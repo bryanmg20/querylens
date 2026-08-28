@@ -211,23 +211,51 @@ Desde el punto de vista técnico, las soluciones existentes demuestran la viabil
 
 ## 7. Metodología de desarrollo y plan de trabajo
 
-Describe el enfoque metodológico que orientará el desarrollo del proyecto y la forma en que este se traducirá en actividades, iteraciones y entregables concretos. Debe explicar cómo se construirá, validará y refinará la solución a lo largo del proceso.
-
 ### 7.1 Enfoque metodológico
 
-Explica la metodología adoptada para el desarrollo del proyecto, justificando su elección. En particular, debe describirse el uso de un enfoque de prototipado iterativo, indicando cómo se plantea avanzar mediante ciclos sucesivos de diseño, construcción, prueba y ajuste de la solución.
+El desarrollo de QUERYLENS se realizará mediante un **enfoque de prototipado iterativo**, adecuado para un proyecto que integra diferentes componentes técnicos y requiere validar progresivamente su funcionamiento. El proceso se organizará en ciclos de **diseño, construcción, prueba y ajuste**, permitiendo detectar problemas y realizar modificaciones antes de avanzar a las siguientes etapas.
+
+La solución se desarrollará de manera modular, trabajando sobre la capa de recolección y normalización, el motor de detección, el módulo de contención, la interfaz de análisis y el banco de pruebas. Posteriormente, estos componentes serán integrados para validar el funcionamiento completo de QUERYLENS.
 
 ### 7.2 Iteraciones o fases de desarrollo
 
-Describe las principales fases o iteraciones previstas para el proyecto, indicando el propósito de cada una, las actividades principales a realizar y la manera en que cada ciclo contribuirá al refinamiento progresivo de la solución.
+El desarrollo de QUERYLENS se realizará mediante iteraciones progresivas, en las que cada ciclo permitirá construir, probar y ajustar un conjunto de componentes antes de continuar con el siguiente. Las iteraciones previstas son:
+
+1. **Iteración de requisitos y diseño:** tendrá como propósito establecer las necesidades de la solución y sus bases arquitectónicas. Se definirán los requisitos, el catálogo de patologías, el modelo canónico y las decisiones tecnológicas iniciales. Los resultados de esta iteración servirán como referencia para orientar la implementación y evitar modificaciones importantes en etapas posteriores.
+
+2. **Iteración de recolección y normalización:** tendrá como propósito obtener y unificar la telemetría proveniente de PostgreSQL y MySQL. Se implementará la recolección *agentless*, las funciones de traducción al modelo canónico y la anonimización de literales. Las pruebas permitirán identificar diferencias entre motores y ajustar el modelo para conservar la información necesaria para el diagnóstico.
+
+3. **Iteración de detección y contención:** tendrá como propósito desarrollar las capacidades principales de análisis. Se implementarán las reglas deterministas para los anti-patrones y el análisis de bloqueos y abrazos mortales. Los resultados de las pruebas permitirán calibrar los umbrales, reducir falsos positivos y mejorar la trazabilidad de las detecciones.
+
+4. **Iteración de interfaz y explicación:** tendrá como propósito presentar los resultados de forma comprensible para el usuario objetivo. Se desarrollarán las vistas de análisis, la visualización de grafos y las explicaciones accionables. La revisión de los resultados permitirá ajustar la información presentada y mejorar la claridad de los diagnósticos.
+
+5. **Iteración de integración y validación:** tendrá como propósito comprobar el funcionamiento conjunto de la solución. Se integrarán los componentes y se utilizará el banco de pruebas reproducible para ejecutar patologías controladas. Los resultados obtenidos permitirán realizar los últimos ajustes sobre las reglas, la normalización, el rendimiento y la interfaz antes del cierre del proyecto.
+
+De esta manera, cada iteración no solo incorpora nuevas funcionalidades, sino que utiliza los resultados de las pruebas y revisiones para **refinar progresivamente la solución** hasta obtener una versión integrada y validada de QUERYLENS.
+
 
 ### 7.3 Estrategia de validación
 
-Explica cómo se evaluarán los avances en cada iteración, por ejemplo mediante retroalimentación de usuarios, pruebas funcionales, revisión de requerimientos o validaciones técnicas y de usabilidad.
+La validación se realizará de forma progresiva mediante **pruebas funcionales, técnicas y de integración**. El banco de pruebas reproducible será la principal fuente de validación, utilizando patologías inyectadas de forma controlada y etiquetas conocidas para comparar los resultados obtenidos por QUERYLENS.
+
+Se medirán principalmente la **precisión y exhaustividad** del motor de detección, además del sobrecosto generado por la recolección. También se verificará la correcta normalización de la telemetría entre motores, la reconstrucción de los grafos de espera, la anonimización de la información y la presentación de explicaciones comprensibles.
+
+La retroalimentación del tutor se incorporará durante las diferentes iteraciones para revisar los requisitos, las decisiones de diseño y la utilidad de los resultados. Cuando sea posible, la evaluación con usuarios o entornos reales se utilizará como fuente adicional de retroalimentación, sin constituir una dependencia para la validación principal.
 
 ### 7.4 Plan de trabajo, cronograma o hitos
 
-Presenta la planificación general del proyecto en forma de cronograma, tabla o listado de hitos, indicando las actividades principales, los entregables esperados y, cuando aplique, la temporalidad estimada de cada fase.
+El plan de trabajo se organizará mediante hitos que permitan realizar un seguimiento del avance del proyecto y verificar la obtención de los principales resultados. Cada hito estará asociado a un entregable concreto.
+
+| Hito | Resultado esperado | Entregable | Temporalidad |
+|---|---|---|---|
+| **H1. Definición y diseño** | Bases funcionales y arquitectónicas establecidas. | Requisitos, arquitectura y decisiones de diseño. | Por definir |
+| **H2. Recolección y normalización** | Telemetría de PostgreSQL y MySQL disponible en el modelo definido. | Capa de recolección y normalización. | Por definir |
+| **H3. Motor de análisis** | Detección de patologías y análisis de contención implementados. | Motor de detección y módulo de contención. | Por definir |
+| **H4. Interfaz funcional** | Resultados disponibles para consulta y análisis. | Interfaz web y capa de explicación. | Por definir |
+| **H5. Sistema integrado** | Componentes integrados en un entorno reproducible. | Versión integrada y banco de pruebas. | Por definir |
+| **H6. Validación y cierre** | Cumplimiento de los criterios de validación y consolidación del proyecto. | Resultados de validación, documentación y versión final de QUERYLENS. | Por definir |
+
+El trabajo será distribuido entre los integrantes por componentes, manteniendo actividades conjuntas de **integración, validación y documentación** para garantizar la coherencia de la solución.
 
 ## 8. Referencias
 
