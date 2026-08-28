@@ -252,8 +252,8 @@ El plan de trabajo se organizará mediante hitos que permitan realizar un seguim
 | **H2. Recolección y normalización** | Telemetría de PostgreSQL y MySQL disponible en el modelo definido. | Capa de recolección y normalización. | Semanas 3-6 |
 | **H3. Motor de análisis** | Detección de patologías y análisis de contención implementados. | Motor de detección y módulo de contención. | Semanas 7-10 |
 | **H4. Interfaz funcional** | Resultados disponibles para consulta y análisis. | Interfaz web y capa de explicación. | Semanas 10-12 |
-| **H5. Sistema integrado** | Componentes integrados en un entorno reproducible. | Versión integrada y banco de pruebas. | Semanas 12-14 |
-| **H6. Validación y cierre** | Cumplimiento de los criterios de validación y consolidación del proyecto. | Resultados de validación, documentación y versión final de QUERYLENS. | Semanas 14-16 |
+| **H5. Sistema integrado** | Componentes integrados en un entorno reproducible. | Versión integrada y banco de pruebas. | Semanas 13-14 |
+| **H6. Validación y cierre** | Cumplimiento de los criterios de validación y consolidación del proyecto. | Resultados de validación, documentación y versión final de QUERYLENS. | Semanas 15-16 |
 
 El trabajo será distribuido entre los integrantes por componentes, manteniendo actividades conjuntas de **integración, validación y documentación** para garantizar la coherencia de la solución.
 
@@ -267,8 +267,7 @@ El trabajo será distribuido entre los integrantes por componentes, manteniendo 
 
 [4] SolarWinds. (2026). *Introduction to Database Performance Analyzer*. SolarWinds Documentation. https://documentation.solarwinds.com/en/success_center/dpa/content/dpa-introduction.htm
 
-[5] Quest Software. (2026). *Foglight for Databases*. https://support.quest.com/foglight-for-databases
+[5] Quest Software. (2026). *Foglight for Databases*. https://www.quest.com/products/foglight-for-cross-platform-databases/
 
 [6] Redgate Software. (2026). *Comparison of functionality by database engine*. Redgate Monitor Documentation. https://documentation.red-gate.com/monitor/comparison-of-functionality-by-database-engine-342852844.html
-
-[7] Percona. (2026). *Percona Monitoring and Management*. Percona Documentation. https://docs.percona.com/percona-monitoring-and-management/
+[7] Percona. (2026). *Percona Monitoring and Management*. Percona Documentation. https://docs.percona.com/percona-monitoring-and-management/2/index.html
