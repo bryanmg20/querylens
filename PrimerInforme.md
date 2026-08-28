@@ -248,12 +248,12 @@ El plan de trabajo se organizará mediante hitos que permitan realizar un seguim
 
 | Hito | Resultado esperado | Entregable | Temporalidad |
 |---|---|---|---|
-| **H1. Definición y diseño** | Bases funcionales y arquitectónicas establecidas. | Requisitos, arquitectura y decisiones de diseño. | Por definir |
-| **H2. Recolección y normalización** | Telemetría de PostgreSQL y MySQL disponible en el modelo definido. | Capa de recolección y normalización. | Por definir |
-| **H3. Motor de análisis** | Detección de patologías y análisis de contención implementados. | Motor de detección y módulo de contención. | Por definir |
-| **H4. Interfaz funcional** | Resultados disponibles para consulta y análisis. | Interfaz web y capa de explicación. | Por definir |
-| **H5. Sistema integrado** | Componentes integrados en un entorno reproducible. | Versión integrada y banco de pruebas. | Por definir |
-| **H6. Validación y cierre** | Cumplimiento de los criterios de validación y consolidación del proyecto. | Resultados de validación, documentación y versión final de QUERYLENS. | Por definir |
+| **H1. Definición y diseño** | Bases funcionales y arquitectónicas establecidas. | Requisitos, arquitectura y decisiones de diseño. | Semanas 1-2 |
+| **H2. Recolección y normalización** | Telemetría de PostgreSQL y MySQL disponible en el modelo definido. | Capa de recolección y normalización. | Semanas 3-6 |
+| **H3. Motor de análisis** | Detección de patologías y análisis de contención implementados. | Motor de detección y módulo de contención. | Semanas 7-10 |
+| **H4. Interfaz funcional** | Resultados disponibles para consulta y análisis. | Interfaz web y capa de explicación. | Semanas 10-12 |
+| **H5. Sistema integrado** | Componentes integrados en un entorno reproducible. | Versión integrada y banco de pruebas. | Semanas 12-14 |
+| **H6. Validación y cierre** | Cumplimiento de los criterios de validación y consolidación del proyecto. | Resultados de validación, documentación y versión final de QUERYLENS. | Semanas 14-16 |
 
 El trabajo será distribuido entre los integrantes por componentes, manteniendo actividades conjuntas de **integración, validación y documentación** para garantizar la coherencia de la solución.
 
