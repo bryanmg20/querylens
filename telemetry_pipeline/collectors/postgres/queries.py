@@ -1,0 +1,78 @@
+INDEXES_QUERY = """
+SELECT
+    schemaname AS schema_name,
+    relname AS table_name,
+    indexrelname AS index_name,
+    idx_scan AS index_scans,
+    last_idx_scan AS last_index_scan,
+    pg_get_indexdef(indexrelid) AS index_ref,
+    pg_relation_size(indexrelid) AS index_size_bytes
+FROM pg_stat_user_indexes;
+"""
+
+
+TABLES_QUERY = """
+SELECT
+    schemaname AS schema_name,
+    relname AS table_name,
+    seq_scan AS seq_scans,
+    idx_scan AS idx_scans,
+    n_live_tup AS live_rows
+FROM pg_stat_user_tables;
+"""
+
+
+STATEMENTS_QUERY = """
+SELECT
+    queryid AS query_id,
+    query AS query_text,
+    calls AS execution_count,
+    rows AS rows_returned,
+    100*(rows/calls) AS avg_rows_per_call,
+    total_exec_time AS total_time_ms,
+    mean_exec_time AS mean_time_ms,
+    stddev_exec_time AS stddev_time_ms,
+    min_exec_time AS min_time_ms,
+    max_exec_time AS max_time_ms,
+    stddev_exec_time / NULLIF(mean_exec_time, 0) AS coeff_of_variation,
+    shared_blks_hit AS shared_blocks_hit,
+    shared_blks_read AS shared_blocks_read,
+    100.0*(shared_blks_hit / NULLIF(shared_blks_hit + shared_blks_read, 0)::float) AS pct_shared_blocks_hit,
+    temp_blks_written AS temp_blocks_written
+FROM pg_stat_statements
+WHERE userid != (SELECT oid FROM pg_roles WHERE rolname = session_user)
+ORDER BY total_exec_time DESC;
+"""
+
+
+LOCKS_QUERY = """
+SELECT
+    l.pid AS process_id,
+    l.relation AS oid_relation,
+    c.relname AS table_name,
+    l.mode AS lock_mode,
+    l.granted AS is_granted
+FROM pg_locks l
+LEFT JOIN pg_class c ON c.oid = l.relation;
+"""
+
+
+ACTIVE_QUERIES_QUERY = """
+SELECT
+    pid AS process_id,
+    query AS query_text,
+    query_id AS query_id,
+    state AS query_state,
+    query_start AS query_start_time,
+    xact_start AS transaction_start_time,
+    wait_event_type AS wait_event_type,
+    wait_event AS wait_event
+FROM pg_stat_activity
+WHERE usesysid != (SELECT oid FROM pg_roles WHERE rolname = session_user);
+"""
+
+
+STATS_RESET_QUERY = """
+SELECT stats_reset
+FROM pg_stat_bgwriter;
+"""

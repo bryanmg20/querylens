@@ -1,0 +1,122 @@
+INDEXES_QUERY = """
+SELECT
+    t.table_schema                          AS schema_name,
+    t.table_name                            AS table_name,
+    t.index_name                            AS index_name,
+    CAST(io.COUNT_READ AS SIGNED)           AS index_scans,
+    NULL                                    AS last_index_scan,
+    NULL                                    AS index_ref,
+    CAST(st.index_length AS SIGNED)         AS index_size_bytes
+FROM information_schema.statistics t
+LEFT JOIN performance_schema.table_io_waits_summary_by_index_usage io
+       ON io.object_schema = t.table_schema
+      AND io.object_name   = t.table_name
+      AND io.index_name    = t.index_name
+LEFT JOIN information_schema.tables st
+       ON st.table_schema = t.table_schema
+      AND st.table_name   = t.table_name
+WHERE t.table_schema NOT IN ('mysql', 'performance_schema', 'information_schema', 'sys')
+GROUP BY
+    t.table_schema,
+    t.table_name,
+    t.index_name,
+    io.COUNT_READ,
+    st.index_length;
+"""
+
+
+TABLES_QUERY = """
+SELECT
+    t.table_schema                              AS schema_name,
+    t.table_name                                AS table_name,
+    CAST(io.COUNT_READ AS SIGNED)               AS seq_scans,
+    CAST(
+        COALESCE(idx_io.total_index_reads, 0)
+    AS SIGNED)                                  AS idx_scans,
+    CAST(t.table_rows AS SIGNED)                AS live_rows
+FROM information_schema.tables t
+LEFT JOIN performance_schema.table_io_waits_summary_by_table io
+       ON io.object_schema = t.table_schema
+      AND io.object_name   = t.table_name
+LEFT JOIN (
+    SELECT object_schema, object_name, SUM(COUNT_READ) AS total_index_reads
+    FROM performance_schema.table_io_waits_summary_by_index_usage
+    WHERE index_name IS NOT NULL
+    GROUP BY object_schema, object_name
+) idx_io
+       ON idx_io.object_schema = t.table_schema
+      AND idx_io.object_name   = t.table_name
+WHERE t.table_schema NOT IN ('mysql', 'performance_schema', 'information_schema', 'sys')
+  AND t.table_type = 'BASE TABLE';
+"""
+
+
+STATEMENTS_QUERY = """
+SELECT
+    s.DIGEST                                                        AS query_id,
+    s.DIGEST_TEXT                                                   AS query_text,
+    CAST(s.COUNT_STAR AS SIGNED)                                    AS execution_count,
+    CAST(s.SUM_ROWS_SENT AS SIGNED)                                 AS rows_returned,
+    NULL                                                            AS avg_rows_per_call,
+    ROUND(s.SUM_TIMER_WAIT / 1000000000.0, 6)                       AS total_time_ms,
+    ROUND(s.AVG_TIMER_WAIT / 1000000000.0, 6)                       AS mean_time_ms,
+    NULL                                                            AS stddev_time_ms,
+    ROUND(s.MIN_TIMER_WAIT / 1000000000.0, 6)                       AS min_time_ms,
+    ROUND(s.MAX_TIMER_WAIT / 1000000000.0, 6)                       AS max_time_ms,
+    NULL                                                            AS coeff_of_variation,
+    NULL                                                            AS shared_blocks_hit,
+    NULL                                                            AS shared_blocks_read,
+    NULL                                                            AS pct_shared_blocks_hit,
+    NULL                                                            AS temp_blocks_written
+FROM performance_schema.events_statements_summary_by_digest s
+WHERE s.DIGEST_TEXT IS NOT NULL
+  AND s.DIGEST_TEXT NOT LIKE '%performance_schema%'
+  AND s.DIGEST_TEXT NOT LIKE '%information_schema%'
+  AND s.DIGEST_TEXT NOT LIKE '%events_statements_summary%'
+ORDER BY s.SUM_TIMER_WAIT DESC;
+"""
+
+
+LOCKS_QUERY = """
+SELECT
+    r.trx_mysql_thread_id   AS process_id,
+    NULL                   AS oid_relation,
+    l.object_name           AS table_name,
+    l.lock_type             AS lock_mode,
+    l.lock_status           AS is_granted
+FROM performance_schema.data_locks l
+LEFT JOIN information_schema.innodb_trx r
+       ON CAST(r.trx_id AS CHAR) = l.engine_transaction_id
+WHERE l.object_schema NOT IN ('mysql', 'performance_schema', 'information_schema', 'sys');
+"""
+
+
+ACTIVE_QUERIES_QUERY = """
+SELECT
+    t.processlist_id                        AS process_id,
+    s.SQL_TEXT                              AS query_text,
+    s.STATEMENT_ID                          AS query_id,
+    t.processlist_state                     AS query_state,
+    t.processlist_time                      AS query_start_time,
+    trx.trx_started                         AS transaction_start_time,
+    t.processlist_state                     AS wait_event_type,
+    s.EVENT_NAME                            AS wait_event
+FROM performance_schema.threads t
+LEFT JOIN performance_schema.events_statements_current s
+       ON s.thread_id = t.thread_id
+LEFT JOIN information_schema.innodb_trx trx
+       ON trx.trx_mysql_thread_id = t.processlist_id
+WHERE t.processlist_user IS NOT NULL
+  AND t.processlist_user != (SELECT SUBSTRING_INDEX(CURRENT_USER(), '@', 1))
+  AND t.processlist_command != 'Sleep';
+"""
+
+
+STATS_RESET_QUERY = """
+SELECT
+    FROM_UNIXTIME(
+        UNIX_TIMESTAMP() - variable_value
+    )                       AS stats_reset
+FROM performance_schema.global_status
+WHERE variable_name = 'Uptime';
+"""

@@ -1,0 +1,722 @@
+{
+    "indexes": [
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest1",
+            "index_name": "PRIMARY",
+            "index_scans": null,
+            "last_index_scan": null,
+            "index_ref": null,
+            "index_size_bytes": 212992
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest1",
+            "index_name": "k_1",
+            "index_scans": null,
+            "last_index_scan": null,
+            "index_ref": null,
+            "index_size_bytes": 212992
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest2",
+            "index_name": "PRIMARY",
+            "index_scans": null,
+            "last_index_scan": null,
+            "index_ref": null,
+            "index_size_bytes": 212992
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest2",
+            "index_name": "k_2",
+            "index_scans": null,
+            "last_index_scan": null,
+            "index_ref": null,
+            "index_size_bytes": 212992
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest3",
+            "index_name": "PRIMARY",
+            "index_scans": null,
+            "last_index_scan": null,
+            "index_ref": null,
+            "index_size_bytes": 229376
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest3",
+            "index_name": "k_3",
+            "index_scans": null,
+            "last_index_scan": null,
+            "index_ref": null,
+            "index_size_bytes": 229376
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest4",
+            "index_name": "PRIMARY",
+            "index_scans": null,
+            "last_index_scan": null,
+            "index_ref": null,
+            "index_size_bytes": 196608
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest4",
+            "index_name": "k_4",
+            "index_scans": null,
+            "last_index_scan": null,
+            "index_ref": null,
+            "index_size_bytes": 196608
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest5",
+            "index_name": "PRIMARY",
+            "index_scans": null,
+            "last_index_scan": null,
+            "index_ref": null,
+            "index_size_bytes": 196608
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest5",
+            "index_name": "k_5",
+            "index_scans": null,
+            "last_index_scan": null,
+            "index_ref": null,
+            "index_size_bytes": 196608
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest6",
+            "index_name": "PRIMARY",
+            "index_scans": null,
+            "last_index_scan": null,
+            "index_ref": null,
+            "index_size_bytes": 196608
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest6",
+            "index_name": "k_6",
+            "index_scans": null,
+            "last_index_scan": null,
+            "index_ref": null,
+            "index_size_bytes": 196608
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest7",
+            "index_name": "PRIMARY",
+            "index_scans": null,
+            "last_index_scan": null,
+            "index_ref": null,
+            "index_size_bytes": 212992
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest7",
+            "index_name": "k_7",
+            "index_scans": null,
+            "last_index_scan": null,
+            "index_ref": null,
+            "index_size_bytes": 212992
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest8",
+            "index_name": "PRIMARY",
+            "index_scans": null,
+            "last_index_scan": null,
+            "index_ref": null,
+            "index_size_bytes": 212992
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest8",
+            "index_name": "k_8",
+            "index_scans": null,
+            "last_index_scan": null,
+            "index_ref": null,
+            "index_size_bytes": 212992
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest9",
+            "index_name": "PRIMARY",
+            "index_scans": null,
+            "last_index_scan": null,
+            "index_ref": null,
+            "index_size_bytes": 196608
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest9",
+            "index_name": "k_9",
+            "index_scans": null,
+            "last_index_scan": null,
+            "index_ref": null,
+            "index_size_bytes": 196608
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest10",
+            "index_name": "PRIMARY",
+            "index_scans": null,
+            "last_index_scan": null,
+            "index_ref": null,
+            "index_size_bytes": 196608
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest10",
+            "index_name": "k_10",
+            "index_scans": null,
+            "last_index_scan": null,
+            "index_ref": null,
+            "index_size_bytes": 196608
+        }
+    ],
+    "tables": [
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest1",
+            "seq_scans": null,
+            "idx_scans": 0,
+            "live_rows": 9936
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest10",
+            "seq_scans": null,
+            "idx_scans": 0,
+            "live_rows": 9936
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest2",
+            "seq_scans": null,
+            "idx_scans": 0,
+            "live_rows": 9936
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest3",
+            "seq_scans": null,
+            "idx_scans": 0,
+            "live_rows": 9936
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest4",
+            "seq_scans": null,
+            "idx_scans": 0,
+            "live_rows": 9936
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest5",
+            "seq_scans": null,
+            "idx_scans": 0,
+            "live_rows": 9936
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest6",
+            "seq_scans": null,
+            "idx_scans": 0,
+            "live_rows": 9936
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest7",
+            "seq_scans": null,
+            "idx_scans": 0,
+            "live_rows": 9936
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest8",
+            "seq_scans": null,
+            "idx_scans": 0,
+            "live_rows": 9680
+        },
+        {
+            "schema_name": "ql_demo",
+            "table_name": "sbtest9",
+            "seq_scans": null,
+            "idx_scans": 0,
+            "live_rows": 9936
+        }
+    ],
+    "statements": [
+        {
+            "query_id": "6d631211d940af327fe3f82a008b908dc6cba3912cae61881353006e73354eee",
+            "query_text": "SET NAMES `utf8mb4`",
+            "execution_count": 2,
+            "rows_returned": 0,
+            "avg_rows_per_call": null,
+            "total_time_ms": "17.2534",
+            "mean_time_ms": "8.6267",
+            "stddev_time_ms": null,
+            "min_time_ms": "0.2502",
+            "max_time_ms": "17.0032",
+            "coeff_of_variation": null,
+            "shared_blocks_hit": null,
+            "shared_blocks_read": null,
+            "pct_shared_blocks_hit": null,
+            "temp_blocks_written": null
+        },
+        {
+            "query_id": "b715edd335c8ab2a3c43087e726bbc978f59bc64c69c2ff9f0f7f1ef75c8d651",
+            "query_text": "SELECT `VERSION` ( )",
+            "execution_count": 1,
+            "rows_returned": 1,
+            "avg_rows_per_call": null,
+            "total_time_ms": "11.4352",
+            "mean_time_ms": "11.4352",
+            "stddev_time_ms": null,
+            "min_time_ms": "11.4352",
+            "max_time_ms": "11.4352",
+            "coeff_of_variation": null,
+            "shared_blocks_hit": null,
+            "shared_blocks_read": null,
+            "pct_shared_blocks_hit": null,
+            "temp_blocks_written": null
+        },
+        {
+            "query_id": "ce04eda080d3f5605113e1d0d47c2f20e23b091e2487ba586f07b32cda423942",
+            "query_text": "SELECT SCHEMA ( )",
+            "execution_count": 1,
+            "rows_returned": 1,
+            "avg_rows_per_call": null,
+            "total_time_ms": "3.0533",
+            "mean_time_ms": "3.0533",
+            "stddev_time_ms": null,
+            "min_time_ms": "3.0533",
+            "max_time_ms": "3.0533",
+            "coeff_of_variation": null,
+            "shared_blocks_hit": null,
+            "shared_blocks_read": null,
+            "pct_shared_blocks_hit": null,
+            "temp_blocks_written": null
+        },
+        {
+            "query_id": "d2e23336c82e4471f84822225ad6f478ce9b82f474a7e59f9d42387edf1c1c12",
+            "query_text": "SELECT @@`transaction_isolation`",
+            "execution_count": 1,
+            "rows_returned": 1,
+            "avg_rows_per_call": null,
+            "total_time_ms": "2.9288",
+            "mean_time_ms": "2.9288",
+            "stddev_time_ms": null,
+            "min_time_ms": "2.9288",
+            "max_time_ms": "2.9288",
+            "coeff_of_variation": null,
+            "shared_blocks_hit": null,
+            "shared_blocks_read": null,
+            "pct_shared_blocks_hit": null,
+            "temp_blocks_written": null
+        },
+        {
+            "query_id": "41eb3b98a0a8ca5242efb496b77bb03b31d873053653fed8bd7543d714afec7c",
+            "query_text": "SET `AUTOCOMMIT` = ?",
+            "execution_count": 1,
+            "rows_returned": 0,
+            "avg_rows_per_call": null,
+            "total_time_ms": "2.4290",
+            "mean_time_ms": "2.4290",
+            "stddev_time_ms": null,
+            "min_time_ms": "2.4290",
+            "max_time_ms": "2.4290",
+            "coeff_of_variation": null,
+            "shared_blocks_hit": null,
+            "shared_blocks_read": null,
+            "pct_shared_blocks_hit": null,
+            "temp_blocks_written": null
+        },
+        {
+            "query_id": "1da3a196185b678ecb9d76f22b1efe1ad4983d6b48955f16315e02da05f3d0e8",
+            "query_text": "SELECT @@`lower_case_table_names`",
+            "execution_count": 1,
+            "rows_returned": 1,
+            "avg_rows_per_call": null,
+            "total_time_ms": "0.7560",
+            "mean_time_ms": "0.7560",
+            "stddev_time_ms": null,
+            "min_time_ms": "0.7560",
+            "max_time_ms": "0.7560",
+            "coeff_of_variation": null,
+            "shared_blocks_hit": null,
+            "shared_blocks_read": null,
+            "pct_shared_blocks_hit": null,
+            "temp_blocks_written": null
+        },
+        {
+            "query_id": "d41392b6408bf37c8c00d5bd4e604f3a3970a4d3ccd89060135a9d5dd85b3a4d",
+            "query_text": "SELECT @@`sql_mode`",
+            "execution_count": 1,
+            "rows_returned": 1,
+            "avg_rows_per_call": null,
+            "total_time_ms": "0.6141",
+            "mean_time_ms": "0.6141",
+            "stddev_time_ms": null,
+            "min_time_ms": "0.6141",
+            "max_time_ms": "0.6141",
+            "coeff_of_variation": null,
+            "shared_blocks_hit": null,
+            "shared_blocks_read": null,
+            "pct_shared_blocks_hit": null,
+            "temp_blocks_written": null
+        },
+        {
+            "query_id": "3e67fa9d38d82054e7fc01fe3ee8844dc76faaaefbd74d213a2af42e60e95520",
+            "query_text": "ROLLBACK",
+            "execution_count": 1,
+            "rows_returned": 0,
+            "avg_rows_per_call": null,
+            "total_time_ms": "0.4252",
+            "mean_time_ms": "0.4252",
+            "stddev_time_ms": null,
+            "min_time_ms": "0.4252",
+            "max_time_ms": "0.4252",
+            "coeff_of_variation": null,
+            "shared_blocks_hit": null,
+            "shared_blocks_read": null,
+            "pct_shared_blocks_hit": null,
+            "temp_blocks_written": null
+        }
+    ],
+    "locks": [],
+    "active_queries": [
+        {
+            "process_id": 5,
+            "query_text": null,
+            "query_id": null,
+            "query_state": "Waiting on empty queue",
+            "query_start_time": 100,
+            "transaction_start_time": null,
+            "wait_event_type": "Waiting on empty queue",
+            "wait_event": null
+        }
+    ],
+    "stats_reset_timestamp": [
+        {
+            "stats_reset": "2026-08-30 00:20:41"
+        }
+    ],
+    "high_impact_statements": [
+        {
+            "query_id": "6d631211d940af327fe3f82a008b908dc6cba3912cae61881353006e73354eee",
+            "query_text": "SET NAMES `utf8mb4`",
+            "execution_count": 2,
+            "rows_returned": 0,
+            "avg_rows_per_call": null,
+            "total_time_ms": "17.2534",
+            "mean_time_ms": "8.6267",
+            "stddev_time_ms": null,
+            "min_time_ms": "0.2502",
+            "max_time_ms": "17.0032",
+            "coeff_of_variation": null,
+            "shared_blocks_hit": null,
+            "shared_blocks_read": null,
+            "pct_shared_blocks_hit": null,
+            "temp_blocks_written": null
+        },
+        {
+            "query_id": "b715edd335c8ab2a3c43087e726bbc978f59bc64c69c2ff9f0f7f1ef75c8d651",
+            "query_text": "SELECT `VERSION` ( )",
+            "execution_count": 1,
+            "rows_returned": 1,
+            "avg_rows_per_call": null,
+            "total_time_ms": "11.4352",
+            "mean_time_ms": "11.4352",
+            "stddev_time_ms": null,
+            "min_time_ms": "11.4352",
+            "max_time_ms": "11.4352",
+            "coeff_of_variation": null,
+            "shared_blocks_hit": null,
+            "shared_blocks_read": null,
+            "pct_shared_blocks_hit": null,
+            "temp_blocks_written": null
+        },
+        {
+            "query_id": "ce04eda080d3f5605113e1d0d47c2f20e23b091e2487ba586f07b32cda423942",
+            "query_text": "SELECT SCHEMA ( )",
+            "execution_count": 1,
+            "rows_returned": 1,
+            "avg_rows_per_call": null,
+            "total_time_ms": "3.0533",
+            "mean_time_ms": "3.0533",
+            "stddev_time_ms": null,
+            "min_time_ms": "3.0533",
+            "max_time_ms": "3.0533",
+            "coeff_of_variation": null,
+            "shared_blocks_hit": null,
+            "shared_blocks_read": null,
+            "pct_shared_blocks_hit": null,
+            "temp_blocks_written": null
+        },
+        {
+            "query_id": "d2e23336c82e4471f84822225ad6f478ce9b82f474a7e59f9d42387edf1c1c12",
+            "query_text": "SELECT @@`transaction_isolation`",
+            "execution_count": 1,
+            "rows_returned": 1,
+            "avg_rows_per_call": null,
+            "total_time_ms": "2.9288",
+            "mean_time_ms": "2.9288",
+            "stddev_time_ms": null,
+            "min_time_ms": "2.9288",
+            "max_time_ms": "2.9288",
+            "coeff_of_variation": null,
+            "shared_blocks_hit": null,
+            "shared_blocks_read": null,
+            "pct_shared_blocks_hit": null,
+            "temp_blocks_written": null
+        },
+        {
+            "query_id": "41eb3b98a0a8ca5242efb496b77bb03b31d873053653fed8bd7543d714afec7c",
+            "query_text": "SET `AUTOCOMMIT` = ?",
+            "execution_count": 1,
+            "rows_returned": 0,
+            "avg_rows_per_call": null,
+            "total_time_ms": "2.4290",
+            "mean_time_ms": "2.4290",
+            "stddev_time_ms": null,
+            "min_time_ms": "2.4290",
+            "max_time_ms": "2.4290",
+            "coeff_of_variation": null,
+            "shared_blocks_hit": null,
+            "shared_blocks_read": null,
+            "pct_shared_blocks_hit": null,
+            "temp_blocks_written": null
+        },
+        {
+            "query_id": "1da3a196185b678ecb9d76f22b1efe1ad4983d6b48955f16315e02da05f3d0e8",
+            "query_text": "SELECT @@`lower_case_table_names`",
+            "execution_count": 1,
+            "rows_returned": 1,
+            "avg_rows_per_call": null,
+            "total_time_ms": "0.7560",
+            "mean_time_ms": "0.7560",
+            "stddev_time_ms": null,
+            "min_time_ms": "0.7560",
+            "max_time_ms": "0.7560",
+            "coeff_of_variation": null,
+            "shared_blocks_hit": null,
+            "shared_blocks_read": null,
+            "pct_shared_blocks_hit": null,
+            "temp_blocks_written": null
+        },
+        {
+            "query_id": "d41392b6408bf37c8c00d5bd4e604f3a3970a4d3ccd89060135a9d5dd85b3a4d",
+            "query_text": "SELECT @@`sql_mode`",
+            "execution_count": 1,
+            "rows_returned": 1,
+            "avg_rows_per_call": null,
+            "total_time_ms": "0.6141",
+            "mean_time_ms": "0.6141",
+            "stddev_time_ms": null,
+            "min_time_ms": "0.6141",
+            "max_time_ms": "0.6141",
+            "coeff_of_variation": null,
+            "shared_blocks_hit": null,
+            "shared_blocks_read": null,
+            "pct_shared_blocks_hit": null,
+            "temp_blocks_written": null
+        },
+        {
+            "query_id": "3e67fa9d38d82054e7fc01fe3ee8844dc76faaaefbd74d213a2af42e60e95520",
+            "query_text": "ROLLBACK",
+            "execution_count": 1,
+            "rows_returned": 0,
+            "avg_rows_per_call": null,
+            "total_time_ms": "0.4252",
+            "mean_time_ms": "0.4252",
+            "stddev_time_ms": null,
+            "min_time_ms": "0.4252",
+            "max_time_ms": "0.4252",
+            "coeff_of_variation": null,
+            "shared_blocks_hit": null,
+            "shared_blocks_read": null,
+            "pct_shared_blocks_hit": null,
+            "temp_blocks_written": null
+        }
+    ],
+    "unstable_statements": [],
+    "io_heavy_statements": [],
+    "explain_candidates": [
+        {
+            "query_id": "b715edd335c8ab2a3c43087e726bbc978f59bc64c69c2ff9f0f7f1ef75c8d651",
+            "query_text": "SELECT `VERSION` ( )",
+            "execution_count": 1,
+            "rows_returned": 1,
+            "avg_rows_per_call": null,
+            "total_time_ms": "11.4352",
+            "mean_time_ms": "11.4352",
+            "stddev_time_ms": null,
+            "min_time_ms": "11.4352",
+            "max_time_ms": "11.4352",
+            "coeff_of_variation": null,
+            "shared_blocks_hit": null,
+            "shared_blocks_read": null,
+            "pct_shared_blocks_hit": null,
+            "temp_blocks_written": null,
+            "selected_by": [
+                "time_high_impact"
+            ],
+            "real_query_found": false
+        },
+        {
+            "query_id": "ce04eda080d3f5605113e1d0d47c2f20e23b091e2487ba586f07b32cda423942",
+            "query_text": "SELECT SCHEMA ( )",
+            "execution_count": 1,
+            "rows_returned": 1,
+            "avg_rows_per_call": null,
+            "total_time_ms": "3.0533",
+            "mean_time_ms": "3.0533",
+            "stddev_time_ms": null,
+            "min_time_ms": "3.0533",
+            "max_time_ms": "3.0533",
+            "coeff_of_variation": null,
+            "shared_blocks_hit": null,
+            "shared_blocks_read": null,
+            "pct_shared_blocks_hit": null,
+            "temp_blocks_written": null,
+            "selected_by": [
+                "time_high_impact"
+            ],
+            "real_query_found": false
+        },
+        {
+            "query_id": "d2e23336c82e4471f84822225ad6f478ce9b82f474a7e59f9d42387edf1c1c12",
+            "query_text": "SELECT @@`transaction_isolation`",
+            "execution_count": 1,
+            "rows_returned": 1,
+            "avg_rows_per_call": null,
+            "total_time_ms": "2.9288",
+            "mean_time_ms": "2.9288",
+            "stddev_time_ms": null,
+            "min_time_ms": "2.9288",
+            "max_time_ms": "2.9288",
+            "coeff_of_variation": null,
+            "shared_blocks_hit": null,
+            "shared_blocks_read": null,
+            "pct_shared_blocks_hit": null,
+            "temp_blocks_written": null,
+            "selected_by": [
+                "time_high_impact"
+            ],
+            "real_query_found": false
+        },
+        {
+            "query_id": "1da3a196185b678ecb9d76f22b1efe1ad4983d6b48955f16315e02da05f3d0e8",
+            "query_text": "SELECT @@`lower_case_table_names`",
+            "execution_count": 1,
+            "rows_returned": 1,
+            "avg_rows_per_call": null,
+            "total_time_ms": "0.7560",
+            "mean_time_ms": "0.7560",
+            "stddev_time_ms": null,
+            "min_time_ms": "0.7560",
+            "max_time_ms": "0.7560",
+            "coeff_of_variation": null,
+            "shared_blocks_hit": null,
+            "shared_blocks_read": null,
+            "pct_shared_blocks_hit": null,
+            "temp_blocks_written": null,
+            "selected_by": [
+                "time_high_impact"
+            ],
+            "real_query_found": false
+        },
+        {
+            "query_id": "d41392b6408bf37c8c00d5bd4e604f3a3970a4d3ccd89060135a9d5dd85b3a4d",
+            "query_text": "SELECT @@`sql_mode`",
+            "execution_count": 1,
+            "rows_returned": 1,
+            "avg_rows_per_call": null,
+            "total_time_ms": "0.6141",
+            "mean_time_ms": "0.6141",
+            "stddev_time_ms": null,
+            "min_time_ms": "0.6141",
+            "max_time_ms": "0.6141",
+            "coeff_of_variation": null,
+            "shared_blocks_hit": null,
+            "shared_blocks_read": null,
+            "pct_shared_blocks_hit": null,
+            "temp_blocks_written": null,
+            "selected_by": [
+                "time_high_impact"
+            ],
+            "real_query_found": false
+        }
+    ],
+    "non_explainable_candidates": [
+        {
+            "query_id": "6d631211d940af327fe3f82a008b908dc6cba3912cae61881353006e73354eee",
+            "query_text": "SET NAMES `utf8mb4`",
+            "execution_count": 2,
+            "rows_returned": 0,
+            "avg_rows_per_call": null,
+            "total_time_ms": "17.2534",
+            "mean_time_ms": "8.6267",
+            "stddev_time_ms": null,
+            "min_time_ms": "0.2502",
+            "max_time_ms": "17.0032",
+            "coeff_of_variation": null,
+            "shared_blocks_hit": null,
+            "shared_blocks_read": null,
+            "pct_shared_blocks_hit": null,
+            "temp_blocks_written": null,
+            "selected_by": [
+                "time_high_impact"
+            ]
+        },
+        {
+            "query_id": "41eb3b98a0a8ca5242efb496b77bb03b31d873053653fed8bd7543d714afec7c",
+            "query_text": "SET `AUTOCOMMIT` = ?",
+            "execution_count": 1,
+            "rows_returned": 0,
+            "avg_rows_per_call": null,
+            "total_time_ms": "2.4290",
+            "mean_time_ms": "2.4290",
+            "stddev_time_ms": null,
+            "min_time_ms": "2.4290",
+            "max_time_ms": "2.4290",
+            "coeff_of_variation": null,
+            "shared_blocks_hit": null,
+            "shared_blocks_read": null,
+            "pct_shared_blocks_hit": null,
+            "temp_blocks_written": null,
+            "selected_by": [
+                "time_high_impact"
+            ]
+        },
+        {
+            "query_id": "3e67fa9d38d82054e7fc01fe3ee8844dc76faaaefbd74d213a2af42e60e95520",
+            "query_text": "ROLLBACK",
+            "execution_count": 1,
+            "rows_returned": 0,
+            "avg_rows_per_call": null,
+            "total_time_ms": "0.4252",
+            "mean_time_ms": "0.4252",
+            "stddev_time_ms": null,
+            "min_time_ms": "0.4252",
+            "max_time_ms": "0.4252",
+            "coeff_of_variation": null,
+            "shared_blocks_hit": null,
+            "shared_blocks_read": null,
+            "pct_shared_blocks_hit": null,
+            "temp_blocks_written": null,
+            "selected_by": [
+                "time_high_impact"
+            ]
+        }
+    ],
+    "query_explain": []
+}

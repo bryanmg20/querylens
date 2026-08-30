@@ -1,0 +1,89 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: ql_postgres
+    environment:
+      POSTGRES_USER: ql_user
+      POSTGRES_PASSWORD: ql_pass
+      POSTGRES_DB: ql_demo
+    ports:
+      - "5432:5432"
+    command: >
+      postgres
+        -c shared_preload_libraries=pg_stat_statements
+        -c pg_stat_statements.track=all
+        -c pg_stat_statements.max=10000
+        -c track_activity_query_size=4096
+        -c log_lock_waits=on
+        -c deadlock_timeout=1s
+        -c shared_buffers=16MB
+    volumes:
+      - ./init/init_postgres.sql:/docker-entrypoint-initdb.d/init_postgres.sql
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ql_user -d ql_demo"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ql_network
+
+  mysql:
+    image: mysql:8.0
+    container_name: ql_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ql_root
+      MYSQL_DATABASE: ql_demo
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: app_pass
+    ports:
+      - "3307:3306"
+    command: >
+      --performance-schema=ON
+      --performance-schema-instrument='statement/%=ON'
+      --performance-schema-consumer-events-statements-history=ON
+      --performance-schema-consumer-events-statements-history-long=ON
+      --performance-schema-consumer-events-waits-current=ON
+      --max_connections=1000
+      --performance-schema-consumer-statements-digest=ON
+      --performance-schema-consumer-events-waits-current=ON
+      --performance-schema-consumer-events-waits-history=ON
+      --performance-schema-instrument='wait/io/table/sql/handler=ON'
+    volumes:
+      - ./init/init_mysql.sql:/docker-entrypoint-initdb.d/init_mysql.sql
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pql_root"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+    networks:
+      - ql_network
+
+  sysbench:
+    image: debian:bookworm-slim
+    container_name: ql_sysbench
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ./scripts:/scripts
+    command: >
+      bash -c "
+        apt-get update &&
+        apt-get install -y --no-install-recommends sysbench default-mysql-client postgresql-client &&
+        bash /scripts/run.sh
+        tail -f /dev/null
+      "
+    networks:
+      - ql_network
+
+volumes:
+  postgres_data:
+  mysql_data:
+
+networks:
+  ql_network:
+    driver: bridge
