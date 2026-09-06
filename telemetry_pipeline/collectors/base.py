@@ -13,12 +13,11 @@ class DB_Engine_Collector(ABC):
     def select_unstable_statements(self):
             self.stats['unstable_statements'] = [stmd for stmd in self.stats.get('statements', []) if stmd.get('coeff_of_variation') is not None and stmd['coeff_of_variation'] > 2 and stmd.get('mean_time_ms', 0) > 10]
       
-    def select_io_heavy_statements(self):
-            self.stats['io_heavy_statements'] = [stmd for stmd in self.stats.get('statements', []) if stmd['pct_shared_blocks_hit'] is not None and stmd.get('pct_shared_blocks_hit', 0) < 95 and stmd.get('shared_blocks_read', 0) > 999]
+    #def select_io_heavy_statements(self):
+            #self.stats['io_heavy_statements'] = [stmd for stmd in self.stats.get('statements', []) if stmd['pct_shared_blocks_hit'] is not None and stmd.get('pct_shared_blocks_hit', 0) < 95 and stmd.get('shared_blocks_read', 0) > 999]
     
-
-    def select_disk_spill_statements(self):
-            self.stats['disk_spill_statements'] = [stmd for stmd in self.stats.get('statements', []) if stmd.get('temp_blocks_written', 0) > 0]
+    def select_disk_spill_indicator(self):
+            self.stats['disk_spill_statements'] = [stmd for stmd in self.stats.get('statements', []) if stmd.get('disk_spill_indicator', 0) > 0]
 
 
     def select_candidates_to_explain(self):
@@ -28,7 +27,6 @@ class DB_Engine_Collector(ABC):
         statement_groups = [
             ("time_high_impact", "high_impact_statements"),
             ("unstable", "unstable_statements"),
-            ("io_heavy", "io_heavy_statements"),
             ("disk_spill", "disk_spill_statements"),
         ]
 
@@ -102,8 +100,8 @@ class DB_Engine_Collector(ABC):
     def get_candidates(self):
         return json.dumps(self.stats.get('explain_candidates', []), indent=4, default=str)
 
-    def get_querylens(self):
-        return json.dumps(self.stats.get('explain_candidates', []), indent=4, default=str)
+    def get_non_explainable_candidates(self):
+        return json.dumps(self.stats.get('non_explainable_candidates', []), indent=4, default=str)
 
     def get_active_queries(self):
         return json.dumps(self.stats.get('active_queries', []), indent=4, default=str)

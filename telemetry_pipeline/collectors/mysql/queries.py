@@ -50,24 +50,20 @@ WHERE t.table_schema NOT IN ('mysql', 'performance_schema', 'information_schema'
   AND t.table_type = 'BASE TABLE';
 """
 
-
 STATEMENTS_QUERY = """
 SELECT
     s.DIGEST                                                        AS query_id,
     s.DIGEST_TEXT                                                   AS query_text,
     CAST(s.COUNT_STAR AS SIGNED)                                    AS execution_count,
     CAST(s.SUM_ROWS_SENT AS SIGNED)                                 AS rows_returned,
-    NULL                                                            AS avg_rows_per_call,
-    ROUND(s.SUM_TIMER_WAIT / 1000000000.0, 6)                       AS total_time_ms,
-    ROUND(s.AVG_TIMER_WAIT / 1000000000.0, 6)                       AS mean_time_ms,
-    NULL                                                            AS stddev_time_ms,
-    ROUND(s.MIN_TIMER_WAIT / 1000000000.0, 6)                       AS min_time_ms,
-    ROUND(s.MAX_TIMER_WAIT / 1000000000.0, 6)                       AS max_time_ms,
-    NULL                                                            AS coeff_of_variation,
-    NULL                                                            AS shared_blocks_hit,
-    NULL                                                            AS shared_blocks_read,
-    NULL                                                            AS pct_shared_blocks_hit,
-    NULL                                                            AS temp_blocks_written
+    CAST(ROUND(s.SUM_ROWS_SENT / NULLIF(s.COUNT_STAR, 0), 0) AS DOUBLE)        AS avg_rows_per_call,
+    CAST(ROUND(s.SUM_TIMER_WAIT / 1000000000.0, 6) AS DOUBLE)                  AS total_time_ms,
+    CAST(ROUND(s.AVG_TIMER_WAIT / 1000000000.0, 6) AS DOUBLE)                  AS mean_time_ms,
+    NULL                                                                        AS stddev_time_ms,
+    CAST(ROUND(s.MIN_TIMER_WAIT / 1000000000.0, 6) AS DOUBLE)                  AS min_time_ms,
+    CAST(ROUND(s.MAX_TIMER_WAIT / 1000000000.0, 6) AS DOUBLE)                  AS max_time_ms,
+    NULL                                                                        AS coeff_of_variation,
+    CAST(s.SUM_CREATED_TMP_DISK_TABLES AS SIGNED)                               AS disk_spill_indicator
 FROM performance_schema.events_statements_summary_by_digest s
 WHERE s.DIGEST_TEXT IS NOT NULL
   AND s.DIGEST_TEXT NOT LIKE '%performance_schema%'
@@ -95,7 +91,7 @@ ACTIVE_QUERIES_QUERY = """
 SELECT
     t.processlist_id                        AS process_id,
     s.SQL_TEXT                              AS query_text,
-    s.STATEMENT_ID                          AS query_id,
+    s.DIGEST                                AS query_id,
     t.processlist_state                     AS query_state,
     t.processlist_time                      AS query_start_time,
     trx.trx_started                         AS transaction_start_time,

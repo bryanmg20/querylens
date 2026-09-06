@@ -9,17 +9,22 @@ BEGIN
     END IF;
 
     IF NOT EXISTS (
-        SELECT FROM pg_roles WHERE rolname = 'app_user'
+        SELECT FROM pg_roles WHERE rolname = 'ql_user'
     ) THEN
-        CREATE ROLE app_user LOGIN PASSWORD 'app_pass';
+        CREATE ROLE ql_user LOGIN PASSWORD 'ql_pass';
     END IF;
 END
 $$;
 
 GRANT CONNECT ON DATABASE ql_demo TO querylens_monitor;
 GRANT pg_read_all_stats TO querylens_monitor;
+GRANT USAGE ON SCHEMA public TO querylens_monitor;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO querylens_monitor;
 
-GRANT CONNECT ON DATABASE ql_demo TO app_user;
-GRANT USAGE, CREATE ON SCHEMA public TO app_user;
+GRANT CONNECT ON DATABASE ql_demo TO ql_user;
+GRANT USAGE, CREATE ON SCHEMA public TO ql_user;
 
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO app_user;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO ql_user;
+
+ALTER DEFAULT PRIVILEGES FOR ROLE ql_user IN SCHEMA public
+GRANT SELECT ON TABLES TO querylens_monitor;

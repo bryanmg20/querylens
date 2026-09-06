@@ -35,10 +35,7 @@ SELECT
     min_exec_time AS min_time_ms,
     max_exec_time AS max_time_ms,
     stddev_exec_time / NULLIF(mean_exec_time, 0) AS coeff_of_variation,
-    shared_blks_hit AS shared_blocks_hit,
-    shared_blks_read AS shared_blocks_read,
-    100.0*(shared_blks_hit / NULLIF(shared_blks_hit + shared_blks_read, 0)::float) AS pct_shared_blocks_hit,
-    temp_blks_written AS temp_blocks_written
+    temp_blks_written AS disk_spill_indicator
 FROM pg_stat_statements
 WHERE userid != (SELECT oid FROM pg_roles WHERE rolname = session_user)
 ORDER BY total_exec_time DESC;

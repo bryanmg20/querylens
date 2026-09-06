@@ -42,7 +42,7 @@ def get_connection_mysql() -> Engine:
         db_password = "monitor_pass"
 
         # Build connection URL using MySQL with PyMySQL driver
-        url = f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}"
+        url = f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 
         engine = create_engine(
             url,

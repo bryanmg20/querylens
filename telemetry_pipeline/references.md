@@ -61,6 +61,7 @@ To use simulate_queries.sh:
 docker exec -it ql_sysbench bash
 
 apt-get update && apt-get install -y --no-install-recommends postgresql-client
+apt-get update && apt-get install -y --no-install-recommends default-mysql-client
 
 for i in $(seq 1 100); do bash /scripts/script.sh; done
 
@@ -68,3 +69,4 @@ for i in $(seq 1 100); do bash /scripts/script.sh; done
 
 para poder ver selects en mysql
 docker exec -it ql_mysql mysql -uroot -pql_root
+docker exec -it ql_postgres postgres -uroot -pql_root

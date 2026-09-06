@@ -47,14 +47,14 @@ class Postgres_Collector(DB_Engine_Collector):
                     logger.error(f"for Postgres Error calling function select_unstable_statements: {e}")
                     print("for Postgres Error calling function select_unstable_statements")
 
-                try:
-                    self.select_io_heavy_statements()
-                except Exception as e:
-                    logger.error(f"for Postgres Error calling function select_io_heavy_statements: {e}")
-                    print("for Postgres Error calling function select_io_heavy_statements")
+                #try:
+                #    self.select_io_heavy_statements()
+                #except Exception as e:
+                #    logger.error(f"for Postgres Error calling function select_io_heavy_statements: {e}")
+                #    print("for Postgres Error calling function select_io_heavy_statements")
 
                 try:
-                    self.select_disk_spill_statements()
+                    self.select_disk_spill_indicator()
                 except Exception as e:
                     logger.error(f"Error calling function select_disk_spill_statements: {e}")
                     print("for Posthres Error calling function select_disk_spill_statements")
