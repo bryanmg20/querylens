@@ -12,7 +12,20 @@ MYSQL=(
 )
 
 while true; do
-  "${MYSQL[@]}" --execute="SELECT c, count(*) FROM sbtest1 GROUP BY c ORDER BY count(*) DESC, SLEEP(1);" >/dev/null
-  "${MYSQL[@]}" --execute="SELECT DISTINCT c FROM sbtest1 WHERE id BETWEEN 1 AND 5000 ORDER BY c, SLEEP(1);" >/dev/null
-  "${MYSQL[@]}" --execute="SELECT count(*) FROM sbtest1 WHERE c LIKE '%a%', SLEEP(1);" >/dev/null
+  "${MYSQL[@]}" --execute="
+    SELECT DISTINCT
+        a.c,
+        COUNT(*) AS total
+    FROM sbtest1 AS a
+    JOIN sbtest1 AS b
+        ON b.id = a.id
+    WHERE a.k > 100
+      AND a.id = (
+          SELECT MIN(x.id)
+          FROM sbtest1 AS x
+          WHERE x.c = a.c
+      )
+    GROUP BY a.c
+    ORDER BY COUNT(*) DESC;
+  " >/dev/null
 done

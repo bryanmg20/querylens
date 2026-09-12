@@ -16,11 +16,21 @@ POSTGRES=(
   --command
 )
 
-for _ in $(seq 1 100); do
+while true; do
   "${POSTGRES[@]}" "
-    SELECT c, COUNT(*)
-    FROM sbtest1
-    GROUP BY c
+    SELECT DISTINCT
+    a.c,
+        COUNT(*) AS total
+    FROM sbtest1 AS a
+    JOIN sbtest1 AS b
+        ON b.id = a.id
+    WHERE a.k > 100
+      AND a.id = (
+          SELECT MIN(x.id)
+          FROM sbtest1 AS x
+          WHERE x.c = a.c
+      )
+    GROUP BY a.c
     ORDER BY COUNT(*) DESC;
   " >/dev/null
 done

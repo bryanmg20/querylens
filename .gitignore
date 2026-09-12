@@ -2,4 +2,4 @@ venv
 __pycache__
 logs/
 .vscode
-stats_complete.json
+draft/

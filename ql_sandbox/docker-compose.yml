@@ -74,7 +74,6 @@ services:
       bash -c "
         apt-get update &&
         apt-get install -y --no-install-recommends sysbench default-mysql-client postgresql-client &&
-        bash /scripts/run.sh
         tail -f /dev/null
       "
     networks:
