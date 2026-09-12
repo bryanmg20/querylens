@@ -19,6 +19,9 @@ class DB_Engine_Collector(ABC):
     def select_disk_spill_indicator(self):
             self.stats['disk_spill_statements'] = [stmd for stmd in self.stats.get('statements', []) if stmd.get('disk_spill_indicator', 0) > 0]
 
+    def eliminate_querytext_active(self):
+            for stmdt in self.stats.get("active_queries", []):
+                del stmdt["query_text"]
 
     def select_candidates_to_explain(self):
         candidates = {}
@@ -31,11 +34,7 @@ class DB_Engine_Collector(ABC):
         ]
 
         explainable_commands = (
-            "SELECT",
-            "INSERT",
-            "UPDATE",
-            "DELETE",
-            "WITH",
+            "SELECT"
         )
 
         for reason, stats_key in statement_groups:
@@ -87,6 +86,18 @@ class DB_Engine_Collector(ABC):
                 readys[query_id]["query_text"] = stmd.get("query_text")
 
         self.stats["explain_candidates"] = list(readys.values())
+
+    def anonimize_query_text(self):
+
+        dict_statements = {
+            item["query_id"]: {k: v for k, v in item.items() if k != "query_id"}
+            for item in self.stats.get("statements", [])
+        }
+        for stmd in self.stats.get("explain_candidates", []):
+            query_id = stmd.get("query_id")
+            if query_id in dict_statements:
+                stmd["query_text"] = dict_statements[query_id].get("query_text")
+            
                 
     def get_statements(self):
         return json.dumps(self.stats, indent=4, default=str)

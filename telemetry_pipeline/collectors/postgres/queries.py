@@ -28,7 +28,7 @@ SELECT
     query AS query_text,
     calls AS execution_count,
     rows AS rows_returned,
-    100*(rows/calls) AS avg_rows_per_call,
+    (rows/calls) AS avg_rows_per_call,
     total_exec_time AS total_time_ms,
     mean_exec_time AS mean_time_ms,
     stddev_exec_time AS stddev_time_ms,
@@ -45,7 +45,6 @@ ORDER BY total_exec_time DESC;
 LOCKS_QUERY = """
 SELECT
     l.pid AS process_id,
-    l.relation AS oid_relation,
     c.relname AS table_name,
     l.mode AS lock_mode,
     l.granted AS is_granted
@@ -56,20 +55,16 @@ LEFT JOIN pg_class c ON c.oid = l.relation;
 
 ACTIVE_QUERIES_QUERY = """
 SELECT
-    pid AS process_id,
-    query AS query_text,
-    query_id AS query_id,
-    state AS query_state,
-    query_start AS query_start_time,
-    xact_start AS transaction_start_time,
-    wait_event_type AS wait_event_type,
-    wait_event AS wait_event
+    pid                   AS process_id,
+    query                 AS query_text,
+    query_id              AS query_id,
+    TO_CHAR(xact_start, 'YYYY-MM-DD HH24:MI:SS') AS transaction_start_time,
+    pg_blocking_pids(pid) AS blocking_pids  
 FROM pg_stat_activity
 WHERE usesysid != (SELECT oid FROM pg_roles WHERE rolname = session_user);
 """
 
 
 STATS_RESET_QUERY = """
-SELECT stats_reset
-FROM pg_stat_bgwriter;
+SELECT stats_reset FROM pg_stat_statements_info;
 """

@@ -76,9 +76,8 @@ ORDER BY s.SUM_TIMER_WAIT DESC;
 LOCKS_QUERY = """
 SELECT
     r.trx_mysql_thread_id   AS process_id,
-    NULL                   AS oid_relation,
     l.object_name           AS table_name,
-    l.lock_type             AS lock_mode,
+    l.lock_mode             AS lock_mode,
     l.lock_status           AS is_granted
 FROM performance_schema.data_locks l
 LEFT JOIN information_schema.innodb_trx r
@@ -86,17 +85,19 @@ LEFT JOIN information_schema.innodb_trx r
 WHERE l.object_schema NOT IN ('mysql', 'performance_schema', 'information_schema', 'sys');
 """
 
-
 ACTIVE_QUERIES_QUERY = """
 SELECT
-    t.processlist_id                        AS process_id,
-    s.SQL_TEXT                              AS query_text,
-    s.DIGEST                                AS query_id,
-    t.processlist_state                     AS query_state,
-    t.processlist_time                      AS query_start_time,
-    trx.trx_started                         AS transaction_start_time,
-    t.processlist_state                     AS wait_event_type,
-    s.EVENT_NAME                            AS wait_event
+    t.processlist_id                AS process_id,
+    s.SQL_TEXT                      AS query_text,
+    s.DIGEST                        AS query_id,
+    trx.trx_started                 AS transaction_start_time,
+    (
+        SELECT GROUP_CONCAT(t2.processlist_id)
+        FROM performance_schema.data_lock_waits dlw
+        JOIN performance_schema.threads t2
+          ON t2.thread_id = dlw.BLOCKING_THREAD_ID
+        WHERE dlw.REQUESTING_THREAD_ID = t.thread_id
+    )                               AS blocking_pids
 FROM performance_schema.threads t
 LEFT JOIN performance_schema.events_statements_current s
        ON s.thread_id = t.thread_id

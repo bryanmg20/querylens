@@ -7,15 +7,24 @@ def main():
     mysql_engine = get_connection_mysql()  # Get MySQL engine
     creator = Engine_Factory()  # Create PostgreSQL collector
 
-    #collector_postgres = creator.create_collector('postgres', postgres_engine)  # Create the collector instance
-    #collector_postgres.collect_telemetry()  # Collect telemetry data from PostgreSQL
-    #print(collector_postgres.get_candidates())  # Get the collected telemetry data
-    #print(collector_postgres.get_active_queries())  # Get the collected statistics
-    #print(collector_postgres.get_query_explain())  # Get the collected statistics
+    collector_postgres = creator.create_collector('postgres', postgres_engine)  # Create the collector instance
+    collector_postgres.collect_telemetry()  # Collect telemetry data from PostgreSQL
+  
+    collector_postgres.get_canonic_explains()
+    collector_postgres.get_candidates()
+    collector_postgres.get_stats_complete()
+    collector_postgres.get_locks()
+    collector_postgres.get_active_queries()
+
+
     collector_mysql = creator.create_collector('mysql', mysql_engine)  # Create the collector instance
     collector_mysql.collect_telemetry()  # Collect telemetry data from MySQL
-    #print(collector_mysql.get_candidates()) # Get the collected telemetry data
-    print(collector_mysql.get_query_explain())
+  
+    collector_mysql.get_canonic_explains()  # Get the collected statistics
+    collector_mysql.get_candidates()  # Get the collected statistics
+    collector_mysql.get_statements()  # Get the collected statistics
+    collector_mysql.get_locks()
+    collector_mysql.get_active_queries()
     
 if __name__ == "__main__":
     main()
