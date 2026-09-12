@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: ghcr.io/pgmq/pg17-pgmq:latest
+    container_name: querylens_db
+    environment:
+      POSTGRES_USER: ${QUERYLENS_USER}
+      POSTGRES_PASSWORD: ${QUERYLENS_PASSWORD}
+      POSTGRES_DB: ${QUERYLENS_DB}
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./querylens_database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+
+volumes:
+  pgdata:

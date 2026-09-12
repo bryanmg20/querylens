@@ -2,3 +2,4 @@ sqlalchemy
 psycopg2
 pymysql
 sqlglot
+python-dotenv

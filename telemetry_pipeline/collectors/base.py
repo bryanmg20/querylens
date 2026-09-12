@@ -120,3 +120,6 @@ class DB_Engine_Collector(ABC):
     def get_stats_complete(self):
         with open('stats_complete.json', 'w') as f:
             json.dump(self.stats, f, indent=4, default=str)
+
+    def get_stats(self):
+         return self.stats
