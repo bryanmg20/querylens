@@ -157,38 +157,39 @@ class Mysql_Collector(DB_Engine_Collector):
 
     def clean_mysql_explain_predicate_dynamic(self,pred_text):
         import re
+        import sqlglot
+        from sqlglot import exp
+
         if not pred_text:
             return None
-        
-        # 1. Quitar comentarios del optimizador estilo /* select#2 */
-        cleaned = re.sub(r'/\*.*?\*/', '', pred_text)
-        
-        # 2. Quitar backticks de MySQL
-        cleaned = cleaned.replace('`', '')
-        
-        # 3. Detectar dinámicamente el esquema (captura el primer identificador antes del primer punto, ej: "ql_demo")
-        # Busca patrones como `esquema`.`tabla` o esquema.tabla y extrae el esquema
-        match = re.search(r'\b([a-zA-Z0-9_]+)\.[a-zA-Z0-9_]+\.', cleaned)
-        if match:
-            dynamic_schema = match.group(1)
-            # Eliminamos dinámicamente solo ese esquema detectado seguido de un punto
-            cleaned = re.sub(rf'\b{dynamic_schema}\.', '', cleaned)
-        
-        # 4. Normalizar espacios múltiples
-        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
-        
-        return cleaned
+
+        try:
+            preprocessed = pred_text.replace('<cache>', '').replace('</cache>', '')
+            ast = sqlglot.parse_one(preprocessed, read='mysql')
+            for column in list(ast.find_all(exp.Column)):
+                if column.db:
+                    column.set('db', None)
+            for table in list(ast.find_all(exp.Table)):
+                if table.db:
+                    table.set('db', None)
+            return ast.sql(dialect='postgres', identify=False, comments=False).replace('"', '')
+        except Exception:
+            cleaned = re.sub(r'/\*.*?\*/', '', pred_text)
+            cleaned = cleaned.replace('`', '')
+            match = re.search(r'\b([a-zA-Z0-9_]+)\.[a-zA-Z0-9_]+\.', cleaned)
+            if match:
+                dynamic_schema = match.group(1)
+                cleaned = re.sub(rf'\b{dynamic_schema}\.', '', cleaned)
+            cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+            return cleaned
 
 
     def create_canonic_queries(self):
         if self.stats.get('explain_candidates'):
-            import sqlglot
-
             for stmd in self.stats['explain_candidates']:
                 query_text = stmd.get('query_text')
                 query_clean = self.clean_mysql_sintax(query_text) if query_text else None
-                canonic_query = self.transform_to_canonical(sqlglot.parse_one(query_clean, read='mysql')) if query_clean else None
-                stmd['canonic_query'] = canonic_query
+                stmd['canonic_query'] = self.canonicalize_query(query_clean)
                    
 
     def clean_mysql_sintax(self,query):
@@ -197,27 +198,6 @@ class Mysql_Collector(DB_Engine_Collector):
         return cleaned_query
 
 
-    def transform_to_canonical(self, ast):
-        import re
-        
-        # 1. Generamos el SQL en postgres (sqlglot convierte el '?' de mysql en '%s')
-        query_sql = ast.sql(dialect="postgres", identify=False)
-        
-        # 2. Reemplazamos cada '%s' de forma secuencial por $1, $2, $3...
-        param_index = 1
-        def replace_placeholder(match):
-            nonlocal param_index
-            current_param = f"${param_index}"
-            param_index += 1
-            return current_param
-
-        query_with_dollars = re.sub(r'%s', replace_placeholder, query_sql)
-        
-        # 3. Limpiamos las comillas dobles
-        final_query = query_with_dollars.replace('"', '')
-        
-        return final_query
-    
     def calculate_stddev_coeff(self):
         import math
 

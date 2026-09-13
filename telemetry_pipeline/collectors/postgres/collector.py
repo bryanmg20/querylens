@@ -114,7 +114,7 @@ class Postgres_Collector(DB_Engine_Collector):
     def create_canonic_queries(self):
         if self.stats.get("explain_candidates"):
             for stmdt in self.stats["explain_candidates"]:
-                    stmdt["canonic_query"] = " ".join(stmdt.get("query_text").split())
+                    stmdt["canonic_query"] = self.canonicalize_query(stmdt.get("query_text"))
                 
 
     def normalize_explain(self):

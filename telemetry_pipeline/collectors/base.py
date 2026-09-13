@@ -16,34 +16,40 @@ class DB_Engine_Collector(ABC):
     def select_disk_spill_indicator(self):
             self.stats['disk_spill_statements'] = [stmd for stmd in self.stats.get('statements', []) if stmd.get('disk_spill_indicator', 0) > 0]
 
-    def normalize_querytext_active(self):
-         import re
-         import sqlglot
-         from sqlglot import exp
+    def canonicalize_query(self, query_text):
+        import re
+        import sqlglot
+        from sqlglot import exp
 
+        if not query_text:
+            return None
+
+        try:
+            ast = sqlglot.parse_one(query_text, read=getattr(self, "source_dialect", "postgres"))
+            for node in list(ast.find_all(exp.Literal, exp.Boolean, exp.Null, exp.Parameter)):
+                node.replace(exp.Placeholder())
+            canonic = ast.sql(dialect="postgres", identify=False, comments=False)
+
+            param_index = 1
+            def replace_placeholder(match):
+                nonlocal param_index
+                current_param = f"${param_index}"
+                param_index += 1
+                return current_param
+
+            return re.sub(r"%s", replace_placeholder, canonic).replace('"', "")
+        except Exception:
+            return " ".join(query_text.split())
+
+    def normalize_querytext_active(self):
          for stmt in self.stats.get("active_queries", []):
              query_text = stmt.get("query_text")
+             del stmt["query_text"]
              if not query_text:
-                 stmt["query_text"] = "Not available"
+                 stmt["canonic_query"] = "Not available"
                  continue
 
-             try:
-                 ast = sqlglot.parse_one(query_text, read=getattr(self, "source_dialect", "postgres"))
-                 for node in list(ast.find_all(exp.Literal, exp.Boolean, exp.Null)):
-                     node.replace(exp.Placeholder())
-                 canonic = ast.sql(dialect="postgres", identify=False)
-
-                 param_index = 1
-                 def replace_placeholder(match):
-                     nonlocal param_index
-                     current_param = f"${param_index}"
-                     param_index += 1
-                     return current_param
-                 
-                 del stmt["query_text"]
-                 stmt["canonic_query"] = re.sub(r"%s", replace_placeholder, canonic).replace('"', "")
-             except Exception:
-                 stmt["canonic_query"] = "Not available"
+             stmt["canonic_query"] = self.canonicalize_query(query_text) or "Not available"
 
          
 
