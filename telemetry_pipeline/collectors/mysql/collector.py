@@ -234,7 +234,6 @@ class Mysql_Collector(DB_Engine_Collector):
 
         for stmt in self.stats.get("statements", []):
             mean = float(stmt.get('mean_time_ms') or 0)
-            total = float(stmt.get('total_time_ms') or 0)
             count = int(stmt.get('execution_count') or 0)
             max_time = float(stmt.get('max_time_ms') or 0)
 
@@ -243,9 +242,8 @@ class Mysql_Collector(DB_Engine_Collector):
                 stmt['coeff_of_variation'] = None
                 continue
 
-            if count > 1 and mean > 0:
-                variance = (total * total / count) - (mean * mean)
-                stddev = math.sqrt(max(variance, 0))
+            if count > 1 and mean > 0 and max_time > mean:
+                stddev = (max_time - mean) / math.sqrt(count)
             else:
                 stddev = None
 
@@ -253,11 +251,6 @@ class Mysql_Collector(DB_Engine_Collector):
                 coeff_of_variation = stddev / mean
             else:
                 coeff_of_variation = None
-
-            if stddev is not None and stddev > max_time:
-                stmt['stddev_time_ms'] = None
-                stmt['coeff_of_variation'] = None
-                continue
 
             stmt['stddev_time_ms'] = stddev
             stmt['coeff_of_variation'] = coeff_of_variation
