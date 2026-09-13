@@ -31,46 +31,39 @@ class Postgres_Collector(DB_Engine_Collector):
                 except Exception as e:
                     conn.rollback()
                     self.stats[key] = None
-                    logger.error(f"For Postgres Error executing postgres-query for {key}: {e}")
-                    print(f"for Postgres Error executing collect_telemetry for queries")
+                    logger.error(f"postgres | collect_telemetry | query={key} | {e}")
 
             try:
                 self.normalize_active_query_timestamps()
             except Exception as e:
-                logger.error(f"for Postgres Error calling function normalize_active_query_timestamps: {e}")
-                print("for Postgres Error calling function normalize_active_query_timestamps")
+                logger.error(f"postgres | normalize_active_query_timestamps | {e}")
 
             if self.stats['statements'] is not None:
                 
                 try:
                     self.select_high_impact_time_statements()
                 except Exception as e:
-                    logger.error(f"for Postgres Error calling function select_high_impact_statements: {e}")
-                    print("for Postgres Error calling function select_high_impact_statements")
+                    logger.error(f"postgres | select_high_impact_time_statements | {e}")
 
                 try:
                     self.select_unstable_statements()
                 except Exception as e:
-                    logger.error(f"for Postgres Error calling function select_unstable_statements: {e}")
-                    print("for Postgres Error calling function select_unstable_statements")
+                    logger.error(f"postgres | select_unstable_statements | {e}")
 
                 try:
                     self.select_disk_spill_indicator()
                 except Exception as e:
-                    logger.error(f"Error calling function select_disk_spill_statements: {e}")
-                    print("for Posthres Error calling function select_disk_spill_statements")
+                    logger.error(f"postgres | select_disk_spill_indicator | {e}")
 
                 try:
                     self.select_candidates_to_explain()
                 except Exception as e:
-                    logger.error(f"for Postgres Error calling function select_candidates_to_explain: {e}")
-                    print("for Postgres Error calling function select_candidates_to_explain")
+                    logger.error(f"postgres | select_candidates_to_explain | {e}")
 
                 try:
                     self.select_explain_ready()
                 except Exception as e:
-                    logger.error(f"For Postgres Error calling function select_explain_ready: {e}")
-                    print("for Postgres Error calling function select_explain_ready")
+                    logger.error(f"postgres | select_explain_ready | {e}")
 
 
                 self.stats['query_explain'] = []
@@ -86,32 +79,27 @@ class Postgres_Collector(DB_Engine_Collector):
                             })
                         except Exception as e:
                             conn.rollback()
-                            logger.error(f"for Postgres Error executing EXPLAIN for query_id {query_id}: {e}")
-                            print(f"for Postgres Error executing EXPLAIN for query_id {query_id}")
+                            logger.error(f"postgres | EXPLAIN | query_id={query_id} | {e}")
 
                 try:
                     self.normalize_explain()
                 except Exception as e:
-                    logger.error(f"for Postgres Error calling function normalize_explain: {e}")
-                    print("for Postgres Error calling function normalize_explain")
+                    logger.error(f"postgres | normalize_explain | {e}")
 
                 try:
                     self.anonimize_query_text()
                 except Exception as e:
-                    logger.error("for Postgres Error calling function anonimize_query_text: {e}")
-                    print("for Postgres Error calling function anonimize_query_text")
+                    logger.error(f"postgres | anonimize_query_text | {e}")
 
                 try:
                     self.create_canonic_queries()
                 except Exception as e:
-                    logger.error(f"for Postgres Error calling function create_canonic_query: {e}")
-                    print("for Postgres Error calling function create_canonic_query")
+                    logger.error(f"postgres | create_canonic_queries | {e}")
 
                 try:
                     self.normalize_querytext_active()
                 except Exception as e:
-                    logger.error(f"for Postgres Error calling function normalize_querytext_active: {e}")
-                    print("for Postgres Error calling function normalize_querytext_active")
+                    logger.error(f"postgres | normalize_querytext_active | {e}")
 
 
     def normalize_active_query_timestamps(self):

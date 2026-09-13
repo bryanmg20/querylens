@@ -31,8 +31,7 @@ class Mysql_Collector(DB_Engine_Collector):
                 except Exception as e:
                     conn.rollback()
                     self.stats[key] = None
-                    logger.error(f"For mysql Error executing query for {key}: {e}")
-                    print(f"for mysql Error executing collect_telemetry for queries")
+                    logger.error(f"mysql | collect_telemetry | query={key} | {e}")
 
 
             if self.stats['statements'] is not None:
@@ -41,20 +40,17 @@ class Mysql_Collector(DB_Engine_Collector):
                     self.calculate_stddev_coeff()
 
                 except Exception as e:
-                    logger.error(f"For mysql Error executing calculate_sttdev_coeff: {e}")
-                    print("for mysql Error executing calculate_sttdev_coeff")
+                    logger.error(f"mysql | calculate_stddev_coeff | {e}")
                 
                 try:
                     self.select_high_impact_time_statements()
                 except Exception as e:
-                    logger.error(f"for mysql Error calling function select_high_impact_statements: {e}")
-                    print("for mysql Error calling function select_high_impact_statements")
+                    logger.error(f"mysql | select_high_impact_time_statements | {e}")
 
                 try:
                     self.select_unstable_statements()
                 except Exception as e:
-                    logger.error(f"for mysql Error calling function select_unstable_statements: {e}")
-                    print("for mysql Error calling function select_unstable_statements")
+                    logger.error(f"mysql | select_unstable_statements | {e}")
 
                 #try:
                 #   self.select_io_heavy_statements()
@@ -65,20 +61,17 @@ class Mysql_Collector(DB_Engine_Collector):
                 try:
                     self.select_disk_spill_indicator()
                 except Exception as e:
-                    logger.error(f"for mysql Error calling function select_disk_spill_statements: {e}")
-                    print("for mysql Error calling function select_disk_spill_statements")
+                    logger.error(f"mysql | select_disk_spill_indicator | {e}")
 
                 try:
                     self.select_candidates_to_explain()
                 except Exception as e:
-                    logger.error(f"for mysql Error calling function select_candidates_to_explain: {e}")
-                    print("for mysql Error calling function select_candidates_to_explain")
+                    logger.error(f"mysql | select_candidates_to_explain | {e}")
 
                 try:
                     self.select_explain_ready()
                 except Exception as e:
-                    logger.error(f"For mysql Error calling function select_explain_ready: {e}")
-                    print("for mysql Error calling function select_explain_ready")
+                    logger.error(f"mysql | select_explain_ready | {e}")
 
 
                 self.stats['query_explain'] = []
@@ -88,6 +81,9 @@ class Mysql_Collector(DB_Engine_Collector):
                         try:
                             result = conn.execute(text(f"EXPLAIN FORMAT=JSON {query.get('query_text')}"))
                             plan_row = next(result.mappings(), None)
+                            if plan_row is None:
+                                logger.error(f"mysql | EXPLAIN | query_id={query_id} | returned no plan row")
+                                continue
                             plan = json.loads(plan_row["EXPLAIN"])
                             self.stats['query_explain'].append({
                                 "query_id": query_id,
@@ -95,50 +91,42 @@ class Mysql_Collector(DB_Engine_Collector):
                             })
                         except Exception as e:
                             conn.rollback()
-                            logger.error(f"for mysql Error executing EXPLAIN for query_id {query_id}: {e}")
-                            print(f"for mysql Error executing EXPLAIN for query_id {query_id}")
+                            logger.error(f"mysql | EXPLAIN | query_id={query_id} | {e}")
 
                 try:
                     self.normalize_explain()
                 except Exception as e:
-                    logger.error(f"for mysql Error calling function normalize_explain: {e}")
-                    print("for mysql Error calling function normalize_explain")
+                    logger.error(f"mysql | normalize_explain | {e}")
 
                 try:
                     self.anonimize_query_text()
                 except Exception as e:
-                    logger.error(f"for mysql Error calling function anonimize_query_text: {e}")
-                    print("for mysql Error calling function anonimize_query_text")
+                    logger.error(f"mysql | anonimize_query_text | {e}")
 
                 try:
                     self.create_canonic_queries()
                 except Exception as e:
-                    logger.error(f"for mysql Error calling function create_canonic_query: {e}")
-                    print("for mysql Error calling function create_ast_query")
+                    logger.error(f"mysql | create_canonic_queries | {e}")
 
                 try:
                     self.normalize_predicate()
                 except Exception as e:
-                    logger.error(f"for mysql Error calling function normalize_predicate: {e}")
-                    print("for mysql Error calling function normalize_predicate")
+                    logger.error(f"mysql | normalize_predicate | {e}")
 
                 try:
                     self.normalize_locks()
                 except Exception as e:
-                    logger.error(f"for mysql Error calling function normalize_locks: {e}")
-                    print("for mysql Error calling function normalize_locks")
+                    logger.error(f"mysql | normalize_locks | {e}")
 
                 try:
                     self.normalize_querytext_active()
                 except Exception as e:
-                    logger.error(f"for mysql Error calling function normalize_querytext_active: {e}")
-                    print("for mysql Error calling function normalize_querytext_active")
+                    logger.error(f"mysql | normalize_querytext_active | {e}")
 
                 try:
                     self.normalize_blocking_pids()
                 except Exception as e:
-                    logger.error(f"for mysql Error calling function normalize_blocking_pids: {e}")
-                    print("for mysql Error calling function normalize_blocking_pids")
+                    logger.error(f"mysql | normalize_blocking_pids | {e}")
 
 
 
