@@ -11,6 +11,7 @@ class Mysql_Collector(DB_Engine_Collector):
     def __init__(self, engine):
         self.stats = {}
         self.engine = engine
+        self.source_dialect = "mysql"
         self.queries = {
                         "indexes": INDEXES_QUERY,
                         "tables": TABLES_QUERY,
@@ -128,10 +129,10 @@ class Mysql_Collector(DB_Engine_Collector):
                     print("for mysql Error calling function normalize_locks")
 
                 try:
-                    self.eliminate_querytext_active()
+                    self.normalize_querytext_active()
                 except Exception as e:
-                    logger.error(f"for mysql Error calling function normalize_active_queries: {e}")
-                    print("for mysql Error calling function normalize_active_queries")
+                    logger.error(f"for mysql Error calling function normalize_querytext_active: {e}")
+                    print("for mysql Error calling function normalize_querytext_active")
 
                 try:
                     self.normalize_blocking_pids()

@@ -11,6 +11,7 @@ class Postgres_Collector(DB_Engine_Collector):
     def __init__(self, engine):
         self.stats = {}
         self.engine = engine
+        self.source_dialect = "postgres"
         self.queries = {
                         "indexes": INDEXES_QUERY,
                         "tables": TABLES_QUERY,
@@ -33,6 +34,11 @@ class Postgres_Collector(DB_Engine_Collector):
                     logger.error(f"For Postgres Error executing postgres-query for {key}: {e}")
                     print(f"for Postgres Error executing collect_telemetry for queries")
 
+            try:
+                self.normalize_active_query_timestamps()
+            except Exception as e:
+                logger.error(f"for Postgres Error calling function normalize_active_query_timestamps: {e}")
+                print("for Postgres Error calling function normalize_active_query_timestamps")
 
             if self.stats['statements'] is not None:
                 
@@ -102,11 +108,20 @@ class Postgres_Collector(DB_Engine_Collector):
                     print("for Postgres Error calling function create_canonic_query")
 
                 try:
-                    self.eliminate_querytext_active()
+                    self.normalize_querytext_active()
                 except Exception as e:
-                    logger.error(f"for Postgres Error calling function eliminate_querytext_active: {e}")
-                    print("for Postgres Error calling function eliminate_querytext_active")
+                    logger.error(f"for Postgres Error calling function normalize_querytext_active: {e}")
+                    print("for Postgres Error calling function normalize_querytext_active")
 
+
+    def normalize_active_query_timestamps(self):
+        from datetime import datetime
+        for stmt in self.stats.get("active_queries") or []:
+            ts = stmt.get("transaction_start_time")
+            if ts is None:
+                continue
+            if isinstance(ts, datetime):
+                stmt["transaction_start_time"] = ts.replace(tzinfo=None).isoformat(sep=" ", timespec="microseconds")
 
     def create_canonic_queries(self):
         if self.stats.get("explain_candidates"):

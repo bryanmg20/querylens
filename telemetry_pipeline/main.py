@@ -18,8 +18,8 @@ def main():
     collector_mysql.collect_telemetry()  # Collect telemetry data from MySQL
 
     querylens_engine = get_connection_querylens_db()  # Get QueryLens engine
-    payload = collector_mysql.get_stats()  # Get the collected telemetry data from PostgreSQL or Mysql
-    payload["source"] = "mysql"  # Add source information to the payload, you have to change this line to "mysql" if you want to send MySQL data instead
+    payload = collector_postgres.get_stats()  # Get the collected telemetry data from PostgreSQL or Mysql
+    payload["source"] = "postgres"  # Add source information to the payload, you have to change this line to "mysql" if you want to send MySQL data instead
 
     payload_json = json.dumps(payload, default=str)  # Convert the payload to JSON format
 

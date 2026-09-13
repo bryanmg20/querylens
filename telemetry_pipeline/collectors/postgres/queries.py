@@ -58,7 +58,7 @@ SELECT
     pid                   AS process_id,
     query                 AS query_text,
     query_id              AS query_id,
-    TO_CHAR(xact_start, 'YYYY-MM-DD HH24:MI:SS') AS transaction_start_time,
+    xact_start AS transaction_start_time,
     pg_blocking_pids(pid) AS blocking_pids  
 FROM pg_stat_activity
 WHERE usesysid != (SELECT oid FROM pg_roles WHERE rolname = session_user);
