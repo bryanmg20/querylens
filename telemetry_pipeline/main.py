@@ -1,6 +1,6 @@
-from sysbench_databases import get_connection_postgres, get_connection_mysql  # Import database connection functions
+from config.connections import get_connection_postgres, get_connection_mysql, get_connection_querylens_db # Import database connection functions
 from collectors.factory import Engine_Factory # Import the factory module for collector creation
-from querylens_connection import get_connection_querylens_db  # Import the function to get the QueryLens database connection
+
 from sqlalchemy import text  # Import the text function from SQLAlchemy for executing raw SQL queries
 import json
 
