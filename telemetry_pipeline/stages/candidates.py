@@ -1,7 +1,8 @@
 import selectors
+
 class CandidatesStage:
     def __init__(self, collector):
-        self.db_connection = collector
+        self.collector = collector
 
     def execute(self, stats):
         stats = self.collector.preprocess_statements(stats)

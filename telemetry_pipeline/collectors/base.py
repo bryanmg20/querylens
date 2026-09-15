@@ -1,155 +1,61 @@
 from abc import ABC, abstractmethod
-import json 
+
+from stages import canonicalizers, explain_normalizer as explain_norm, normalize, selectors
+
 
 class DB_Engine_Collector(ABC):
     @abstractmethod
     def collect_telemetry(self):
         pass
 
-    
-    def select_high_impact_time_statements(self):      
-            self.stats['high_impact_statements'] = self.stats['statements'][:10]
-    
+    def select_high_impact_time_statements(self):
+        selectors.select_high_impact_time_statements(self.stats)
+
     def select_unstable_statements(self):
-            self.stats['unstable_statements'] = [stmd for stmd in self.stats.get('statements', []) if stmd.get('coeff_of_variation') is not None and stmd['coeff_of_variation'] > 2 and stmd.get('mean_time_ms', 0) > 10]
+        selectors.select_unstable_statements(self.stats)
 
     def select_disk_spill_indicator(self):
-            self.stats['disk_spill_statements'] = [stmd for stmd in self.stats.get('statements', []) if stmd.get('disk_spill_indicator', 0) > 0]
-
-    def canonicalize_query(self, query_text):
-        import re
-        import sqlglot
-        from sqlglot import exp
-
-        if not query_text:
-            return None
-
-        try:
-            ast = sqlglot.parse_one(query_text, read=getattr(self, "source_dialect", "postgres"))
-            for node in list(ast.find_all(exp.Literal, exp.Boolean, exp.Null, exp.Parameter)):
-                node.replace(exp.Placeholder())
-            canonic = ast.sql(dialect="postgres", identify=False, comments=False)
-
-            param_index = 1
-            def replace_placeholder(match):
-                nonlocal param_index
-                current_param = f"${param_index}"
-                param_index += 1
-                return current_param
-
-            return re.sub(r"%s", replace_placeholder, canonic).replace('"', "")
-        except Exception:
-            return " ".join(query_text.split())
-
-    def normalize_querytext_active(self):
-         for stmt in self.stats.get("active_queries", []):
-             query_text = stmt.get("query_text")
-             del stmt["query_text"]
-             if not query_text:
-                 stmt["canonic_query"] = "Not available"
-                 continue
-
-             stmt["canonic_query"] = self.canonicalize_query(query_text) or "Not available"
-
-         
+        selectors.select_disk_spill_indicator(self.stats)
 
     def select_candidates_to_explain(self):
-        candidates = {}
-        skipped_candidates = {}
-
-        statement_groups = [
-            ("time_high_impact", "high_impact_statements"),
-            ("unstable", "unstable_statements"),
-            ("disk_spill", "disk_spill_statements"),
-        ]
-
-        explainable_commands = (
-            "SELECT"
-        )
-
-        for reason, stats_key in statement_groups:
-            statements = self.stats.get(stats_key) or []
-
-            for statement in statements:
-                query_id = statement.get("query_id")
-                query_text = statement.get("query_text")
-
-                if query_id is None or not query_text:
-                    continue
-
-                normalized_query = query_text.strip().upper()
-
-                target = candidates
-
-                if not normalized_query.startswith(explainable_commands):
-                    target = skipped_candidates
-
-                if query_id not in target:
-                    target[query_id] = {
-                        **statement,
-                        "selected_by": [],
-                    }
-
-                selected_by = target[query_id]["selected_by"]
-
-                if reason not in selected_by:
-                    selected_by.append(reason)
-
-        self.stats["explain_candidates"] = list(candidates.values())
-        self.stats["non_explainable_candidates"] = list(
-            skipped_candidates.values()
-        )
+        selectors.select_candidates_to_explain(self.stats)
 
     def select_explain_ready(self):
-        readys = {}
+        selectors.select_explain_ready(self.stats)
 
-        for candidate in self.stats.get("explain_candidates", []):
+    def canonicalize_query(self, query_text):
+        return canonicalizers.canonicalize_query(
+            query_text, getattr(self, "source_dialect", "postgres")
+        )
 
-            query_id = candidate.get('query_id')
-            if query_id is not None:
-                readys[query_id] = {**candidate, "real_query_found": False}
-
-        for stmd in self.stats.get("active_queries", []):
-            query_id = stmd.get("query_id")
-            if query_id in readys:
-                readys[query_id]["real_query_found"] = True
-                readys[query_id]["query_text"] = stmd.get("query_text")
-
-        self.stats["explain_candidates"] = list(readys.values())
+    def normalize_querytext_active(self):
+        canonicalizers.normalize_querytext_active(
+            self.stats, getattr(self, "source_dialect", "postgres")
+        )
 
     def anonimize_query_text(self):
+        canonicalizers.anonimize_query_text(self.stats)
 
-        dict_statements = {
-            item["query_id"]: {k: v for k, v in item.items() if k != "query_id"}
-            for item in self.stats.get("statements", [])
-        }
-        for stmd in self.stats.get("explain_candidates", []):
-            query_id = stmd.get("query_id")
-            if query_id in dict_statements:
-                stmd["query_text"] = dict_statements[query_id].get("query_text")
-            
-                
-    def get_statements(self):
-        return json.dumps(self.stats, indent=4, default=str)
+    def normalize_active_query_timestamps(self):
+        normalize.normalize_active_query_timestamps(self.stats)
 
-    def get_query_explain(self):
-        if 'query_explain' not in self.stats:
-            return json.dumps([], indent=4, default=str)
-        
-        return json.dumps(self.stats.get('query_explain'), indent=4, default=str)
+    def normalize_locks(self):
+        normalize.normalize_locks(self.stats)
 
-    def get_candidates(self):
-        return json.dumps(self.stats.get('explain_candidates', []), indent=4, default=str)
+    def normalize_predicate(self):
+        normalize.normalize_predicate(self.stats)
 
-    def get_non_explainable_candidates(self):
-        return json.dumps(self.stats.get('non_explainable_candidates', []), indent=4, default=str)
+    def normalize_blocking_pids(self):
+        normalize.normalize_blocking_pids(self.stats)
 
-    def get_active_queries(self):
-        return json.dumps(self.stats.get('active_queries', []), indent=4, default=str)
-
-    def get_stats_complete(self):
-        with open('stats_complete.json', 'w') as f:
-            json.dump(self.stats, f, indent=4, default=str)
+    def normalize_explain(self):
+        explain_norm.EXPLAIN_NORMALIZERS[self.source_dialect]().normalize(self.stats)
 
     def get_stats(self):
-         return self.stats
+        return self.stats
+
+    def preprocess_statements(self, stats):
+        return stats
+
+    def normalize_engine_artifacts(self, stats):
+        return None
