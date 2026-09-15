@@ -1,4 +1,4 @@
-import selectors
+from . import selectors
 
 class CandidatesStage:
     def __init__(self, collector):

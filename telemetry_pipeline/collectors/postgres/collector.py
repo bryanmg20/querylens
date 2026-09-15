@@ -68,7 +68,7 @@ class Postgres_Collector(DB_Engine_Collector):
 
 
                 self.stats['query_explain'] = []
-                for query in self.stats.get('explain_candidates',[]):
+                for query in self.stats.get('top_impact_queries',[]):
                     query_id = query.get('query_id')
                     if query_id is not None and query.get('real_query_found', False) == True:
                         
@@ -109,3 +109,4 @@ class Postgres_Collector(DB_Engine_Collector):
   
     def normalize_engine_artifacts(self, stats):
         normalize.normalize_active_query_timestamps(stats)
+        return stats

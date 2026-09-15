@@ -52,16 +52,20 @@ def select_candidates_to_explain(stats):
                 if reason not in selected_by:
                     selected_by.append(reason)
 
-        stats["explain_candidates"] = list(candidates.values())
+        stats["top_impact_queries"] = list(candidates.values())
         stats["non_explainable_candidates"] = list(
             skipped_candidates.values()
         )
+
+        stats.pop("high_impact_statements", None)
+        stats.pop("unstable_statements", None)
+        stats.pop("disk_spill_statements", None)
      
 
 def select_explain_ready(stats):
         readys = {}
 
-        for candidate in stats.get("explain_candidates", []):
+        for candidate in stats.get("top_impact_queries", []):
 
             query_id = candidate.get('query_id')
             if query_id is not None:
@@ -73,4 +77,4 @@ def select_explain_ready(stats):
                 readys[query_id]["real_query_found"] = True
                 readys[query_id]["query_text"] = stmd.get("query_text")
 
-        stats["explain_candidates"] = list(readys.values())
+        stats["top_impact_queries"] = list(readys.values())

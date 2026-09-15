@@ -30,7 +30,7 @@ def clean_mysql_sintax(query):
 
 
 def create_canonic_queries(stats, source_dialect="postgres", clean_mysql=False):
-    for stmt in stats.get("explain_candidates") or []:
+    for stmt in stats.get("top_impact_queries") or []:
         query_text = stmt.get("query_text")
         if clean_mysql:
             query_text = clean_mysql_sintax(query_text) if query_text else None
@@ -42,7 +42,7 @@ def anonimize_query_text(stats):
         item["query_id"]: {k: v for k, v in item.items() if k != "query_id"}
         for item in stats.get("statements", [])
     }
-    for stmd in stats.get("explain_candidates", []):
+    for stmd in stats.get("top_impact_queries", []):
         query_id = stmd.get("query_id")
         if query_id in dict_statements:
             stmd["query_text"] = dict_statements[query_id].get("query_text")

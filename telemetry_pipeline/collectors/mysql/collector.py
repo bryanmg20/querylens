@@ -77,7 +77,7 @@ class Mysql_Collector(DB_Engine_Collector):
 
 
                 self.stats['query_explain'] = []
-                for query in self.stats.get('explain_candidates',[]):
+                for query in self.stats.get('top_impact_queries',[]):
                     query_id = query.get('query_id')
                     if query_id is not None and query.get('real_query_found', False) == True:
                         try:
@@ -172,7 +172,10 @@ class Mysql_Collector(DB_Engine_Collector):
             stmt['stddev_time_ms'] = stddev
             stmt['coeff_of_variation'] = coeff_of_variation
 
+        return stats
+
     def normalize_engine_artifacts(self, stats):
         normalize.normalize_locks(stats)
         normalize.normalize_blocking_pids(stats)
         normalize.normalize_predicate(stats)
+        return stats

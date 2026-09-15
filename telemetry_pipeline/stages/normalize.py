@@ -3,6 +3,8 @@ import re
 import sqlglot
 from sqlglot import exp
 
+from . import canonicalizers
+
 def _to_number(value):
     if value is None:
         return None
@@ -11,9 +13,21 @@ def _to_number(value):
     except (TypeError, ValueError):
         return value
 
-def normalize_stats(stats, collector):
-    collector.normalize_engine_artifacts(stats)  
-    return stats
+class NormalizeStage:
+    def __init__(self, collector):
+        self.collector = collector
+
+    def execute(self, stats):
+        canonicalizers.anonimize_query_text(stats)
+        canonicalizers.create_canonic_queries(
+            stats,
+            self.collector.source_dialect,
+            clean_mysql=(self.collector.source_dialect == "mysql"),
+        )
+        stats = self.collector.normalize_engine_artifacts(stats)
+        canonicalizers.normalize_querytext_active(stats, self.collector.source_dialect)
+        return stats
+
 
 def normalize_active_query_timestamps(stats):
         for stmt in stats.get("active_queries") or []:
