@@ -69,3 +69,13 @@ STATS_RESET_QUERY = """
 SELECT
     pg_postmaster_start_time()                         AS stats_reset
 """
+
+COLUMNS_QUERY = """
+SELECT
+    table_schema AS schema_name,
+    table_name   AS table_name,
+    column_name  AS column_name,
+    data_type    AS data_type
+FROM information_schema.columns
+WHERE table_schema NOT IN ('pg_catalog', 'information_schema');
+"""

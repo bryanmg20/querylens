@@ -117,3 +117,13 @@ SELECT
 FROM performance_schema.global_status
 WHERE variable_name = 'Uptime';
 """
+
+COLUMNS_QUERY = """
+SELECT
+    table_schema AS schema_name,
+    table_name   AS table_name,
+    column_name  AS column_name,
+    data_type    AS data_type
+FROM information_schema.columns
+WHERE table_schema NOT IN ('mysql', 'performance_schema', 'information_schema', 'sys');
+"""

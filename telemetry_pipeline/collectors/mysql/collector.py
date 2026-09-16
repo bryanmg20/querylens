@@ -6,6 +6,7 @@ from .queries import (
     LOCKS_QUERY,
     ACTIVE_QUERIES_QUERY,
     STATS_RESET_QUERY,
+    COLUMNS_QUERY
 )
 import stages.normalize as normalize
 
@@ -21,7 +22,8 @@ class Mysql_Collector(DB_Engine_Collector):
                         "statements": STATEMENTS_QUERY,
                         "locks": LOCKS_QUERY,
                         "active_queries": ACTIVE_QUERIES_QUERY,
-                        "stats_reset_timestamp": STATS_RESET_QUERY
+                        "stats_reset_timestamp": STATS_RESET_QUERY,
+                        "columns": COLUMNS_QUERY
                         }
 
     def preprocess_statements(self, stats):

@@ -7,5 +7,4 @@ class EnrichStage:
 
     def execute(self, stats):
         stats["db_id"] = DB_ID
-        stats["source"] = self.collector.source_dialect
         return stats
