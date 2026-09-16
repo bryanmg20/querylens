@@ -5,7 +5,16 @@ SELECT
     t.index_name                            AS index_name,
     CAST(io.COUNT_READ AS SIGNED)           AS index_scans,
     NULL                                    AS last_index_scan,
-    NULL                                    AS index_ref,
+    CONCAT(
+        'CREATE ',
+        IF(MAX(t.NON_UNIQUE) = 0, 'UNIQUE ', ''),
+        'INDEX ', t.index_name,
+        ' ON ', t.table_schema, '.', t.table_name,
+        ' USING ', LOWER(MAX(t.index_type)),
+        ' (',
+        GROUP_CONCAT(t.column_name ORDER BY t.seq_in_index SEPARATOR ', '),
+        ')'
+    )                                       AS index_ref,
     CAST(st.index_length AS SIGNED)         AS index_size_bytes
 FROM information_schema.statistics t
 LEFT JOIN performance_schema.table_io_waits_summary_by_index_usage io
