@@ -1,7 +1,6 @@
 SNAPSHOT_SCHEMA = (
     "db_id",
     "snapshot_ts",
-    "server_generation",
     "query_id",
     "query_key",
     "process_id",
