@@ -4,7 +4,3 @@ logs/
 .vscode
 draft/
 .env
-pipeline_anatomy.md
-testing_plan.md
-queries_anatomy.md
-pipeline_heart_review.md
