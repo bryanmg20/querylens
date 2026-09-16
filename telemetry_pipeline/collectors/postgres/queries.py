@@ -28,7 +28,7 @@ SELECT
     query AS query_text,
     calls AS execution_count,
     rows AS rows_returned,
-    (rows/calls) AS avg_rows_per_call,
+    ROUND(rows::numeric / NULLIF(calls, 0), 6) AS avg_rows_per_call,
     total_exec_time AS total_time_ms,
     mean_exec_time AS mean_time_ms,
     stddev_exec_time AS stddev_time_ms,

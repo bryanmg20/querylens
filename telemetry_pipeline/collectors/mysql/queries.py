@@ -5,7 +5,16 @@ SELECT
     t.index_name                            AS index_name,
     CAST(io.COUNT_READ AS SIGNED)           AS index_scans,
     NULL                                    AS last_index_scan,
-    NULL                                    AS index_ref,
+    CONCAT(
+        'CREATE ',
+        IF(MAX(t.NON_UNIQUE) = 0, 'UNIQUE ', ''),
+        'INDEX ', t.index_name,
+        ' ON ', t.table_schema, '.', t.table_name,
+        ' USING ', LOWER(MAX(t.index_type)),
+        ' (',
+        GROUP_CONCAT(t.column_name ORDER BY t.seq_in_index SEPARATOR ', '),
+        ')'
+    )                                       AS index_ref,
     CAST(st.index_length AS SIGNED)         AS index_size_bytes
 FROM information_schema.statistics t
 LEFT JOIN performance_schema.table_io_waits_summary_by_index_usage io
@@ -56,7 +65,7 @@ SELECT
     s.DIGEST_TEXT                                                   AS query_text,
     CAST(s.COUNT_STAR AS SIGNED)                                    AS execution_count,
     CAST(s.SUM_ROWS_SENT AS SIGNED)                                 AS rows_returned,
-    CAST(ROUND(s.SUM_ROWS_SENT / NULLIF(s.COUNT_STAR, 0), 0) AS DOUBLE)        AS avg_rows_per_call,
+    CAST(ROUND(s.SUM_ROWS_SENT / NULLIF(s.COUNT_STAR, 0), 6) AS DOUBLE)        AS avg_rows_per_call,
     CAST(ROUND(s.SUM_TIMER_WAIT / 1000000000.0, 6) AS DOUBLE)                  AS total_time_ms,
     CAST(ROUND(s.AVG_TIMER_WAIT / 1000000000.0, 6) AS DOUBLE)                  AS mean_time_ms,
     NULL                                                                        AS stddev_time_ms,

@@ -1,0 +1,893 @@
+{
+    "db_id": "querylens-db-01",
+    "locks": [],
+    "tables": [
+        {
+            "idx_scans": 52204,
+            "live_rows": 9936,
+            "seq_scans": 1566214412,
+            "table_name": "sbtest1",
+            "schema_name": "ql_demo"
+        },
+        {
+            "idx_scans": 0,
+            "live_rows": 9936,
+            "seq_scans": null,
+            "table_name": "sbtest2",
+            "schema_name": "ql_demo"
+        },
+        {
+            "idx_scans": 0,
+            "live_rows": 9680,
+            "seq_scans": null,
+            "table_name": "sbtest3",
+            "schema_name": "ql_demo"
+        },
+        {
+            "idx_scans": 0,
+            "live_rows": 9680,
+            "seq_scans": null,
+            "table_name": "sbtest4",
+            "schema_name": "ql_demo"
+        },
+        {
+            "idx_scans": 0,
+            "live_rows": 9680,
+            "seq_scans": null,
+            "table_name": "sbtest5",
+            "schema_name": "ql_demo"
+        },
+        {
+            "idx_scans": 0,
+            "live_rows": 9680,
+            "seq_scans": null,
+            "table_name": "sbtest6",
+            "schema_name": "ql_demo"
+        },
+        {
+            "idx_scans": 0,
+            "live_rows": 9936,
+            "seq_scans": null,
+            "table_name": "sbtest7",
+            "schema_name": "ql_demo"
+        },
+        {
+            "idx_scans": 0,
+            "live_rows": 9936,
+            "seq_scans": null,
+            "table_name": "sbtest8",
+            "schema_name": "ql_demo"
+        },
+        {
+            "idx_scans": 0,
+            "live_rows": 9936,
+            "seq_scans": null,
+            "table_name": "sbtest9",
+            "schema_name": "ql_demo"
+        },
+        {
+            "idx_scans": 0,
+            "live_rows": 9936,
+            "seq_scans": null,
+            "table_name": "sbtest10",
+            "schema_name": "ql_demo"
+        }
+    ],
+    "columns": [
+        {
+            "data_type": "int",
+            "table_name": "sbtest1",
+            "column_name": "id",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest1",
+            "column_name": "k",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest1",
+            "column_name": "c",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest1",
+            "column_name": "pad",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest10",
+            "column_name": "id",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest10",
+            "column_name": "k",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest10",
+            "column_name": "c",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest10",
+            "column_name": "pad",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest2",
+            "column_name": "id",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest2",
+            "column_name": "k",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest2",
+            "column_name": "c",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest2",
+            "column_name": "pad",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest3",
+            "column_name": "id",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest3",
+            "column_name": "k",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest3",
+            "column_name": "c",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest3",
+            "column_name": "pad",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest4",
+            "column_name": "id",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest4",
+            "column_name": "k",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest4",
+            "column_name": "c",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest4",
+            "column_name": "pad",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest5",
+            "column_name": "id",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest5",
+            "column_name": "k",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest5",
+            "column_name": "c",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest5",
+            "column_name": "pad",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest6",
+            "column_name": "id",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest6",
+            "column_name": "k",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest6",
+            "column_name": "c",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest6",
+            "column_name": "pad",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest7",
+            "column_name": "id",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest7",
+            "column_name": "k",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest7",
+            "column_name": "c",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest7",
+            "column_name": "pad",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest8",
+            "column_name": "id",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest8",
+            "column_name": "k",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest8",
+            "column_name": "c",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest8",
+            "column_name": "pad",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest9",
+            "column_name": "id",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest9",
+            "column_name": "k",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest9",
+            "column_name": "c",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest9",
+            "column_name": "pad",
+            "schema_name": "ql_demo"
+        }
+    ],
+    "indexes": [
+        {
+            "index_ref": null,
+            "index_name": "PRIMARY",
+            "table_name": "sbtest1",
+            "index_scans": 52196,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 212992
+        },
+        {
+            "index_ref": null,
+            "index_name": "k_1",
+            "table_name": "sbtest1",
+            "index_scans": 0,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 212992
+        },
+        {
+            "index_ref": null,
+            "index_name": "PRIMARY",
+            "table_name": "sbtest2",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 212992
+        },
+        {
+            "index_ref": null,
+            "index_name": "k_2",
+            "table_name": "sbtest2",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 212992
+        },
+        {
+            "index_ref": null,
+            "index_name": "PRIMARY",
+            "table_name": "sbtest3",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 212992
+        },
+        {
+            "index_ref": null,
+            "index_name": "k_3",
+            "table_name": "sbtest3",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 212992
+        },
+        {
+            "index_ref": null,
+            "index_name": "PRIMARY",
+            "table_name": "sbtest4",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 212992
+        },
+        {
+            "index_ref": null,
+            "index_name": "k_4",
+            "table_name": "sbtest4",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 212992
+        },
+        {
+            "index_ref": null,
+            "index_name": "PRIMARY",
+            "table_name": "sbtest5",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 212992
+        },
+        {
+            "index_ref": null,
+            "index_name": "k_5",
+            "table_name": "sbtest5",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 212992
+        },
+        {
+            "index_ref": null,
+            "index_name": "PRIMARY",
+            "table_name": "sbtest6",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 212992
+        },
+        {
+            "index_ref": null,
+            "index_name": "k_6",
+            "table_name": "sbtest6",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 212992
+        },
+        {
+            "index_ref": null,
+            "index_name": "PRIMARY",
+            "table_name": "sbtest7",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 196608
+        },
+        {
+            "index_ref": null,
+            "index_name": "k_7",
+            "table_name": "sbtest7",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 196608
+        },
+        {
+            "index_ref": null,
+            "index_name": "PRIMARY",
+            "table_name": "sbtest8",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 196608
+        },
+        {
+            "index_ref": null,
+            "index_name": "k_8",
+            "table_name": "sbtest8",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 196608
+        },
+        {
+            "index_ref": null,
+            "index_name": "PRIMARY",
+            "table_name": "sbtest9",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 229376
+        },
+        {
+            "index_ref": null,
+            "index_name": "k_9",
+            "table_name": "sbtest9",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 229376
+        },
+        {
+            "index_ref": null,
+            "index_name": "PRIMARY",
+            "table_name": "sbtest10",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 196608
+        },
+        {
+            "index_ref": null,
+            "index_name": "k_10",
+            "table_name": "sbtest10",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 196608
+        }
+    ],
+    "statements": [
+        {
+            "query_id": "58fdbaf58778b057caea99cc7cdaac9a53fc153849617fc94b2f8174d2c69a52",
+            "query_text": "SELECT DISTINCTROW `a` . `c` , COUNT ( * ) AS `total` FROM `sbtest1` AS `a` JOIN `sbtest1` AS `b` ON `b` . `id` = `a` . `id` WHERE `a` . `k` > ? AND `a` . `id` = ( SELECT MIN ( `x` . `id` ) FROM `sbtest1` AS `x` WHERE `x` . `c` = `a` . `c` ) GROUP BY `a` . `c` ORDER BY COUNT ( * ) DESC",
+            "max_time_ms": 121318.3083,
+            "min_time_ms": 102946.9738,
+            "mean_time_ms": 110057.01,
+            "rows_returned": 50000,
+            "total_time_ms": 550285.0499,
+            "stddev_time_ms": 5036.205702740568,
+            "execution_count": 5,
+            "avg_rows_per_call": 10000.0,
+            "coeff_of_variation": 0.04575997206121235,
+            "disk_spill_indicator": 0
+        },
+        {
+            "query_id": "6d631211d940af327fe3f82a008b908dc6cba3912cae61881353006e73354eee",
+            "query_text": "SET NAMES `utf8mb4`",
+            "max_time_ms": 14.0656,
+            "min_time_ms": 0.1824,
+            "mean_time_ms": 5.9416,
+            "rows_returned": 0,
+            "total_time_ms": 23.7664,
+            "stddev_time_ms": 4.061999999999999,
+            "execution_count": 4,
+            "avg_rows_per_call": 0.0,
+            "coeff_of_variation": 0.6836542345496162,
+            "disk_spill_indicator": 0
+        },
+        {
+            "query_id": "b715edd335c8ab2a3c43087e726bbc978f59bc64c69c2ff9f0f7f1ef75c8d651",
+            "query_text": "SELECT `VERSION` ( )",
+            "max_time_ms": 9.071,
+            "min_time_ms": 6.2202,
+            "mean_time_ms": 7.6456,
+            "rows_returned": 2,
+            "total_time_ms": 15.2913,
+            "stddev_time_ms": 1.0079100059033046,
+            "execution_count": 2,
+            "avg_rows_per_call": 1.0,
+            "coeff_of_variation": 0.13182876502868376,
+            "disk_spill_indicator": 0
+        },
+        {
+            "query_id": "41eb3b98a0a8ca5242efb496b77bb03b31d873053653fed8bd7543d714afec7c",
+            "query_text": "SET `AUTOCOMMIT` = ?",
+            "max_time_ms": 6.2256,
+            "min_time_ms": 2.7907,
+            "mean_time_ms": 4.5081,
+            "rows_returned": 0,
+            "total_time_ms": 9.0163,
+            "stddev_time_ms": 1.2144558966878956,
+            "execution_count": 2,
+            "avg_rows_per_call": 0.0,
+            "coeff_of_variation": 0.2693941786313293,
+            "disk_spill_indicator": 0
+        },
+        {
+            "query_id": "732da95dffe432bdc6958c8a62750bab9519b36f3b2fceed00edfc61c289319b",
+            "query_text": "EXPLAIN FORMAT = JSON SELECT DISTINCTROW `a` . `c` , COUNT ( * ) AS `total` FROM `sbtest1` AS `a` JOIN `sbtest1` AS `b` ON `b` . `id` = `a` . `id` WHERE `a` . `k` > ? AND `a` . `id` = ( SELECT MIN ( `x` . `id` ) FROM `sbtest1` AS `x` WHERE `x` . `c` = `a` . `c` ) GROUP BY `a` . `c` ORDER BY COUNT ( * ) DESC",
+            "max_time_ms": 8.7739,
+            "min_time_ms": 8.7739,
+            "mean_time_ms": 8.7739,
+            "rows_returned": 1,
+            "total_time_ms": 8.7739,
+            "stddev_time_ms": null,
+            "execution_count": 1,
+            "avg_rows_per_call": 1.0,
+            "coeff_of_variation": null,
+            "disk_spill_indicator": 0
+        },
+        {
+            "query_id": "d2e23336c82e4471f84822225ad6f478ce9b82f474a7e59f9d42387edf1c1c12",
+            "query_text": "SELECT @@`transaction_isolation`",
+            "max_time_ms": 5.4089,
+            "min_time_ms": 2.1378,
+            "mean_time_ms": 3.7733,
+            "rows_returned": 2,
+            "total_time_ms": 7.5467,
+            "stddev_time_ms": 1.1565438513087172,
+            "execution_count": 2,
+            "avg_rows_per_call": 1.0,
+            "coeff_of_variation": 0.30650726189508315,
+            "disk_spill_indicator": 0
+        },
+        {
+            "query_id": "ce04eda080d3f5605113e1d0d47c2f20e23b091e2487ba586f07b32cda423942",
+            "query_text": "SELECT SCHEMA ( )",
+            "max_time_ms": 3.3608,
+            "min_time_ms": 0.9673,
+            "mean_time_ms": 2.164,
+            "rows_returned": 2,
+            "total_time_ms": 4.3281,
+            "stddev_time_ms": 0.8462653957240598,
+            "execution_count": 2,
+            "avg_rows_per_call": 1.0,
+            "coeff_of_variation": 0.39106533998339177,
+            "disk_spill_indicator": 0
+        },
+        {
+            "query_id": "d41392b6408bf37c8c00d5bd4e604f3a3970a4d3ccd89060135a9d5dd85b3a4d",
+            "query_text": "SELECT @@`sql_mode`",
+            "max_time_ms": 2.5163,
+            "min_time_ms": 1.7471,
+            "mean_time_ms": 2.1317,
+            "rows_returned": 2,
+            "total_time_ms": 4.2634,
+            "stddev_time_ms": 0.27195326804434633,
+            "execution_count": 2,
+            "avg_rows_per_call": 1.0,
+            "coeff_of_variation": 0.12757576959438305,
+            "disk_spill_indicator": 0
+        },
+        {
+            "query_id": "1da3a196185b678ecb9d76f22b1efe1ad4983d6b48955f16315e02da05f3d0e8",
+            "query_text": "SELECT @@`lower_case_table_names`",
+            "max_time_ms": 1.3649,
+            "min_time_ms": 1.1087,
+            "mean_time_ms": 1.2368,
+            "rows_returned": 2,
+            "total_time_ms": 2.4736,
+            "stddev_time_ms": 0.09058037866999681,
+            "execution_count": 2,
+            "avg_rows_per_call": 1.0,
+            "coeff_of_variation": 0.0732376929738008,
+            "disk_spill_indicator": 0
+        },
+        {
+            "query_id": "3e67fa9d38d82054e7fc01fe3ee8844dc76faaaefbd74d213a2af42e60e95520",
+            "query_text": "ROLLBACK",
+            "max_time_ms": 1.2057,
+            "min_time_ms": 0.3553,
+            "mean_time_ms": 0.7113,
+            "rows_returned": 0,
+            "total_time_ms": 2.1338,
+            "stddev_time_ms": 0.285441973087351,
+            "execution_count": 3,
+            "avg_rows_per_call": 0.0,
+            "coeff_of_variation": 0.4012961803561802,
+            "disk_spill_indicator": 0
+        }
+    ],
+    "active_queries": [
+        {
+            "query_id": null,
+            "process_id": 5,
+            "blocking_pids": [],
+            "canonic_query": "Not available",
+            "transaction_start_time": null
+        },
+        {
+            "query_id": "58fdbaf58778b057caea99cc7cdaac9a53fc153849617fc94b2f8174d2c69a52",
+            "process_id": 278,
+            "blocking_pids": [],
+            "canonic_query": "SELECT DISTINCT a.c, COUNT(*) AS total FROM sbtest1 AS a JOIN sbtest1 AS b ON b.id = a.id WHERE a.k > $1 AND a.id = (SELECT MIN(x.id) FROM sbtest1 AS x WHERE x.c = a.c) GROUP BY a.c ORDER BY COUNT(*) DESC NULLS LAST",
+            "transaction_start_time": "2026-09-16 16:44:05"
+        }
+    ],
+    "canonic_explains": [
+        {
+            "query_id": "58fdbaf58778b057caea99cc7cdaac9a53fc153849617fc94b2f8174d2c69a52",
+            "canonical_plan": {
+                "estimates": {
+                    "total_cost": 2772.65
+                },
+                "logical_shape": {
+                    "joins": 1,
+                    "scans": 3,
+                    "sorts": 1,
+                    "distinct": 0,
+                    "aggregates": 1,
+                    "subqueries": 1
+                },
+                "physical_operations": [
+                    {
+                        "type": "scan",
+                        "relation": "a",
+                        "predicate": "((a.k > 100) AND (a.id = (SELECT MIN(x.id) FROM sbtest1 AS x WHERE (x.c = a.c))))",
+                        "index_name": null,
+                        "access_method": "full_table_scan",
+                        "estimated_rows": 4968
+                    },
+                    {
+                        "type": "scan",
+                        "relation": "x",
+                        "predicate": "(x.c = a.c)",
+                        "index_name": null,
+                        "access_method": "full_table_scan",
+                        "estimated_rows": 993
+                    },
+                    {
+                        "type": "scan",
+                        "relation": "b",
+                        "predicate": "(b.id = a.id)",
+                        "index_name": "PRIMARY",
+                        "access_method": "index_lookup",
+                        "estimated_rows": 4968
+                    }
+                ]
+            }
+        }
+    ],
+    "top_impact_queries": [
+        {
+            "query_id": "58fdbaf58778b057caea99cc7cdaac9a53fc153849617fc94b2f8174d2c69a52",
+            "query_text": "SELECT DISTINCTROW `a` . `c` , COUNT ( * ) AS `total` FROM `sbtest1` AS `a` JOIN `sbtest1` AS `b` ON `b` . `id` = `a` . `id` WHERE `a` . `k` > ? AND `a` . `id` = ( SELECT MIN ( `x` . `id` ) FROM `sbtest1` AS `x` WHERE `x` . `c` = `a` . `c` ) GROUP BY `a` . `c` ORDER BY COUNT ( * ) DESC",
+            "max_time_ms": 121318.3083,
+            "min_time_ms": 102946.9738,
+            "selected_by": [
+                "time_high_impact"
+            ],
+            "mean_time_ms": 110057.01,
+            "canonic_query": "SELECT DISTINCT a.c, COUNT(*) AS total FROM sbtest1 AS a JOIN sbtest1 AS b ON b.id = a.id WHERE a.k > $1 AND a.id = (SELECT MIN(x.id) FROM sbtest1 AS x WHERE x.c = a.c) GROUP BY a.c ORDER BY COUNT(*) DESC NULLS LAST",
+            "rows_returned": 50000,
+            "total_time_ms": 550285.0499,
+            "stddev_time_ms": 5036.205702740568,
+            "execution_count": 5,
+            "real_query_found": true,
+            "avg_rows_per_call": 10000.0,
+            "coeff_of_variation": 0.04575997206121235,
+            "disk_spill_indicator": 0
+        },
+        {
+            "query_id": "b715edd335c8ab2a3c43087e726bbc978f59bc64c69c2ff9f0f7f1ef75c8d651",
+            "query_text": "SELECT `VERSION` ( )",
+            "max_time_ms": 9.071,
+            "min_time_ms": 6.2202,
+            "selected_by": [
+                "time_high_impact"
+            ],
+            "mean_time_ms": 7.6456,
+            "canonic_query": "SELECT VERSION()",
+            "rows_returned": 2,
+            "total_time_ms": 15.2913,
+            "stddev_time_ms": 1.0079100059033046,
+            "execution_count": 2,
+            "real_query_found": false,
+            "avg_rows_per_call": 1.0,
+            "coeff_of_variation": 0.13182876502868376,
+            "disk_spill_indicator": 0
+        },
+        {
+            "query_id": "d2e23336c82e4471f84822225ad6f478ce9b82f474a7e59f9d42387edf1c1c12",
+            "query_text": "SELECT @@`transaction_isolation`",
+            "max_time_ms": 5.4089,
+            "min_time_ms": 2.1378,
+            "selected_by": [
+                "time_high_impact"
+            ],
+            "mean_time_ms": 3.7733,
+            "canonic_query": "SELECT @@transaction_isolation",
+            "rows_returned": 2,
+            "total_time_ms": 7.5467,
+            "stddev_time_ms": 1.1565438513087172,
+            "execution_count": 2,
+            "real_query_found": false,
+            "avg_rows_per_call": 1.0,
+            "coeff_of_variation": 0.30650726189508315,
+            "disk_spill_indicator": 0
+        },
+        {
+            "query_id": "ce04eda080d3f5605113e1d0d47c2f20e23b091e2487ba586f07b32cda423942",
+            "query_text": "SELECT SCHEMA ( )",
+            "max_time_ms": 3.3608,
+            "min_time_ms": 0.9673,
+            "selected_by": [
+                "time_high_impact"
+            ],
+            "mean_time_ms": 2.164,
+            "canonic_query": "SELECT CURRENT_SCHEMA",
+            "rows_returned": 2,
+            "total_time_ms": 4.3281,
+            "stddev_time_ms": 0.8462653957240598,
+            "execution_count": 2,
+            "real_query_found": false,
+            "avg_rows_per_call": 1.0,
+            "coeff_of_variation": 0.39106533998339177,
+            "disk_spill_indicator": 0
+        },
+        {
+            "query_id": "d41392b6408bf37c8c00d5bd4e604f3a3970a4d3ccd89060135a9d5dd85b3a4d",
+            "query_text": "SELECT @@`sql_mode`",
+            "max_time_ms": 2.5163,
+            "min_time_ms": 1.7471,
+            "selected_by": [
+                "time_high_impact"
+            ],
+            "mean_time_ms": 2.1317,
+            "canonic_query": "SELECT @@sql_mode",
+            "rows_returned": 2,
+            "total_time_ms": 4.2634,
+            "stddev_time_ms": 0.27195326804434633,
+            "execution_count": 2,
+            "real_query_found": false,
+            "avg_rows_per_call": 1.0,
+            "coeff_of_variation": 0.12757576959438305,
+            "disk_spill_indicator": 0
+        },
+        {
+            "query_id": "1da3a196185b678ecb9d76f22b1efe1ad4983d6b48955f16315e02da05f3d0e8",
+            "query_text": "SELECT @@`lower_case_table_names`",
+            "max_time_ms": 1.3649,
+            "min_time_ms": 1.1087,
+            "selected_by": [
+                "time_high_impact"
+            ],
+            "mean_time_ms": 1.2368,
+            "canonic_query": "SELECT @@lower_case_table_names",
+            "rows_returned": 2,
+            "total_time_ms": 2.4736,
+            "stddev_time_ms": 0.09058037866999681,
+            "execution_count": 2,
+            "real_query_found": false,
+            "avg_rows_per_call": 1.0,
+            "coeff_of_variation": 0.0732376929738008,
+            "disk_spill_indicator": 0
+        }
+    ],
+    "stats_reset_timestamp": [
+        {
+            "stats_reset": "2026-09-16 16:21:40"
+        }
+    ],
+    "non_explainable_candidates": [
+        {
+            "query_id": "6d631211d940af327fe3f82a008b908dc6cba3912cae61881353006e73354eee",
+            "query_text": "SET NAMES `utf8mb4`",
+            "max_time_ms": 14.0656,
+            "min_time_ms": 0.1824,
+            "selected_by": [
+                "time_high_impact"
+            ],
+            "mean_time_ms": 5.9416,
+            "rows_returned": 0,
+            "total_time_ms": 23.7664,
+            "stddev_time_ms": 4.061999999999999,
+            "execution_count": 4,
+            "avg_rows_per_call": 0.0,
+            "coeff_of_variation": 0.6836542345496162,
+            "disk_spill_indicator": 0
+        },
+        {
+            "query_id": "41eb3b98a0a8ca5242efb496b77bb03b31d873053653fed8bd7543d714afec7c",
+            "query_text": "SET `AUTOCOMMIT` = ?",
+            "max_time_ms": 6.2256,
+            "min_time_ms": 2.7907,
+            "selected_by": [
+                "time_high_impact"
+            ],
+            "mean_time_ms": 4.5081,
+            "rows_returned": 0,
+            "total_time_ms": 9.0163,
+            "stddev_time_ms": 1.2144558966878956,
+            "execution_count": 2,
+            "avg_rows_per_call": 0.0,
+            "coeff_of_variation": 0.2693941786313293,
+            "disk_spill_indicator": 0
+        },
+        {
+            "query_id": "732da95dffe432bdc6958c8a62750bab9519b36f3b2fceed00edfc61c289319b",
+            "query_text": "EXPLAIN FORMAT = JSON SELECT DISTINCTROW `a` . `c` , COUNT ( * ) AS `total` FROM `sbtest1` AS `a` JOIN `sbtest1` AS `b` ON `b` . `id` = `a` . `id` WHERE `a` . `k` > ? AND `a` . `id` = ( SELECT MIN ( `x` . `id` ) FROM `sbtest1` AS `x` WHERE `x` . `c` = `a` . `c` ) GROUP BY `a` . `c` ORDER BY COUNT ( * ) DESC",
+            "max_time_ms": 8.7739,
+            "min_time_ms": 8.7739,
+            "selected_by": [
+                "time_high_impact"
+            ],
+            "mean_time_ms": 8.7739,
+            "rows_returned": 1,
+            "total_time_ms": 8.7739,
+            "stddev_time_ms": null,
+            "execution_count": 1,
+            "avg_rows_per_call": 1.0,
+            "coeff_of_variation": null,
+            "disk_spill_indicator": 0
+        },
+        {
+            "query_id": "3e67fa9d38d82054e7fc01fe3ee8844dc76faaaefbd74d213a2af42e60e95520",
+            "query_text": "ROLLBACK",
+            "max_time_ms": 1.2057,
+            "min_time_ms": 0.3553,
+            "selected_by": [
+                "time_high_impact"
+            ],
+            "mean_time_ms": 0.7113,
+            "rows_returned": 0,
+            "total_time_ms": 2.1338,
+            "stddev_time_ms": 0.285441973087351,
+            "execution_count": 3,
+            "avg_rows_per_call": 0.0,
+            "coeff_of_variation": 0.4012961803561802,
+            "disk_spill_indicator": 0
+        }
+    ]
+}

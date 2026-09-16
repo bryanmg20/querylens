@@ -3,4 +3,4 @@ class DB_Engine_Collector:
         return stats
 
     def normalize_engine_artifacts(self, stats):
-        return None
+        return stats
