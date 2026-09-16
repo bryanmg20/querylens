@@ -4,164 +4,164 @@
         {
             "lock_mode": "AccessShareLock",
             "is_granted": true,
-            "process_id": 2252,
-            "table_name": "k_1"
-        },
-        {
-            "lock_mode": "AccessShareLock",
-            "is_granted": true,
-            "process_id": 2252,
-            "table_name": "sbtest1_pkey"
-        },
-        {
-            "lock_mode": "AccessShareLock",
-            "is_granted": true,
-            "process_id": 2252,
-            "table_name": "sbtest1"
-        },
-        {
-            "lock_mode": "ExclusiveLock",
-            "is_granted": true,
-            "process_id": 2252,
-            "table_name": null
-        },
-        {
-            "lock_mode": "AccessShareLock",
-            "is_granted": true,
-            "process_id": 2261,
+            "process_id": 12736,
             "table_name": "pg_roles"
         },
         {
             "lock_mode": "AccessShareLock",
             "is_granted": true,
-            "process_id": 2261,
+            "process_id": 12736,
             "table_name": "pg_stat_statements"
         },
         {
             "lock_mode": "AccessShareLock",
             "is_granted": true,
-            "process_id": 2261,
+            "process_id": 12736,
             "table_name": "pg_stat_all_tables"
         },
         {
             "lock_mode": "AccessShareLock",
             "is_granted": true,
-            "process_id": 2261,
+            "process_id": 12736,
             "table_name": "pg_stat_user_tables"
         },
         {
             "lock_mode": "AccessShareLock",
             "is_granted": true,
-            "process_id": 2261,
+            "process_id": 12736,
             "table_name": "pg_namespace_oid_index"
         },
         {
             "lock_mode": "AccessShareLock",
             "is_granted": true,
-            "process_id": 2261,
+            "process_id": 12736,
             "table_name": "pg_namespace_nspname_index"
         },
         {
             "lock_mode": "AccessShareLock",
             "is_granted": true,
-            "process_id": 2261,
+            "process_id": 12736,
             "table_name": "pg_index_indexrelid_index"
         },
         {
             "lock_mode": "AccessShareLock",
             "is_granted": true,
-            "process_id": 2261,
+            "process_id": 12736,
             "table_name": "pg_index_indrelid_index"
         },
         {
             "lock_mode": "AccessShareLock",
             "is_granted": true,
-            "process_id": 2261,
+            "process_id": 12736,
             "table_name": "pg_class_tblspc_relfilenode_index"
         },
         {
             "lock_mode": "AccessShareLock",
             "is_granted": true,
-            "process_id": 2261,
+            "process_id": 12736,
             "table_name": "pg_class_relname_nsp_index"
         },
         {
             "lock_mode": "AccessShareLock",
             "is_granted": true,
-            "process_id": 2261,
+            "process_id": 12736,
             "table_name": "pg_class_oid_index"
         },
         {
             "lock_mode": "AccessShareLock",
             "is_granted": true,
-            "process_id": 2261,
+            "process_id": 12736,
             "table_name": "pg_namespace"
         },
         {
             "lock_mode": "AccessShareLock",
             "is_granted": true,
-            "process_id": 2261,
+            "process_id": 12736,
             "table_name": "pg_index"
         },
         {
             "lock_mode": "AccessShareLock",
             "is_granted": true,
-            "process_id": 2261,
+            "process_id": 12736,
             "table_name": "pg_class"
         },
         {
             "lock_mode": "AccessShareLock",
             "is_granted": true,
-            "process_id": 2261,
+            "process_id": 12736,
             "table_name": "pg_stat_all_indexes"
         },
         {
             "lock_mode": "AccessShareLock",
             "is_granted": true,
-            "process_id": 2261,
+            "process_id": 12736,
             "table_name": "pg_stat_user_indexes"
         },
         {
             "lock_mode": "ExclusiveLock",
             "is_granted": true,
-            "process_id": 2261,
+            "process_id": 12736,
             "table_name": null
         },
         {
             "lock_mode": "AccessShareLock",
             "is_granted": true,
-            "process_id": 2261,
-            "table_name": "pg_locks"
+            "process_id": 12719,
+            "table_name": "k_1"
         },
         {
             "lock_mode": "AccessShareLock",
             "is_granted": true,
-            "process_id": 2261,
-            "table_name": "pg_authid_oid_index"
+            "process_id": 12719,
+            "table_name": "sbtest1_pkey"
         },
         {
             "lock_mode": "AccessShareLock",
             "is_granted": true,
-            "process_id": 2261,
-            "table_name": "pg_db_role_setting_databaseid_rol_index"
+            "process_id": 12719,
+            "table_name": "sbtest1"
+        },
+        {
+            "lock_mode": "ExclusiveLock",
+            "is_granted": true,
+            "process_id": 12719,
+            "table_name": null
         },
         {
             "lock_mode": "AccessShareLock",
             "is_granted": true,
-            "process_id": 2261,
-            "table_name": "pg_authid"
-        },
-        {
-            "lock_mode": "AccessShareLock",
-            "is_granted": true,
-            "process_id": 2261,
+            "process_id": 12736,
             "table_name": "pg_authid_rolname_index"
         },
         {
             "lock_mode": "AccessShareLock",
             "is_granted": true,
-            "process_id": 2261,
+            "process_id": 12736,
             "table_name": "pg_db_role_setting"
+        },
+        {
+            "lock_mode": "AccessShareLock",
+            "is_granted": true,
+            "process_id": 12736,
+            "table_name": "pg_db_role_setting_databaseid_rol_index"
+        },
+        {
+            "lock_mode": "AccessShareLock",
+            "is_granted": true,
+            "process_id": 12736,
+            "table_name": "pg_authid"
+        },
+        {
+            "lock_mode": "AccessShareLock",
+            "is_granted": true,
+            "process_id": 12736,
+            "table_name": "pg_locks"
+        },
+        {
+            "lock_mode": "AccessShareLock",
+            "is_granted": true,
+            "process_id": 12736,
+            "table_name": "pg_authid_oid_index"
         }
     ],
     "tables": [
@@ -222,9 +222,9 @@
             "schema_name": "public"
         },
         {
-            "idx_scans": 18193104,
+            "idx_scans": 24426239,
             "live_rows": 10000,
-            "seq_scans": 18078325,
+            "seq_scans": 24308948,
             "table_name": "sbtest1",
             "schema_name": "public"
         },
@@ -789,18 +789,18 @@
             "index_ref": "CREATE UNIQUE INDEX sbtest1_pkey ON public.sbtest1 USING btree (id)",
             "index_name": "sbtest1_pkey",
             "table_name": "sbtest1",
-            "index_scans": 18191286,
+            "index_scans": 24423794,
             "schema_name": "public",
-            "last_index_scan": "2026-09-16 16:44:23.643954+00:00",
+            "last_index_scan": "2026-09-16 18:27:10.806862",
             "index_size_bytes": 245760
         },
         {
             "index_ref": "CREATE INDEX k_1 ON public.sbtest1 USING btree (k)",
             "index_name": "k_1",
             "table_name": "sbtest1",
-            "index_scans": 1818,
+            "index_scans": 2445,
             "schema_name": "public",
-            "last_index_scan": "2026-09-16 16:44:23.643954+00:00",
+            "last_index_scan": "2026-09-16 18:27:10.806862",
             "index_size_bytes": 221184
         },
         {
@@ -809,7 +809,7 @@
             "table_name": "sbtest2",
             "index_scans": 110856,
             "schema_name": "public",
-            "last_index_scan": "2026-09-13 00:16:30.670543+00:00",
+            "last_index_scan": "2026-09-13 00:16:30.670543",
             "index_size_bytes": 245760
         },
         {
@@ -827,7 +827,7 @@
             "table_name": "sbtest3",
             "index_scans": 108702,
             "schema_name": "public",
-            "last_index_scan": "2026-09-13 00:16:30.670543+00:00",
+            "last_index_scan": "2026-09-13 00:16:30.670543",
             "index_size_bytes": 245760
         },
         {
@@ -845,7 +845,7 @@
             "table_name": "sbtest4",
             "index_scans": 110431,
             "schema_name": "public",
-            "last_index_scan": "2026-09-13 00:16:30.670543+00:00",
+            "last_index_scan": "2026-09-13 00:16:30.670543",
             "index_size_bytes": 245760
         },
         {
@@ -863,7 +863,7 @@
             "table_name": "sbtest5",
             "index_scans": 108412,
             "schema_name": "public",
-            "last_index_scan": "2026-09-13 00:16:30.670543+00:00",
+            "last_index_scan": "2026-09-13 00:16:30.670543",
             "index_size_bytes": 245760
         },
         {
@@ -881,7 +881,7 @@
             "table_name": "sbtest6",
             "index_scans": 109672,
             "schema_name": "public",
-            "last_index_scan": "2026-09-13 00:16:30.670543+00:00",
+            "last_index_scan": "2026-09-13 00:16:30.670543",
             "index_size_bytes": 245760
         },
         {
@@ -899,7 +899,7 @@
             "table_name": "sbtest7",
             "index_scans": 108934,
             "schema_name": "public",
-            "last_index_scan": "2026-09-13 00:16:30.670543+00:00",
+            "last_index_scan": "2026-09-13 00:16:30.670543",
             "index_size_bytes": 245760
         },
         {
@@ -917,7 +917,7 @@
             "table_name": "sbtest8",
             "index_scans": 109016,
             "schema_name": "public",
-            "last_index_scan": "2026-09-13 00:16:30.670543+00:00",
+            "last_index_scan": "2026-09-13 00:16:30.670543",
             "index_size_bytes": 245760
         },
         {
@@ -935,7 +935,7 @@
             "table_name": "sbtest9",
             "index_scans": 108774,
             "schema_name": "public",
-            "last_index_scan": "2026-09-13 00:16:30.670543+00:00",
+            "last_index_scan": "2026-09-13 00:16:30.670543",
             "index_size_bytes": 245760
         },
         {
@@ -953,7 +953,7 @@
             "table_name": "sbtest10",
             "index_scans": 109370,
             "schema_name": "public",
-            "last_index_scan": "2026-09-13 00:16:30.670543+00:00",
+            "last_index_scan": "2026-09-13 00:16:30.670543",
             "index_size_bytes": 245760
         },
         {
@@ -972,13 +972,13 @@
             "query_text": "SELECT DISTINCT\n    a.c,\n        COUNT(*) AS total\n    FROM sbtest1 AS a\n    JOIN sbtest1 AS b\n        ON b.id = a.id\n    WHERE a.k > $1\n      AND a.id = (\n          SELECT MIN(x.id)\n          FROM sbtest1 AS x\n          WHERE x.c = a.c\n      )\n    GROUP BY a.c\n    ORDER BY COUNT(*) DESC",
             "max_time_ms": 22741.862243,
             "min_time_ms": 6426.274388999999,
-            "mean_time_ms": 9799.06248193966,
-            "rows_returned": 18060000,
-            "total_time_ms": 17697106.842382982,
-            "stddev_time_ms": 1594.0238281646825,
-            "execution_count": 1806,
-            "avg_rows_per_call": 10000,
-            "coeff_of_variation": 0.16267105461390588,
+            "mean_time_ms": 9791.885252589133,
+            "rows_returned": 24290000,
+            "total_time_ms": 23784489.27853899,
+            "stddev_time_ms": 1597.602862517542,
+            "execution_count": 2429,
+            "avg_rows_per_call": 10000.0,
+            "coeff_of_variation": 0.16315579904238667,
             "disk_spill_indicator": 0
         },
         {
@@ -991,7 +991,7 @@
             "total_time_ms": 1831.4004720000062,
             "stddev_time_ms": 0.14525616620992968,
             "execution_count": 6417,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.5089595819265039,
             "disk_spill_indicator": 0
         },
@@ -1005,7 +1005,7 @@
             "total_time_ms": 1830.8151020000034,
             "stddev_time_ms": 0.10357633157382276,
             "execution_count": 6469,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.36597649222966455,
             "disk_spill_indicator": 0
         },
@@ -1019,7 +1019,7 @@
             "total_time_ms": 1814.782904999998,
             "stddev_time_ms": 0.09681206128345718,
             "execution_count": 6499,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.34669799045808486,
             "disk_spill_indicator": 0
         },
@@ -1033,7 +1033,7 @@
             "total_time_ms": 1814.2493140000022,
             "stddev_time_ms": 0.09110600412121152,
             "execution_count": 6475,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.3251545265210693,
             "disk_spill_indicator": 0
         },
@@ -1047,7 +1047,7 @@
             "total_time_ms": 1812.5234899999994,
             "stddev_time_ms": 0.10685395343550931,
             "execution_count": 6498,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.3830775122389942,
             "disk_spill_indicator": 0
         },
@@ -1061,7 +1061,7 @@
             "total_time_ms": 1810.2108699999956,
             "stddev_time_ms": 0.09415356377609366,
             "execution_count": 6463,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.3361566836049849,
             "disk_spill_indicator": 0
         },
@@ -1075,7 +1075,7 @@
             "total_time_ms": 1809.1755139999989,
             "stddev_time_ms": 0.14494570799309187,
             "execution_count": 6402,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.5129090104254953,
             "disk_spill_indicator": 0
         },
@@ -1089,7 +1089,7 @@
             "total_time_ms": 1791.1735780000022,
             "stddev_time_ms": 0.11952346902563278,
             "execution_count": 6301,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.42046029909141025,
             "disk_spill_indicator": 0
         },
@@ -1103,7 +1103,7 @@
             "total_time_ms": 1790.9395309999989,
             "stddev_time_ms": 0.09907444863163319,
             "execution_count": 6389,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.35343831623062444,
             "disk_spill_indicator": 0
         },
@@ -1117,7 +1117,7 @@
             "total_time_ms": 1780.1821709999979,
             "stddev_time_ms": 0.10519501135266912,
             "execution_count": 6303,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.3724585985396176,
             "disk_spill_indicator": 0
         },
@@ -1131,7 +1131,7 @@
             "total_time_ms": 1694.7884240000044,
             "stddev_time_ms": 0.13264300635217569,
             "execution_count": 6453,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.5050455312707446,
             "disk_spill_indicator": 0
         },
@@ -1145,7 +1145,7 @@
             "total_time_ms": 1690.1574660000038,
             "stddev_time_ms": 0.0935000614511921,
             "execution_count": 6492,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.3591395542438408,
             "disk_spill_indicator": 0
         },
@@ -1159,7 +1159,7 @@
             "total_time_ms": 1689.0099599999987,
             "stddev_time_ms": 0.11573534528345761,
             "execution_count": 6443,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.44149107898766804,
             "disk_spill_indicator": 0
         },
@@ -1173,7 +1173,7 @@
             "total_time_ms": 1682.1363779999947,
             "stddev_time_ms": 0.09128837708141635,
             "execution_count": 6496,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.3525334243267168,
             "disk_spill_indicator": 0
         },
@@ -1187,7 +1187,7 @@
             "total_time_ms": 1669.2111999999947,
             "stddev_time_ms": 0.09844465863505635,
             "execution_count": 6424,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.37886666892218296,
             "disk_spill_indicator": 0
         },
@@ -1201,7 +1201,7 @@
             "total_time_ms": 1667.9270860000024,
             "stddev_time_ms": 0.10708954736572512,
             "execution_count": 6412,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.4116835702667092,
             "disk_spill_indicator": 0
         },
@@ -1215,7 +1215,7 @@
             "total_time_ms": 1667.6961180000008,
             "stddev_time_ms": 0.09551837342441177,
             "execution_count": 6403,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.36673596492506166,
             "disk_spill_indicator": 0
         },
@@ -1229,7 +1229,7 @@
             "total_time_ms": 1666.9168579999996,
             "stddev_time_ms": 0.1404212295275326,
             "execution_count": 6366,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.5362724258754088,
             "disk_spill_indicator": 0
         },
@@ -1243,7 +1243,7 @@
             "total_time_ms": 1653.006154999997,
             "stddev_time_ms": 0.11338161624358502,
             "execution_count": 6323,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.4337019298686109,
             "disk_spill_indicator": 0
         },
@@ -1257,7 +1257,7 @@
             "total_time_ms": 1652.2764299999972,
             "stddev_time_ms": 0.09434393067583385,
             "execution_count": 6404,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.36566431686496786,
             "disk_spill_indicator": 0
         },
@@ -1271,7 +1271,7 @@
             "total_time_ms": 1207.6847139999963,
             "stddev_time_ms": 0.07205226677893325,
             "execution_count": 6620,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.39495904895301737,
             "disk_spill_indicator": 0
         },
@@ -1285,7 +1285,7 @@
             "total_time_ms": 1177.8986230000003,
             "stddev_time_ms": 0.07680533464461216,
             "execution_count": 6443,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.4201183034367441,
             "disk_spill_indicator": 0
         },
@@ -1299,7 +1299,7 @@
             "total_time_ms": 1174.2093080000004,
             "stddev_time_ms": 0.11877517849126988,
             "execution_count": 6436,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.6510228147244548,
             "disk_spill_indicator": 0
         },
@@ -1313,7 +1313,7 @@
             "total_time_ms": 1173.8488039999988,
             "stddev_time_ms": 0.06661926954006016,
             "execution_count": 6473,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.36736122255554904,
             "disk_spill_indicator": 0
         },
@@ -1327,7 +1327,7 @@
             "total_time_ms": 1166.6133220000022,
             "stddev_time_ms": 0.07641231280494264,
             "execution_count": 6378,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.4177542994575247,
             "disk_spill_indicator": 0
         },
@@ -1341,7 +1341,7 @@
             "total_time_ms": 1163.0128880000061,
             "stddev_time_ms": 0.10198904763839375,
             "execution_count": 6436,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.5643974519744978,
             "disk_spill_indicator": 0
         },
@@ -1355,7 +1355,7 @@
             "total_time_ms": 1152.375159000003,
             "stddev_time_ms": 0.07083319996089511,
             "execution_count": 6374,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.3917915212113188,
             "disk_spill_indicator": 0
         },
@@ -1369,7 +1369,7 @@
             "total_time_ms": 1151.4104929999978,
             "stddev_time_ms": 0.08144534189374193,
             "execution_count": 6328,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.4476128423675921,
             "disk_spill_indicator": 0
         },
@@ -1383,7 +1383,7 @@
             "total_time_ms": 1146.7145559999976,
             "stddev_time_ms": 0.08082198752396016,
             "execution_count": 6348,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.44741559625070054,
             "disk_spill_indicator": 0
         },
@@ -1397,7 +1397,7 @@
             "total_time_ms": 1139.9709630000016,
             "stddev_time_ms": 0.07956327581845353,
             "execution_count": 6380,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.4452865171108161,
             "disk_spill_indicator": 0
         },
@@ -1411,7 +1411,7 @@
             "total_time_ms": 1076.884018999997,
             "stddev_time_ms": 0.014419825440596404,
             "execution_count": 65590,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 0.8782713216665473,
             "disk_spill_indicator": 0
         },
@@ -1425,7 +1425,7 @@
             "total_time_ms": 1066.4647159999888,
             "stddev_time_ms": 0.01693461284440855,
             "execution_count": 64580,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 1.0254791190784278,
             "disk_spill_indicator": 0
         },
@@ -1439,7 +1439,7 @@
             "total_time_ms": 1064.1781509999998,
             "stddev_time_ms": 0.013219041927196038,
             "execution_count": 66100,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 0.8210830776469028,
             "disk_spill_indicator": 0
         },
@@ -1453,7 +1453,7 @@
             "total_time_ms": 1052.441447999999,
             "stddev_time_ms": 0.013268382806313792,
             "execution_count": 64170,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 0.809006644786912,
             "disk_spill_indicator": 0
         },
@@ -1467,7 +1467,7 @@
             "total_time_ms": 1050.9097430000068,
             "stddev_time_ms": 0.018518602672468038,
             "execution_count": 64250,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 1.1321811693452581,
             "disk_spill_indicator": 0
         },
@@ -1481,7 +1481,7 @@
             "total_time_ms": 1047.8473870000144,
             "stddev_time_ms": 0.014279135345966322,
             "execution_count": 63730,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 0.8684559477728852,
             "disk_spill_indicator": 0
         },
@@ -1495,7 +1495,7 @@
             "total_time_ms": 1041.5098630000107,
             "stddev_time_ms": 0.01242741688915412,
             "execution_count": 63300,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 0.7553029664237239,
             "disk_spill_indicator": 0
         },
@@ -1509,7 +1509,7 @@
             "total_time_ms": 1035.809621000002,
             "stddev_time_ms": 0.013885572951242464,
             "execution_count": 63680,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 0.8536639046482977,
             "disk_spill_indicator": 0
         },
@@ -1523,7 +1523,7 @@
             "total_time_ms": 1020.3558669999999,
             "stddev_time_ms": 0.014533698578294996,
             "execution_count": 62680,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 0.8927985385784291,
             "disk_spill_indicator": 0
         },
@@ -1537,7 +1537,7 @@
             "total_time_ms": 1019.0437589999987,
             "stddev_time_ms": 0.012927303579449588,
             "execution_count": 64080,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 0.8129009240820342,
             "disk_spill_indicator": 0
         },
@@ -1551,7 +1551,7 @@
             "total_time_ms": 594.4227769999984,
             "stddev_time_ms": 0.07256808098639674,
             "execution_count": 6406,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 0.7820547004356423,
             "disk_spill_indicator": 0
         },
@@ -1565,7 +1565,7 @@
             "total_time_ms": 594.2022800000009,
             "stddev_time_ms": 0.05464348597248315,
             "execution_count": 6430,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 0.591309772158846,
             "disk_spill_indicator": 0
         },
@@ -1579,7 +1579,7 @@
             "total_time_ms": 593.6090649999995,
             "stddev_time_ms": 0.04338938410142879,
             "execution_count": 6473,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 0.47313880438896044,
             "disk_spill_indicator": 0
         },
@@ -1593,7 +1593,7 @@
             "total_time_ms": 590.9813989999997,
             "stddev_time_ms": 0.043343428618747216,
             "execution_count": 6465,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 0.47415242932240104,
             "disk_spill_indicator": 0
         },
@@ -1607,7 +1607,7 @@
             "total_time_ms": 589.8942950000011,
             "stddev_time_ms": 0.05211442893437824,
             "execution_count": 6384,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 0.5639968332242817,
             "disk_spill_indicator": 0
         },
@@ -1621,7 +1621,7 @@
             "total_time_ms": 578.256168,
             "stddev_time_ms": 0.04490866290245411,
             "execution_count": 6479,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 0.5031735812716832,
             "disk_spill_indicator": 0
         },
@@ -1635,7 +1635,7 @@
             "total_time_ms": 577.0645049999985,
             "stddev_time_ms": 0.03997242988531971,
             "execution_count": 6441,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 0.4461588239452441,
             "disk_spill_indicator": 0
         },
@@ -1649,7 +1649,7 @@
             "total_time_ms": 571.1114529999998,
             "stddev_time_ms": 0.043077178127029145,
             "execution_count": 6441,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 0.485824794545304,
             "disk_spill_indicator": 0
         },
@@ -1663,7 +1663,7 @@
             "total_time_ms": 568.730307,
             "stddev_time_ms": 0.042508850079427445,
             "execution_count": 6357,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 0.4751439419157226,
             "disk_spill_indicator": 0
         },
@@ -1677,7 +1677,7 @@
             "total_time_ms": 567.6299219999989,
             "stddev_time_ms": 0.04613395914406883,
             "execution_count": 6340,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 0.5152816820206257,
             "disk_spill_indicator": 0
         },
@@ -1691,7 +1691,7 @@
             "total_time_ms": 430.26815999999997,
             "stddev_time_ms": 0.19340779008002,
             "execution_count": 6524,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.999234,
             "coeff_of_variation": 2.9325721486852703,
             "disk_spill_indicator": 0
         },
@@ -1705,7 +1705,7 @@
             "total_time_ms": 420.04941899999994,
             "stddev_time_ms": 0.18804281230699457,
             "execution_count": 6415,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.999376,
             "coeff_of_variation": 2.871792190121728,
             "disk_spill_indicator": 0
         },
@@ -1719,7 +1719,7 @@
             "total_time_ms": 417.3835369999999,
             "stddev_time_ms": 0.2292122238703774,
             "execution_count": 6390,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.999218,
             "coeff_of_variation": 3.5091611927465944,
             "disk_spill_indicator": 0
         },
@@ -1733,7 +1733,7 @@
             "total_time_ms": 413.5098140000007,
             "stddev_time_ms": 0.14058491536520457,
             "execution_count": 6438,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.999223,
             "coeff_of_variation": 2.188788885966292,
             "disk_spill_indicator": 0
         },
@@ -1747,7 +1747,7 @@
             "total_time_ms": 408.19935400000054,
             "stddev_time_ms": 0.15350963749892213,
             "execution_count": 6262,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.999042,
             "coeff_of_variation": 2.3549212917623867,
             "disk_spill_indicator": 0
         },
@@ -1761,7 +1761,7 @@
             "total_time_ms": 406.1288299999989,
             "stddev_time_ms": 0.060457128348004686,
             "execution_count": 6519,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.999233,
             "coeff_of_variation": 0.9704310321940005,
             "disk_spill_indicator": 0
         },
@@ -1775,7 +1775,7 @@
             "total_time_ms": 405.8122959999993,
             "stddev_time_ms": 0.07932305960656505,
             "execution_count": 6443,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 1.259396223531627,
             "disk_spill_indicator": 0
         },
@@ -1789,7 +1789,7 @@
             "total_time_ms": 404.0611230000004,
             "stddev_time_ms": 0.15507591139840374,
             "execution_count": 6310,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.999366,
             "coeff_of_variation": 2.421735092103693,
             "disk_spill_indicator": 0
         },
@@ -1803,7 +1803,7 @@
             "total_time_ms": 401.82126000000005,
             "stddev_time_ms": 0.0648657248050788,
             "execution_count": 6498,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.999538,
             "coeff_of_variation": 1.048967592663967,
             "disk_spill_indicator": 0
         },
@@ -1817,7 +1817,7 @@
             "total_time_ms": 394.5096920000002,
             "stddev_time_ms": 0.05592934037098881,
             "execution_count": 6417,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.999688,
             "coeff_of_variation": 0.9097332320054508,
             "disk_spill_indicator": 0
         },
@@ -1831,7 +1831,7 @@
             "total_time_ms": 266.2094159999997,
             "stddev_time_ms": 0.031681095783631354,
             "execution_count": 6444,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 0.7668886559208753,
             "disk_spill_indicator": 0
         },
@@ -1845,7 +1845,7 @@
             "total_time_ms": 265.73717299999913,
             "stddev_time_ms": 0.030509943244388518,
             "execution_count": 6507,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 0.747084792277955,
             "disk_spill_indicator": 0
         },
@@ -1859,7 +1859,7 @@
             "total_time_ms": 265.6538989999997,
             "stddev_time_ms": 0.029890159726956956,
             "execution_count": 6522,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 0.7338255620302939,
             "disk_spill_indicator": 0
         },
@@ -1873,7 +1873,7 @@
             "total_time_ms": 265.0592600000004,
             "stddev_time_ms": 0.04195278254437583,
             "execution_count": 6452,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 1.021203156517952,
             "disk_spill_indicator": 0
         },
@@ -1887,7 +1887,7 @@
             "total_time_ms": 264.7321550000006,
             "stddev_time_ms": 0.029398785645621928,
             "execution_count": 6520,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 0.7240528919105231,
             "disk_spill_indicator": 0
         },
@@ -1901,7 +1901,7 @@
             "total_time_ms": 263.6217000000006,
             "stddev_time_ms": 0.03192620112836689,
             "execution_count": 6446,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 0.7806500469174321,
             "disk_spill_indicator": 0
         },
@@ -1915,7 +1915,7 @@
             "total_time_ms": 262.5057780000002,
             "stddev_time_ms": 0.03116908607934688,
             "execution_count": 6334,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 0.7520786503472063,
             "disk_spill_indicator": 0
         },
@@ -1929,7 +1929,7 @@
             "total_time_ms": 260.1367639999991,
             "stddev_time_ms": 0.03415701703407994,
             "execution_count": 6314,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 0.829053926238508,
             "disk_spill_indicator": 0
         },
@@ -1943,7 +1943,7 @@
             "total_time_ms": 259.3355649999996,
             "stddev_time_ms": 0.03289803065901401,
             "execution_count": 6359,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 0.8066713756004484,
             "disk_spill_indicator": 0
         },
@@ -1957,7 +1957,7 @@
             "total_time_ms": 258.6834780000005,
             "stddev_time_ms": 0.21627903114816988,
             "execution_count": 6428,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.999067,
             "coeff_of_variation": 5.374296120374705,
             "disk_spill_indicator": 0
         },
@@ -1971,7 +1971,7 @@
             "total_time_ms": 256.2312409999992,
             "stddev_time_ms": 0.044540118680090966,
             "execution_count": 6277,
-            "avg_rows_per_call": 1,
+            "avg_rows_per_call": 1.0,
             "coeff_of_variation": 1.0911172418469093,
             "disk_spill_indicator": 0
         },
@@ -1985,7 +1985,7 @@
             "total_time_ms": 247.3294330000003,
             "stddev_time_ms": 0.07482475722745538,
             "execution_count": 6481,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.998303,
             "coeff_of_variation": 1.9607017479037239,
             "disk_spill_indicator": 0
         },
@@ -1999,7 +1999,7 @@
             "total_time_ms": 245.74697100000003,
             "stddev_time_ms": 0.09022833018519029,
             "execution_count": 6427,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.999222,
             "coeff_of_variation": 2.359733980608117,
             "disk_spill_indicator": 0
         },
@@ -2013,7 +2013,7 @@
             "total_time_ms": 243.27121700000035,
             "stddev_time_ms": 0.17927772647884863,
             "execution_count": 6414,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.999688,
             "coeff_of_variation": 4.726771016381021,
             "disk_spill_indicator": 0
         },
@@ -2027,7 +2027,7 @@
             "total_time_ms": 241.88972100000112,
             "stddev_time_ms": 0.0779623792470995,
             "execution_count": 6512,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.999232,
             "coeff_of_variation": 2.098853194580813,
             "disk_spill_indicator": 0
         },
@@ -2041,7 +2041,7 @@
             "total_time_ms": 241.18929199999985,
             "stddev_time_ms": 0.07184808036378243,
             "execution_count": 6458,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.999226,
             "coeff_of_variation": 1.9237790332304923,
             "disk_spill_indicator": 0
         },
@@ -2055,7 +2055,7 @@
             "total_time_ms": 239.03778099999977,
             "stddev_time_ms": 0.0655291000836631,
             "execution_count": 6397,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.998749,
             "coeff_of_variation": 1.7536543866895795,
             "disk_spill_indicator": 0
         },
@@ -2069,7 +2069,7 @@
             "total_time_ms": 237.15853599999988,
             "stddev_time_ms": 0.06559271643275903,
             "execution_count": 6356,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.999843,
             "coeff_of_variation": 1.7579266286523905,
             "disk_spill_indicator": 0
         },
@@ -2083,7 +2083,7 @@
             "total_time_ms": 236.98397299999993,
             "stddev_time_ms": 0.0782084752822687,
             "execution_count": 6433,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.999223,
             "coeff_of_variation": 2.1229921801118277,
             "disk_spill_indicator": 0
         },
@@ -2097,7 +2097,7 @@
             "total_time_ms": 230.75046899999987,
             "stddev_time_ms": 0.061365724596366404,
             "execution_count": 6310,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.999208,
             "coeff_of_variation": 1.6780798924533138,
             "disk_spill_indicator": 0
         },
@@ -2111,7 +2111,7 @@
             "total_time_ms": 168.59846599999995,
             "stddev_time_ms": 0.14551999394875276,
             "execution_count": 6528,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.999081,
             "coeff_of_variation": 5.6344197135071195,
             "disk_spill_indicator": 0
         },
@@ -2125,7 +2125,7 @@
             "total_time_ms": 167.88123399999992,
             "stddev_time_ms": 0.19651177423272326,
             "execution_count": 6318,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.999367,
             "coeff_of_variation": 7.3954745269643745,
             "disk_spill_indicator": 0
         },
@@ -2139,7 +2139,7 @@
             "total_time_ms": 165.5774800000002,
             "stddev_time_ms": 0.13431906648347683,
             "execution_count": 6338,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.999369,
             "coeff_of_variation": 5.141485686171063,
             "disk_spill_indicator": 0
         },
@@ -2153,7 +2153,7 @@
             "total_time_ms": 164.43647399999986,
             "stddev_time_ms": 0.20097420401298238,
             "execution_count": 6279,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.999681,
             "coeff_of_variation": 7.6741917185448525,
             "disk_spill_indicator": 0
         },
@@ -2167,7 +2167,7 @@
             "total_time_ms": 161.71248200000034,
             "stddev_time_ms": 0.08496188288209165,
             "execution_count": 6513,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.999079,
             "coeff_of_variation": 3.421855483060751,
             "disk_spill_indicator": 0
         },
@@ -2181,7 +2181,7 @@
             "total_time_ms": 159.80109399999975,
             "stddev_time_ms": 0.14563176647176468,
             "execution_count": 6447,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.999535,
             "coeff_of_variation": 5.875354010051182,
             "disk_spill_indicator": 0
         },
@@ -2195,7 +2195,7 @@
             "total_time_ms": 156.88385800000006,
             "stddev_time_ms": 0.0581127709007405,
             "execution_count": 6528,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.998775,
             "coeff_of_variation": 2.418095610831,
             "disk_spill_indicator": 0
         },
@@ -2209,7 +2209,7 @@
             "total_time_ms": 155.99177200000005,
             "stddev_time_ms": 0.0580875229077499,
             "execution_count": 6456,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.99938,
             "coeff_of_variation": 2.40405659275692,
             "disk_spill_indicator": 0
         },
@@ -2223,7 +2223,7 @@
             "total_time_ms": 154.47886699999918,
             "stddev_time_ms": 0.08894004344838645,
             "execution_count": 6448,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.99969,
             "coeff_of_variation": 3.712387404778124,
             "disk_spill_indicator": 0
         },
@@ -2237,7 +2237,7 @@
             "total_time_ms": 150.26008199999978,
             "stddev_time_ms": 0.05303544888287607,
             "execution_count": 6361,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.999686,
             "coeff_of_variation": 2.245163757756872,
             "disk_spill_indicator": 0
         },
@@ -2251,7 +2251,7 @@
             "total_time_ms": 39.905026,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2265,7 +2265,7 @@
             "total_time_ms": 39.431352,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2279,7 +2279,7 @@
             "total_time_ms": 35.435742,
             "stddev_time_ms": 2.600461532344339,
             "execution_count": 3,
-            "avg_rows_per_call": 2716,
+            "avg_rows_per_call": 2716.0,
             "coeff_of_variation": 0.2201558132191226,
             "disk_spill_indicator": 0
         },
@@ -2293,7 +2293,7 @@
             "total_time_ms": 34.590308,
             "stddev_time_ms": 0.23952449442500698,
             "execution_count": 3,
-            "avg_rows_per_call": 2716,
+            "avg_rows_per_call": 2716.0,
             "coeff_of_variation": 0.020773838824303646,
             "disk_spill_indicator": 0
         },
@@ -2307,7 +2307,7 @@
             "total_time_ms": 33.733679,
             "stddev_time_ms": 2.9352796423937004,
             "execution_count": 3,
-            "avg_rows_per_call": 2716,
+            "avg_rows_per_call": 2716.0,
             "coeff_of_variation": 0.26103998105813186,
             "disk_spill_indicator": 0
         },
@@ -2321,7 +2321,7 @@
             "total_time_ms": 33.481929,
             "stddev_time_ms": 1.5200775612325395,
             "execution_count": 3,
-            "avg_rows_per_call": 2716,
+            "avg_rows_per_call": 2716.0,
             "coeff_of_variation": 0.13619981942192214,
             "disk_spill_indicator": 0
         },
@@ -2335,7 +2335,7 @@
             "total_time_ms": 32.903666,
             "stddev_time_ms": 1.2671573486946635,
             "execution_count": 3,
-            "avg_rows_per_call": 2716,
+            "avg_rows_per_call": 2716.0,
             "coeff_of_variation": 0.11553338907840817,
             "disk_spill_indicator": 0
         },
@@ -2349,7 +2349,7 @@
             "total_time_ms": 32.237418,
             "stddev_time_ms": 0.7304566865876899,
             "execution_count": 3,
-            "avg_rows_per_call": 2716,
+            "avg_rows_per_call": 2716.0,
             "coeff_of_variation": 0.06797597933442033,
             "disk_spill_indicator": 0
         },
@@ -2363,7 +2363,7 @@
             "total_time_ms": 31.396074,
             "stddev_time_ms": 0.8025093451871245,
             "execution_count": 3,
-            "avg_rows_per_call": 2716,
+            "avg_rows_per_call": 2716.0,
             "coeff_of_variation": 0.0766824551235729,
             "disk_spill_indicator": 0
         },
@@ -2377,7 +2377,7 @@
             "total_time_ms": 31.056036,
             "stddev_time_ms": 0.9397196975548971,
             "execution_count": 3,
-            "avg_rows_per_call": 2716,
+            "avg_rows_per_call": 2716.0,
             "coeff_of_variation": 0.09077652707076625,
             "disk_spill_indicator": 0
         },
@@ -2391,7 +2391,7 @@
             "total_time_ms": 28.07178,
             "stddev_time_ms": 0.42039648250748624,
             "execution_count": 3,
-            "avg_rows_per_call": 2716,
+            "avg_rows_per_call": 2716.0,
             "coeff_of_variation": 0.04492730591086346,
             "disk_spill_indicator": 0
         },
@@ -2405,7 +2405,7 @@
             "total_time_ms": 27.877771999999997,
             "stddev_time_ms": 0.2275660666038664,
             "execution_count": 3,
-            "avg_rows_per_call": 2716,
+            "avg_rows_per_call": 2716.0,
             "coeff_of_variation": 0.024488979959072746,
             "disk_spill_indicator": 0
         },
@@ -2419,7 +2419,7 @@
             "total_time_ms": 8.527359,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 1852,
+            "avg_rows_per_call": 1852.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2433,7 +2433,7 @@
             "total_time_ms": 8.235208,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 1852,
+            "avg_rows_per_call": 1852.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2447,7 +2447,7 @@
             "total_time_ms": 6.724638,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 1852,
+            "avg_rows_per_call": 1852.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2461,7 +2461,7 @@
             "total_time_ms": 6.636813,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 1852,
+            "avg_rows_per_call": 1852.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2475,7 +2475,7 @@
             "total_time_ms": 6.490431,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 1852,
+            "avg_rows_per_call": 1852.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2489,7 +2489,7 @@
             "total_time_ms": 6.466764,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2503,7 +2503,7 @@
             "total_time_ms": 6.463949,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2517,7 +2517,7 @@
             "total_time_ms": 6.363808000000001,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 1852,
+            "avg_rows_per_call": 1852.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2531,7 +2531,7 @@
             "total_time_ms": 6.337246,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 1852,
+            "avg_rows_per_call": 1852.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2545,7 +2545,7 @@
             "total_time_ms": 6.2471369999999995,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 1852,
+            "avg_rows_per_call": 1852.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2559,7 +2559,7 @@
             "total_time_ms": 6.195926,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2573,7 +2573,7 @@
             "total_time_ms": 5.9702139999999995,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 1852,
+            "avg_rows_per_call": 1852.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2587,7 +2587,7 @@
             "total_time_ms": 5.90835,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2601,7 +2601,7 @@
             "total_time_ms": 5.888122,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 1852,
+            "avg_rows_per_call": 1852.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2615,7 +2615,7 @@
             "total_time_ms": 5.822079,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2629,7 +2629,7 @@
             "total_time_ms": 5.136453,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2643,7 +2643,7 @@
             "total_time_ms": 5.122676,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2657,7 +2657,7 @@
             "total_time_ms": 4.997566,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2671,7 +2671,7 @@
             "total_time_ms": 4.847577,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2685,7 +2685,7 @@
             "total_time_ms": 4.658181,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2699,7 +2699,7 @@
             "total_time_ms": 4.331911,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2713,7 +2713,7 @@
             "total_time_ms": 3.812135,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2727,7 +2727,7 @@
             "total_time_ms": 3.647727,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2741,7 +2741,7 @@
             "total_time_ms": 3.410114,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2755,7 +2755,7 @@
             "total_time_ms": 3.398311,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2769,7 +2769,7 @@
             "total_time_ms": 3.330453,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2783,7 +2783,7 @@
             "total_time_ms": 3.188563,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2797,7 +2797,7 @@
             "total_time_ms": 2.659218,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2811,7 +2811,7 @@
             "total_time_ms": 1.979203,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2825,7 +2825,7 @@
             "total_time_ms": 1.849295,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2839,7 +2839,7 @@
             "total_time_ms": 1.804826,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2853,7 +2853,7 @@
             "total_time_ms": 1.784766,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2867,7 +2867,7 @@
             "total_time_ms": 1.614317,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2881,7 +2881,7 @@
             "total_time_ms": 1.521493,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2895,7 +2895,7 @@
             "total_time_ms": 1.477844,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2909,7 +2909,7 @@
             "total_time_ms": 1.447694,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2923,7 +2923,7 @@
             "total_time_ms": 0.97848,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2937,7 +2937,7 @@
             "total_time_ms": 0.767329,
             "stddev_time_ms": 0.0,
             "execution_count": 1,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.0,
             "disk_spill_indicator": 0
         },
@@ -2951,7 +2951,7 @@
             "total_time_ms": 0.079547,
             "stddev_time_ms": 0.0006586544266741956,
             "execution_count": 41,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.33948271454161716,
             "disk_spill_indicator": 0
         },
@@ -2965,7 +2965,7 @@
             "total_time_ms": 0.032975000000000004,
             "stddev_time_ms": 0.002098257297735433,
             "execution_count": 4,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.25452704142355514,
             "disk_spill_indicator": 0
         },
@@ -2979,7 +2979,7 @@
             "total_time_ms": 0.004189,
             "stddev_time_ms": 0.0002561302159058942,
             "execution_count": 4,
-            "avg_rows_per_call": 0,
+            "avg_rows_per_call": 0.0,
             "coeff_of_variation": 0.24457409014647336,
             "disk_spill_indicator": 0
         }
@@ -2987,14 +2987,16 @@
     "active_queries": [
         {
             "query_id": -1859038224550094023,
-            "process_id": 2252,
+            "process_id": 12719,
+            "query_text": null,
             "blocking_pids": [],
             "canonic_query": "SELECT DISTINCT a.c, COUNT(*) AS total FROM sbtest1 AS a JOIN sbtest1 AS b ON b.id = a.id WHERE a.k > $1 AND a.id = (SELECT MIN(x.id) FROM sbtest1 AS x WHERE x.c = a.c) GROUP BY a.c ORDER BY COUNT(*) DESC",
-            "transaction_start_time": "2026-09-16 16:44:23.729248"
+            "transaction_start_time": "2026-09-16 18:27:10.904318"
         },
         {
             "query_id": null,
             "process_id": 32,
+            "query_text": null,
             "blocking_pids": [],
             "canonic_query": "Not available",
             "transaction_start_time": null
@@ -3053,15 +3055,15 @@
             "selected_by": [
                 "time_high_impact"
             ],
-            "mean_time_ms": 9799.06248193966,
+            "mean_time_ms": 9791.885252589133,
             "canonic_query": "SELECT DISTINCT a.c, COUNT(*) AS total FROM sbtest1 AS a JOIN sbtest1 AS b ON b.id = a.id WHERE a.k > $1 AND a.id = (SELECT MIN(x.id) FROM sbtest1 AS x WHERE x.c = a.c) GROUP BY a.c ORDER BY COUNT(*) DESC",
-            "rows_returned": 18060000,
-            "total_time_ms": 17697106.842382982,
-            "stddev_time_ms": 1594.0238281646825,
-            "execution_count": 1806,
+            "rows_returned": 24290000,
+            "total_time_ms": 23784489.27853899,
+            "stddev_time_ms": 1597.602862517542,
+            "execution_count": 2429,
             "real_query_found": true,
-            "avg_rows_per_call": 10000,
-            "coeff_of_variation": 0.16267105461390588,
+            "avg_rows_per_call": 10000.0,
+            "coeff_of_variation": 0.16315579904238667,
             "disk_spill_indicator": 0
         },
         {
@@ -3079,7 +3081,7 @@
             "stddev_time_ms": 0.14525616620992968,
             "execution_count": 6417,
             "real_query_found": false,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.5089595819265039,
             "disk_spill_indicator": 0
         },
@@ -3098,7 +3100,7 @@
             "stddev_time_ms": 0.10357633157382276,
             "execution_count": 6469,
             "real_query_found": false,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.36597649222966455,
             "disk_spill_indicator": 0
         },
@@ -3117,7 +3119,7 @@
             "stddev_time_ms": 0.09681206128345718,
             "execution_count": 6499,
             "real_query_found": false,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.34669799045808486,
             "disk_spill_indicator": 0
         },
@@ -3136,7 +3138,7 @@
             "stddev_time_ms": 0.09110600412121152,
             "execution_count": 6475,
             "real_query_found": false,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.3251545265210693,
             "disk_spill_indicator": 0
         },
@@ -3155,7 +3157,7 @@
             "stddev_time_ms": 0.10685395343550931,
             "execution_count": 6498,
             "real_query_found": false,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.3830775122389942,
             "disk_spill_indicator": 0
         },
@@ -3174,7 +3176,7 @@
             "stddev_time_ms": 0.09415356377609366,
             "execution_count": 6463,
             "real_query_found": false,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.3361566836049849,
             "disk_spill_indicator": 0
         },
@@ -3193,7 +3195,7 @@
             "stddev_time_ms": 0.14494570799309187,
             "execution_count": 6402,
             "real_query_found": false,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.5129090104254953,
             "disk_spill_indicator": 0
         },
@@ -3212,7 +3214,7 @@
             "stddev_time_ms": 0.11952346902563278,
             "execution_count": 6301,
             "real_query_found": false,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.42046029909141025,
             "disk_spill_indicator": 0
         },
@@ -3231,14 +3233,14 @@
             "stddev_time_ms": 0.09907444863163319,
             "execution_count": 6389,
             "real_query_found": false,
-            "avg_rows_per_call": 100,
+            "avg_rows_per_call": 100.0,
             "coeff_of_variation": 0.35343831623062444,
             "disk_spill_indicator": 0
         }
     ],
     "stats_reset_timestamp": [
         {
-            "stats_reset": "2026-09-16 16:21:39.826310+00:00"
+            "stats_reset": "2026-09-16 16:21:39.826310"
         }
     ],
     "non_explainable_candidates": []

@@ -19,7 +19,11 @@ Pendiente de decisión: en MySQL los `filesort` a disco no tienen indicador suma
 
 ## avg_rows_per_call
 
-- Unificado a float (6 decimales) en ambos motores. MySQL solía redondear a entero (`ROUND(...,0)`), inconsistente con Postgres (`rows/calls`).
+- Unificado a float (6 decimales) con guard `NULLIF` en ambos motores:
+  - Postgres: `ROUND(rows::numeric / NULLIF(calls, 0), 6)` (evita división entera de bigint y div-by-zero con `calls = 0`)
+  - MySQL: `CAST(ROUND(s.SUM_ROWS_SENT / NULLIF(s.COUNT_STAR, 0), 6) AS DOUBLE)`
+- MySQL solía redondear a entero (`ROUND(...,0)`) y Postgres truncaba por división bigint; ambos eran inconsistentes entre sí.
+- Fijado por tests de regresión en `tests/test_queries_contract.py`.
 
 ## source
 

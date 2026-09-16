@@ -3,6 +3,7 @@ import re
 import pytest
 
 from collectors.mysql.queries import STATEMENTS_QUERY
+from collectors.postgres.queries import STATEMENTS_QUERY as PG_STATEMENTS_QUERY
 
 pytestmark = pytest.mark.contract
 
@@ -15,6 +16,13 @@ def test_stmt_query_keeps_fractional_avg_rows():
     assert re.search(
         r"ROUND\(s\.SUM_ROWS_SENT / NULLIF\(s\.COUNT_STAR, 0\), [1-9]\)",
         STATEMENTS_QUERY,
+    )
+
+
+def test_pg_stmt_query_keeps_fractional_avg_rows():
+    assert re.search(
+        r"ROUND\(rows::numeric / NULLIF\(calls, 0\), [1-9]\)",
+        PG_STATEMENTS_QUERY,
     )
 
 
