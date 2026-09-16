@@ -9,6 +9,7 @@ from .queries import (
     COLUMNS_QUERY
 )
 import stages.normalize as normalize
+from models.stats import Stats
 
 
 class Mysql_Collector(DB_Engine_Collector):
@@ -26,10 +27,10 @@ class Mysql_Collector(DB_Engine_Collector):
                         "columns": COLUMNS_QUERY
                         }
 
-    def preprocess_statements(self, stats):
+    def preprocess_statements(self, stats: Stats) -> Stats:
         return self.calculate_stddev_coeff(stats)
 
-    def calculate_stddev_coeff(self, stats=None):
+    def calculate_stddev_coeff(self, stats: Stats | None = None) -> Stats:
         import math
 
         if stats is None:
@@ -60,7 +61,7 @@ class Mysql_Collector(DB_Engine_Collector):
 
         return stats
 
-    def normalize_engine_artifacts(self, stats):
+    def normalize_engine_artifacts(self, stats: Stats) -> Stats:
         normalize.normalize_locks(stats)
         normalize.normalize_blocking_pids(stats)
         normalize.normalize_predicate(stats)

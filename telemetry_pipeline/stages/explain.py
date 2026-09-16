@@ -3,24 +3,37 @@ import json
 from sqlalchemy import text
 
 from logger import get_logger
-
-from . import explain_normalizer as en
+from models.stats import Stats
+from stages import explain_normalizer as en
 
 logger = get_logger(__name__)
 
 EXPLAIN_NORMALIZERS = en.EXPLAIN_NORMALIZERS
 
 
+def is_single_statement(query_text):
+    trimmed = (query_text or "").rstrip().rstrip(";").strip()
+    return ";" not in trimmed
+
+
 class ExplainStage:
     def __init__(self, collector):
         self.collector = collector
 
-    def execute(self, stats, conn):
+    def execute(self, stats: Stats, conn):
         stats["query_explain"] = []
 
         for query in stats.get("top_impact_queries", []):
             query_id = query.get("query_id")
             if query_id is None or not query.get("real_query_found"):
+                continue
+
+            query_text = query.get("query_text")
+            if not is_single_statement(query_text):
+                logger.warning(
+                    f"{self.collector.source_dialect} | EXPLAIN | query_id={query_id} "
+                    "| skipped multi-statement query"
+                )
                 continue
 
             try:

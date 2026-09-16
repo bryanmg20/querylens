@@ -1,3 +1,6 @@
+from models.stats import Stats
+
+
 def canonicalize_query(query_text, source_dialect="postgres"):
     import re
     import sqlglot
@@ -29,7 +32,7 @@ def clean_mysql_sintax(query):
     return query.replace("DISTINCTROW", "DISTINCT")
 
 
-def create_canonic_queries(stats, source_dialect="postgres", clean_mysql=False):
+def create_canonic_queries(stats: Stats, source_dialect="postgres", clean_mysql=False):
     for stmt in stats.get("top_impact_queries") or []:
         query_text = stmt.get("query_text")
         if clean_mysql:
@@ -37,7 +40,7 @@ def create_canonic_queries(stats, source_dialect="postgres", clean_mysql=False):
         stmt["canonic_query"] = canonicalize_query(query_text, source_dialect)
 
 
-def anonimize_query_text(stats):
+def anonimize_query_text(stats: Stats):
     dict_statements = {
         item["query_id"]: {k: v for k, v in item.items() if k != "query_id"}
         for item in stats.get("statements", [])
@@ -48,7 +51,7 @@ def anonimize_query_text(stats):
             stmd["query_text"] = dict_statements[query_id].get("query_text")
 
 
-def normalize_querytext_active(stats, source_dialect="postgres"):
+def normalize_querytext_active(stats: Stats, source_dialect="postgres"):
     for stmt in stats.get("active_queries", []):
         query_text = stmt.get("query_text")
         del stmt["query_text"]

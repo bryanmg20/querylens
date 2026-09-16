@@ -1,16 +1,19 @@
-def select_high_impact_time_statements(stats):      
+from models.stats import Stats
+
+
+def select_high_impact_time_statements(stats: Stats):
     stats['high_impact_statements'] = stats['statements'][:10]
         
 
-def select_unstable_statements(stats):
+def select_unstable_statements(stats: Stats):
     stats['unstable_statements'] = [stmd for stmd in stats.get('statements', []) if stmd.get('coeff_of_variation') is not None and stmd['coeff_of_variation'] > 2 and stmd.get('mean_time_ms', 0) > 10]
          
 
-def select_disk_spill_indicator(stats):
+def select_disk_spill_indicator(stats: Stats):
     stats['disk_spill_statements'] = [stmd for stmd in stats.get('statements', []) if stmd.get('disk_spill_indicator', 0) > 0]
            
 
-def select_candidates_to_explain(stats):
+def select_candidates_to_explain(stats: Stats):
         candidates = {}
         skipped_candidates = {}
 
@@ -62,7 +65,7 @@ def select_candidates_to_explain(stats):
         stats.pop("disk_spill_statements", None)
      
 
-def select_explain_ready(stats):
+def select_explain_ready(stats: Stats):
         readys = {}
 
         for candidate in stats.get("top_impact_queries", []):

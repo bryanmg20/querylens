@@ -1,9 +1,10 @@
 import json
 
+from models.stats import Stats
 from stages.normalize import _to_number as to_number
 
 class PostgresExplainNormalizer:
-    def normalize(self, stats):
+    def normalize(self, stats: Stats) -> Stats:
         canonic_explains = []
 
         for explain in stats.get("query_explain") or []:
@@ -167,9 +168,9 @@ class PostgresExplainNormalizer:
             if source_field in node:
                 operation[canonical_field] = node[source_field]
 
-
 class MysqlExplainNormalizer:
-    def normalize(self, stats):
+
+    def normalize(self, stats: Stats) -> Stats:
         canonic_explains = []
 
         for explain in stats.get("query_explain") or []:

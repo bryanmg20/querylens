@@ -9,6 +9,7 @@ from .queries import (
     COLUMNS_QUERY
 )
 import stages.normalize as normalize
+from models.stats import Stats
 
 
 class Postgres_Collector(DB_Engine_Collector):
@@ -26,6 +27,6 @@ class Postgres_Collector(DB_Engine_Collector):
                         "columns": COLUMNS_QUERY
                         }
 
-    def normalize_engine_artifacts(self, stats):
+    def normalize_engine_artifacts(self, stats: Stats) -> Stats:
         normalize.normalize_active_query_timestamps(stats)
         return stats

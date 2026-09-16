@@ -15,12 +15,16 @@ La suite corre únicamente sobre fixtures locales (no necesita bases de datos ni
 
 ## Ejecutar
 
-Desde la raíz del pipeline (donde está `pytest.ini`):
+El `pytest.ini` vive en la raíz del repositorio (`testpaths = telemetry_pipeline/tests`, `pythonpath = telemetry_pipeline`), así que la suite corre desde cualquier carpeta:
 
 ```bash
-cd telemetry_pipeline
+# Desde la raíz del repo
 venv\Scripts\python -m pytest          # Windows (PS/cmd)
 # o en bash:  .venv/bin/python -m pytest
+
+# Desde telemetry_pipeline (idéntico, pytest encuentra la config en la raíz)
+cd telemetry_pipeline
+venv\Scripts\python -m pytest
 ```
 
 ## Comandos útiles

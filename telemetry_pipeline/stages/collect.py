@@ -1,6 +1,7 @@
 from sqlalchemy import text
 
 from logger import get_logger
+from models.stats import Stats
 
 logger = get_logger(__name__)
 
@@ -9,7 +10,7 @@ class CollectStage:
     def __init__(self, collector):
         self.collector = collector
 
-    def execute(self, stats, conn):
+    def execute(self, stats: Stats, conn) -> Stats:
         for key, query in self.collector.queries.items():
             try:
                 result = conn.execute(text(query))
