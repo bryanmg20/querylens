@@ -1,4 +1,3 @@
-from snapshot import build_snapshot
 from stages.candidates import CandidatesStage
 from stages.collect import CollectStage
 from stages.enrich import EnrichStage
@@ -24,4 +23,5 @@ class Orchestrator:
                 self.explain.execute(stats, conn)
                 self.normalize.execute(stats)
             self.enrich.execute(stats)
-        return build_snapshot(stats, self.collector)
+        self.collector.stats = stats
+        return stats
