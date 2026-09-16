@@ -56,7 +56,7 @@ SELECT
     s.DIGEST_TEXT                                                   AS query_text,
     CAST(s.COUNT_STAR AS SIGNED)                                    AS execution_count,
     CAST(s.SUM_ROWS_SENT AS SIGNED)                                 AS rows_returned,
-    CAST(ROUND(s.SUM_ROWS_SENT / NULLIF(s.COUNT_STAR, 0), 0) AS DOUBLE)        AS avg_rows_per_call,
+    CAST(ROUND(s.SUM_ROWS_SENT / NULLIF(s.COUNT_STAR, 0), 6) AS DOUBLE)        AS avg_rows_per_call,
     CAST(ROUND(s.SUM_TIMER_WAIT / 1000000000.0, 6) AS DOUBLE)                  AS total_time_ms,
     CAST(ROUND(s.AVG_TIMER_WAIT / 1000000000.0, 6) AS DOUBLE)                  AS mean_time_ms,
     NULL                                                                        AS stddev_time_ms,
