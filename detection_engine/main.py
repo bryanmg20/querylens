@@ -1,3 +1,4 @@
+import argparse
 import time
 
 from sqlalchemy import text
@@ -90,7 +91,7 @@ def process_job(job: dict) -> list[Hallazgo]:
 
 
 # Loop principal: hace polling continuo de la cola y procesa cada job
-def main() -> None:
+def main(oneshot: bool = False) -> None:
     logger.info("Detection Engine iniciado. Escuchando cola '%s'...", QUEUE_NAME)
     engine = get_connection_querylens_db()
 
@@ -99,8 +100,11 @@ def main() -> None:
             # Lee el siguiente mensaje disponible en la cola
             job = read_next_job(engine)
 
-            # Sin mensajes: esperar y volver a preguntar
             if job is None:
+                # oneshot: cortar el loop en vez de seguir esperando mensajes
+                if oneshot:
+                    logger.info("No hay mensajes disponibles en '%s'.", QUEUE_NAME)
+                    return
                 time.sleep(POLL_INTERVAL_SECONDS)
                 continue
 
@@ -109,6 +113,8 @@ def main() -> None:
                 process_job(job)
                 archive_job(engine, job["msg_id"])
                 logger.info("Job %s procesado y archivado en a_%s.", job["msg_id"], QUEUE_NAME)
+                if oneshot:
+                    return
             except Exception:
                 # No se archiva: el mensaje vuelve a quedar visible para reintentar
                 logger.exception(
@@ -123,4 +129,11 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    # Permite correr un solo job desde la terminal con --oneshot, util para pruebas
+    parser = argparse.ArgumentParser(description="Consume jobs del Detection Engine.")
+    parser.add_argument(
+        "--oneshot",
+        action="store_true",
+        help="Procesa un mensaje disponible y termina; no activa polling continuo.",
+    )
+    main(oneshot=parser.parse_args().oneshot)
