@@ -100,6 +100,7 @@ def main(oneshot: bool = False) -> None:
             # Lee el siguiente mensaje disponible en la cola
             job = read_next_job(engine)
 
+            # Sin mensajes: esperar y volver a preguntar
             if job is None:
                 # oneshot: cortar el loop en vez de seguir esperando mensajes
                 if oneshot:
