@@ -63,6 +63,7 @@ STATEMENTS_QUERY = """
 SELECT
     s.DIGEST                                                        AS query_id,
     s.DIGEST_TEXT                                                   AS query_text,
+    s.schema_name                                                     AS schema_name,
     CAST(s.COUNT_STAR AS SIGNED)                                    AS execution_count,
     CAST(s.SUM_ROWS_SENT AS SIGNED)                                 AS rows_returned,
     CAST(ROUND(s.SUM_ROWS_SENT / NULLIF(s.COUNT_STAR, 0), 6) AS DOUBLE)        AS avg_rows_per_call,
