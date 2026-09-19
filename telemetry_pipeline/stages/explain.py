@@ -20,6 +20,22 @@ class ExplainStage:
     def __init__(self, collector):
         self.collector = collector
 
+    @staticmethod
+    def _search_path_sql(schema_name, engine):
+        if not schema_name:
+            return "SET LOCAL search_path TO DEFAULT"
+        quoted = engine.dialect.identifier_preparer.quote(str(schema_name))
+        return f"SET LOCAL search_path TO {quoted}"
+
+    @staticmethod
+    def _schema_context_sql(schema_name, dialect, engine):
+        if dialect == "postgres":
+            return ExplainStage._search_path_sql(schema_name, engine)
+        if schema_name:
+            quoted = engine.dialect.identifier_preparer.quote(str(schema_name))
+            return f"USE {quoted}"
+        return None
+
     def execute(self, stats: Stats, conn):
         stats["query_explain"] = []
 
@@ -37,6 +53,14 @@ class ExplainStage:
                 continue
 
             try:
+                context_sql = self._schema_context_sql(
+                    query.get("schema_name"),
+                    self.collector.source_dialect,
+                    self.collector.engine,
+                )
+                if context_sql:
+                    conn.execute(text(context_sql))
+
                 if self.collector.source_dialect == "postgres":
                     result = conn.execute(text(f"EXPLAIN (FORMAT JSON) {query.get('query_text')}"))
                     stats["query_explain"].append({
