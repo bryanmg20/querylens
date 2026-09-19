@@ -49,6 +49,7 @@ services:
       --performance-schema-consumer-events-waits-current=ON
       --performance-schema-consumer-events-waits-history=ON
       --performance-schema-instrument='wait/io/table/sql/handler=ON'
+      --temptable_max_ram=1048576
     volumes:
       - ./init/init_mysql.sql:/docker-entrypoint-initdb.d/init_mysql.sql
       - mysql_data:/var/lib/mysql

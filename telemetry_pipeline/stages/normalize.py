@@ -3,7 +3,8 @@ import re
 import sqlglot
 from sqlglot import exp
 
-from . import canonicalizers
+from models.stats import Stats
+from stages import canonicalizers
 
 def _to_number(value):
     if value is None:
@@ -17,7 +18,7 @@ class NormalizeStage:
     def __init__(self, collector):
         self.collector = collector
 
-    def execute(self, stats):
+    def execute(self, stats: Stats) -> Stats:
         canonicalizers.anonimize_query_text(stats)
         canonicalizers.create_canonic_queries(
             stats,
@@ -29,7 +30,7 @@ class NormalizeStage:
         return stats
 
 
-def normalize_active_query_timestamps(stats):
+def normalize_active_query_timestamps(stats: Stats):
         for stmt in stats.get("active_queries") or []:
             ts = stmt.get("transaction_start_time")
             if ts is None:
@@ -37,7 +38,7 @@ def normalize_active_query_timestamps(stats):
             if isinstance(ts, datetime):
                 stmt["transaction_start_time"] = ts.replace(tzinfo=None).isoformat(sep=" ", timespec="microseconds")
 
-def normalize_blocking_pids(stats):
+def normalize_blocking_pids(stats: Stats):
         for query in stats.get("active_queries", []):
             blocking_pids = query.get("blocking_pids")
             if blocking_pids is not None:
@@ -45,7 +46,7 @@ def normalize_blocking_pids(stats):
             else:
                 query["blocking_pids"] = []
 
-def normalize_locks(stats):
+def normalize_locks(stats: Stats):
     for lock in stats.get("locks", []):
         is_granted = lock.get("is_granted")
         if is_granted == "GRANTED":
@@ -53,7 +54,7 @@ def normalize_locks(stats):
         elif is_granted == "WAITING":
             lock["is_granted"] = False
 
-def normalize_predicate(stats):
+def normalize_predicate(stats: Stats):
     for explain in stats.get("canonic_explains") or []:
         for operation in explain.get("canonical_plan", []).get("physical_operations", []):
             predicate = operation.get("predicate")

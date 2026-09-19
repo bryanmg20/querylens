@@ -16,7 +16,7 @@ POSTGRES=(
   --command
 )
 
-for _ in $(seq 1 100); do
+while true; do
   "${POSTGRES[@]}" "
     SET work_mem = '64kB';
     SELECT c, COUNT(*)

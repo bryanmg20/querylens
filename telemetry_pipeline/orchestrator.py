@@ -1,3 +1,4 @@
+from models.stats import Stats
 from stages.candidates import CandidatesStage
 from stages.collect import CollectStage
 from stages.enrich import EnrichStage
@@ -14,8 +15,8 @@ class Orchestrator:
         self.normalize = NormalizeStage(collector)
         self.enrich = EnrichStage(collector)
 
-    def run_pipeline(self):
-        stats = {}
+    def run_pipeline(self) -> Stats:
+        stats: Stats = {}
         with self.collector.engine.connect() as conn:
             self.collect.execute(stats, conn)
             if stats.get("statements") is not None:

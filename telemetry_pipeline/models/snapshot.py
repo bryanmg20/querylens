@@ -41,6 +41,7 @@ QueryId = Union[str, int, None]
 class StatementRow(BaseModel):
     query_id: QueryId
     query_text: str
+    schema_name: str | None = None
     execution_count: int
     rows_returned: int
     avg_rows_per_call: float | None = None

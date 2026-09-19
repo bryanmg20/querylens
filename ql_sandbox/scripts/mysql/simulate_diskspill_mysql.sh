@@ -11,11 +11,9 @@ MYSQL=(
   --database=ql_demo
 )
 
-for _ in $(seq 1 100); do
+while true; do
   "${MYSQL[@]}" --execute="
-    SET SESSION tmp_table_size = 1024;
-    SET SESSION max_heap_table_size = 1024;
-    SELECT c, COUNT(*) FROM sbtest1 GROUP BY c HAVING COUNT(*) > 0 ORDER BY c;
+    SELECT * FROM (SELECT DISTINCT c FROM sbtest1 LIMIT 100000) t ORDER BY t.c, RAND();
 " >/dev/null
 done
 
