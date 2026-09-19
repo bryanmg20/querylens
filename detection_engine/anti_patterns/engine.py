@@ -2,7 +2,11 @@ from collections.abc import Iterable
 
 from models import Hallazgo, Snapshot
 
-from .avoidable_full_scan import DEFAULT_MIN_ESTIMATED_ROWS, detect_avoidable_full_scans
+from .avoidable_full_scan import (
+    DEFAULT_MAX_SELECTIVITY,
+    DEFAULT_MIN_LIVE_ROWS,
+    detect_avoidable_full_scans,
+)
 from .disk_spill import detect_disk_spill
 from .non_sargable_predicate import detect_non_sargable_predicates
 
@@ -11,14 +15,16 @@ from .non_sargable_predicate import detect_non_sargable_predicates
 def detect_all(
     snapshot: Snapshot,
     rule: str | None = None,
-    min_estimated_rows: int = DEFAULT_MIN_ESTIMATED_ROWS,
+    min_live_rows: int = DEFAULT_MIN_LIVE_ROWS,
+    max_selectivity: float = DEFAULT_MAX_SELECTIVITY,
 ) -> list[Hallazgo]:
     # mapea nombre de regla -> funcion detectora, para poder seleccionarla por nombre
     detectors = {
         "disk_spill": detect_disk_spill,
         "avoidable_full_scan": lambda current_snapshot: detect_avoidable_full_scans(
             current_snapshot,
-            min_estimated_rows,
+            min_live_rows,
+            max_selectivity,
         ),
         "non_sargable_predicate": detect_non_sargable_predicates,
     }
@@ -28,7 +34,7 @@ def detect_all(
 
     return [
         *detect_disk_spill(snapshot),
-        *detect_avoidable_full_scans(snapshot, min_estimated_rows),
+        *detect_avoidable_full_scans(snapshot, min_live_rows, max_selectivity),
         *detect_non_sargable_predicates(snapshot),
     ]
 
