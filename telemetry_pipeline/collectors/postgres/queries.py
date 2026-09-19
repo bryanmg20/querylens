@@ -24,6 +24,7 @@ FROM pg_stat_user_tables;
 
 STATEMENTS_QUERY = """
 SELECT
+    userid AS userid,
     queryid AS query_id,
     query AS query_text,
     calls AS execution_count,
@@ -78,4 +79,50 @@ SELECT
     data_type    AS data_type
 FROM information_schema.columns
 WHERE table_schema NOT IN ('pg_catalog', 'information_schema');
+"""
+
+SCHEMA_RESOLVER_QUERY = """
+WITH role_search_paths AS (
+    SELECT
+        r.oid AS user_id,
+        r.rolname,
+        sp.schema_entry,
+        row_number() OVER (PARTITION BY r.oid ORDER BY sp.ordinality) AS priority
+    FROM pg_roles r
+    CROSS JOIN LATERAL unnest(
+        string_to_array(
+            COALESCE(
+                (SELECT regexp_replace(val, 'search_path=', '')
+                 FROM unnest(r.rolconfig) AS cfg(val)
+                 WHERE cfg.val LIKE 'search_path=%'),
+                '"$user", public'
+            ),
+            ','
+        )
+    ) WITH ORDINALITY AS sp(schema_entry)
+),
+normalized_paths AS (
+    SELECT
+        user_id,
+        rolname,
+        trim(replace(schema_entry, '"$user"', rolname)) AS schema_name,
+        priority
+    FROM role_search_paths
+),
+all_relations AS (
+    SELECT
+        n.nspname AS schema_name,
+        c.relname AS table_name
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relkind IN ('r', 'v', 'm', 'p')
+      AND n.nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+)
+SELECT DISTINCT ON (usp.user_id)
+    usp.user_id,
+    usp.rolname      AS username,
+    usp.schema_name  AS resolved_schema
+FROM normalized_paths usp
+JOIN all_relations t ON t.schema_name = usp.schema_name
+ORDER BY usp.user_id, usp.priority;
 """

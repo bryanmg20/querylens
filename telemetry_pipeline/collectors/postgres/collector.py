@@ -6,7 +6,8 @@ from .queries import (
     LOCKS_QUERY,
     ACTIVE_QUERIES_QUERY,
     STATS_RESET_QUERY,
-    COLUMNS_QUERY
+    COLUMNS_QUERY,
+    SCHEMA_RESOLVER_QUERY
 )
 import stages.normalize as normalize
 from models.stats import Stats
@@ -24,7 +25,8 @@ class Postgres_Collector(DB_Engine_Collector):
                         "locks": LOCKS_QUERY,
                         "active_queries": ACTIVE_QUERIES_QUERY,
                         "stats_reset_timestamp": STATS_RESET_QUERY,
-                        "columns": COLUMNS_QUERY
+                        "columns": COLUMNS_QUERY,
+                        "schema_resolver": SCHEMA_RESOLVER_QUERY
                         }
 
     def normalize_engine_artifacts(self, stats: Stats) -> Stats:

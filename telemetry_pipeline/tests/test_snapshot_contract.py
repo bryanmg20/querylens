@@ -95,6 +95,17 @@ def test_locks_boolean_coercion(mysql_snapshot):
         assert lock.is_granted is True or lock.is_granted is False
 
 
+def test_statements_carry_user_and_schema(postgres_snapshot, mysql_snapshot):
+    for stmt in mysql_snapshot["statements"]:
+        assert stmt["schema_name"] in (None, "ql_demo")
+        assert "userid" not in stmt
+    for stmt in postgres_snapshot["statements"]:
+        assert stmt["schema_name"] in (None, "public")
+        assert "userid" not in stmt
+    for top in postgres_snapshot["top_impact_queries"]:
+        assert "userid" not in top
+
+
 def test_active_queries_blocking_pids(mysql_snapshot, postgres_snapshot):
     for raw in (mysql_snapshot, postgres_snapshot):
         payload = SnapshotPayload.from_snapshot(raw)

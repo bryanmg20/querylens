@@ -4,7 +4,7 @@ import sqlglot
 from sqlglot import exp
 
 from models.stats import Stats
-from stages import canonicalizers
+from stages import canonicalizers, schema_resolver
 
 def _to_number(value):
     if value is None:
@@ -26,6 +26,8 @@ class NormalizeStage:
             clean_mysql=(self.collector.source_dialect == "mysql"),
         )
         stats = self.collector.normalize_engine_artifacts(stats)
+        if self.collector.source_dialect == "postgres":
+            schema_resolver.resolve_statements_schema(stats)
         canonicalizers.normalize_querytext_active(stats, self.collector.source_dialect)
         return stats
 
