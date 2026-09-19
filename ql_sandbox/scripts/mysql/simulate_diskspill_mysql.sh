@@ -11,7 +11,7 @@ MYSQL=(
   --database=ql_demo
 )
 
-for _ in $(seq 1 100); do
+while true; do
   "${MYSQL[@]}" --execute="
     SELECT * FROM (SELECT DISTINCT c FROM sbtest1 LIMIT 100000) t ORDER BY t.c, RAND();
 " >/dev/null

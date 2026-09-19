@@ -39,7 +39,7 @@
 # ============================================================
 
 TABLES=1         # number of tables sysbench creates per database
-TABLE_SIZE=10000000 # number of rows per table
+TABLE_SIZE=10000 # number of rows per table
 THREADS=4        # number of parallel connections during the run phase
 DURATION=120     # how many seconds the run phase lasts (2 minutes)
 
