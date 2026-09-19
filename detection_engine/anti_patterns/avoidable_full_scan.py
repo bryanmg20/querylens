@@ -1,32 +1,10 @@
-import sqlglot
-from sqlglot import exp
-
 from models import Hallazgo, Snapshot
+
+from .table_aliases import resolve_table_aliases
 
 
 DEFAULT_MIN_LIVE_ROWS = 10_000  # tabla considerada "grande" para este chequeo
 DEFAULT_MAX_SELECTIVITY = 0.1  # el predicado deja pasar como maximo el 10% de la tabla
-
-
-def resolve_table_aliases(canonic_query: str | None, dialect: str = "postgres") -> dict[str, str]:
-    # Mapea alias -> nombre real de tabla (canonic_query siempre viene en dialecto postgres)
-    if not canonic_query:
-        return {}
-
-    try:
-        ast = sqlglot.parse_one(canonic_query, read=dialect)
-    except Exception:
-        return {}
-
-    aliases: dict[str, str] = {}
-    for table in ast.find_all(exp.Table):
-        real_name = table.name
-        if not real_name:
-            continue
-        aliases[real_name] = real_name
-        if table.alias:
-            aliases[table.alias] = real_name
-    return aliases
 
 
 # Detecta full table scan sobre tabla grande + predicado selectivo
