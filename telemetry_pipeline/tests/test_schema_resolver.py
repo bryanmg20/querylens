@@ -1,11 +1,19 @@
 import pytest
 
+from stages.candidates import CandidatesStage
 from stages.schema_resolver import (
     _build_user_schema_map,
     resolve_statements_schema,
 )
 
 pytestmark = pytest.mark.unit
+
+
+class _FakePostgresCollector:
+    source_dialect = "postgres"
+
+    def preprocess_statements(self, stats):
+        return stats
 
 
 def test_build_user_schema_map_keeps_first_row_per_user():
@@ -129,3 +137,26 @@ def test_resolve_drops_userid_after_lookup():
     assert stats["statements"][0]["schema_name"] == "public"
     assert "userid" not in stats["statements"][0]
     assert "userid" not in stats["top_impact_queries"][0]
+
+
+def test_candidates_resolve_schema_before_explain():
+    stats = {
+        "schema_resolver": [
+            {"user_id": 10, "username": "ql_user", "resolved_schema": "public"},
+        ],
+        "active_queries": [],
+        "statements": [
+            {
+                "query_id": 1,
+                "query_text": "SELECT * FROM sbtest1",
+                "userid": 10,
+                "coeff_of_variation": 3.0,
+                "mean_time_ms": 50.0,
+            }
+        ],
+    }
+    CandidatesStage(_FakePostgresCollector()).execute(stats)
+    top = stats["top_impact_queries"][0]
+    assert top["schema_name"] == "public"
+    assert "userid" not in top
+    assert "schema_resolver" not in stats
