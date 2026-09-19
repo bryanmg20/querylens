@@ -5,7 +5,7 @@ from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from models import Hallazgo, Snapshot
-from detection_engine.anti_patterns.engine import detect_all
+from anti_patterns.engine import detect_all
 from querylens_connection import get_connection_querylens_db
 from logger import get_logger
 

@@ -4,6 +4,7 @@ from models import Hallazgo, Snapshot
 
 from .avoidable_full_scan import DEFAULT_MIN_ESTIMATED_ROWS, detect_avoidable_full_scans
 from .disk_spill import detect_disk_spill
+from .non_sargable_predicate import detect_non_sargable_predicates
 
 
 # Ejecuta un detector puntual por nombre, o todos si no se especifica ninguno
@@ -19,6 +20,7 @@ def detect_all(
             current_snapshot,
             min_estimated_rows,
         ),
+        "non_sargable_predicate": detect_non_sargable_predicates,
     }
 
     if rule is not None:
@@ -27,6 +29,7 @@ def detect_all(
     return [
         *detect_disk_spill(snapshot),
         *detect_avoidable_full_scans(snapshot, min_estimated_rows),
+        *detect_non_sargable_predicates(snapshot),
     ]
 
 
