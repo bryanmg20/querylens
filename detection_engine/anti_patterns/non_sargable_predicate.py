@@ -141,20 +141,34 @@ def _bare_column_and_literals_between(node: exp.Between) -> tuple[str, list[exp.
     return (target.name, literals) if literals else None
 
 
-# Postgres y MySQL arman index_ref con el mismo formato de DDL sintetico,
-# asi que un solo regex sirve para los dos: "... (col1, col2, ...)" al final
-_INDEX_COLUMNS_RE = re.compile(r"\(([^)]+)\)\s*$")
-
-
-def _index_lead_column(index_ref: str | None) -> str | None:
-    # Primera columna del indice, o None si no se pudo leer.
+def _index_lead_column(index_ref: str | None, dialect: str = "postgres") -> tuple[str | None, bool]:
+    # (columna lider, es_parcial). Columna en None si no se pudo leer o si es una
+    # expresion/opclass/etc (no una columna pelada). Parsea con sqlglot en vez
+    # de un regex sobre el texto: un regex de "ultimo parentesis" confunde la
+    # lista de columnas con WHERE (indice parcial) o INCLUDE, que pg_get_indexdef()
+    # puede sumar al mismo texto de index_ref.
     if not index_ref:
-        return None
-    match = _INDEX_COLUMNS_RE.search(index_ref)
-    if not match:
-        return None
-    columns = [c.strip().strip('`"') for c in match.group(1).split(",")]
-    return columns[0] if columns and columns[0] else None
+        return None, False
+
+    try:
+        tree = sqlglot.parse_one(index_ref, read=dialect)
+    except Exception as e:
+        logger.warning(
+            "_index_lead_column | no se pudo parsear index_ref | error=%s | texto=%.200s",
+            e, index_ref,
+        )
+        return None, False
+
+    index_node = tree.this if isinstance(tree, exp.Create) else tree
+    params = index_node.args.get("params") if isinstance(index_node, exp.Index) else None
+    columns = params.args.get("columns") if params else None
+    if not columns:
+        return None, False
+
+    is_partial = params.args.get("where") is not None
+    target = columns[0].this if isinstance(columns[0], exp.Ordered) else columns[0]
+    lead_column = target.name if isinstance(target, exp.Column) else None
+    return lead_column, is_partial
 
 
 def _index_exists_for_column(
@@ -166,6 +180,22 @@ def _index_exists_for_column(
     if not real_table or not column_name:
         return None
     return column_name in leading_columns_by_table.get(real_table, set())
+
+
+def _only_partial_index_for_column(
+    real_table: str | None,
+    column_name: str | None,
+    leading_columns_by_table: dict[str, set[str]],
+    full_leading_columns_by_table: dict[str, set[str]],
+) -> bool:
+    # True si la unica cobertura conocida de esta columna es via indice(s) parcial(es)
+    # (ninguno completo) -- el WHERE del indice puede no cubrir a esta query igual.
+    if not real_table or not column_name:
+        return False
+    return (
+        column_name in leading_columns_by_table.get(real_table, set())
+        and column_name not in full_leading_columns_by_table.get(real_table, set())
+    )
 
 
 def _detect_structural_issues_in_query(
@@ -346,19 +376,33 @@ def detect_non_sargable_predicates(snapshot: Snapshot) -> list[Hallazgo]:
         if column.table_name and column.column_name
     }
     leading_columns_by_table: dict[str, set[str]] = {}
+    full_leading_columns_by_table: dict[str, set[str]] = {}
     for index in snapshot.indexes:
-        lead_column = _index_lead_column(index.index_ref)
-        if index.table_name and lead_column:
-            leading_columns_by_table.setdefault(index.table_name, set()).add(lead_column)
+        lead_column, is_partial = _index_lead_column(index.index_ref)
+        if not index.table_name or not lead_column:
+            continue
+        leading_columns_by_table.setdefault(index.table_name, set()).add(lead_column)
+        if not is_partial:
+            full_leading_columns_by_table.setdefault(index.table_name, set()).add(lead_column)
 
-    def _explicacion_con_indice(subtipo: str, index_exists: bool | None) -> tuple[str, str]:
-        # avisa si la columna ya tiene indice (se neutraliza) o aun no tiene ninguno
+    def _explicacion_con_indice(subtipo: str, index_exists: bool | None, only_partial: bool) -> tuple[str, str]:
+        # avisa si la columna ya tiene indice (se neutraliza) o aun no tiene ninguno.
+        # index_exists solo reconoce indices sobre columnas peladas, no de expresion,
+        # asi que el aviso de "no existe" queda con esa salvedad en vez de afirmarlo.
         explicacion, recomendacion = _SUBTIPO_MENSAJES[subtipo]
         if index_exists is False:
             explicacion += (
-                " Ademas, la columna no tiene hoy un indice que la cubra como columna "
-                "principal: conviene corregir el predicado antes de crear uno, para no "
-                "terminar con un indice igual de inutilizable."
+                " No se detecto un indice sobre la columna simple que la cubra como "
+                "columna principal (esta deteccion no reconoce indices de expresion: si "
+                "ya existe uno equivalente a este predicado, revisar eso antes que nada). "
+                "Conviene corregir el predicado antes de crear un indice nuevo, para no "
+                "terminar con uno igual de inutilizable."
+            )
+        elif index_exists and only_partial:
+            explicacion += (
+                " El unico indice que cubre esta columna como principal es parcial (tiene "
+                "un WHERE): confirmar que esta consulta cae dentro de esa condicion antes "
+                "de asumir que ya esta resuelto."
             )
         return explicacion, recomendacion
 
@@ -371,7 +415,10 @@ def detect_non_sargable_predicates(snapshot: Snapshot) -> list[Hallazgo]:
                 candidate.canonic_query
             ):
                 index_exists = _index_exists_for_column(real_table, column_name, leading_columns_by_table)
-                explicacion, recomendacion = _explicacion_con_indice(subtipo, index_exists)
+                only_partial = _only_partial_index_for_column(
+                    real_table, column_name, leading_columns_by_table, full_leading_columns_by_table
+                )
+                explicacion, recomendacion = _explicacion_con_indice(subtipo, index_exists, only_partial)
                 findings.append(
                     Hallazgo(
                         antipatron="non_sargable_predicate",
@@ -415,7 +462,10 @@ def detect_non_sargable_predicates(snapshot: Snapshot) -> list[Hallazgo]:
 
             for subtipo, column_name in subtipos:
                 index_exists = _index_exists_for_column(real_table, column_name, leading_columns_by_table)
-                explicacion, recomendacion = _explicacion_con_indice(subtipo, index_exists)
+                only_partial = _only_partial_index_for_column(
+                    real_table, column_name, leading_columns_by_table, full_leading_columns_by_table
+                )
+                explicacion, recomendacion = _explicacion_con_indice(subtipo, index_exists, only_partial)
                 findings.append(
                     Hallazgo(
                         antipatron="non_sargable_predicate",
