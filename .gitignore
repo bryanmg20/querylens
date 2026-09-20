@@ -4,3 +4,6 @@ logs/
 .vscode
 draft/
 .env
+node_modules/
+.next/
+*.tsbuildinfo
