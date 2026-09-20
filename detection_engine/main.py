@@ -7,6 +7,7 @@ from sqlalchemy.engine import Engine
 from models import Hallazgo, Snapshot
 from anti_patterns.engine import detect_all
 from querylens_connection import get_connection_querylens_db
+from storage import ensure_hallazgos_table, save_findings
 from logger import get_logger
 
 logger = get_logger(__name__)
@@ -39,13 +40,13 @@ def archive_job(engine: Engine, msg_id: int) -> None:
 
 
 # Convierte el mensaje en un Snapshot, corre las reglas y reporta los hallazgos
-def process_job(job: dict) -> list[Hallazgo]:
+def process_job(engine: Engine, job: dict) -> list[Hallazgo]:
     msg_id = job["msg_id"]
     payload = job["message"]
     snapshot = Snapshot.from_dict(payload)
-    
-    # Obtiene hallazgos de la regla y los reporta en logs y stdout
-    findings = detect_all(snapshot, rule="disk_spill") # Por ahora solo se corre la regla de disk spill
+
+    # Corre las 4 reglas y los reporta en logs y stdout
+    findings = detect_all(snapshot)
 
     logger.info(
         "Job %s recibido | source=%s | enqueued_at=%s",
@@ -87,6 +88,8 @@ def process_job(job: dict) -> list[Hallazgo]:
         )
     print("----------------------------------\n")
 
+    save_findings(engine, snapshot.db_id, findings)
+
     return findings
 
 
@@ -94,6 +97,7 @@ def process_job(job: dict) -> list[Hallazgo]:
 def main(oneshot: bool = False) -> None:
     logger.info("Detection Engine iniciado. Escuchando cola '%s'...", QUEUE_NAME)
     engine = get_connection_querylens_db()
+    ensure_hallazgos_table(engine)
 
     try:
         while True:
@@ -111,7 +115,7 @@ def main(oneshot: bool = False) -> None:
 
             try:
                 # Flujo normal: procesar el job y archivarlo solo si no hubo errores
-                process_job(job)
+                process_job(engine, job)
                 archive_job(engine, job["msg_id"])
                 logger.info("Job %s procesado y archivado en a_%s.", job["msg_id"], QUEUE_NAME)
                 if oneshot:
