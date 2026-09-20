@@ -124,6 +124,7 @@ class CandidateStatement:
     query_id: QueryId | None = None
     query_text: str | None = None
     canonic_query: str | None = None
+    schema_name: str | None = None
     execution_count: int | None = None
     rows_returned: int | None = None
     avg_rows_per_call: float | None = None

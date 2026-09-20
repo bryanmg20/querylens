@@ -171,31 +171,61 @@ def _index_lead_column(index_ref: str | None, dialect: str = "postgres") -> tupl
     return lead_column, is_partial
 
 
+def _lookup_by_table(
+    mapping: dict[tuple[str | None, str], set[str]],
+    schema_name: str | None,
+    table_name: str,
+) -> tuple[set[str] | None, bool]:
+    # (columnas del match, es_ambiguo). Intenta la clave exacta con schema; si
+    # no hay, el fallback solo considera candidatos donde falta el dato de
+    # schema de algun lado (None) -- nunca dos schemas conocidos y distintos,
+    # ahi no hay ambiguedad, hay certeza de que son tablas distintas.
+    exact = mapping.get((schema_name, table_name))
+    if exact is not None:
+        return exact, False
+    candidates = [
+        columns for (sn, tn), columns in mapping.items()
+        if tn == table_name and (sn is None or schema_name is None)
+    ]
+    if len(candidates) == 1:
+        return candidates[0], False
+    return None, len(candidates) > 1
+
+
 def _index_exists_for_column(
     real_table: str | None,
     column_name: str | None,
-    leading_columns_by_table: dict[str, set[str]],
+    schema_name: str | None,
+    leading_columns_by_table: dict[tuple[str | None, str], set[str]],
 ) -> bool | None:
-    # True/False si se pudo determinar, None si falta tabla o columna para decidir.
+    # True/False si se pudo determinar, None si falta tabla/columna o el nombre
+    # de tabla es ambiguo entre schemas y no se puede saber cual es.
     if not real_table or not column_name:
         return None
-    return column_name in leading_columns_by_table.get(real_table, set())
+    columns, ambiguous = _lookup_by_table(leading_columns_by_table, schema_name, real_table)
+    if ambiguous:
+        return None
+    return column_name in (columns or set())
 
 
 def _only_partial_index_for_column(
     real_table: str | None,
     column_name: str | None,
-    leading_columns_by_table: dict[str, set[str]],
-    full_leading_columns_by_table: dict[str, set[str]],
+    schema_name: str | None,
+    leading_columns_by_table: dict[tuple[str | None, str], set[str]],
+    full_leading_columns_by_table: dict[tuple[str | None, str], set[str]],
 ) -> bool:
     # True si la unica cobertura conocida de esta columna es via indice(s) parcial(es)
     # (ninguno completo) -- el WHERE del indice puede no cubrir a esta query igual.
     if not real_table or not column_name:
         return False
-    return (
-        column_name in leading_columns_by_table.get(real_table, set())
-        and column_name not in full_leading_columns_by_table.get(real_table, set())
-    )
+    columns, ambiguous = _lookup_by_table(leading_columns_by_table, schema_name, real_table)
+    if ambiguous or column_name not in (columns or set()):
+        return False
+    full_columns, full_ambiguous = _lookup_by_table(full_leading_columns_by_table, schema_name, real_table)
+    if full_ambiguous:
+        return False  # no se puede confirmar que sea completo, mejor no afirmar "solo parcial"
+    return column_name not in (full_columns or set())
 
 
 def _detect_structural_issues_in_query(
@@ -259,10 +289,30 @@ def _detect_structural_issues_in_query(
     return found
 
 
+def _column_type_for(
+    column_types: dict[tuple[str | None, str, str], str],
+    schema_name: str | None,
+    table_name: str | None,
+    column_name: str | None,
+) -> str | None:
+    # Mismo criterio que _lookup_by_table (ver ahi el detalle del fallback).
+    if not table_name or not column_name:
+        return None
+    data_type = column_types.get((schema_name, table_name, column_name))
+    if data_type is not None:
+        return data_type
+    candidates = [
+        dt for (sn, tn, cn), dt in column_types.items()
+        if tn == table_name and cn == column_name and (sn is None or schema_name is None)
+    ]
+    return candidates[0] if len(candidates) == 1 else None
+
+
 def _detect_predicate_subtypes(
     predicate: str,
     real_table: str | None,
-    column_types: dict[tuple[str, str], str],
+    schema_name: str | None,
+    column_types: dict[tuple[str | None, str, str], str],
     dialect: str = "postgres",
 ) -> list[tuple[str, str | None]]:
     # Detecta las 4 formas de predicado no sargable en el AST del predicado real del plan.
@@ -310,7 +360,7 @@ def _detect_predicate_subtypes(
             bare = _bare_column_and_literal(comparison)
             if bare is not None:
                 column_name, literal = bare
-                is_non_numeric = _is_non_numeric_type(column_types.get((real_table, column_name)))
+                is_non_numeric = _is_non_numeric_type(_column_type_for(column_types, schema_name, real_table, column_name))
                 if is_non_numeric and not literal.is_string:
                     _add("implicit_cast", column_name)
 
@@ -332,7 +382,7 @@ def _detect_predicate_subtypes(
             bare_in = _bare_column_and_literals_in(in_node)
             if bare_in is not None:
                 column_name, literals = bare_in
-                is_non_numeric = _is_non_numeric_type(column_types.get((real_table, column_name)))
+                is_non_numeric = _is_non_numeric_type(_column_type_for(column_types, schema_name, real_table, column_name))
                 if is_non_numeric and any(not literal.is_string for literal in literals):
                     _add("implicit_cast", column_name)
 
@@ -352,7 +402,7 @@ def _detect_predicate_subtypes(
             bare_between = _bare_column_and_literals_between(between_node)
             if bare_between is not None:
                 column_name, literals = bare_between
-                is_non_numeric = _is_non_numeric_type(column_types.get((real_table, column_name)))
+                is_non_numeric = _is_non_numeric_type(_column_type_for(column_types, schema_name, real_table, column_name))
                 if is_non_numeric and any(not literal.is_string for literal in literals):
                     _add("implicit_cast", column_name)
 
@@ -370,20 +420,22 @@ def detect_non_sargable_predicates(snapshot: Snapshot) -> list[Hallazgo]:
         for explain in snapshot.canonic_explains
         if explain.get("query_id") is not None
     }
-    column_types = {
-        (column.table_name, column.column_name): column.data_type
+    # claves con schema para no confundir tablas homonimas de schemas distintos
+    column_types: dict[tuple[str | None, str, str], str] = {
+        (column.schema_name, column.table_name, column.column_name): column.data_type
         for column in snapshot.columns
         if column.table_name and column.column_name
     }
-    leading_columns_by_table: dict[str, set[str]] = {}
-    full_leading_columns_by_table: dict[str, set[str]] = {}
+    leading_columns_by_table: dict[tuple[str | None, str], set[str]] = {}
+    full_leading_columns_by_table: dict[tuple[str | None, str], set[str]] = {}
     for index in snapshot.indexes:
         lead_column, is_partial = _index_lead_column(index.index_ref)
         if not index.table_name or not lead_column:
             continue
-        leading_columns_by_table.setdefault(index.table_name, set()).add(lead_column)
+        key = (index.schema_name, index.table_name)
+        leading_columns_by_table.setdefault(key, set()).add(lead_column)
         if not is_partial:
-            full_leading_columns_by_table.setdefault(index.table_name, set()).add(lead_column)
+            full_leading_columns_by_table.setdefault(key, set()).add(lead_column)
 
     def _explicacion_con_indice(subtipo: str, index_exists: bool | None, only_partial: bool) -> tuple[str, str]:
         # avisa si la columna ya tiene indice (se neutraliza) o aun no tiene ninguno.
@@ -411,12 +463,16 @@ def detect_non_sargable_predicates(snapshot: Snapshot) -> list[Hallazgo]:
 
         if explain is None:
             # sin EXPLAIN: respaldo por texto, solo 2 subtipos
+            tables = sorted(set(resolve_table_aliases(candidate.canonic_query).values()))
             for subtipo, real_table, column_name, fragmento in _detect_structural_issues_in_query(
                 candidate.canonic_query
             ):
-                index_exists = _index_exists_for_column(real_table, column_name, leading_columns_by_table)
+                index_exists = _index_exists_for_column(
+                    real_table, column_name, candidate.schema_name, leading_columns_by_table
+                )
                 only_partial = _only_partial_index_for_column(
-                    real_table, column_name, leading_columns_by_table, full_leading_columns_by_table
+                    real_table, column_name, candidate.schema_name,
+                    leading_columns_by_table, full_leading_columns_by_table,
                 )
                 explicacion, recomendacion = _explicacion_con_indice(subtipo, index_exists, only_partial)
                 findings.append(
@@ -427,6 +483,8 @@ def detect_non_sargable_predicates(snapshot: Snapshot) -> list[Hallazgo]:
                             "query_id": candidate.query_id,
                             "query_text": candidate.query_text,
                             "canonic_query": candidate.canonic_query,
+                            "schema_name": candidate.schema_name,
+                            "tables": tables,
                             "subtipo": subtipo,
                             "predicate": fragmento,
                             "relation": real_table,
@@ -458,12 +516,15 @@ def detect_non_sargable_predicates(snapshot: Snapshot) -> list[Hallazgo]:
 
             relation = operation.get("relation")
             real_table = alias_map.get(relation, relation)
-            subtipos = _detect_predicate_subtypes(predicate, real_table, column_types)
+            subtipos = _detect_predicate_subtypes(predicate, real_table, candidate.schema_name, column_types)
 
             for subtipo, column_name in subtipos:
-                index_exists = _index_exists_for_column(real_table, column_name, leading_columns_by_table)
+                index_exists = _index_exists_for_column(
+                    real_table, column_name, candidate.schema_name, leading_columns_by_table
+                )
                 only_partial = _only_partial_index_for_column(
-                    real_table, column_name, leading_columns_by_table, full_leading_columns_by_table
+                    real_table, column_name, candidate.schema_name,
+                    leading_columns_by_table, full_leading_columns_by_table,
                 )
                 explicacion, recomendacion = _explicacion_con_indice(subtipo, index_exists, only_partial)
                 findings.append(
@@ -474,6 +535,8 @@ def detect_non_sargable_predicates(snapshot: Snapshot) -> list[Hallazgo]:
                             "query_id": candidate.query_id,
                             "query_text": candidate.query_text,
                             "canonic_query": candidate.canonic_query,
+                            "schema_name": candidate.schema_name,
+                            "tables": sorted(set(alias_map.values())),
                             "subtipo": subtipo,
                             "predicate": predicate,
                             "relation": relation,

@@ -119,16 +119,20 @@ def _used_index_names(snapshot: Snapshot) -> set[str]:
     }
 
 
-def _collect_query_traffic(snapshot: Snapshot) -> tuple[dict[str, list[dict]], set[str]]:
+def _collect_query_traffic(
+    snapshot: Snapshot,
+) -> tuple[dict[tuple[str | None, str], list[dict]], set[tuple[str | None, str]]]:
     # Un solo recorrido de top_impact_queries: que tablas tienen trafico real, y
     # cuales full scans filtran por que columna (para priorizar "no usado" mas abajo).
+    # Clave (schema_name, tabla): schema_name es el de la query completa
+    # (candidate.schema_name), no por tabla individual dentro de ella.
     explains_by_query_id = {
         explain.get("query_id"): explain
         for explain in snapshot.canonic_explains
         if explain.get("query_id") is not None
     }
-    full_scan_columns_by_table: dict[str, list[dict]] = {}
-    tables_with_traffic: set[str] = set()
+    full_scan_columns_by_table: dict[tuple[str | None, str], list[dict]] = {}
+    tables_with_traffic: set[tuple[str | None, str]] = set()
 
     for candidate in snapshot.top_impact_queries:
         explain = explains_by_query_id.get(candidate.query_id)
@@ -143,11 +147,12 @@ def _collect_query_traffic(snapshot: Snapshot) -> tuple[dict[str, list[dict]], s
             if not relation:
                 continue
             real_table = alias_map.get(relation, relation)
-            tables_with_traffic.add(real_table)
+            key = (candidate.schema_name, real_table)
+            tables_with_traffic.add(key)
 
             if operation.get("access_method") != "full_table_scan":
                 continue
-            full_scan_columns_by_table.setdefault(real_table, []).append({
+            full_scan_columns_by_table.setdefault(key, []).append({
                 "query_id": candidate.query_id,
                 "columns": _predicate_columns(operation.get("predicate")),
                 "execution_count": candidate.execution_count,
@@ -157,11 +162,44 @@ def _collect_query_traffic(snapshot: Snapshot) -> tuple[dict[str, list[dict]], s
     return full_scan_columns_by_table, tables_with_traffic
 
 
+def _traffic_for_table(
+    tables_with_traffic: set[tuple[str | None, str]],
+    schema_name: str | None,
+    table_name: str,
+) -> bool:
+    # Match exacto con schema; si no hay, el fallback solo aplica cuando falta
+    # el dato de schema de alguno de los dos lados (None) -- nunca cuando los
+    # dos son conocidos pero distintos, ahi no hay ambiguedad real, hay certeza
+    # de que son tablas distintas.
+    if (schema_name, table_name) in tables_with_traffic:
+        return True
+    candidates = [
+        sn for sn, tn in tables_with_traffic
+        if tn == table_name and (sn is None or schema_name is None)
+    ]
+    return len(candidates) == 1
+
+
+def _full_scan_entries_for_table(
+    full_scan_columns_by_table: dict[tuple[str | None, str], list[dict]],
+    schema_name: str | None,
+    table_name: str,
+) -> list[dict]:
+    exact = full_scan_columns_by_table.get((schema_name, table_name))
+    if exact is not None:
+        return exact
+    candidates = [
+        entries for (sn, tn), entries in full_scan_columns_by_table.items()
+        if tn == table_name and (sn is None or schema_name is None)
+    ]
+    return candidates[0] if len(candidates) == 1 else []
+
+
 def _detect_unused(
     snapshot: Snapshot,
     used_index_names: set[str],
-    full_scan_columns_by_table: dict[str, list[dict]],
-    tables_with_traffic: set[str],
+    full_scan_columns_by_table: dict[tuple[str | None, str], list[dict]],
+    tables_with_traffic: set[tuple[str | None, str]],
 ) -> list[Hallazgo]:
     findings = []
     for index in snapshot.indexes:
@@ -173,14 +211,14 @@ def _detect_unused(
 
         # queries reales que escanean completa esta tabla filtrando justo por
         # la columna que este indice cubriria: la evidencia mas fuerte posible
-        affected = [
-            entry for entry in full_scan_columns_by_table.get(index.table_name, [])
-            if lead_column and lead_column in entry["columns"]
-        ]
+        affected = []
+        if index.table_name:
+            entries = _full_scan_entries_for_table(full_scan_columns_by_table, index.schema_name, index.table_name)
+            affected = [entry for entry in entries if lead_column and lead_column in entry["columns"]]
 
         if affected:
             severidad = "high"
-        elif index.table_name in tables_with_traffic:
+        elif index.table_name and _traffic_for_table(tables_with_traffic, index.schema_name, index.table_name):
             severidad = "medium"  # la tabla tiene trafico, pero no via esta columna
         else:
             severidad = "low"  # nadie toca esta tabla en la ventana capturada
@@ -228,15 +266,16 @@ def _detect_unused(
 
 
 def _detect_redundant(snapshot: Snapshot, used_index_names: set[str]) -> list[Hallazgo]:
-    # Estructural: agrupa por tabla y compara columnas lider como prefijo. No
-    # depende de trafico para detectar, solo para calibrar la severidad.
-    by_table: dict[str, list] = {}
+    # Estructural: agrupa por (schema, tabla) y compara columnas lider como
+    # prefijo. Cada IndexStat ya trae su propio schema_name, sin ambiguedad
+    # posible aca (a diferencia del trafico de queries, esto no necesita fallback).
+    by_table: dict[tuple[str | None, str], list] = {}
     for index in snapshot.indexes:
         if index.table_name and index.index_ref:
-            by_table.setdefault(index.table_name, []).append(index)
+            by_table.setdefault((index.schema_name, index.table_name), []).append(index)
 
     findings = []
-    for table_name, indexes in by_table.items():
+    for (_, table_name), indexes in by_table.items():
         for narrow in indexes:
             narrow_method, narrow_columns, is_unique, narrow_is_partial = _parse_index_ref(narrow.index_ref)
             # sin columnas, o con una columna de expresion sin resolver (None):

@@ -20,12 +20,27 @@ def detect_avoidable_full_scans(
         for explain in snapshot.canonic_explains
         if explain.get("query_id") is not None
     }
-    # tamano real de cada tabla, para calcular selectividad mas abajo
-    live_rows_by_table = {
-        table.table_name: table.live_rows
-        for table in snapshot.tables
-        if table.table_name and table.live_rows is not None
-    }
+    # tamano real de cada tabla, para calcular selectividad mas abajo. Clave con
+    # schema para no confundir tablas homonimas de schemas distintos
+    live_rows_by_table: dict[tuple[str | None, str], int] = {}
+    for table in snapshot.tables:
+        if table.table_name and table.live_rows is not None:
+            live_rows_by_table[(table.schema_name, table.table_name)] = table.live_rows
+
+    def _live_rows_for(schema_name: str | None, table_name: str | None) -> int | None:
+        if not table_name:
+            return None
+        live_rows = live_rows_by_table.get((schema_name, table_name))
+        if live_rows is not None:
+            return live_rows
+        # el fallback solo aplica si falta el dato de schema de algun lado (None):
+        # si los dos son conocidos pero distintos, no es ambiguedad, es certeza
+        # de que son tablas distintas -- no hay que puentearlas
+        candidates = [
+            lr for (sn, tn), lr in live_rows_by_table.items()
+            if tn == table_name and (sn is None or schema_name is None)
+        ]
+        return candidates[0] if len(candidates) == 1 else None
 
     for candidate in snapshot.top_impact_queries:
         explain = explains_by_query_id.get(candidate.query_id)
@@ -41,7 +56,7 @@ def detect_avoidable_full_scans(
             relation = operation.get("relation")
             real_table = alias_map.get(relation, relation)
 
-            live_rows = live_rows_by_table.get(real_table)
+            live_rows = _live_rows_for(candidate.schema_name, real_table)
             # sin dato de la tabla, o tabla chica: el costo de un indice ahi no compensa
             if live_rows is None or live_rows < min_live_rows:
                 continue
@@ -61,6 +76,8 @@ def detect_avoidable_full_scans(
                         "query_id": candidate.query_id,
                         "query_text": candidate.query_text,
                         "canonic_query": candidate.canonic_query,
+                        "schema_name": candidate.schema_name,
+                        "tables": sorted(set(alias_map.values())),
                         "relation": relation,
                         "predicate": operation.get("predicate"),
                         "estimated_rows": estimated_rows,

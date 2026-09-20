@@ -24,6 +24,7 @@ def detect_disk_spill(snapshot: Snapshot) -> list[Hallazgo]:
                     "query_id": candidate.query_id,
                     "query_text": candidate.query_text,
                     "canonic_query": candidate.canonic_query,
+                    "schema_name": candidate.schema_name,
                     "disk_spill_indicator": candidate.disk_spill_indicator,
                     "tables": tables,
                     "mean_time_ms": candidate.mean_time_ms,
