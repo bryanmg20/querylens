@@ -141,6 +141,47 @@ def test_mysql_uses_min_duration_seconds(tmp_path):
     assert candidate["real_query_found"] is True
 
 
+def test_postgres_placeholder_without_params_left_not_found(tmp_path):
+    path = tmp_path / "postgresql.log"
+    cols = [""] * 23
+    cols[0] = "2026-09-16 10:00:00.000 UTC"
+    cols[13] = "duration: 150.000 ms  execute sbstmt-1: UPDATE sbtest1 SET k=k+1 WHERE id=$1\n"
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        csv.writer(f).writerow(cols)
+    stage = LogsBackfillStage(
+        _FakeCollector("postgres"),
+        log_sources={"postgres": {"enabled": True, "path": str(path), "min_duration_ms": 100}},
+    )
+    candidate = _candidate(query_text="UPDATE sbtest1 SET k=k+1 WHERE id=$1")
+    stats = _stats(candidate)
+
+    stage.execute(stats)
+
+    assert candidate["real_query_found"] is False
+    assert candidate["query_text"] == "UPDATE sbtest1 SET k=k+1 WHERE id=$1"
+
+
+def test_postgres_placeholder_with_params_matches(tmp_path):
+    path = tmp_path / "postgresql.log"
+    cols = [""] * 23
+    cols[0] = "2026-09-16 10:00:00.000 UTC"
+    cols[13] = "duration: 150.000 ms  execute sbstmt-1: UPDATE sbtest1 SET k=k+1 WHERE id=$1\n"
+    cols[14] = "parameters: $1 = '4983'"
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        csv.writer(f).writerow(cols)
+    stage = LogsBackfillStage(
+        _FakeCollector("postgres"),
+        log_sources={"postgres": {"enabled": True, "path": str(path), "min_duration_ms": 100}},
+    )
+    candidate = _candidate(query_text="UPDATE sbtest1 SET k=k+1 WHERE id=$1")
+    stats = _stats(candidate)
+
+    stage.execute(stats)
+
+    assert candidate["real_query_found"] is True
+    assert candidate["query_params"] == {1: "4983"}
+
+
 def test_mysql_entry_below_threshold_not_matched(tmp_path):
     path = tmp_path / "ql-slow.log"
     path.write_text(

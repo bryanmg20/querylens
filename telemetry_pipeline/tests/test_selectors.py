@@ -88,10 +88,11 @@ def test_candidate_without_text_skipped():
     assert stats["non_explainable_candidates"] == []
 
 
-def test_explain_ready_marks_real_query():
+def test_explain_ready_starts_unresolved():
     stats = {
         "top_impact_queries": [
             {"query_id": 1, "query_text": "old text"},
+            {"query_id": 2, "query_text": "x"},
         ],
         "active_queries": [
             {"query_id": 1, "query_text": "live text"},
@@ -99,9 +100,9 @@ def test_explain_ready_marks_real_query():
         ],
     }
     select_explain_ready(stats)
-    ready = stats["top_impact_queries"][0]
-    assert ready["real_query_found"] is True
-    assert ready["query_text"] == "live text"
+    for ready in stats["top_impact_queries"]:
+        assert ready["real_query_found"] is False
+    assert stats["top_impact_queries"][0]["query_text"] == "old text"
 
 
 def test_explain_ready_default_false():

@@ -1,11 +1,22 @@
 from pathlib import Path
+import re
 
 from config.logs import LOG_SOURCES
 from logger import get_logger
 from models.stats import Stats
-from stages import canonicalizers, log_reader
+from stages import log_reader
 
 logger = get_logger(__name__)
+
+
+def params_complete_for_explain(query_text, params, dialect) -> bool:
+    if dialect != "postgres":
+        return True
+    placeholders = set(int(m) for m in re.findall(r"\$(\d+)", query_text or ""))
+    if not placeholders:
+        return True
+    have = set(params or {})
+    return placeholders.issubset(have)
 
 
 class LogsBackfillStage:
@@ -48,13 +59,21 @@ class LogsBackfillStage:
             if not query_text:
                 continue
 
-            canonical = canonicalizers.canonicalize_query(query_text, dialect)
+            canonical = log_reader.fast_signature(query_text)
             entry = index.get(canonical)
             if entry is None:
                 continue
 
+            if not params_complete_for_explain(entry.raw_text, entry.params, dialect):
+                logger.warning(
+                    f"{dialect} | log_backfill | query_id={candidate.get('query_id')} "
+                    "| log row lacks parameter values; left as not found"
+                )
+                continue
+
             candidate["real_query_found"] = True
             candidate["query_text"] = entry.raw_text
+            candidate["query_params"] = entry.params
             matched += 1
 
         if matched:
