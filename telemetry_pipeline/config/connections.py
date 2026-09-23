@@ -61,8 +61,10 @@ def get_connection_mysql() -> Engine:
         raise RuntimeError(f"Error connecting to MySQL: {e}")
 
 
-env_path = Path(__file__).resolve().parent.parent / ".env"
-load_dotenv(dotenv_path=env_path)
+_env_path = Path(__file__).resolve().parents[2] / ".env"
+if not _env_path.exists():
+    _env_path = Path(__file__).resolve().parent.parent / ".env"
+load_dotenv(dotenv_path=_env_path, override=True)
 
 
 def get_connection_querylens_db() -> Engine:
