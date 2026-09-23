@@ -17,9 +17,15 @@ services:
         -c log_lock_waits=on
         -c deadlock_timeout=1s
         -c shared_buffers=16MB
+        -c logging_collector=on
+        -c log_destination=csvlog
+        -c log_directory=/pg_logs
+        -c log_filename=postgresql.log
+        -c log_min_duration_statement=100
     volumes:
       - ./init/init_postgres.sql:/docker-entrypoint-initdb.d/init_postgres.sql
       - postgres_data:/var/lib/postgresql/data
+      - ./pg_logs:/pg_logs
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ql_user -d ql_demo"]
       interval: 5s
@@ -50,9 +56,14 @@ services:
       --performance-schema-consumer-events-waits-history=ON
       --performance-schema-instrument='wait/io/table/sql/handler=ON'
       --temptable_max_ram=1048576
+      --slow-query-log=ON
+      --slow-query-log-file=/mysql_logs/ql-slow.log
+      --long-query-time=1
+      --log-output=FILE
     volumes:
       - ./init/init_mysql.sql:/docker-entrypoint-initdb.d/init_mysql.sql
       - mysql_data:/var/lib/mysql
+      - ./mysql_logs:/mysql_logs
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pql_root"]
       interval: 5s

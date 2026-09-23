@@ -50,3 +50,17 @@ DURATION=120     # segundos de carga
 ```bash
 docker compose down -v
 ```
+
+## Logs de queries lentas (fuente del pipeline)
+
+El sandbox deja los **logs de statements reales** en bind mounts locales que el pipeline lee:
+
+| Motor | Configuración | Archivo local |
+|-------|---------------|---------------|
+| PostgreSQL | `log_min_duration_statement=100` (ms) + `log_destination=csvlog` | `pg_logs/postgresql.log` |
+| MySQL | `slow_query_log=ON`, `long_query_time=1` (s), `log_output=FILE` | `mysql_logs/ql-slow.log` |
+
+Estos umbrales son los del sandbox de desarrollo. Bájalo si las queries simuladas no se capturan
+(por ej. PG `50`, MySQL `0.2`), o súbelos en producción. El pipeline lee los dos con
+`telemetry_pipeline/config/logs.py`; si el archivo no existe o no matchea, avanza sin él.
+Recrea los contenedores (`docker compose up -d --force-recreate`) tras cambiar los umbrales.

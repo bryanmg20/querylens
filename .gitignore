@@ -4,3 +4,5 @@ logs/
 .vscode
 draft/
 .env
+ql_sandbox/pg_logs/
+ql_sandbox/mysql_logs/
