@@ -8,8 +8,12 @@
 # from the logs.
 #
 # USAGE (from the sysbench container):
-#   bash /scripts/battery.sh [REPS]
+#   bash /scripts/battery.sh [REPS] [NOISE]
 #   (default REP iteration count per query = 50)
+#   NOISE = cuantas queries baratas por motor se ejecutan DESPUES de la
+#   bateria, para simular produccion: el log sigue creciendo con trafico
+#   que NO entra al top-impact mientras el pipeline debe seguir encontrando
+#   las queries heavy por firma. Default 0 (sin ruido).
 #
 # It also gives a CLEAN measurement window:
 #   - truncates both logs (pg csvlog + mysql slow log)
@@ -20,6 +24,7 @@
 set -euo pipefail
 
 REPS="${1:-50}"
+NOISE="${2:-0}"
 
 export PGPASSWORD=ql_pass
 
@@ -57,5 +62,22 @@ for i in $(seq 1 "$REPS"); do
   done
   if (( i % 5 == 0 )); then echo "  rep $i/$REPS"; fi
 done
+
+if (( NOISE > 0 )); then
+  echo ">>> Running $NOISE cheap queries per engine (log filler, out of top impact)..."
+  NOISE_QUERIES=(
+    "SELECT c FROM sbtest1 WHERE id = $((RANDOM % 10000 + 1));"
+    "SELECT k FROM sbtest1 WHERE id BETWEEN $((RANDOM % 8000 + 1)) AND $((RANDOM % 8000 + 150));"
+    "SELECT id FROM sbtest1 WHERE k > $((RANDOM % 500));"
+    "SELECT pad FROM sbtest1 WHERE id = $((RANDOM % 10000 + 1));"
+    "SELECT k, c FROM sbtest1 WHERE id = $((RANDOM % 10000 + 1));"
+  )
+  for i in $(seq 1 "$NOISE"); do
+    q="${NOISE_QUERIES[$((i % ${#NOISE_QUERIES[@]}))]}"
+    "${PSQL[@]}" "$q" >/dev/null &
+    "${MYSQL[@]}" "$q" >/dev/null &
+    wait
+  done
+fi
 
 echo ">>> Battery done."

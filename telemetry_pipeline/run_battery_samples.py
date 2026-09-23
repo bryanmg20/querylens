@@ -4,6 +4,7 @@ import statistics
 import subprocess
 import sys
 from collections import Counter
+from datetime import datetime, timezone
 
 import sqlglot
 from sqlglot import exp
@@ -12,9 +13,12 @@ from sqlalchemy import text
 PIPELINE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, PIPELINE)
 from config.connections import get_connection_querylens_db
+from config.logs import LOG_SOURCES
+from stages.log_reader import fast_signature, parse_mysql_slow_log, parse_pg_csvlog
 
 SAMPLES = int(sys.argv[1]) if len(sys.argv) > 1 else 10
 REPS = sys.argv[2] if len(sys.argv) > 2 else "30"
+NOISE = sys.argv[3] if len(sys.argv) > 3 else "150"
 PY = os.path.join(PIPELINE, "venv", "Scripts", "python.exe")
 
 NUMERIC_HINTS = ("int", "float", "decimal", "numeric", "double", "real", "smallserial", "bigserial")
@@ -112,7 +116,8 @@ def engine_stats():
 
 def run_sample(i):
     agg = {}
-    subprocess.run(["docker", "exec", "ql_sysbench", "bash", "/scripts/battery.sh", REPS], check=True)
+    os.environ["QL_LOG_SINCE"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    subprocess.run(["docker", "exec", "ql_sysbench", "bash", "/scripts/battery.sh", REPS, NOISE], check=True)
     subprocess.run([PY, os.path.join(PIPELINE, "main.py")], check=True)
 
     with get_connection_querylens_db().connect() as conn:
@@ -155,6 +160,50 @@ def run_sample(i):
               f"({100 * found / max(1, total):.0f}%) explains={explains}", flush=True)
 
     return agg
+
+
+def realism_check():
+    """Verifica que las top-impact se encuentran aunque el final del log sea ruido."""
+    print("\n" + "=" * 72)
+    print("VERIFICACION REALISTA (log con trafico de ruido tras las top-impact)")
+    print("=" * 72)
+    with get_connection_querylens_db().connect() as conn:
+        rows = conn.execute(
+            text("SELECT message FROM pgmq.q_analyze_job ORDER BY msg_id DESC LIMIT 2")
+        ).mappings().all()
+
+    perr = {"postgres": parse_pg_csvlog, "mysql": parse_mysql_slow_log}
+    parsers = {"postgres": "postgres", "mysql": "mysql"}
+    for r in rows:
+        payload = r["message"]
+        if isinstance(payload, (str, bytes, bytearray)):
+            payload = json.loads(payload)
+        e = "postgres" if payload.get("top_impact_queries") and isinstance(
+            payload["top_impact_queries"][0].get("query_id"), int) else "mysql"
+        path = LOG_SOURCES[parsers[e]]["path"]
+        entries = perr[e](path, since=os.environ.get("QL_LOG_SINCE"))
+        positions = {}
+        for i, ent in enumerate(entries):
+            positions.setdefault(ent.canonical_text, []).append(i)
+
+        locs = []
+        for cand in payload.get("top_impact_queries") or []:
+            if not cand.get("real_query_found"):
+                continue
+            sig = fast_signature(cand.get("query_text"))
+            idxs = positions.get(sig, [])
+            if idxs:
+                locs.append(idxs[-1])
+
+        n = len(entries) or 1
+        pct = [100 * (i + 1) / n for i in locs]
+        found = len(locs)
+        early = sum(p < 85 for p in pct)
+        after_last = (n - 1 - max(locs)) if locs else 0
+        print(f"  {e}: {n} entradas en ventana | top-impact encontradas: {found} | "
+              f"percentil medio={statistics.mean(pct) if pct else 0:.0f}% "
+              f"(min {min(pct) if pct else 0:.0f}) | enterradas no al final: {early}/{found} | "
+              f"trafico escrito DESPUES de la ultima top-impact: {after_last}")
 
 
 def print_final(agg):
@@ -219,6 +268,20 @@ def main():
                 b["found"] += o["found"]
             base["misses"] += st["misses"]
     print_final(agg)
+
+    try:
+        realism_check()
+    except Exception as ex:
+        print(f"  ERROR en verificacion realista: {ex}")
+
+    print("\n" + "=" * 72)
+    print("  SOBRECOSTO DEL PIPELINE SOBRE LAS DBS (perfil rapido)")
+    print("=" * 72)
+    import measure_overhead
+    try:
+        measure_overhead.run(quick=True, reps=10)
+    except Exception as ex:
+        print(f"  ERROR midiendo overhead: {ex}")
 
 
 if __name__ == "__main__":
