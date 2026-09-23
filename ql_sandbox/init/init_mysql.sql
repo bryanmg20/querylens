@@ -18,6 +18,10 @@ GRANT SELECT ON *.* TO 'querylens_monitor'@'%';
 GRANT PROCESS ON *.* TO 'querylens_monitor'@'%';
 GRANT REPLICATION CLIENT ON *.* TO 'querylens_monitor'@'%';
 
+-- Permisos DML para EXPLAIN de sentencias de escritura:
+-- MySQL exige el privilegio sobre la tabla aunque EXPLAIN no ejecute la modificación.
+GRANT INSERT, UPDATE, DELETE ON `ql_demo`.* TO 'querylens_monitor'@'%';
+
 -- ⚠️ NO GRANT EN information_schema - NO ES NECESARIO
 -- Los permisos de información de esquemas se heredan automáticamente
 
