@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 import re
 
 from config.logs import LOG_SOURCES
@@ -45,6 +46,7 @@ class LogsBackfillStage:
                 dialect,
                 path,
                 min_duration_ms=self._effective_min_duration_ms(cfg),
+                since=os.getenv("QL_LOG_SINCE"),
             )
         except Exception as e:
             logger.error(f"{dialect} | log_backfill | {e}")

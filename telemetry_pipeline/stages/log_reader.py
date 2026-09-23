@@ -1,7 +1,10 @@
 import csv
+import io
+import os
 import re
 import sys
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 
 from stages import canonicalizers
@@ -19,6 +22,68 @@ PG_DURATION_RE = re.compile(
 PG_PARAMS_RE = re.compile(r"\$(\d+)\s*=\s*((?:'[^']*(?:''[^']*)*')|[^,]+)")
 
 MAX_PARSE_ROWS = 500000
+
+# Cuantas lineas fisicas del final de cada log se leen por ciclo. Como el log
+# crece sin fin, se preserva lo RECIENTE (cola) en vez de lo viejo (cabeza).
+LOG_TAIL_LINES = int(os.getenv("QL_LOG_TAIL_LINES", "200000"))
+
+# Primera columna del csvlog de PostgreSQL (log_time) para detectar filas validas
+PG_ROW_START = re.compile(r"^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+")
+
+_T_READER_CHUNK = 1 << 20
+
+
+def _parse_log_time(raw):
+    """Normaliza el log_time a datetime naive UTC (None si no se puede)."""
+    if not raw:
+        return None
+    norm = raw.strip().replace("Z", "").replace(" UTC", "").replace("+00:00", "")
+    for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S.%f",
+                "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"):
+        try:
+            return datetime.strptime(norm[:26], fmt)
+        except ValueError:
+            continue
+    return None
+
+
+def _since_dt(since):
+    if not since:
+        return None
+    s = since.strip().replace("Z", "").replace(" UTC", "").replace("+00:00", "")
+    for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S.%f",
+                "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"):
+        try:
+            return datetime.strptime(s[:26], fmt)
+        except ValueError:
+            continue
+    return None
+
+
+def _read_tail_lines(path, n) -> list:
+    """Ultimas n lineas fisicas del archivo, leyendo desde el final por bloques."""
+    path = Path(path)
+    size = path.stat().st_size
+    if size == 0:
+        return []
+
+    with open(path, "rb") as f:
+        f.seek(0, os.SEEK_END)
+        pos = f.tell()
+        buf = b""
+        while buf.count(b"\n") < n and pos > 0:
+            step = min(_T_READER_CHUNK, pos)
+            pos -= step
+            f.seek(pos)
+            buf = f.read(step) + buf
+
+    if not buf:
+        return []
+    lines = buf.split(b"\n")
+    if pos > 0:
+        lines = lines[1:]  # primera pieza es una linea cortada -> descartar
+    lines = lines[-n:]
+    return [ln.decode("utf-8", errors="replace") for ln in lines]
 
 
 def fast_signature(query_text) -> str:
@@ -100,55 +165,69 @@ def _statement_from_message(message):
     return duration_ms, query_text
 
 
-def parse_pg_csvlog(path) -> list:
+def parse_pg_csvlog(path, tail_lines=LOG_TAIL_LINES, max_rows=MAX_PARSE_ROWS, since=None) -> list:
     entries = []
     path = Path(path)
 
-    with open(path, "r", encoding="utf-8") as f:
-        reader = csv.reader(f)
-        for row_count, row in enumerate(reader):
-            if row_count >= MAX_PARSE_ROWS:
-                break
-            if not row:
+    lines = _read_tail_lines(path, tail_lines)
+    cleaned = []
+    for line in lines:
+        if not cleaned and not PG_ROW_START.match(line):
+            continue  # descartar fila cortada en la frontera de la cola
+        cleaned.append(line)
+    if not cleaned:
+        return entries
+
+    reader = csv.reader(io.StringIO("\n".join(cleaned)))
+    for row_count, row in enumerate(reader):
+        if row_count >= max_rows:
+            break
+        if not row or len(row) < 20:  # fila parcial/sucio del borde del log
+            continue
+
+        log_time = _field(row, 0)
+        message = _field(row, 13) or ""
+        detail = _field(row, 14)
+
+        duration_ms = None
+        query_text = None
+
+        extracted = _statement_from_message(message)
+        if extracted is not None:
+            duration_ms, query_text = extracted
+        else:
+            statement_field = _field(row, 19)
+            if statement_field and _is_explainable(statement_field):
+                query_text = statement_field.strip()
+
+        if not query_text or not _is_explainable(query_text):
+            continue
+
+        query_text = query_text.rstrip(";").strip()
+
+        params = _parse_pg_params(detail)
+
+        if since is not None:
+            since_dt = _since_dt(since)
+            entry_dt = _parse_log_time(log_time)
+            if since_dt is not None and entry_dt is not None and entry_dt < since_dt:
                 continue
 
-            log_time = _field(row, 0)
-            message = _field(row, 13) or ""
-            detail = _field(row, 14)
-
-            duration_ms = None
-            query_text = None
-
-            extracted = _statement_from_message(message)
-            if extracted is not None:
-                duration_ms, query_text = extracted
-            else:
-                statement_field = _field(row, 19)
-                if statement_field and _is_explainable(statement_field):
-                    query_text = statement_field.strip()
-
-            if not query_text or not _is_explainable(query_text):
-                continue
-
-            query_text = query_text.rstrip(";").strip()
-
-            params = _parse_pg_params(detail)
-
-            entries.append(
-                LogEntry(
-                    raw_text=query_text,
-                    canonical_text=fast_signature(query_text),
-                    duration_ms=duration_ms,
-                    source="postgres",
-                    log_time=log_time,
-                    params=params,
-                )
+        entries.append(
+            LogEntry(
+                raw_text=query_text,
+                canonical_text=fast_signature(query_text),
+                duration_ms=duration_ms,
+                source="postgres",
+                log_time=log_time,
+                params=params,
             )
+        )
 
     return entries
 
 
-def parse_mysql_slow_log(path) -> list:
+def parse_mysql_slow_log(path, tail_lines=LOG_TAIL_LINES, max_rows=MAX_PARSE_ROWS, since=None) -> list:
     entries = []
     path = Path(path)
 
@@ -164,6 +243,12 @@ def parse_mysql_slow_log(path) -> list:
         raw_text = MYSQL_SET_TIMESTAMP_RE.sub("", raw_text, count=1).strip()
         raw_text = raw_text.rstrip().rstrip(";").strip()
         if raw_text and _is_explainable(raw_text):
+            if since is not None:
+                since_dt = _since_dt(since)
+                entry_dt = _parse_log_time(current_time)
+                if since_dt is not None and entry_dt is not None and entry_dt < since_dt:
+                    sql_lines.clear()
+                    return
             entries.append(
                 LogEntry(
                     raw_text=raw_text,
@@ -175,42 +260,44 @@ def parse_mysql_slow_log(path) -> list:
             )
         sql_lines.clear()
 
-    with open(path, "r", encoding="utf-8") as f:
-        for line in f:
-            if len(entries) >= MAX_PARSE_ROWS:
-                break
-            stripped = line.strip()
+    for line in _read_tail_lines(path, tail_lines):
+        if len(entries) >= max_rows:
+            break
+        stripped = line.strip()
 
-            if MYSQL_HEADER_RE.match(stripped):
-                if sql_lines or not saw_header:
-                    flush()
-                    saw_header = True
-                    current_time = None
-                    current_duration = None
+        if MYSQL_HEADER_RE.match(stripped):
+            if sql_lines or not saw_header:
+                flush()
+                saw_header = True
+                current_time = None
+                current_duration = None
 
-                time_match = re.search(r"Time:\s*(.*)$", stripped)
-                if time_match:
-                    current_time = time_match.group(1).strip()
+            time_match = re.search(r"Time:\s*(.*)$", stripped)
+            if time_match:
+                current_time = time_match.group(1).strip()
 
-                duration_match = MYSQL_QUERY_TIME_RE.search(stripped)
-                if duration_match:
-                    current_duration = float(duration_match.group(1))
-                continue
+            duration_match = MYSQL_QUERY_TIME_RE.search(stripped)
+            if duration_match:
+                current_duration = float(duration_match.group(1))
+            continue
 
-            if MYSQL_SET_TIMESTAMP_RE.match(stripped) or MYSQL_USE_RE.match(stripped):
-                continue
+        if not saw_header:
+            continue  # descartar linea cortada por delante de la cola
 
-            sql_lines.append(line.rstrip("\n"))
+        if MYSQL_SET_TIMESTAMP_RE.match(stripped) or MYSQL_USE_RE.match(stripped):
+            continue
+
+        sql_lines.append(stripped)
 
     flush()
     return entries
 
 
-def build_log_index(dialect, path, min_duration_ms=None) -> dict:
+def build_log_index(dialect, path, min_duration_ms=None, since=None) -> dict:
     if dialect == "postgres":
-        entries = parse_pg_csvlog(path)
+        entries = parse_pg_csvlog(path, since=since)
     elif dialect == "mysql":
-        entries = parse_mysql_slow_log(path)
+        entries = parse_mysql_slow_log(path, since=since)
     else:
         return {}
 
