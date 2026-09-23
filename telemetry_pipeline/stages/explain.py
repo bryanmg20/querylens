@@ -5,6 +5,7 @@ from sqlalchemy import text
 from logger import get_logger
 from models.stats import Stats
 from stages import explain_normalizer as en
+from stages.log_reader import materialize_placeholders
 
 logger = get_logger(__name__)
 
@@ -52,6 +53,11 @@ class ExplainStage:
                 )
                 continue
 
+            if self.collector.source_dialect == "postgres":
+                query_text = materialize_placeholders(
+                    query_text, query.get("query_params")
+                )
+
             try:
                 context_sql = self._schema_context_sql(
                     query.get("schema_name"),
@@ -62,13 +68,13 @@ class ExplainStage:
                     conn.execute(text(context_sql))
 
                 if self.collector.source_dialect == "postgres":
-                    result = conn.execute(text(f"EXPLAIN (FORMAT JSON) {query.get('query_text')}"))
+                    result = conn.execute(text(f"EXPLAIN (FORMAT JSON) {query_text}"))
                     stats["query_explain"].append({
                         "query_id": query_id,
                         "plan": [dict(row) for row in result.mappings()],
                     })
                 else:
-                    result = conn.execute(text(f"EXPLAIN FORMAT=JSON {query.get('query_text')}"))
+                    result = conn.execute(text(f"EXPLAIN FORMAT=JSON {query_text}"))
                     plan_row = next(result.mappings(), None)
                     if plan_row is None:
                         logger.error(f"mysql | EXPLAIN | query_id={query_id} | returned no plan row")
