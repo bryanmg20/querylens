@@ -1,5 +1,5 @@
 from models.stats import Stats
-from stages import selectors
+from stages import selectors, schema_resolver
 
 class CandidatesStage:
     def __init__(self, collector):
@@ -12,4 +12,6 @@ class CandidatesStage:
         selectors.select_disk_spill_indicator(stats)
         selectors.select_candidates_to_explain(stats)
         selectors.select_explain_ready(stats)
+        if self.collector.source_dialect == "postgres":
+            schema_resolver.resolve_statements_schema(stats)
         return stats
