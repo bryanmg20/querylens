@@ -1,0 +1,945 @@
+{
+  "meta": {
+    "script": "compare_real_query_mechanics.py",
+    "muestras": 3,
+    "reps": "5",
+    "noise": "50",
+    "run_at": "2026-09-23T22:52:42+00:00",
+    "v1": "select_explain_ready antiguo: query_id en active_queries (pg_stat_activity / events_statements_current)",
+    "v2": "LogsBackfillStage actual: firma canonica del query en pg_csvlog / slow log de MySQL"
+  },
+  "por_engine": {
+    "mysql": {
+      "totales": {
+        "top_impact_candidates": 30,
+        "v1_found": 0,
+        "v2_found": 30,
+        "both": 0,
+        "solo_v1": 0,
+        "solo_v2": 30,
+        "ninguno": 0,
+        "v1_rate": 0.0,
+        "v2_rate": 100.0
+      },
+      "por_muestra": [
+        {
+          "total": 10,
+          "v1_found": 0,
+          "v2_found": 10,
+          "both": 0,
+          "solo_v1": 0,
+          "solo_v2": 10,
+          "ninguno": 0
+        },
+        {
+          "total": 10,
+          "v1_found": 0,
+          "v2_found": 10,
+          "both": 0,
+          "solo_v1": 0,
+          "solo_v2": 10,
+          "ninguno": 0
+        },
+        {
+          "total": 10,
+          "v1_found": 0,
+          "v2_found": 10,
+          "both": 0,
+          "solo_v1": 0,
+          "solo_v2": 10,
+          "ninguno": 0
+        }
+      ],
+      "varianza_v1_pct_por_muestra": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "varianza_v2_pct_por_muestra": [
+        100.0,
+        100.0,
+        100.0
+      ],
+      "por_operacion": {
+        "v1": {
+          "SELECT": {
+            "total": 30,
+            "found": 0
+          }
+        },
+        "v2": {
+          "SELECT": {
+            "total": 30,
+            "found": 30
+          }
+        }
+      },
+      "solo_v1_candidatos": [],
+      "solo_v2_candidatos": [
+        [
+          "SELECT",
+          "864c221061d4b660a27826c88ae8cf2f9156146f73ecdf50adca93bb8fab35ab",
+          "SELECT COUNT ( * ) FROM `sbtest1` `a` WHERE `a` . `id` = ( SELECT MAX "
+        ],
+        [
+          "SELECT",
+          "1db394432abe3db3d3021befcb36d8b03a99e8e1b37938716ece3738b5fbcffd",
+          "SELECT `a` . `id` , ( SELECT COUNT ( * ) FROM `sbtest1` `b` WHERE `b` "
+        ],
+        [
+          "SELECT",
+          "d6431f200291c19f481376073ee77aaa488b28737a86ecbcbe07fd1a5c09e217",
+          "SELECT `id` , `k` , ROW_NUMBER ( ) OVER ( PARTITION BY `k` ORDER BY `c"
+        ],
+        [
+          "SELECT",
+          "efa2f5a7c25efdbdce3f61208ffa0f36a40f2beca8e6fef639afd89543fa4103",
+          "SELECT `a` . `c` , COUNT ( * ) AS `total` FROM `sbtest1` AS `a` JOIN `"
+        ],
+        [
+          "SELECT",
+          "8aa34322c96b11e0f4362bb2d63df80a389fb3c598cc25a5b3f0ec166fbcf3e0",
+          "SELECT `a` . `id` , `b` . `id` FROM `sbtest1` `a` JOIN `sbtest1` `b` O"
+        ],
+        [
+          "SELECT",
+          "191237201273a605ac2e63c367320605a666878f33f2a1ba0135744a90aeb2df",
+          "SELECT SUBSTRING ( `c` , ?, ... ) AS `pref` , COUNT ( * ) AS `cnt` FRO"
+        ],
+        [
+          "SELECT",
+          "5da1c1966009fd7dc4f26a331e2d3f0ba513a85a62879d6d25e20354e1ca812b",
+          "SELECT `a` . `k` , COUNT ( * ) AS `cnt` FROM `sbtest1` `a` JOIN `sbtes"
+        ],
+        [
+          "SELECT",
+          "c76bf6b3c038a0457eaf545bd4b9640b718d8d79aad8353918034a5735b19685",
+          "SELECT `id` FROM `sbtest1` WHERE `k` > ?"
+        ],
+        [
+          "SELECT",
+          "1e2d8b48f403e526523608f0e842ebd1009b7cd08442f8805baacf04d7d6aed3",
+          "SELECT ? AS `tipo` , SUM ( `k` ) AS `s` FROM `sbtest1` UNION ALL SELEC"
+        ],
+        [
+          "SELECT",
+          "e09de071700e20397f986cb8612876d2d16d255924601bb9d2c84ba61f0e3bba",
+          "SELECT `id` , CASE WHEN `k` % ? = ? THEN ? WHEN `k` % ? = ? THEN ? ELS"
+        ],
+        [
+          "SELECT",
+          "864c221061d4b660a27826c88ae8cf2f9156146f73ecdf50adca93bb8fab35ab",
+          "SELECT COUNT ( * ) FROM `sbtest1` `a` WHERE `a` . `id` = ( SELECT MAX "
+        ],
+        [
+          "SELECT",
+          "1db394432abe3db3d3021befcb36d8b03a99e8e1b37938716ece3738b5fbcffd",
+          "SELECT `a` . `id` , ( SELECT COUNT ( * ) FROM `sbtest1` `b` WHERE `b` "
+        ],
+        [
+          "SELECT",
+          "d6431f200291c19f481376073ee77aaa488b28737a86ecbcbe07fd1a5c09e217",
+          "SELECT `id` , `k` , ROW_NUMBER ( ) OVER ( PARTITION BY `k` ORDER BY `c"
+        ],
+        [
+          "SELECT",
+          "efa2f5a7c25efdbdce3f61208ffa0f36a40f2beca8e6fef639afd89543fa4103",
+          "SELECT `a` . `c` , COUNT ( * ) AS `total` FROM `sbtest1` AS `a` JOIN `"
+        ],
+        [
+          "SELECT",
+          "8aa34322c96b11e0f4362bb2d63df80a389fb3c598cc25a5b3f0ec166fbcf3e0",
+          "SELECT `a` . `id` , `b` . `id` FROM `sbtest1` `a` JOIN `sbtest1` `b` O"
+        ],
+        [
+          "SELECT",
+          "191237201273a605ac2e63c367320605a666878f33f2a1ba0135744a90aeb2df",
+          "SELECT SUBSTRING ( `c` , ?, ... ) AS `pref` , COUNT ( * ) AS `cnt` FRO"
+        ],
+        [
+          "SELECT",
+          "5da1c1966009fd7dc4f26a331e2d3f0ba513a85a62879d6d25e20354e1ca812b",
+          "SELECT `a` . `k` , COUNT ( * ) AS `cnt` FROM `sbtest1` `a` JOIN `sbtes"
+        ],
+        [
+          "SELECT",
+          "1e2d8b48f403e526523608f0e842ebd1009b7cd08442f8805baacf04d7d6aed3",
+          "SELECT ? AS `tipo` , SUM ( `k` ) AS `s` FROM `sbtest1` UNION ALL SELEC"
+        ],
+        [
+          "SELECT",
+          "c76bf6b3c038a0457eaf545bd4b9640b718d8d79aad8353918034a5735b19685",
+          "SELECT `id` FROM `sbtest1` WHERE `k` > ?"
+        ],
+        [
+          "SELECT",
+          "335b3dcaa2897f9e43ed45a632273c58c5afc14f22dacd4f97806a85ba0c01e3",
+          "SELECT `k` FROM `sbtest1` WHERE `id` BETWEEN ? AND ?"
+        ],
+        [
+          "SELECT",
+          "864c221061d4b660a27826c88ae8cf2f9156146f73ecdf50adca93bb8fab35ab",
+          "SELECT COUNT ( * ) FROM `sbtest1` `a` WHERE `a` . `id` = ( SELECT MAX "
+        ],
+        [
+          "SELECT",
+          "1db394432abe3db3d3021befcb36d8b03a99e8e1b37938716ece3738b5fbcffd",
+          "SELECT `a` . `id` , ( SELECT COUNT ( * ) FROM `sbtest1` `b` WHERE `b` "
+        ],
+        [
+          "SELECT",
+          "d6431f200291c19f481376073ee77aaa488b28737a86ecbcbe07fd1a5c09e217",
+          "SELECT `id` , `k` , ROW_NUMBER ( ) OVER ( PARTITION BY `k` ORDER BY `c"
+        ],
+        [
+          "SELECT",
+          "efa2f5a7c25efdbdce3f61208ffa0f36a40f2beca8e6fef639afd89543fa4103",
+          "SELECT `a` . `c` , COUNT ( * ) AS `total` FROM `sbtest1` AS `a` JOIN `"
+        ],
+        [
+          "SELECT",
+          "8aa34322c96b11e0f4362bb2d63df80a389fb3c598cc25a5b3f0ec166fbcf3e0",
+          "SELECT `a` . `id` , `b` . `id` FROM `sbtest1` `a` JOIN `sbtest1` `b` O"
+        ],
+        [
+          "SELECT",
+          "191237201273a605ac2e63c367320605a666878f33f2a1ba0135744a90aeb2df",
+          "SELECT SUBSTRING ( `c` , ?, ... ) AS `pref` , COUNT ( * ) AS `cnt` FRO"
+        ],
+        [
+          "SELECT",
+          "c76bf6b3c038a0457eaf545bd4b9640b718d8d79aad8353918034a5735b19685",
+          "SELECT `id` FROM `sbtest1` WHERE `k` > ?"
+        ],
+        [
+          "SELECT",
+          "5da1c1966009fd7dc4f26a331e2d3f0ba513a85a62879d6d25e20354e1ca812b",
+          "SELECT `a` . `k` , COUNT ( * ) AS `cnt` FROM `sbtest1` `a` JOIN `sbtes"
+        ],
+        [
+          "SELECT",
+          "1e2d8b48f403e526523608f0e842ebd1009b7cd08442f8805baacf04d7d6aed3",
+          "SELECT ? AS `tipo` , SUM ( `k` ) AS `s` FROM `sbtest1` UNION ALL SELEC"
+        ],
+        [
+          "SELECT",
+          "e09de071700e20397f986cb8612876d2d16d255924601bb9d2c84ba61f0e3bba",
+          "SELECT `id` , CASE WHEN `k` % ? = ? THEN ? WHEN `k` % ? = ? THEN ? ELS"
+        ]
+      ]
+    },
+    "postgres": {
+      "totales": {
+        "top_impact_candidates": 30,
+        "v1_found": 0,
+        "v2_found": 30,
+        "both": 0,
+        "solo_v1": 0,
+        "solo_v2": 30,
+        "ninguno": 0,
+        "v1_rate": 0.0,
+        "v2_rate": 100.0
+      },
+      "por_muestra": [
+        {
+          "total": 10,
+          "v1_found": 0,
+          "v2_found": 10,
+          "both": 0,
+          "solo_v1": 0,
+          "solo_v2": 10,
+          "ninguno": 0
+        },
+        {
+          "total": 10,
+          "v1_found": 0,
+          "v2_found": 10,
+          "both": 0,
+          "solo_v1": 0,
+          "solo_v2": 10,
+          "ninguno": 0
+        },
+        {
+          "total": 10,
+          "v1_found": 0,
+          "v2_found": 10,
+          "both": 0,
+          "solo_v1": 0,
+          "solo_v2": 10,
+          "ninguno": 0
+        }
+      ],
+      "varianza_v1_pct_por_muestra": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "varianza_v2_pct_por_muestra": [
+        100.0,
+        100.0,
+        100.0
+      ],
+      "por_operacion": {
+        "v1": {
+          "SELECT": {
+            "total": 30,
+            "found": 0
+          }
+        },
+        "v2": {
+          "SELECT": {
+            "total": 30,
+            "found": 30
+          }
+        }
+      },
+      "solo_v1_candidatos": [],
+      "solo_v2_candidatos": [
+        [
+          "SELECT",
+          -4771886699169262329,
+          "SELECT COUNT(*) FROM sbtest1 a WHERE a.id = (SELECT MAX(b.id) FROM sbt"
+        ],
+        [
+          "SELECT",
+          -1232716347889392665,
+          "SELECT a.id, (SELECT COUNT(*) FROM sbtest1 b WHERE b.k = a.k) AS cnt F"
+        ],
+        [
+          "SELECT",
+          -4196604929975110208,
+          "SELECT SUBSTRING(c, $1, $2) AS pref, COUNT(*) AS cnt FROM sbtest1 WHER"
+        ],
+        [
+          "SELECT",
+          2400787508518417558,
+          "SELECT id, k, ROW_NUMBER() OVER (PARTITION BY k ORDER BY c) AS rn FROM"
+        ],
+        [
+          "SELECT",
+          -58064517687412585,
+          "SELECT a.c, COUNT(*) AS total FROM sbtest1 AS a JOIN sbtest1 AS b ON b"
+        ],
+        [
+          "SELECT",
+          1846686832555718276,
+          "SELECT a.k, COUNT(*) AS cnt FROM sbtest1 a JOIN sbtest1 b ON b.id = a."
+        ],
+        [
+          "SELECT",
+          -7602942644537328878,
+          "SELECT id FROM sbtest1 WHERE k > $1"
+        ],
+        [
+          "SELECT",
+          -5580412542610240785,
+          "SELECT id, CASE WHEN k % $1 = $2 THEN $3 WHEN k % $4 = $5 THEN $6 ELSE"
+        ],
+        [
+          "SELECT",
+          -2209365685421286314,
+          "SELECT a.id, b.id FROM sbtest1 a JOIN sbtest1 b ON b.c = a.c WHERE a.i"
+        ],
+        [
+          "SELECT",
+          4958791658444919656,
+          "SELECT $1 AS tipo, SUM(k) AS s FROM sbtest1 UNION ALL SELECT $2, AVG(i"
+        ],
+        [
+          "SELECT",
+          -4771886699169262329,
+          "SELECT COUNT(*) FROM sbtest1 a WHERE a.id = (SELECT MAX(b.id) FROM sbt"
+        ],
+        [
+          "SELECT",
+          -1232716347889392665,
+          "SELECT a.id, (SELECT COUNT(*) FROM sbtest1 b WHERE b.k = a.k) AS cnt F"
+        ],
+        [
+          "SELECT",
+          -4196604929975110208,
+          "SELECT SUBSTRING(c, $1, $2) AS pref, COUNT(*) AS cnt FROM sbtest1 WHER"
+        ],
+        [
+          "SELECT",
+          2400787508518417558,
+          "SELECT id, k, ROW_NUMBER() OVER (PARTITION BY k ORDER BY c) AS rn FROM"
+        ],
+        [
+          "SELECT",
+          -58064517687412585,
+          "SELECT a.c, COUNT(*) AS total FROM sbtest1 AS a JOIN sbtest1 AS b ON b"
+        ],
+        [
+          "SELECT",
+          -7602942644537328878,
+          "SELECT id FROM sbtest1 WHERE k > $1"
+        ],
+        [
+          "SELECT",
+          1846686832555718276,
+          "SELECT a.k, COUNT(*) AS cnt FROM sbtest1 a JOIN sbtest1 b ON b.id = a."
+        ],
+        [
+          "SELECT",
+          -2209365685421286314,
+          "SELECT a.id, b.id FROM sbtest1 a JOIN sbtest1 b ON b.c = a.c WHERE a.i"
+        ],
+        [
+          "SELECT",
+          -5580412542610240785,
+          "SELECT id, CASE WHEN k % $1 = $2 THEN $3 WHEN k % $4 = $5 THEN $6 ELSE"
+        ],
+        [
+          "SELECT",
+          5752764627604425018,
+          "SELECT k FROM sbtest1 WHERE id BETWEEN $1 AND $2"
+        ],
+        [
+          "SELECT",
+          -4771886699169262329,
+          "SELECT COUNT(*) FROM sbtest1 a WHERE a.id = (SELECT MAX(b.id) FROM sbt"
+        ],
+        [
+          "SELECT",
+          -1232716347889392665,
+          "SELECT a.id, (SELECT COUNT(*) FROM sbtest1 b WHERE b.k = a.k) AS cnt F"
+        ],
+        [
+          "SELECT",
+          -4196604929975110208,
+          "SELECT SUBSTRING(c, $1, $2) AS pref, COUNT(*) AS cnt FROM sbtest1 WHER"
+        ],
+        [
+          "SELECT",
+          2400787508518417558,
+          "SELECT id, k, ROW_NUMBER() OVER (PARTITION BY k ORDER BY c) AS rn FROM"
+        ],
+        [
+          "SELECT",
+          -58064517687412585,
+          "SELECT a.c, COUNT(*) AS total FROM sbtest1 AS a JOIN sbtest1 AS b ON b"
+        ],
+        [
+          "SELECT",
+          1846686832555718276,
+          "SELECT a.k, COUNT(*) AS cnt FROM sbtest1 a JOIN sbtest1 b ON b.id = a."
+        ],
+        [
+          "SELECT",
+          -7602942644537328878,
+          "SELECT id FROM sbtest1 WHERE k > $1"
+        ],
+        [
+          "SELECT",
+          -2209365685421286314,
+          "SELECT a.id, b.id FROM sbtest1 a JOIN sbtest1 b ON b.c = a.c WHERE a.i"
+        ],
+        [
+          "SELECT",
+          -5580412542610240785,
+          "SELECT id, CASE WHEN k % $1 = $2 THEN $3 WHEN k % $4 = $5 THEN $6 ELSE"
+        ],
+        [
+          "SELECT",
+          4958791658444919656,
+          "SELECT $1 AS tipo, SUM(k) AS s FROM sbtest1 UNION ALL SELECT $2, AVG(i"
+        ]
+      ]
+    }
+  },
+  "muestras_raw": [
+    {
+      "sample": 1,
+      "engine": "mysql",
+      "msg_id": 88,
+      "buckets": {
+        "total": 10,
+        "v1_found": 0,
+        "v2_found": 10,
+        "both": 0,
+        "solo_v1": 0,
+        "solo_v2": 10,
+        "ninguno": 0
+      },
+      "op": {
+        "v1": {
+          "SELECT": {
+            "total": 10,
+            "found": 0
+          }
+        },
+        "v2": {
+          "SELECT": {
+            "total": 10,
+            "found": 10
+          }
+        }
+      },
+      "solo_v1_list": [],
+      "solo_v2_list": [
+        [
+          "SELECT",
+          "864c221061d4b660a27826c88ae8cf2f9156146f73ecdf50adca93bb8fab35ab",
+          "SELECT COUNT ( * ) FROM `sbtest1` `a` WHERE `a` . `id` = ( SELECT MAX "
+        ],
+        [
+          "SELECT",
+          "1db394432abe3db3d3021befcb36d8b03a99e8e1b37938716ece3738b5fbcffd",
+          "SELECT `a` . `id` , ( SELECT COUNT ( * ) FROM `sbtest1` `b` WHERE `b` "
+        ],
+        [
+          "SELECT",
+          "d6431f200291c19f481376073ee77aaa488b28737a86ecbcbe07fd1a5c09e217",
+          "SELECT `id` , `k` , ROW_NUMBER ( ) OVER ( PARTITION BY `k` ORDER BY `c"
+        ],
+        [
+          "SELECT",
+          "efa2f5a7c25efdbdce3f61208ffa0f36a40f2beca8e6fef639afd89543fa4103",
+          "SELECT `a` . `c` , COUNT ( * ) AS `total` FROM `sbtest1` AS `a` JOIN `"
+        ],
+        [
+          "SELECT",
+          "8aa34322c96b11e0f4362bb2d63df80a389fb3c598cc25a5b3f0ec166fbcf3e0",
+          "SELECT `a` . `id` , `b` . `id` FROM `sbtest1` `a` JOIN `sbtest1` `b` O"
+        ],
+        [
+          "SELECT",
+          "191237201273a605ac2e63c367320605a666878f33f2a1ba0135744a90aeb2df",
+          "SELECT SUBSTRING ( `c` , ?, ... ) AS `pref` , COUNT ( * ) AS `cnt` FRO"
+        ],
+        [
+          "SELECT",
+          "5da1c1966009fd7dc4f26a331e2d3f0ba513a85a62879d6d25e20354e1ca812b",
+          "SELECT `a` . `k` , COUNT ( * ) AS `cnt` FROM `sbtest1` `a` JOIN `sbtes"
+        ],
+        [
+          "SELECT",
+          "c76bf6b3c038a0457eaf545bd4b9640b718d8d79aad8353918034a5735b19685",
+          "SELECT `id` FROM `sbtest1` WHERE `k` > ?"
+        ],
+        [
+          "SELECT",
+          "1e2d8b48f403e526523608f0e842ebd1009b7cd08442f8805baacf04d7d6aed3",
+          "SELECT ? AS `tipo` , SUM ( `k` ) AS `s` FROM `sbtest1` UNION ALL SELEC"
+        ],
+        [
+          "SELECT",
+          "e09de071700e20397f986cb8612876d2d16d255924601bb9d2c84ba61f0e3bba",
+          "SELECT `id` , CASE WHEN `k` % ? = ? THEN ? WHEN `k` % ? = ? THEN ? ELS"
+        ]
+      ],
+      "explains": 10
+    },
+    {
+      "sample": 1,
+      "engine": "postgres",
+      "msg_id": 87,
+      "buckets": {
+        "total": 10,
+        "v1_found": 0,
+        "v2_found": 10,
+        "both": 0,
+        "solo_v1": 0,
+        "solo_v2": 10,
+        "ninguno": 0
+      },
+      "op": {
+        "v1": {
+          "SELECT": {
+            "total": 10,
+            "found": 0
+          }
+        },
+        "v2": {
+          "SELECT": {
+            "total": 10,
+            "found": 10
+          }
+        }
+      },
+      "solo_v1_list": [],
+      "solo_v2_list": [
+        [
+          "SELECT",
+          -4771886699169262329,
+          "SELECT COUNT(*) FROM sbtest1 a WHERE a.id = (SELECT MAX(b.id) FROM sbt"
+        ],
+        [
+          "SELECT",
+          -1232716347889392665,
+          "SELECT a.id, (SELECT COUNT(*) FROM sbtest1 b WHERE b.k = a.k) AS cnt F"
+        ],
+        [
+          "SELECT",
+          -4196604929975110208,
+          "SELECT SUBSTRING(c, $1, $2) AS pref, COUNT(*) AS cnt FROM sbtest1 WHER"
+        ],
+        [
+          "SELECT",
+          2400787508518417558,
+          "SELECT id, k, ROW_NUMBER() OVER (PARTITION BY k ORDER BY c) AS rn FROM"
+        ],
+        [
+          "SELECT",
+          -58064517687412585,
+          "SELECT a.c, COUNT(*) AS total FROM sbtest1 AS a JOIN sbtest1 AS b ON b"
+        ],
+        [
+          "SELECT",
+          1846686832555718276,
+          "SELECT a.k, COUNT(*) AS cnt FROM sbtest1 a JOIN sbtest1 b ON b.id = a."
+        ],
+        [
+          "SELECT",
+          -7602942644537328878,
+          "SELECT id FROM sbtest1 WHERE k > $1"
+        ],
+        [
+          "SELECT",
+          -5580412542610240785,
+          "SELECT id, CASE WHEN k % $1 = $2 THEN $3 WHEN k % $4 = $5 THEN $6 ELSE"
+        ],
+        [
+          "SELECT",
+          -2209365685421286314,
+          "SELECT a.id, b.id FROM sbtest1 a JOIN sbtest1 b ON b.c = a.c WHERE a.i"
+        ],
+        [
+          "SELECT",
+          4958791658444919656,
+          "SELECT $1 AS tipo, SUM(k) AS s FROM sbtest1 UNION ALL SELECT $2, AVG(i"
+        ]
+      ],
+      "explains": 10
+    },
+    {
+      "sample": 2,
+      "engine": "mysql",
+      "msg_id": 90,
+      "buckets": {
+        "total": 10,
+        "v1_found": 0,
+        "v2_found": 10,
+        "both": 0,
+        "solo_v1": 0,
+        "solo_v2": 10,
+        "ninguno": 0
+      },
+      "op": {
+        "v1": {
+          "SELECT": {
+            "total": 10,
+            "found": 0
+          }
+        },
+        "v2": {
+          "SELECT": {
+            "total": 10,
+            "found": 10
+          }
+        }
+      },
+      "solo_v1_list": [],
+      "solo_v2_list": [
+        [
+          "SELECT",
+          "864c221061d4b660a27826c88ae8cf2f9156146f73ecdf50adca93bb8fab35ab",
+          "SELECT COUNT ( * ) FROM `sbtest1` `a` WHERE `a` . `id` = ( SELECT MAX "
+        ],
+        [
+          "SELECT",
+          "1db394432abe3db3d3021befcb36d8b03a99e8e1b37938716ece3738b5fbcffd",
+          "SELECT `a` . `id` , ( SELECT COUNT ( * ) FROM `sbtest1` `b` WHERE `b` "
+        ],
+        [
+          "SELECT",
+          "d6431f200291c19f481376073ee77aaa488b28737a86ecbcbe07fd1a5c09e217",
+          "SELECT `id` , `k` , ROW_NUMBER ( ) OVER ( PARTITION BY `k` ORDER BY `c"
+        ],
+        [
+          "SELECT",
+          "efa2f5a7c25efdbdce3f61208ffa0f36a40f2beca8e6fef639afd89543fa4103",
+          "SELECT `a` . `c` , COUNT ( * ) AS `total` FROM `sbtest1` AS `a` JOIN `"
+        ],
+        [
+          "SELECT",
+          "8aa34322c96b11e0f4362bb2d63df80a389fb3c598cc25a5b3f0ec166fbcf3e0",
+          "SELECT `a` . `id` , `b` . `id` FROM `sbtest1` `a` JOIN `sbtest1` `b` O"
+        ],
+        [
+          "SELECT",
+          "191237201273a605ac2e63c367320605a666878f33f2a1ba0135744a90aeb2df",
+          "SELECT SUBSTRING ( `c` , ?, ... ) AS `pref` , COUNT ( * ) AS `cnt` FRO"
+        ],
+        [
+          "SELECT",
+          "5da1c1966009fd7dc4f26a331e2d3f0ba513a85a62879d6d25e20354e1ca812b",
+          "SELECT `a` . `k` , COUNT ( * ) AS `cnt` FROM `sbtest1` `a` JOIN `sbtes"
+        ],
+        [
+          "SELECT",
+          "1e2d8b48f403e526523608f0e842ebd1009b7cd08442f8805baacf04d7d6aed3",
+          "SELECT ? AS `tipo` , SUM ( `k` ) AS `s` FROM `sbtest1` UNION ALL SELEC"
+        ],
+        [
+          "SELECT",
+          "c76bf6b3c038a0457eaf545bd4b9640b718d8d79aad8353918034a5735b19685",
+          "SELECT `id` FROM `sbtest1` WHERE `k` > ?"
+        ],
+        [
+          "SELECT",
+          "335b3dcaa2897f9e43ed45a632273c58c5afc14f22dacd4f97806a85ba0c01e3",
+          "SELECT `k` FROM `sbtest1` WHERE `id` BETWEEN ? AND ?"
+        ]
+      ],
+      "explains": 10
+    },
+    {
+      "sample": 2,
+      "engine": "postgres",
+      "msg_id": 89,
+      "buckets": {
+        "total": 10,
+        "v1_found": 0,
+        "v2_found": 10,
+        "both": 0,
+        "solo_v1": 0,
+        "solo_v2": 10,
+        "ninguno": 0
+      },
+      "op": {
+        "v1": {
+          "SELECT": {
+            "total": 10,
+            "found": 0
+          }
+        },
+        "v2": {
+          "SELECT": {
+            "total": 10,
+            "found": 10
+          }
+        }
+      },
+      "solo_v1_list": [],
+      "solo_v2_list": [
+        [
+          "SELECT",
+          -4771886699169262329,
+          "SELECT COUNT(*) FROM sbtest1 a WHERE a.id = (SELECT MAX(b.id) FROM sbt"
+        ],
+        [
+          "SELECT",
+          -1232716347889392665,
+          "SELECT a.id, (SELECT COUNT(*) FROM sbtest1 b WHERE b.k = a.k) AS cnt F"
+        ],
+        [
+          "SELECT",
+          -4196604929975110208,
+          "SELECT SUBSTRING(c, $1, $2) AS pref, COUNT(*) AS cnt FROM sbtest1 WHER"
+        ],
+        [
+          "SELECT",
+          2400787508518417558,
+          "SELECT id, k, ROW_NUMBER() OVER (PARTITION BY k ORDER BY c) AS rn FROM"
+        ],
+        [
+          "SELECT",
+          -58064517687412585,
+          "SELECT a.c, COUNT(*) AS total FROM sbtest1 AS a JOIN sbtest1 AS b ON b"
+        ],
+        [
+          "SELECT",
+          -7602942644537328878,
+          "SELECT id FROM sbtest1 WHERE k > $1"
+        ],
+        [
+          "SELECT",
+          1846686832555718276,
+          "SELECT a.k, COUNT(*) AS cnt FROM sbtest1 a JOIN sbtest1 b ON b.id = a."
+        ],
+        [
+          "SELECT",
+          -2209365685421286314,
+          "SELECT a.id, b.id FROM sbtest1 a JOIN sbtest1 b ON b.c = a.c WHERE a.i"
+        ],
+        [
+          "SELECT",
+          -5580412542610240785,
+          "SELECT id, CASE WHEN k % $1 = $2 THEN $3 WHEN k % $4 = $5 THEN $6 ELSE"
+        ],
+        [
+          "SELECT",
+          5752764627604425018,
+          "SELECT k FROM sbtest1 WHERE id BETWEEN $1 AND $2"
+        ]
+      ],
+      "explains": 10
+    },
+    {
+      "sample": 3,
+      "engine": "mysql",
+      "msg_id": 92,
+      "buckets": {
+        "total": 10,
+        "v1_found": 0,
+        "v2_found": 10,
+        "both": 0,
+        "solo_v1": 0,
+        "solo_v2": 10,
+        "ninguno": 0
+      },
+      "op": {
+        "v1": {
+          "SELECT": {
+            "total": 10,
+            "found": 0
+          }
+        },
+        "v2": {
+          "SELECT": {
+            "total": 10,
+            "found": 10
+          }
+        }
+      },
+      "solo_v1_list": [],
+      "solo_v2_list": [
+        [
+          "SELECT",
+          "864c221061d4b660a27826c88ae8cf2f9156146f73ecdf50adca93bb8fab35ab",
+          "SELECT COUNT ( * ) FROM `sbtest1` `a` WHERE `a` . `id` = ( SELECT MAX "
+        ],
+        [
+          "SELECT",
+          "1db394432abe3db3d3021befcb36d8b03a99e8e1b37938716ece3738b5fbcffd",
+          "SELECT `a` . `id` , ( SELECT COUNT ( * ) FROM `sbtest1` `b` WHERE `b` "
+        ],
+        [
+          "SELECT",
+          "d6431f200291c19f481376073ee77aaa488b28737a86ecbcbe07fd1a5c09e217",
+          "SELECT `id` , `k` , ROW_NUMBER ( ) OVER ( PARTITION BY `k` ORDER BY `c"
+        ],
+        [
+          "SELECT",
+          "efa2f5a7c25efdbdce3f61208ffa0f36a40f2beca8e6fef639afd89543fa4103",
+          "SELECT `a` . `c` , COUNT ( * ) AS `total` FROM `sbtest1` AS `a` JOIN `"
+        ],
+        [
+          "SELECT",
+          "8aa34322c96b11e0f4362bb2d63df80a389fb3c598cc25a5b3f0ec166fbcf3e0",
+          "SELECT `a` . `id` , `b` . `id` FROM `sbtest1` `a` JOIN `sbtest1` `b` O"
+        ],
+        [
+          "SELECT",
+          "191237201273a605ac2e63c367320605a666878f33f2a1ba0135744a90aeb2df",
+          "SELECT SUBSTRING ( `c` , ?, ... ) AS `pref` , COUNT ( * ) AS `cnt` FRO"
+        ],
+        [
+          "SELECT",
+          "c76bf6b3c038a0457eaf545bd4b9640b718d8d79aad8353918034a5735b19685",
+          "SELECT `id` FROM `sbtest1` WHERE `k` > ?"
+        ],
+        [
+          "SELECT",
+          "5da1c1966009fd7dc4f26a331e2d3f0ba513a85a62879d6d25e20354e1ca812b",
+          "SELECT `a` . `k` , COUNT ( * ) AS `cnt` FROM `sbtest1` `a` JOIN `sbtes"
+        ],
+        [
+          "SELECT",
+          "1e2d8b48f403e526523608f0e842ebd1009b7cd08442f8805baacf04d7d6aed3",
+          "SELECT ? AS `tipo` , SUM ( `k` ) AS `s` FROM `sbtest1` UNION ALL SELEC"
+        ],
+        [
+          "SELECT",
+          "e09de071700e20397f986cb8612876d2d16d255924601bb9d2c84ba61f0e3bba",
+          "SELECT `id` , CASE WHEN `k` % ? = ? THEN ? WHEN `k` % ? = ? THEN ? ELS"
+        ]
+      ],
+      "explains": 10
+    },
+    {
+      "sample": 3,
+      "engine": "postgres",
+      "msg_id": 91,
+      "buckets": {
+        "total": 10,
+        "v1_found": 0,
+        "v2_found": 10,
+        "both": 0,
+        "solo_v1": 0,
+        "solo_v2": 10,
+        "ninguno": 0
+      },
+      "op": {
+        "v1": {
+          "SELECT": {
+            "total": 10,
+            "found": 0
+          }
+        },
+        "v2": {
+          "SELECT": {
+            "total": 10,
+            "found": 10
+          }
+        }
+      },
+      "solo_v1_list": [],
+      "solo_v2_list": [
+        [
+          "SELECT",
+          -4771886699169262329,
+          "SELECT COUNT(*) FROM sbtest1 a WHERE a.id = (SELECT MAX(b.id) FROM sbt"
+        ],
+        [
+          "SELECT",
+          -1232716347889392665,
+          "SELECT a.id, (SELECT COUNT(*) FROM sbtest1 b WHERE b.k = a.k) AS cnt F"
+        ],
+        [
+          "SELECT",
+          -4196604929975110208,
+          "SELECT SUBSTRING(c, $1, $2) AS pref, COUNT(*) AS cnt FROM sbtest1 WHER"
+        ],
+        [
+          "SELECT",
+          2400787508518417558,
+          "SELECT id, k, ROW_NUMBER() OVER (PARTITION BY k ORDER BY c) AS rn FROM"
+        ],
+        [
+          "SELECT",
+          -58064517687412585,
+          "SELECT a.c, COUNT(*) AS total FROM sbtest1 AS a JOIN sbtest1 AS b ON b"
+        ],
+        [
+          "SELECT",
+          1846686832555718276,
+          "SELECT a.k, COUNT(*) AS cnt FROM sbtest1 a JOIN sbtest1 b ON b.id = a."
+        ],
+        [
+          "SELECT",
+          -7602942644537328878,
+          "SELECT id FROM sbtest1 WHERE k > $1"
+        ],
+        [
+          "SELECT",
+          -2209365685421286314,
+          "SELECT a.id, b.id FROM sbtest1 a JOIN sbtest1 b ON b.c = a.c WHERE a.i"
+        ],
+        [
+          "SELECT",
+          -5580412542610240785,
+          "SELECT id, CASE WHEN k % $1 = $2 THEN $3 WHEN k % $4 = $5 THEN $6 ELSE"
+        ],
+        [
+          "SELECT",
+          4958791658444919656,
+          "SELECT $1 AS tipo, SUM(k) AS s FROM sbtest1 UNION ALL SELECT $2, AVG(i"
+        ]
+      ],
+      "explains": 10
+    }
+  ]
+}
