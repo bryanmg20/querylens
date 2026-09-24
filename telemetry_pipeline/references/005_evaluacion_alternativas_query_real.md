@@ -24,18 +24,23 @@ Se probaron las dos opciones sobre el mismo banco, varias veces y con tráfico d
 
 ### Prueba 2 — Límite de la Opción B (cuándo empieza a perder)
 
-El 100 % de la Opción B depende de cuánto registro se lee: siempre se lee el **final** del log, una cantidad fija de líneas (200 000 por defecto). Si después de las consultas pesadas se escribe mucho tráfico nuevo, ese tráfico queda al final y las consultas pesadas pueden quedar **antes de lo leído** y perderse. La prueba varió el tamaño de lo que se lee y el volumen de tráfico posterior:
+El 100 % de la Opción B depende de cuánto registro se lee (50 000 líneas por defecto, leídas desde el final). Si después de las consultas pesadas se escribe mucho tráfico nuevo, ese tráfico queda al final y las consultas pesadas pueden quedar **antes de lo leído** y perderse. La prueba midió el efecto de distintos volúmenes de tráfico posterior. Para cruzar los umbrales grandes sin gastar horas de batería, las celdas con tráfico alto se escribieron directamente en el log con el mismo formato que usan los motores (mismo efecto sobre la ventana):
 
-| Líneas leídas del log | Tráfico posterior | MySQL | PostgreSQL |
-|-----------------------|-------------------|-------|------------|
-| 200 000 | ninguno | 100 % | 100 % |
-| 200 000 | mucho | 100 % | 100 % |
-| 1 000 | mucho | 50 % | 10 % |
-| 200 | mucho | 10 % | 15 % |
-| 200 | ninguno | 10 % | 100 % |
-| 50 | ninguno | 0 % | 0 % |
+| líneas leídas | tráfico posterior | MySQL | PostgreSQL |
+|---|---|---|---|
+| 50 000 | ninguno | 100 % | 100 % |
+| 50 000 | 900 consultas (normal) | 100 % | 100 % |
+| 50 000 | 10 000 consultas | 0 % | 100 % |
+| 50 000 | 20 000 consultas | 0 % | 100 % |
+| 50 000 | 48 000 consultas | 0 % | 100 % |
+| 50 000 | 49 990 consultas | 0 % | 0 % |
+| 50 000 | 51 000 consultas | 0 % | 0 % |
+| 50 000 | 60 000 consultas | 0 % | 0 % |
 
-Conclusión: la Opción B solo falla cuando el tráfico reciente es mayor que la cantidad de log que se lee. En producción, esa cantidad debe ser lo bastante grande para cubrir el tráfico que se espera en una ventana de tiempo, o las consultas pesadas más antiguas se pierden.
+Dos cosas importantes:
+
+1. **El umbral no es una pendiente, es un corte.** No aparece una degradación gradual del 90 % o 80 %: hasta un punto se recupera todo y un poco más allá no se recupera nada. En producción, si las consultas pesadas siguen apareciendo en el tráfico, la ventana siempre cubre las más recientes; el corte solo importa si una consulta pesada ocurre una sola vez y queda enterrada.
+2. **MySQL se entierra antes que PostgreSQL** (≈10 000 consultas frente a ≈50 000) porque cada consulta del slow log ocupa unas 5 líneas (cabecera + consulta), mientras que en PostgreSQL ocupa 1 línea. El consumo de ventana no se mide en consultas sino en líneas físicas: ambas se pierden alrededor de las 50 000 líneas.
 
 ## Pregunta 1. ¿Cuál alternativa ofrece mejor desempeño bajo carga esperada?
 

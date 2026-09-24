@@ -3,37 +3,45 @@
     "script": "ablate_recovery_window.py",
     "muestras_por_celda": 2,
     "reps_bateria": 3,
-    "run_at": "2026-09-23T23:24:05+00:00",
+    "run_at": "2026-09-24T02:10:33+00:00",
     "grid": [
       {
-        "tail_lines": 200000,
+        "tail_lines": 50000,
         "noise": 0
       },
       {
-        "tail_lines": 200000,
+        "tail_lines": 50000,
         "noise": 900
       },
       {
-        "tail_lines": 1000,
-        "noise": 900
+        "tail_lines": 50000,
+        "noise": 10000
       },
       {
-        "tail_lines": 200,
-        "noise": 900
+        "tail_lines": 50000,
+        "noise": 20000
       },
       {
-        "tail_lines": 200,
-        "noise": 0
+        "tail_lines": 50000,
+        "noise": 48000
       },
       {
-        "tail_lines": 50,
-        "noise": 0
+        "tail_lines": 50000,
+        "noise": 49990
+      },
+      {
+        "tail_lines": 50000,
+        "noise": 51000
+      },
+      {
+        "tail_lines": 50000,
+        "noise": 60000
       }
     ],
-    "mecanica": "v2 = LogsBackfillStage actual (colas del log via QL_LOG_TAIL_LINES)"
+    "mecanica": "v2 = LogsBackfillStage actual (colas del log via QL_LOG_TAIL_LINES, default 50000); noise > 2000 se anexa masivamente al log en lugar de bateria real"
   },
   "por_celda": {
-    "tail=200000_noise=0": {
+    "tail=50000_noise=0": {
       "mysql": {
         "muestras": [
           {
@@ -41,7 +49,7 @@
             "v2": 10,
             "en_ventana_no_v2": 0,
             "fuera": 0,
-            "n_log_entries": 43
+            "n_log_entries": 42
           },
           {
             "total": 10,
@@ -56,7 +64,7 @@
           "v2": 20,
           "en_ventana_sin_v2": 0,
           "fuera": 0,
-          "n_log_entries_mean": 42.5
+          "n_log_entries_mean": 42
         }
       },
       "postgres": {
@@ -85,8 +93,33 @@
         }
       }
     },
-    "tail=200000_noise=900": {
+    "tail=50000_noise=900": {
       "mysql": {
+        "muestras": [
+          {
+            "total": 10,
+            "v2": 10,
+            "en_ventana_no_v2": 0,
+            "fuera": 0,
+            "n_log_entries": 943
+          },
+          {
+            "total": 10,
+            "v2": 10,
+            "en_ventana_no_v2": 0,
+            "fuera": 0,
+            "n_log_entries": 943
+          }
+        ],
+        "totales": {
+          "top_impact": 20,
+          "v2": 20,
+          "en_ventana_sin_v2": 0,
+          "fuera": 0,
+          "n_log_entries_mean": 943
+        }
+      },
+      "postgres": {
         "muestras": [
           {
             "total": 10,
@@ -110,160 +143,31 @@
           "fuera": 0,
           "n_log_entries_mean": 942
         }
-      },
-      "postgres": {
-        "muestras": [
-          {
-            "total": 10,
-            "v2": 10,
-            "en_ventana_no_v2": 0,
-            "fuera": 0,
-            "n_log_entries": 942
-          },
-          {
-            "total": 10,
-            "v2": 10,
-            "en_ventana_no_v2": 0,
-            "fuera": 0,
-            "n_log_entries": 942
-          }
-        ],
-        "totales": {
-          "top_impact": 20,
-          "v2": 20,
-          "en_ventana_sin_v2": 0,
-          "fuera": 0,
-          "n_log_entries_mean": 942
-        }
       }
     },
-    "tail=1000_noise=900": {
+    "tail=50000_noise=10000": {
       "mysql": {
         "muestras": [
           {
             "total": 10,
-            "v2": 5,
+            "v2": 0,
             "en_ventana_no_v2": 0,
-            "fuera": 5,
-            "n_log_entries": 85
-          },
-          {
-            "total": 10,
-            "v2": 5,
-            "en_ventana_no_v2": 0,
-            "fuera": 5,
-            "n_log_entries": 86
-          }
-        ],
-        "totales": {
-          "top_impact": 20,
-          "v2": 10,
-          "en_ventana_sin_v2": 0,
-          "fuera": 10,
-          "n_log_entries_mean": 85.5
-        }
-      },
-      "postgres": {
-        "muestras": [
-          {
-            "total": 10,
-            "v2": 1,
-            "en_ventana_no_v2": 0,
-            "fuera": 9,
-            "n_log_entries": 877
-          },
-          {
-            "total": 10,
-            "v2": 1,
-            "en_ventana_no_v2": 0,
-            "fuera": 9,
-            "n_log_entries": 877
-          }
-        ],
-        "totales": {
-          "top_impact": 20,
-          "v2": 2,
-          "en_ventana_sin_v2": 0,
-          "fuera": 18,
-          "n_log_entries_mean": 877
-        }
-      }
-    },
-    "tail=200_noise=900": {
-      "mysql": {
-        "muestras": [
-          {
-            "total": 10,
-            "v2": 1,
-            "en_ventana_no_v2": 0,
-            "fuera": 9,
+            "fuera": 10,
             "n_log_entries": 12
           },
           {
             "total": 10,
-            "v2": 1,
+            "v2": 0,
             "en_ventana_no_v2": 0,
-            "fuera": 9,
+            "fuera": 10,
             "n_log_entries": 12
           }
         ],
         "totales": {
           "top_impact": 20,
-          "v2": 2,
+          "v2": 0,
           "en_ventana_sin_v2": 0,
-          "fuera": 18,
-          "n_log_entries_mean": 12
-        }
-      },
-      "postgres": {
-        "muestras": [
-          {
-            "total": 10,
-            "v2": 2,
-            "en_ventana_no_v2": 0,
-            "fuera": 8,
-            "n_log_entries": 75
-          },
-          {
-            "total": 10,
-            "v2": 1,
-            "en_ventana_no_v2": 0,
-            "fuera": 9,
-            "n_log_entries": 77
-          }
-        ],
-        "totales": {
-          "top_impact": 20,
-          "v2": 3,
-          "en_ventana_sin_v2": 0,
-          "fuera": 17,
-          "n_log_entries_mean": 76
-        }
-      }
-    },
-    "tail=200_noise=0": {
-      "mysql": {
-        "muestras": [
-          {
-            "total": 10,
-            "v2": 1,
-            "en_ventana_no_v2": 0,
-            "fuera": 9,
-            "n_log_entries": 12
-          },
-          {
-            "total": 10,
-            "v2": 1,
-            "en_ventana_no_v2": 0,
-            "fuera": 9,
-            "n_log_entries": 12
-          }
-        ],
-        "totales": {
-          "top_impact": 20,
-          "v2": 2,
-          "en_ventana_sin_v2": 0,
-          "fuera": 18,
+          "fuera": 20,
           "n_log_entries_mean": 12
         }
       },
@@ -293,7 +197,7 @@
         }
       }
     },
-    "tail=50_noise=0": {
+    "tail=50000_noise=20000": {
       "mysql": {
         "muestras": [
           {
@@ -301,14 +205,14 @@
             "v2": 0,
             "en_ventana_no_v2": 0,
             "fuera": 10,
-            "n_log_entries": 3
+            "n_log_entries": 12
           },
           {
             "total": 10,
             "v2": 0,
             "en_ventana_no_v2": 0,
             "fuera": 10,
-            "n_log_entries": 3
+            "n_log_entries": 12
           }
         ],
         "totales": {
@@ -316,7 +220,111 @@
           "v2": 0,
           "en_ventana_sin_v2": 0,
           "fuera": 20,
-          "n_log_entries_mean": 3
+          "n_log_entries_mean": 12
+        }
+      },
+      "postgres": {
+        "muestras": [
+          {
+            "total": 10,
+            "v2": 10,
+            "en_ventana_no_v2": 0,
+            "fuera": 0,
+            "n_log_entries": 42
+          },
+          {
+            "total": 10,
+            "v2": 10,
+            "en_ventana_no_v2": 0,
+            "fuera": 0,
+            "n_log_entries": 42
+          }
+        ],
+        "totales": {
+          "top_impact": 20,
+          "v2": 20,
+          "en_ventana_sin_v2": 0,
+          "fuera": 0,
+          "n_log_entries_mean": 42
+        }
+      }
+    },
+    "tail=50000_noise=48000": {
+      "mysql": {
+        "muestras": [
+          {
+            "total": 10,
+            "v2": 0,
+            "en_ventana_no_v2": 0,
+            "fuera": 10,
+            "n_log_entries": 12
+          },
+          {
+            "total": 10,
+            "v2": 0,
+            "en_ventana_no_v2": 0,
+            "fuera": 10,
+            "n_log_entries": 12
+          }
+        ],
+        "totales": {
+          "top_impact": 20,
+          "v2": 0,
+          "en_ventana_sin_v2": 0,
+          "fuera": 20,
+          "n_log_entries_mean": 12
+        }
+      },
+      "postgres": {
+        "muestras": [
+          {
+            "total": 10,
+            "v2": 10,
+            "en_ventana_no_v2": 0,
+            "fuera": 0,
+            "n_log_entries": 42
+          },
+          {
+            "total": 10,
+            "v2": 10,
+            "en_ventana_no_v2": 0,
+            "fuera": 0,
+            "n_log_entries": 42
+          }
+        ],
+        "totales": {
+          "top_impact": 20,
+          "v2": 20,
+          "en_ventana_sin_v2": 0,
+          "fuera": 0,
+          "n_log_entries_mean": 42
+        }
+      }
+    },
+    "tail=50000_noise=49990": {
+      "mysql": {
+        "muestras": [
+          {
+            "total": 10,
+            "v2": 0,
+            "en_ventana_no_v2": 0,
+            "fuera": 10,
+            "n_log_entries": 12
+          },
+          {
+            "total": 10,
+            "v2": 0,
+            "en_ventana_no_v2": 0,
+            "fuera": 10,
+            "n_log_entries": 12
+          }
+        ],
+        "totales": {
+          "top_impact": 20,
+          "v2": 0,
+          "en_ventana_sin_v2": 0,
+          "fuera": 20,
+          "n_log_entries_mean": 12
         }
       },
       "postgres": {
@@ -326,14 +334,14 @@
             "v2": 0,
             "en_ventana_no_v2": 0,
             "fuera": 10,
-            "n_log_entries": 1
+            "n_log_entries": 11
           },
           {
             "total": 10,
             "v2": 0,
             "en_ventana_no_v2": 0,
             "fuera": 10,
-            "n_log_entries": 1
+            "n_log_entries": 11
           }
         ],
         "totales": {
@@ -341,7 +349,111 @@
           "v2": 0,
           "en_ventana_sin_v2": 0,
           "fuera": 20,
-          "n_log_entries_mean": 1
+          "n_log_entries_mean": 11
+        }
+      }
+    },
+    "tail=50000_noise=51000": {
+      "mysql": {
+        "muestras": [
+          {
+            "total": 10,
+            "v2": 0,
+            "en_ventana_no_v2": 0,
+            "fuera": 10,
+            "n_log_entries": 12
+          },
+          {
+            "total": 10,
+            "v2": 0,
+            "en_ventana_no_v2": 0,
+            "fuera": 10,
+            "n_log_entries": 12
+          }
+        ],
+        "totales": {
+          "top_impact": 20,
+          "v2": 0,
+          "en_ventana_sin_v2": 0,
+          "fuera": 20,
+          "n_log_entries_mean": 12
+        }
+      },
+      "postgres": {
+        "muestras": [
+          {
+            "total": 10,
+            "v2": 0,
+            "en_ventana_no_v2": 0,
+            "fuera": 10,
+            "n_log_entries": 11
+          },
+          {
+            "total": 10,
+            "v2": 0,
+            "en_ventana_no_v2": 0,
+            "fuera": 10,
+            "n_log_entries": 11
+          }
+        ],
+        "totales": {
+          "top_impact": 20,
+          "v2": 0,
+          "en_ventana_sin_v2": 0,
+          "fuera": 20,
+          "n_log_entries_mean": 11
+        }
+      }
+    },
+    "tail=50000_noise=60000": {
+      "mysql": {
+        "muestras": [
+          {
+            "total": 10,
+            "v2": 0,
+            "en_ventana_no_v2": 0,
+            "fuera": 10,
+            "n_log_entries": 12
+          },
+          {
+            "total": 10,
+            "v2": 0,
+            "en_ventana_no_v2": 0,
+            "fuera": 10,
+            "n_log_entries": 12
+          }
+        ],
+        "totales": {
+          "top_impact": 20,
+          "v2": 0,
+          "en_ventana_sin_v2": 0,
+          "fuera": 20,
+          "n_log_entries_mean": 12
+        }
+      },
+      "postgres": {
+        "muestras": [
+          {
+            "total": 10,
+            "v2": 0,
+            "en_ventana_no_v2": 0,
+            "fuera": 10,
+            "n_log_entries": 11
+          },
+          {
+            "total": 10,
+            "v2": 0,
+            "en_ventana_no_v2": 0,
+            "fuera": 10,
+            "n_log_entries": 11
+          }
+        ],
+        "totales": {
+          "top_impact": 20,
+          "v2": 0,
+          "en_ventana_sin_v2": 0,
+          "fuera": 20,
+          "n_log_entries_mean": 11
         }
       }
     }

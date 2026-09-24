@@ -21,14 +21,67 @@ PARSERS = {"postgres": parse_pg_csvlog, "mysql": parse_mysql_slow_log}
 PATHS = {k: v["path"] for k, v in LOG_SOURCES.items()}
 
 # (lineas fisicas de cola del log que lee el pipeline, queries de ruido posterior)
+# Cartografia del umbral de la ventana de produccion (50k por defecto). Cada query
+# de ruido genera 1 linea fisica en el csvlog de PostgreSQL (heuristico) y ~5 en
+# el slow log de MySQL, por eso el cruce del umbral de formateado aparece primero
+# en MySQL. Para cruzar cantidades grandes sin gastar horas de bateria, las celdas
+# con noise > BULK_NOISE_THRESHOLD anexan el relleno directamente al log con el
+# mismo formato real (ver write_bulk_filler).
+BULK_NOISE_THRESHOLD = 2000
+
 GRID = [
-    (200000, 0),    # control: ventana gigante, sin enterramiento
-    (200000, 900),  # ventana gigante, ruido fuerte -> deberia seguir 100 %
-    (1000, 900),    # ventana media, ruido fuerte
-    (200, 900),     # ventana chica, ruido fuerte
-    (200, 0),       # ventana chica, sin ruido
-    (50, 0),        # ventana minimima, sin ruido
+    (50000, 0),        # control: ventana de produccion (por defecto), sin relleno
+    (50000, 900),      # relleno normal via bateria -> deberia seguir 100 %
+    (50000, 10000),    # masivo: ya entierra MySQL (~5 lineas/query x 10k = ~50k fisicas); pg (1 linea/query) no
+    (50000, 20000),    # masivo: MySQL enterrada con margen; PostgreSQL todavia 100 %
+    (50000, 48000),    # masivo: justo antes del umbral de PostgreSQL -> sigue 100 %
+    (50000, 49990),    # masivo: en el borde del umbral de PostgreSQL -> ya cae a 0 % (corte abrupto)
+    (50000, 51000),    # masivo: apenas por encima del umbral de PostgreSQL
+    (50000, 60000),    # masivo: por encima del umbral con margen
 ]
+
+_FILLER_TS = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S.000 UTC")
+
+
+def write_bulk_filler(noise):
+    """Simula ruido posterior masivo escribiendo las lineas directamente en los
+    logs con el mismo formato que producen los motores. Mismo efecto sobre la
+    ventana: el bloque de queries pesadas queda 'enterrado' solo si el total de
+    lo escrito despues las supera desde el final."""
+    pg_row = ",".join([
+        _FILLER_TS, "ql_sysbench", "ql_user", "ql_demo", "0", "", "app",
+        "ql_user", "0", "0", "0", "0", "0",
+        "duration: 1.234 ms statement: SELECT c FROM sbtest1 WHERE id = {i}",
+        "Parameters: $1 = '{i}'", "", "", "", "", "SELECT c FROM sbtest1 WHERE id = $1",
+    ])
+    with open(PATHS["postgres"], "a", encoding="utf-8") as f:
+        for start in range(0, noise, 1000):
+            f.write("".join(pg_row.format(i=i) + "\n" for i in range(start, min(start + 1000, noise))))
+    _mysql_filler(PATHS["mysql"], noise)
+
+
+def _mysql_filler(path, noise):
+    lines = []
+    for i in range(noise):
+        lines.append("# Time: " + _FILLER_TS.replace(" UTC", "Z").replace(" ", "T") + "\n")
+        lines.append("# User@Host: app_user[app_user] @  [172.17.0.2]\n")
+        lines.append("# Query_time: 0.001234  Lock_time: 0.000000 Rows_sent: 1  Rows_examined: 1\n")
+        lines.append("SET timestamp=1750000000;\n")
+        lines.append(f"SELECT c FROM sbtest1 WHERE id = {i};\n")
+    with open(path, "a", encoding="utf-8") as fp:
+        fp.write("".join(lines))
+
+
+def _mysql_filler(path, noise):
+    lines = []
+    for i in range(noise):
+        lines.append("# Time: " + _FILLER_TS.replace(" UTC", "Z").replace(" ", "T") + "\n")
+        lines.append("# User@Host: app_user[app_user] @  [172.17.0.2]\n")
+        lines.append("# Query_time: 0.001234  Lock_time: 0.000000 Rows_sent: 1  Rows_examined: 1\n")
+        lines.append("SET timestamp=1750000000;\n")
+        lines.append(f"SELECT c FROM sbtest1 WHERE id = {i};\n")
+    with open(path, "a", encoding="utf-8") as fp:
+        fp.write("".join(lines))
 
 _REPORT_HEAD = "=" * 72
 
@@ -70,14 +123,18 @@ def analyze_payload(payload, engine, tail_lines, since):
 
 def run_cell(tail_lines, noise, reps, samples):
     cell = {}
+    bulk = noise > BULK_NOISE_THRESHOLD
+    battery_noise = 0 if bulk else noise
     for s in range(1, samples + 1):
         since = datetime.now(timezone.utc).isoformat(timespec="seconds")
         os.environ["QL_LOG_TAIL_LINES"] = str(tail_lines)
         os.environ["QL_LOG_SINCE"] = since
         subprocess.run(
-            ["docker", "exec", "ql_sysbench", "bash", "/scripts/battery.sh", str(reps), str(noise)],
+            ["docker", "exec", "ql_sysbench", "bash", "/scripts/battery.sh", str(reps), str(battery_noise)],
             check=True,
         )
+        if bulk:
+            write_bulk_filler(noise)
         subprocess.run([PY, os.path.join(PIPELINE, "main.py")], check=True)
 
         with get_connection_querylens_db().connect() as conn:
@@ -147,7 +204,8 @@ def save_results(agg, args, out_dir):
             "reps_bateria": args.reps,
             "run_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "grid": [{"tail_lines": t, "noise": n} for t, n in GRID],
-            "mecanica": "v2 = LogsBackfillStage actual (colas del log via QL_LOG_TAIL_LINES)",
+            "mecanica": "v2 = LogsBackfillStage actual (colas del log via QL_LOG_TAIL_LINES, default 50000); "
+                        "noise > " + str(BULK_NOISE_THRESHOLD) + " se anexa masivamente al log en lugar de bateria real",
         },
         "por_celda": {},
     }

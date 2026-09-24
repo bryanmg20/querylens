@@ -25,7 +25,7 @@ MAX_PARSE_ROWS = 500000
 
 # Cuantas lineas fisicas del final de cada log se leen por ciclo. Como el log
 # crece sin fin, se preserva lo RECIENTE (cola) en vez de lo viejo (cabeza).
-LOG_TAIL_LINES = int(os.getenv("QL_LOG_TAIL_LINES", "200000"))
+LOG_TAIL_LINES = int(os.getenv("QL_LOG_TAIL_LINES", "50000"))
 
 # Primera columna del csvlog de PostgreSQL (log_time) para detectar filas validas
 PG_ROW_START = re.compile(r"^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+")

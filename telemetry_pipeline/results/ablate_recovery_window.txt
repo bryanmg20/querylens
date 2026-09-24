@@ -5,28 +5,36 @@ ventana = firma de la top-impact presente en la ventana leida
 fuera = top-impact cuya firma quedo enterrada fuera de la ventana
 ========================================================================
 
-:: ventana=200000 lineas | ruido posterior=0 | muestras=2
+:: ventana=50000 lineas | ruido posterior=0 | muestras=2
   mysql     v2=20/20 (100%; min/max 100/100) | cobertura de ventana 100% | en_ventana_sin_v2=0 fuera=0 | entradas promedio en ventana=42
   postgres  v2=20/20 (100%; min/max 100/100) | cobertura de ventana 100% | en_ventana_sin_v2=0 fuera=0 | entradas promedio en ventana=42
 
-:: ventana=200000 lineas | ruido posterior=900 | muestras=2
-  mysql     v2=20/20 (100%; min/max 100/100) | cobertura de ventana 100% | en_ventana_sin_v2=0 fuera=0 | entradas promedio en ventana=942
+:: ventana=50000 lineas | ruido posterior=900 | muestras=2
+  mysql     v2=20/20 (100%; min/max 100/100) | cobertura de ventana 100% | en_ventana_sin_v2=0 fuera=0 | entradas promedio en ventana=943
   postgres  v2=20/20 (100%; min/max 100/100) | cobertura de ventana 100% | en_ventana_sin_v2=0 fuera=0 | entradas promedio en ventana=942
 
-:: ventana=1000 lineas | ruido posterior=900 | muestras=2
-  mysql     v2=10/20 (50%; min/max 50/50) | cobertura de ventana 50% | en_ventana_sin_v2=0 fuera=10 | entradas promedio en ventana=86
-  postgres  v2=2/20 (10%; min/max 10/10) | cobertura de ventana 10% | en_ventana_sin_v2=0 fuera=18 | entradas promedio en ventana=877
-
-:: ventana=200 lineas | ruido posterior=900 | muestras=2
-  mysql     v2=2/20 (10%; min/max 10/10) | cobertura de ventana 10% | en_ventana_sin_v2=0 fuera=18 | entradas promedio en ventana=12
-  postgres  v2=3/20 (15%; min/max 10/20) | cobertura de ventana 15% | en_ventana_sin_v2=0 fuera=17 | entradas promedio en ventana=76
-
-:: ventana=200 lineas | ruido posterior=0 | muestras=2
-  mysql     v2=2/20 (10%; min/max 10/10) | cobertura de ventana 10% | en_ventana_sin_v2=0 fuera=18 | entradas promedio en ventana=12
+:: ventana=50000 lineas | ruido posterior=10000 | muestras=2
+  mysql     v2=0/20 (0%; min/max 0/0) | cobertura de ventana 0% | en_ventana_sin_v2=0 fuera=20 | entradas promedio en ventana=12
   postgres  v2=20/20 (100%; min/max 100/100) | cobertura de ventana 100% | en_ventana_sin_v2=0 fuera=0 | entradas promedio en ventana=42
 
-:: ventana=50 lineas | ruido posterior=0 | muestras=2
-  mysql     v2=0/20 (0%; min/max 0/0) | cobertura de ventana 0% | en_ventana_sin_v2=0 fuera=20 | entradas promedio en ventana=3
-  postgres  v2=0/20 (0%; min/max 0/0) | cobertura de ventana 0% | en_ventana_sin_v2=0 fuera=20 | entradas promedio en ventana=1
+:: ventana=50000 lineas | ruido posterior=20000 | muestras=2
+  mysql     v2=0/20 (0%; min/max 0/0) | cobertura de ventana 0% | en_ventana_sin_v2=0 fuera=20 | entradas promedio en ventana=12
+  postgres  v2=20/20 (100%; min/max 100/100) | cobertura de ventana 100% | en_ventana_sin_v2=0 fuera=0 | entradas promedio en ventana=42
+
+:: ventana=50000 lineas | ruido posterior=48000 | muestras=2
+  mysql     v2=0/20 (0%; min/max 0/0) | cobertura de ventana 0% | en_ventana_sin_v2=0 fuera=20 | entradas promedio en ventana=12
+  postgres  v2=20/20 (100%; min/max 100/100) | cobertura de ventana 100% | en_ventana_sin_v2=0 fuera=0 | entradas promedio en ventana=42
+
+:: ventana=50000 lineas | ruido posterior=49990 | muestras=2
+  mysql     v2=0/20 (0%; min/max 0/0) | cobertura de ventana 0% | en_ventana_sin_v2=0 fuera=20 | entradas promedio en ventana=12
+  postgres  v2=0/20 (0%; min/max 0/0) | cobertura de ventana 0% | en_ventana_sin_v2=0 fuera=20 | entradas promedio en ventana=11
+
+:: ventana=50000 lineas | ruido posterior=51000 | muestras=2
+  mysql     v2=0/20 (0%; min/max 0/0) | cobertura de ventana 0% | en_ventana_sin_v2=0 fuera=20 | entradas promedio en ventana=12
+  postgres  v2=0/20 (0%; min/max 0/0) | cobertura de ventana 0% | en_ventana_sin_v2=0 fuera=20 | entradas promedio en ventana=11
+
+:: ventana=50000 lineas | ruido posterior=60000 | muestras=2
+  mysql     v2=0/20 (0%; min/max 0/0) | cobertura de ventana 0% | en_ventana_sin_v2=0 fuera=20 | entradas promedio en ventana=12
+  postgres  v2=0/20 (0%; min/max 0/0) | cobertura de ventana 0% | en_ventana_sin_v2=0 fuera=20 | entradas promedio en ventana=11
 
 ========================================================================
