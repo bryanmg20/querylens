@@ -200,23 +200,23 @@ El diagnóstico del rendimiento y de los problemas de contención en bases de da
 
 #### 5.1.1 pganalyze
 
-pganalyze es una solución comercial especializada en la observabilidad y optimización del rendimiento de PostgreSQL. Entre sus funcionalidades se encuentran el análisis de estadísticas de consultas, seguimiento de latencia, análisis de planes de ejecución, recomendaciones de optimización, análisis de índices, información sobre conexiones y alertas. Su módulo Query Advisor analiza automáticamente los planes de ejecución para identificar oportunidades de optimización y proporcionar sugerencias accionables. [1]
+pganalyze es una solución comercial especializada en la observabilidad y optimización del rendimiento de PostgreSQL. Entre sus funcionalidades se encuentran el análisis de estadísticas de consultas, seguimiento de latencia, análisis de planes de ejecución, recomendaciones de optimización, análisis de índices, información sobre conexiones y alertas. Su módulo Query Advisor analiza automáticamente los planes de ejecución para identificar oportunidades de optimización y proporcionar sugerencias accionables. [19]
 
-Una característica relevante es que pganalyze utiliza un componente denominado *pganalyze Collector* para recopilar información del entorno. Este componente debe instalarse en el servidor de base de datos o en un contenedor o máquina virtual que pueda conectarse a este. [2]
+Una característica relevante es que pganalyze utiliza un componente denominado *pganalyze Collector* para recopilar información del entorno. Este componente debe instalarse en el servidor de base de datos o en un contenedor o máquina virtual que pueda conectarse a este. [20]
 
 pganalyze constituye un antecedente importante para QUERYLENS por su profundidad en el análisis de consultas y planes de ejecución. Sin embargo, su especialización se encuentra en PostgreSQL y su arquitectura de recolección utiliza un componente dedicado. QUERYLENS plantea, en cambio, una arquitectura multi-motor con una capa de recolección *agentless* y un modelo común para representar la información obtenida de los diferentes motores.
 
 #### 5.1.2 SolarWinds Database Performance Analyzer
 
-SolarWinds Database Performance Analyzer (DPA) es una plataforma comercial orientada al monitoreo, diagnóstico y optimización del rendimiento de bases de datos. La herramienta utiliza análisis basado en tiempos de espera para identificar cuellos de botella y permite investigar consultas con tiempos de espera elevados, consultas ineficientes y anomalías de rendimiento. Además, soporta diferentes sistemas gestores y proporciona una vista centralizada de su rendimiento. [3]
+SolarWinds Database Performance Analyzer (DPA) es una plataforma comercial orientada al monitoreo, diagnóstico y optimización del rendimiento de bases de datos. La herramienta utiliza análisis basado en tiempos de espera para identificar cuellos de botella y permite investigar consultas con tiempos de espera elevados, consultas ineficientes y anomalías de rendimiento. Además, soporta diferentes sistemas gestores y proporciona una vista centralizada de su rendimiento. [21]
 
-Una característica especialmente relevante para QUERYLENS es su arquitectura *agentless*. La documentación de DPA indica que la herramienta utiliza este enfoque y que el consumo de recursos en sistemas de producción es inferior al 1 %. [4]
+Una característica especialmente relevante para QUERYLENS es su arquitectura *agentless*. La documentación de DPA indica que la herramienta utiliza este enfoque y que el consumo de recursos en sistemas de producción es inferior al 1 %. [22]
 
 DPA representa uno de los antecedentes técnicos más relevantes para QUERYLENS, debido a la combinación de recolección sin agente, análisis de rendimiento y soporte multi-motor. La diferencia principal se encuentra en el enfoque de análisis: QUERYLENS plantea un catálogo explícito de anti-patrones, reglas deterministas, trazabilidad de la evidencia y un modelo canónico que permita abstraer las diferencias entre PostgreSQL y MySQL.
 
 #### 5.1.3 Quest Foglight
 
-Quest Foglight es una plataforma comercial de observabilidad y diagnóstico para diferentes tecnologías de bases de datos. Su arquitectura permite trabajar con distintos motores mediante componentes específicos, incluyendo PostgreSQL y MySQL. [5]
+Quest Foglight es una plataforma comercial de observabilidad y diagnóstico para diferentes tecnologías de bases de datos. Su arquitectura permite trabajar con distintos motores mediante componentes específicos, incluyendo PostgreSQL y MySQL. [23]
 
 La solución proporciona capacidades orientadas al análisis del rendimiento y de las consultas, además de herramientas para investigar problemas relacionados con eventos y actividad de las bases de datos. Su soporte para múltiples tecnologías la convierte en un antecedente relevante para el enfoque multi-motor de QUERYLENS.
 
@@ -224,9 +224,9 @@ La principal diferencia se encuentra en el objetivo de la solución. Foglight ab
 
 #### 5.1.4 Redgate Monitor
 
-Redgate Monitor es una plataforma comercial de monitoreo que permite supervisar diferentes motores de bases de datos desde una interfaz común. Actualmente soporta, entre otras tecnologías, SQL Server, PostgreSQL, Oracle, MySQL y MongoDB. Proporciona funcionalidades relacionadas con consultas, planes de ejecución, estadísticas de espera, rendimiento, alertas y análisis histórico. [6]
+Redgate Monitor es una plataforma comercial de monitoreo que permite supervisar diferentes motores de bases de datos desde una interfaz común. Actualmente soporta, entre otras tecnologías, SQL Server, PostgreSQL, Oracle, MySQL y MongoDB. Proporciona funcionalidades relacionadas con consultas, planes de ejecución, estadísticas de espera, rendimiento, alertas y análisis histórico. [24]
 
-Una característica importante para el análisis de QUERYLENS es que las capacidades disponibles no son idénticas para todos los motores. Por ejemplo, la documentación de Redgate muestra que PostgreSQL dispone de determinadas capacidades de análisis de consultas y esperas, mientras que algunas funcionalidades de bloqueo y deadlocks se encuentran disponibles únicamente para determinados motores. [6]
+Una característica importante para el análisis de QUERYLENS es que las capacidades disponibles no son idénticas para todos los motores. Por ejemplo, la documentación de Redgate muestra que PostgreSQL dispone de determinadas capacidades de análisis de consultas y esperas, mientras que algunas funcionalidades de bloqueo y deadlocks se encuentran disponibles únicamente para determinados motores. [24]
 
 Esta diferencia evidencia uno de los retos principales del enfoque multi-motor: aunque una plataforma pueda soportar diferentes sistemas gestores, la información disponible y las capacidades de diagnóstico pueden variar entre ellos. QUERYLENS aborda este problema mediante la definición de un modelo canónico y funciones de traducción específicas para cada motor.
 
@@ -234,9 +234,9 @@ Esta diferencia evidencia uno de los retos principales del enfoque multi-motor: 
 
 #### 5.2.1 Percona Monitoring and Management
 
-Percona Monitoring and Management (PMM) es una plataforma de código abierto orientada a la observabilidad, monitoreo y administración de bases de datos. Actualmente proporciona visibilidad sobre MySQL, PostgreSQL y MongoDB, desde métricas generales de los clústeres hasta información sobre consultas individuales. También permite desplegarse en entornos locales, cloud e híbridos. [7]
+Percona Monitoring and Management (PMM) es una plataforma de código abierto orientada a la observabilidad, monitoreo y administración de bases de datos. Actualmente proporciona visibilidad sobre MySQL, PostgreSQL y MongoDB, desde métricas generales de los clústeres hasta información sobre consultas individuales. También permite desplegarse en entornos locales, cloud e híbridos. [25]
 
-PMM constituye un antecedente relevante porque demuestra que es posible construir una plataforma de observabilidad multi-motor utilizando componentes de código abierto. Su arquitectura utiliza dos componentes principales, denominados *Server* y *Client*, para recopilar y centralizar la información de las bases de datos monitorizadas. [7]
+PMM constituye un antecedente relevante porque demuestra que es posible construir una plataforma de observabilidad multi-motor utilizando componentes de código abierto. Su arquitectura utiliza dos componentes principales, denominados *Server* y *Client*, para recopilar y centralizar la información de las bases de datos monitorizadas. [25]
 
 Frente a este enfoque, QUERYLENS plantea una arquitectura de recolección *agentless*, en la que no se requiere instalar agentes dentro del servidor de base de datos. Además, mientras PMM busca proporcionar una plataforma general de observabilidad, QUERYLENS concentra el análisis en un catálogo específico de patologías y en la generación de explicaciones trazables y accionables.
 
@@ -515,4 +515,52 @@ Describe las actividades restantes, prioridades, riesgos y estrategia de cierre 
 
 ## 16. Referencias
 
-Incluye las fuentes consultadas y citadas en el documento.
+[1] T. Haerder y A. Reuter. (1983). Principles of transaction-oriented database recovery. *ACM Computing Surveys*, 15(4), 287–317. https://doi.org/10.1145/289.291
+ 
+[2] PostgreSQL Global Development Group. (2024). *Chapter 13. Concurrency Control*. PostgreSQL 17 Documentation. https://www.postgresql.org/docs/17/mvcc.html
+ 
+[3] Oracle. (2026). *Chapter 17. The InnoDB Storage Engine*. MySQL 8.0 Reference Manual. https://dev.mysql.com/doc/refman/8.0/en/innodb-storage-engine.html
+ 
+[4] P. G. Selinger, M. M. Astrahan, D. D. Chamberlin, R. A. Lorie y T. G. Price. (1979). Access path selection in a relational database management system. En *Proceedings of the 1979 ACM SIGMOD International Conference on Management of Data* (pp. 23–34). https://doi.org/10.1145/582095.582099
+ 
+[5] G. Moerkotte, T. Neumann y G. Steidl. (2009). Preventing bad plans by bounding the impact of cardinality estimation errors. *Proceedings of the VLDB Endowment*, 2(1), 982–993. https://doi.org/10.14778/1687627.1687738
+ 
+[6] M. Winand. (2012). *SQL Performance Explained*. Markus Winand. https://use-the-index-luke.com
+ 
+[7] M. Fowler. (2002). *Patterns of Enterprise Application Architecture*. Addison-Wesley.
+ 
+[8] Oracle. (2026). *InnoDB Locking and Transaction Model*. MySQL 8.0 Reference Manual. https://dev.mysql.com/doc/refman/8.0/en/innodb-locking-transaction-model.html
+ 
+[9] E. G. Coffman, M. Elphick y A. Shoshani. (1971). System deadlocks. *ACM Computing Surveys*, 3(2), 67–78. https://doi.org/10.1145/356586.356588
+ 
+[10] Oracle. (2026). *Deadlocks in InnoDB*. MySQL 8.0 Reference Manual. https://dev.mysql.com/doc/refman/8.0/en/innodb-deadlocks.html
+ 
+[11] C. Majors, L. Fong-Jones y G. Miranda. (2022). *Observability Engineering*. O'Reilly Media.
+ 
+[12] PostgreSQL Global Development Group. (2024). *pg_stat_statements — track statistics of SQL planning and execution*. PostgreSQL 17 Documentation. https://www.postgresql.org/docs/17/pgstatstatements.html
+ 
+[13] Oracle. (2026). *MySQL Performance Schema*. MySQL 8.0 Reference Manual. https://dev.mysql.com/doc/refman/8.0/en/performance-schema.html
+ 
+[14] G. Hohpe y B. Woolf. (2003). *Enterprise Integration Patterns: Designing, Building, and Deploying Messaging Solutions*. Addison-Wesley.
+ 
+[15] Congreso de la República de Colombia. (2012). *Ley Estatutaria 1581 de 2012, por la cual se dictan disposiciones generales para la protección de datos personales*. Diario Oficial 48.587.
+ 
+[16] M.-C. Hsueh, T. K. Tsai y R. K. Iyer. (1997). Fault injection techniques and tools. *Computer*, 30(4), 75–82. https://doi.org/10.1109/2.585157
+ 
+[17] C. D. Manning, P. Raghavan y H. Schütze. (2008). *Introduction to Information Retrieval*. Cambridge University Press.
+ 
+[18] A. Kopytov. (2026). *sysbench: Scriptable database and system performance benchmark*. GitHub. https://github.com/akopytov/sysbench
+ 
+[19] pganalyze. (2026). *Query Performance*. pganalyze Documentation. https://pganalyze.com/docs/query-performance
+ 
+[20] pganalyze. (2026). *pganalyze Documentation*. https://pganalyze.com/docs
+ 
+[21] SolarWinds. (2026). *Database Performance Analyzer*. https://www.solarwinds.com/database-performance-analyzer
+ 
+[22] SolarWinds. (2026). *Introduction to Database Performance Analyzer*. SolarWinds Documentation. https://documentation.solarwinds.com/en/success_center/dpa/content/dpa-introduction.htm
+ 
+[23] Quest Software. (2026). *Foglight for Databases*. https://www.quest.com/products/foglight-for-cross-platform-databases/
+ 
+[24] Redgate Software. (2026). *Comparison of functionality by database engine*. Redgate Monitor Documentation. https://documentation.red-gate.com/monitor/comparison-of-functionality-by-database-engine-342852844.html
+ 
+[25] Percona. (2026). *Percona Monitoring and Management*. Percona Documentation. https://docs.percona.com/percona-monitoring-and-management/2/index.html
