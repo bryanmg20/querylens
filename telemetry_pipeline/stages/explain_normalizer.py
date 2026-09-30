@@ -30,6 +30,7 @@ class PostgresExplainNormalizer:
 
             canonic_explains.append({
                 "query_id": explain.get("query_id"),
+                "explain_source": explain.get("explain_source"),
                 "canonical_plan": canonical_plan,
             })
 
@@ -195,6 +196,7 @@ class MysqlExplainNormalizer:
 
             canonic_explains.append({
                 "query_id": explain.get("query_id"),
+                "explain_source": explain.get("explain_source"),
                 "canonical_plan": canonical_plan,
             })
 

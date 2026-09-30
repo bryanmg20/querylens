@@ -57,7 +57,7 @@ class StatementRow(BaseModel):
 class StatementCandidate(StatementRow):
     canonic_query: str | None = None
     selected_by: list[str] = Field(default_factory=list)
-    real_query_found: bool = False
+    ready_for_explain: bool = False
 
 
 class LockRow(BaseModel):
@@ -137,6 +137,7 @@ class CanonicalPlan(BaseModel):
 
 class CanonicExplain(BaseModel):
     query_id: QueryId
+    explain_source: str | None = None
     canonical_plan: CanonicalPlan
 
 

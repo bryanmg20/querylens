@@ -32,3 +32,8 @@ class Postgres_Collector(DB_Engine_Collector):
     def normalize_engine_artifacts(self, stats: Stats) -> Stats:
         normalize.normalize_active_query_timestamps(stats)
         return stats
+
+    def mark_explainable(self, stats: Stats) -> Stats:
+        for candidate in stats.get("top_impact_queries", []):
+            candidate["ready_for_explain"] = True
+        return stats

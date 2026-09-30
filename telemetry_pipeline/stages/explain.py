@@ -5,7 +5,6 @@ from sqlalchemy import text
 from logger import get_logger
 from models.stats import Stats
 from stages import explain_normalizer as en
-from stages.log_reader import materialize_placeholders
 
 logger = get_logger(__name__)
 
@@ -42,21 +41,21 @@ class ExplainStage:
 
         for query in stats.get("top_impact_queries", []):
             query_id = query.get("query_id")
-            if query_id is None or not query.get("real_query_found"):
+            if query_id is None or not query.get("ready_for_explain"):
                 continue
 
-            query_text = query.get("query_text")
+            dialect = self.collector.source_dialect
+            query_text = (
+                query.get("query_text")
+                if dialect == "postgres"
+                else query.get("query_sample_text")
+            )
             if not is_single_statement(query_text):
                 logger.warning(
-                    f"{self.collector.source_dialect} | EXPLAIN | query_id={query_id} "
+                    f"{dialect} | EXPLAIN | query_id={query_id} "
                     "| skipped multi-statement query"
                 )
                 continue
-
-            if self.collector.source_dialect == "postgres":
-                query_text = materialize_placeholders(
-                    query_text, query.get("query_params")
-                )
 
             try:
                 context_sql = self._schema_context_sql(
@@ -67,10 +66,13 @@ class ExplainStage:
                 if context_sql:
                     conn.execute(text(context_sql))
 
-                if self.collector.source_dialect == "postgres":
-                    result = conn.execute(text(f"EXPLAIN (FORMAT JSON) {query_text}"))
+                if dialect == "postgres":
+                    result = conn.execute(
+                        text(f"EXPLAIN (GENERIC_PLAN, FORMAT JSON) {query_text}")
+                    )
                     stats["query_explain"].append({
                         "query_id": query_id,
+                        "explain_source": "generic",
                         "plan": [dict(row) for row in result.mappings()],
                     })
                 else:
@@ -81,11 +83,12 @@ class ExplainStage:
                         continue
                     stats["query_explain"].append({
                         "query_id": query_id,
+                        "explain_source": "sample",
                         "plan": json.loads(plan_row["EXPLAIN"]),
                     })
             except Exception as e:
                 conn.rollback()
-                logger.error(f"{self.collector.source_dialect} | EXPLAIN | query_id={query_id} | {e}")
+                logger.error(f"{dialect} | EXPLAIN | query_id={query_id} | {e}")
 
         normalizer = EXPLAIN_NORMALIZERS[self.collector.source_dialect]()
         normalizer.normalize(stats)

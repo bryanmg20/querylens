@@ -63,6 +63,7 @@ STATEMENTS_QUERY = """
 SELECT
     s.DIGEST                                                        AS query_id,
     s.DIGEST_TEXT                                                   AS query_text,
+    s.QUERY_SAMPLE_TEXT                                             AS query_sample_text,
     s.schema_name                                                     AS schema_name,
     CAST(s.COUNT_STAR AS SIGNED)                                    AS execution_count,
     CAST(s.SUM_ROWS_SENT AS SIGNED)                                 AS rows_returned,
@@ -79,6 +80,10 @@ WHERE s.DIGEST_TEXT IS NOT NULL
   AND s.DIGEST_TEXT NOT LIKE '%performance_schema%'
   AND s.DIGEST_TEXT NOT LIKE '%information_schema%'
   AND s.DIGEST_TEXT NOT LIKE '%events_statements_summary%'
+  AND s.DIGEST_TEXT NOT LIKE 'SELECT @@%'
+  AND s.DIGEST_TEXT NOT LIKE 'SELECT `VERSION`%'
+  AND s.DIGEST_TEXT NOT LIKE 'SET @@%'
+  AND s.DIGEST_TEXT NOT LIKE 'SHOW %'
 ORDER BY s.SUM_TIMER_WAIT DESC;
 """
 

@@ -72,6 +72,6 @@ def select_explain_ready(stats: Stats):
 
             query_id = candidate.get('query_id')
             if query_id is not None:
-                readys[query_id] = {**candidate, "real_query_found": False}
+                readys[query_id] = {**candidate, "ready_for_explain": False}
 
         stats["top_impact_queries"] = list(readys.values())

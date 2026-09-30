@@ -7,3 +7,6 @@ class DB_Engine_Collector:
 
     def normalize_engine_artifacts(self, stats: Stats) -> Stats:
         return stats
+
+    def mark_explainable(self, stats: Stats) -> Stats:
+        return stats

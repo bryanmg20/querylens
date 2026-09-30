@@ -66,3 +66,9 @@ class Mysql_Collector(DB_Engine_Collector):
         normalize.normalize_blocking_pids(stats)
         normalize.normalize_predicate(stats)
         return stats
+
+    def mark_explainable(self, stats: Stats) -> Stats:
+        for candidate in stats.get("top_impact_queries", []):
+            sample = (candidate.get("query_sample_text") or "").strip()
+            candidate["ready_for_explain"] = bool(sample)
+        return stats

@@ -101,7 +101,7 @@ def test_explain_ready_starts_unresolved():
     }
     select_explain_ready(stats)
     for ready in stats["top_impact_queries"]:
-        assert ready["real_query_found"] is False
+        assert ready["ready_for_explain"] is False
     assert stats["top_impact_queries"][0]["query_text"] == "old text"
 
 
@@ -111,4 +111,4 @@ def test_explain_ready_default_false():
         "active_queries": [],
     }
     select_explain_ready(stats)
-    assert stats["top_impact_queries"][0]["real_query_found"] is False
+    assert stats["top_impact_queries"][0]["ready_for_explain"] is False

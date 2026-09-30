@@ -13,7 +13,6 @@ from stages.collect import CollectStage
 from stages.enrich import EnrichStage
 from stages.explain import ExplainStage
 from stages.explain_normalizer import PostgresExplainNormalizer, MysqlExplainNormalizer, EXPLAIN_NORMALIZERS
-from stages.log_backfill import LogsBackfillStage
 from stages.normalize import NormalizeStage
 
 pytestmark = pytest.mark.contract
@@ -71,7 +70,7 @@ class TestExplainNormalizerRegistry:
 class TestPipelineStages:
     @pytest.mark.parametrize(
         "stage_cls",
-        [CollectStage, CandidatesStage, ExplainStage, NormalizeStage, EnrichStage, LogsBackfillStage],
+        [CollectStage, CandidatesStage, ExplainStage, NormalizeStage, EnrichStage],
     )
     def test_every_stage_exposes_execute(self, stage_cls):
         collector = DB_Engine_Collector()
@@ -81,7 +80,6 @@ class TestPipelineStages:
         orchestrator = Orchestrator(DB_Engine_Collector())
         assert isinstance(orchestrator.collect, CollectStage)
         assert isinstance(orchestrator.candidates, CandidatesStage)
-        assert isinstance(orchestrator.log_backfill, LogsBackfillStage)
         assert isinstance(orchestrator.explain, ExplainStage)
         assert isinstance(orchestrator.normalize, NormalizeStage)
         assert isinstance(orchestrator.enrich, EnrichStage)

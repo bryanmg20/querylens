@@ -15,6 +15,9 @@ class _FakePostgresCollector:
     def preprocess_statements(self, stats):
         return stats
 
+    def mark_explainable(self, stats):
+        return stats
+
 
 def test_build_user_schema_map_keeps_first_row_per_user():
     rows = [
