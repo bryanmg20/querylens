@@ -6,8 +6,8 @@ Cómo generar carga sobre las bases (sysbench) ejecutando `simulate_queries.sh`,
 
 1. Abrir una shell dentro del contenedor de sysbench:
 
-```bash
-docker exec -it ql_sysbench bash
+docker exec -it ql_sysbench bash```bash
+
 ```
 
 2. Instalar los clientes de ambos motores (una sola vez):
