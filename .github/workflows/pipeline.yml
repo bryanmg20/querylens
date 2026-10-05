@@ -2,7 +2,9 @@ name: pipeline
 
 on:
   push:
-    branches: [main]
+    # develop es la rama de integracion por ahora, pero cualquier push directo
+    # dispara el workflow: las ramas de trabajo validan sin necesidad de PR.
+    branches: ["**"]
   pull_request:
 
 concurrency:
@@ -30,10 +32,10 @@ jobs:
           path: report-unit.xml
 
   integration:
-    # Solo en push a main. Levanta los motores reales del sandbox y corre el
+    # Solo en push a develop. Levanta los motores reales del sandbox y corre el
     # pipeline completo contra ellos, incluida la cola PGMQ.
     needs: unit
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
 
     services:
