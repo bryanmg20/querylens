@@ -16,9 +16,10 @@ def _to_iso(value):
 
 def _to_bool(value):
     if isinstance(value, str):
-        if value.upper() == "GRANTED":
+        normalized = value.strip().upper()
+        if normalized == "GRANTED":
             return True
-        if value.upper() == "WAITING":
+        if normalized == "WAITING":
             return False
     return value
 
