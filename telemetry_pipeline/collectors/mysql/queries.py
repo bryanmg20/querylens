@@ -84,6 +84,23 @@ WHERE s.DIGEST_TEXT IS NOT NULL
   AND s.DIGEST_TEXT NOT LIKE 'SELECT `VERSION`%'
   AND s.DIGEST_TEXT NOT LIKE 'SET @@%'
   AND s.DIGEST_TEXT NOT LIKE 'SHOW %'
+  -- Autobservacion: events_statements_summary_by_digest agrupa por digest y
+  -- no expone usuario, asi que no hay filtro por rol como el de Postgres. La
+  -- unica defensa es reconocer la forma de lo que emite el propio pipeline.
+  -- Sin esto, el EXPLAIN del ExplainStage se acumula entre corridas y termina
+  -- contaminando high_impact_statements con planes del pipeline.
+  AND s.DIGEST_TEXT NOT LIKE 'SET NAMES%'
+  AND s.DIGEST_TEXT NOT LIKE 'SET `AUTOCOMMIT`%'
+  AND s.DIGEST_TEXT NOT LIKE 'USE %'
+  AND s.DIGEST_TEXT NOT LIKE 'ROLLBACK%'
+  AND s.DIGEST_TEXT NOT LIKE 'SELECT SCHEMA%'
+  AND s.DIGEST_TEXT NOT LIKE 'SELECT ?%'
+  AND s.DIGEST_TEXT NOT LIKE 'EXPLAIN FORMAT = JSON%'
+  -- BEGIN/COMMIT son sentencias de control, no telemetria: nunca llegan a ser
+  -- candidatos a explicar, asi que excluirlas no_costa un candidato. Se
+  -- excluyen para que el filtro y PIPELINE_FINGERPRINT digan lo mismo.
+  AND s.DIGEST_TEXT NOT LIKE 'BEGIN%'
+  AND s.DIGEST_TEXT NOT LIKE 'COMMIT%'
 ORDER BY s.SUM_TIMER_WAIT DESC;
 """
 
