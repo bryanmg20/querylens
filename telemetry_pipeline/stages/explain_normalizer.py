@@ -2,15 +2,17 @@ import json
 
 from models.stats import Stats
 from stages.normalize import _to_number as to_number
-
-
 def _flag(node, key):
     """MySQL reporta Estas caracteristicas como bool en el plan; el snapshot solo
     tiene `predicate: str | None`, asi que el nombre de la flag viaja ahi."""
     value = node.get(key)
-    if value is None or value is False:
+    if value is None:
         return None
-    return key if value is True else str(value)
+    if value is True:
+        return key
+    if value is False:
+        return None
+    return str(value)
 
 
 class PostgresExplainNormalizer:
