@@ -256,3 +256,93 @@ def test_mysql_no_plan_row_is_logged_and_skipped():
     stats = _mysql_stats()
     ExplainStage(_FakeMysqlCollector()).execute(stats, conn)
     assert stats["canonic_explains"] == []
+
+
+def test_mysql_quotes_schema_identifier():
+    """El schema sale de pg_roles.rolconfig via schema_resolver, no de una
+    constante del codigo, asi que puede traer comillas o espacios. Sin quoting
+    el USE falla y el EXPLAIN del candidato cae al schema equivocado.
+
+    ql_demo no ejercita esto: es un identificador simple que el servidor acepta
+    sin comillas, por eso hace falta un caso que las necesite.
+    """
+    conn = _FakeConn(rows=[{"EXPLAIN": '{"query_block": {"select_id": 1}}'}])
+    stats = _mysql_stats(schema_name="ql demo")
+    ExplainStage(_FakeMysqlCollector()).execute(stats, conn)
+    assert conn.sent[0] == "USE `ql demo`"
+
+
+@pytest.mark.parametrize(
+    "schema_name,expected",
+    [
+        # El preparer de PyMySQL solo entrecomilla cuando hace falta: un
+        # identificador simple se emite crudo, uno con espacios o caracteres
+        # especiales entrecomillado, y el case se preserva porque en MySQL
+        # Mixed_Case y mixed_case son bases distintas.
+        ("ql_demo", "USE ql_demo"),
+        ("otro_schema", "USE otro_schema"),
+        ("app-stats", "USE `app-stats`"),
+        ("ql demo", "USE `ql demo`"),
+        ("Mixed_Case", "USE `Mixed_Case`"),
+    ],
+)
+def test_mysql_use_identifiers_are_safely_quoted(schema_name, expected):
+    """Un schema con espacios o guiones sin entrecomillar hace fallar el USE, y
+    con el falla el EXPLAIN del candidato."""
+    conn = _FakeConn(rows=[{"EXPLAIN": '{"query_block": {"select_id": 1}}'}])
+    stats = _mysql_stats(schema_name=schema_name)
+    ExplainStage(_FakeMysqlCollector()).execute(stats, conn)
+    assert conn.sent[0] == expected
+
+
+def test_mysql_schema_from_resolver_drives_the_use():
+    """El USE sale de schema_name, que es lo que llena schema_resolver. Si el
+    stage lo derivara de otra parte, el candidato se explicaria en otra base."""
+    conn = _FakeConn(rows=[{"EXPLAIN": '{"query_block": {"select_id": 1}}'}])
+    stats = _mysql_stats(schema_name="otro_schema")
+    stats["top_impact_queries"][0]["query_text"] = "SELECT 1 FROM ql_demo.t"
+    ExplainStage(_FakeMysqlCollector()).execute(stats, conn)
+    assert conn.sent[0] == "USE otro_schema"
+
+
+def test_postgres_search_path_is_local_not_session():
+    """SET LOCAL confines el cambio a la transaccion. Un SET (sin LOCAL) dejaria
+    el search_path alterado para el resto de la sesion del pool, y el siguiente
+    candidato se explicaría en el schema del anterior."""
+    conn = _FakeConn()
+    stats = _stats(schema_name="otro")
+    ExplainStage(_FakeCollector()).execute(stats, conn)
+    assert conn.sent[0] == "SET LOCAL search_path TO otro"
+    assert "SET LOCAL" in conn.sent[0]
+
+
+def test_explain_text_is_not_interpolated_with_placeholders():
+    """Postgres deja los placeholders como estan; el EXPLAIN necesita el texto
+    parametrizado para que el plan sea generico."""
+    conn = _FakeConn()
+    stats = _stats()
+    stats["top_impact_queries"][0]["query_text"] = "SELECT * FROM t WHERE a = $1 AND b = $2"
+    ExplainStage(_FakeCollector()).execute(stats, conn)
+    assert "$1" in conn.sent[1] and "$2" in conn.sent[1]
+
+
+def test_mysql_never_sends_postgres_placeholders_to_explain():
+    """MySQL usa la muestra, que trae literales. Mandarle el digest con ? lo
+    hace fallar con error de sintaxis y se pierde el candidato."""
+    conn = _FakeConn(rows=[{"EXPLAIN": '{"query_block": {"select_id": 1}}'}])
+    stats = _mysql_stats()
+    stats["top_impact_queries"][0]["query_text"] = "SELECT * FROM sbtest1 WHERE id = ?"
+    ExplainStage(_FakeMysqlCollector()).execute(stats, conn)
+    explain_sql = [s for s in conn.sent if "EXPLAIN" in s][0]
+    assert "?" not in explain_sql
+
+
+def test_query_explain_is_dropped_from_snapshot():
+    """query_explain es la forma cruda del motor; canonic_explains es la
+    canonica. Las dos viajando duplicaria el payload y expondría JSON crudo del
+    motor al consumidor."""
+    conn = _FakeConn()
+    stats = _stats()
+    ExplainStage(_FakeCollector()).execute(stats, conn)
+    assert "query_explain" not in stats
+    assert stats["canonic_explains"]
