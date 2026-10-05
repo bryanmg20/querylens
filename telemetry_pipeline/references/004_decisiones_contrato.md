@@ -2,11 +2,15 @@
 
 Decisiones de diseño del contrato de datos que emite el pipeline, validadas contra capturas reales de ambos motores.
 
-## query_id: statements ↔ pg_stat_activity
+## query_id: identidad del statement
 
-- `select_explain_ready` depende de que el `query_id` de una query activa coincida con el de `pg_stat_statements` (o `performance_schema.events_statements_summary_by_digest` en MySQL). Así, un candidato obtiene plan real solo si su query está ejecutándose en el momento del snapshot.
-- Verificado en capturas reales (golden): MySQL digest hex → string; Postgres `queryid` → bigint (p. ej. `-1859038224550094023`). Ambos aparecen en `statements` y en `active_queries` al mismo tiempo.
+- `query_id` identifica el statement dentro de su motor, no una ejecución en curso. Antes (commit `c730da1`) la explicación cruzaba `statements.query_id` contra `active_queries.query_id`, de modo que un candidato solo se explicaba si su query se estaba ejecutando en el momento del snapshot. Ese cruce ya **no aplica**: desde `93beb5e` el plan lo produce el propio motor sin necesitar la query en vivo.
+- Cada motor resuelve el plan por su vía nativa, y el hook `mark_explainable` decide:
+  - Postgres: `EXPLAIN (GENERIC_PLAN)` (PG16+) sobre `pg_stat_statements.query`, que ya viene con placeholders `$1`. Marca **todos** los candidatos como listos.
+  - MySQL: `DIGEST_TEXT` trae `?`, que da error de sintaxis en `EXPLAIN`; se usa `QUERY_SAMPLE_TEXT`, que trae literales reales. Marca solo lo que tenga `query_sample_text` no vacío.
+- Verificado en capturas reales (golden): MySQL digest hex → string; Postgres `queryid` → bigint (p. ej. `-1859038224550094023`). Ambos aparecen en `statements` y en `active_queries` al mismo tiempo, pero esa coincidencia ya no condiciona nada.
 - Modelo: `QueryId = Union[str, int, None]`.
+- Lo que queda de `select_explain_ready` es solo inicializar `ready_for_explain=False` y deduplicar por `query_id`; la decisión real la sobrescribe `mark_explainable` justo después, en el mismo `CandidatesStage`.
 
 ## disk_spill_indicator: divergencia de semántica entre motores
 
@@ -34,7 +38,7 @@ Pendiente de decisión: en MySQL los `filesort` a disco no tienen indicador suma
 - `StatementRow` expone `schema_name` (además de los campos previos). `userid` vive solo en el flujo interno de recolección: se usa para el cruce y se elimina de cada statement/candidato al resolver, no se emite en el snapshot.
 - `schema_name` es **escalar por statement** y se resuelve **sin parsear el texto**: se cruza el `userid` de cada statement con `SCHEMA_RESOLVER_QUERY`, que devuelve por rol el primer schema **real** de su `search_path` (fallback real de Postgres para roles sin `rolconfig`: `"$user", public`). Todas las statements del mismo rol heredan ese schema.
 - MySQL: `schema_name` ya viene del digest (`events_statements_summary_by_digest.SCHEMA_NAME`), que es el schema activo del momento de ejecución; sin cruce extra.
-- `schema_resolver` (resultado de `SCHEMA_RESOLVER_QUERY`) es **transitorio**: lo consume `CandidatesStage` (después de `select_explain_ready`, es decir **antes** del EXPLAIN, para que el context SQL del plan tenga el schema resuelto) y se elimina de `stats` antes de emitir el snapshot.
+- `schema_resolver` (resultado de `SCHEMA_RESOLVER_QUERY`) es **transitorio**: lo consume `CandidatesStage` (al final, **antes** del EXPLAIN, para que el context SQL del plan tenga el schema resuelto) y se elimina de `stats` antes de emitir el snapshot.
 - Limitación (aceptada a propósito): sin parseo, una statement no se distingue por tabla; si un rol tiene varias schemas reales en su `search_path`, `schema_name` toma la primera en orden de prioridad. La resolución por tabla (exacta, con `to_regclass`) quedó descartada por requerir parsear el texto de la query.
 - Verificado en capturas reales (golden `postgres_snapshot.json`): 61 statements, todas de `userid=10`, con `schema_name: "public"` (search_path de `ql_user`); `top_impact_queries` y `non_explainable_candidates` heredan `schema_name` vía copia del statement + cruce, y `userid` se descarta igual que en statements.
 

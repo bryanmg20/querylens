@@ -24,6 +24,6 @@ Bloqueos vivos al momento del muestreo: modo, estado `GRANTED`/`WAITING`, `block
 https://www.postgresql.org/docs/17/view-pg-locks.html
 
 ## pg_stat_activity
-Sesiones activas con su `query_id` y `transaction_start_time`. Alimenta `active_queries` y la dependencia de `select_explain_ready`.
+Sesiones activas con su `query_id` y `transaction_start_time`. Alimenta `active_queries`, que hoy es informativo: ya no condiciona qué candidatos se explican (cada motor produce su plan por vía nativa).
 
 https://www.postgresql.org/docs/17/monitoring-stats.html#MONITORING-PG-STAT-ACTIVITY-VIEW

@@ -29,7 +29,9 @@ main.py
   │     │     select_disk_spill_indicator()         disk_spill_indicator > 0
   │     │     select_candidates_to_explain()        dedupe por query_id + selected_by
   │     │                                           (SQL no explicable va a non_explainable_candidates)
-  │     │     select_explain_ready()                ready_for_explain=False por defecto
+   │     │     select_explain_ready()                dedupe por query_id +
+   │     │                                           ready_for_explain=False (valor inicial;
+   │     │                                           no mira active_queries, se härga aquí)
   │     │     collector.mark_explainable(stats)     → hook por motor: Postgres=True siempre,
   │     │                                           MySQL=True si query_sample_text no está vacío
   │     │
@@ -104,7 +106,8 @@ Los tests de arquitectura son **contratos estructurales**: validan "qué interfa
 
 - `stats["source"]` fue eliminado: el dialecto vive en el collector (`source_dialect`); replicarlo en el payload rompía la unicidad del evento en la cola.
 - `query_id` es `Union[str, int, None]`: MySQL lo emite como digest hex (string), Postgres como `queryid` bigint.
-- `ready_for_explain` es la puerta de entrada a `EXPLAIN`. Cada motor decide por su vía: Postgres marca todo como listo porque `EXPLAIN (GENERIC_PLAN)` resuelve los placeholders `$1` sin conocer los valores; MySQL marca solo lo que tiene `QUERY_SAMPLE_TEXT`, porque su `EXPLAIN` necesita literales reales.
+- `ready_for_explain` es la puerta de entrada a `EXPLAIN`. `select_explain_ready` solo la inicializa en `False` y deduplica por `query_id`; la decisión real la toma `mark_explainable`, por motor: Postgres marca todo como listo porque `EXPLAIN (GENERIC_PLAN)` resuelve los placeholders `$1` sin conocer los valores; MySQL marca solo lo que tiene `QUERY_SAMPLE_TEXT`, porque su `EXPLAIN` necesita literales reales.
+- Antes (`c730da1`) la explicación exigía que el `query_id` del candidato estuviera en `active_queries`, es decir que la query se estuviera ejecutando en ese instante. Ese cruce ya no aplica desde `93beb5e`: cada motor produce el plan por su vía nativa sin necesitar la query en vivo, así que `select_explain_ready` ya no lee `active_queries` (aunque el nombre y la firma los conserven).
 - La asimetría es propia de cada motor, no una inconsistencia: `pg_stat_statements.query` ya viene normalizado con `$1` y `EXPLAIN (GENERIC_PLAN)` (PG16+) lo convierte en plan. `DIGEST_TEXT` de MySQL trae `?`, que no produce plan; `QUERY_SAMPLE_TEXT` trae la consulta con valores reales, que sí lo produce.
 - `EXPLAIN (GENERIC_PLAN)` requiere PostgreSQL 16+. En versiones anteriores el `EXPLAIN` falla, la excepción se captura por consulta, se hace `rollback` y el candidato queda fuera de `canonic_explains` sin abortar el ciclo.
 - `explain_source` viaja en `canonic_explains` para que el consumidor sepa con qué fidelidad se obtuvo el plan: `"generic"` (Postgres, plan sin valores concretos) o `"sample"` (MySQL, plan de una ejecución real).
