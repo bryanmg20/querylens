@@ -1,13 +1,44 @@
+from collections import Counter
+
 import pytest
 
 from models.snapshot import (
-    ActiveQueryRow,
     CanonicExplain,
     CanonicalPlan,
     SnapshotPayload,
 )
 
 pytestmark = pytest.mark.contract
+
+
+@pytest.mark.parametrize(
+    "snapshot_name", ["postgres_snapshot", "mysql_snapshot"]
+)
+def test_goldens_shape_counters_match_physical_operations(request, snapshot_name):
+    snapshot = request.getfixturevalue(snapshot_name)
+    """Cada contador de LogicalShape debe tener su tipo en physical_operations.
+
+    El golden es la unica fuente que demuestra el contrato sobre planes reales
+    de ambos motores: si un normalizador cuenta y luego descarta, los contadores
+    cuadran con cero operaciones y este test cae.
+    """
+    field_to_type = {
+        "scans": "scan",
+        "joins": "join",
+        "aggregates": "aggregate",
+        "sorts": "sort",
+        "subqueries": "subquery",
+        "distinct": "distinct",
+    }
+    for explain in snapshot["canonic_explains"]:
+        plan = explain["canonical_plan"]
+        counted = Counter(op["type"] for op in plan["physical_operations"])
+        for field, operation_type in field_to_type.items():
+            assert plan["logical_shape"][field] == counted.get(operation_type, 0), (
+                f"{explain['query_id']}: {field}="
+                f"{plan['logical_shape'][field]} pero hay "
+                f"{counted.get(operation_type, 0)} operaciones '{operation_type}'"
+            )
 
 
 def test_mysql_golden_validates(mysql_snapshot):

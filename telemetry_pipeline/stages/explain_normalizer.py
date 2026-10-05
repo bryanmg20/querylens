@@ -3,6 +3,16 @@ import json
 from models.stats import Stats
 from stages.normalize import _to_number as to_number
 
+
+def _flag(node, key):
+    """MySQL reporta Estas caracteristicas como bool en el plan; el snapshot solo
+    tiene `predicate: str | None`, asi que el nombre de la flag viaja ahi."""
+    value = node.get(key)
+    if value is None or value is False:
+        return None
+    return key if value is True else str(value)
+
+
 class PostgresExplainNormalizer:
     def normalize(self, stats: Stats) -> Stats:
         canonic_explains = []
@@ -64,6 +74,7 @@ class PostgresExplainNormalizer:
     def _walk_plan(self, node, canonical_plan):
         node_type = node.get("Node Type")
         operation = None
+        operations = []
         is_subquery = (
             node.get("Parent Relationship") in ("SubPlan", "InitPlan")
             or "Subplan Name" in node
@@ -75,7 +86,7 @@ class PostgresExplainNormalizer:
         elif node_type in ("Nested Loop", "Hash Join", "Merge Join"):
             canonical_plan["logical_shape"]["joins"] += 1
             operation = self._join_operation(node)
-        elif node_type in ("Aggregate", "Group"):
+        elif node_type in ("Aggregate", "Group", "GroupAggregate"):
             canonical_plan["logical_shape"]["aggregates"] += 1
             operation = self._aggregate_operation(node)
         elif node_type in ("Sort", "Incremental Sort"):
@@ -83,27 +94,29 @@ class PostgresExplainNormalizer:
             operation = self._sort_operation(node)
         elif node_type in ("Subquery Scan", "SubPlan", "InitPlan"):
             canonical_plan["logical_shape"]["subqueries"] += 1
-            operation = self._base_operation("subquery")
+            operation = self._subquery_operation(node)
         elif node_type in ("Unique",):
             canonical_plan["logical_shape"]["distinct"] += 1
-            operation = self._base_operation("distinct")
+            operation = self._distinct_operation(node)
 
         if is_subquery and node_type not in ("Subquery Scan", "SubPlan", "InitPlan"):
             canonical_plan["logical_shape"]["subqueries"] += 1
             if operation is None:
-                operation = self._base_operation("subquery")
+                operation = self._subquery_operation(node)
+            else:
+                operations.append(operation)
+                operation = self._subquery_operation(node)
 
-        if operation is not None and operation.get("type") == "scan":
-            canonical_plan["physical_operations"].append(operation)
-        elif operation is not None and operation.get("type") == "join":
-            join_predicate = (
-                node.get("Join Filter")
-                or node.get("Hash Cond")
-                or node.get("Merge Cond")
-            )
-            if join_predicate is not None:
-                operation["predicate"] = join_predicate
-                canonical_plan["physical_operations"].append(operation)
+        if operation is not None:
+            if operation["type"] == "join":
+                operation["predicate"] = (
+                    node.get("Join Filter")
+                    or node.get("Hash Cond")
+                    or node.get("Merge Cond")
+                )
+            operations.append(operation)
+
+        canonical_plan["physical_operations"].extend(operations)
 
         for child in node.get("Plans", []):
             if isinstance(child, dict):
@@ -145,11 +158,30 @@ class PostgresExplainNormalizer:
         operation = self._base_operation("aggregate")
         self._copy_fields(operation, node, {
             "Filter": "predicate",
+            "Plan Rows": "estimated_rows",
         })
         return operation
 
     def _sort_operation(self, node):
         operation = self._base_operation("sort")
+        self._copy_fields(operation, node, {
+            "Plan Rows": "estimated_rows",
+        })
+        return operation
+
+    def _subquery_operation(self, node):
+        operation = self._base_operation("subquery")
+        self._copy_fields(operation, node, {
+            "Filter": "predicate",
+            "Plan Rows": "estimated_rows",
+        })
+        return operation
+
+    def _distinct_operation(self, node):
+        operation = self._base_operation("distinct")
+        self._copy_fields(operation, node, {
+            "Plan Rows": "estimated_rows",
+        })
         return operation
 
     @staticmethod
@@ -225,7 +257,7 @@ class MysqlExplainNormalizer:
                 operation = self._scan_operation(node)
             elif key == "nested_loop":
                 canonical_plan["logical_shape"]["joins"] += 1
-                operation = self._base_operation("join")
+                operation = self._join_operation(node)
             elif key == "grouping_operation" and isinstance(node, dict):
                 canonical_plan["logical_shape"]["aggregates"] += 1
                 operation = self._aggregate_operation(node)
@@ -234,14 +266,14 @@ class MysqlExplainNormalizer:
                 operation = self._sort_operation(node)
             elif key == "duplicates_removal":
                 canonical_plan["logical_shape"]["distinct"] += 1
-                operation = self._base_operation("distinct")
+                operation = self._distinct_operation(node)
             elif key in ("subquery", "attached_subqueries", "dependent_subquery"):
                 canonical_plan["logical_shape"]["subqueries"] += 1
-                operation = self._base_operation("subquery")
+                operation = self._subquery_operation(node)
             else:
                 operation = None
 
-            if operation is not None and operation.get("type") == "scan":
+            if operation is not None:
                 canonical_plan["physical_operations"].append(operation)
 
             if isinstance(node, (dict, list)):
@@ -276,13 +308,29 @@ class MysqlExplainNormalizer:
 
         return operation
 
+    def _join_operation(self, node):
+        operation = self._base_operation("join")
+        if isinstance(node, dict):
+            operation["predicate"] = _flag(node, "join_condition")
+        return operation
+
     def _aggregate_operation(self, node):
         operation = self._base_operation("aggregate")
+        if isinstance(node, dict):
+            operation["predicate"] = _flag(node, "using_temporary_table")
         return operation
 
     def _sort_operation(self, node):
         operation = self._base_operation("sort")
+        if isinstance(node, dict):
+            operation["predicate"] = _flag(node, "using_filesort")
         return operation
+
+    def _subquery_operation(self, node):
+        return self._base_operation("subquery")
+
+    def _distinct_operation(self, node):
+        return self._base_operation("distinct")
 
     @staticmethod
     def _base_operation(operation_type):
