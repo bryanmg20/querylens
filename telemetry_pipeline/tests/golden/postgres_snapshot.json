@@ -1,532 +1,11 @@
 {
-  "db_id": "querylens-db-01",
-  "statements": [
-    {
-      "query_id": -4771886699169262329,
-      "query_text": "SELECT COUNT(*) FROM sbtest1 a WHERE a.id = (SELECT MAX(b.id) FROM sbtest1 b WHERE b.k = a.k)",
-      "schema_name": "public",
-      "execution_count": 50,
-      "rows_returned": 50,
-      "avg_rows_per_call": 1.0,
-      "total_time_ms": 18509.523856000007,
-      "mean_time_ms": 370.1904771200001,
-      "stddev_time_ms": 20.70990940832331,
-      "min_time_ms": 340.112819,
-      "max_time_ms": 456.415896,
-      "coeff_of_variation": 0.055943928027111386,
-      "disk_spill_indicator": 0
-    },
-    {
-      "query_id": -1232716347889392665,
-      "query_text": "SELECT a.id, (SELECT COUNT(*) FROM sbtest1 b WHERE b.k = a.k) AS cnt FROM sbtest1 a WHERE a.id > $1 ORDER BY cnt DESC, a.id LIMIT $2",
-      "schema_name": "public",
-      "execution_count": 50,
-      "rows_returned": 5000,
-      "avg_rows_per_call": 100.0,
-      "total_time_ms": 2408.514354000001,
-      "mean_time_ms": 48.17028708000001,
-      "stddev_time_ms": 6.453020974405318,
-      "min_time_ms": 40.142258,
-      "max_time_ms": 68.779927,
-      "coeff_of_variation": 0.1339626845837207,
-      "disk_spill_indicator": 0
-    },
-    {
-      "query_id": -4196604929975110208,
-      "query_text": "SELECT SUBSTRING(c, $1, $2) AS pref, COUNT(*) AS cnt FROM sbtest1 WHERE c LIKE $3 GROUP BY pref ORDER BY cnt DESC LIMIT $4",
-      "schema_name": "public",
-      "execution_count": 50,
-      "rows_returned": 2500,
-      "avg_rows_per_call": 50.0,
-      "total_time_ms": 753.0530359999999,
-      "mean_time_ms": 15.061060720000002,
-      "stddev_time_ms": 1.6463813921556458,
-      "min_time_ms": 13.913869,
-      "max_time_ms": 24.593337,
-      "coeff_of_variation": 0.1093137742927608,
-      "disk_spill_indicator": 0
-    },
-    {
-      "query_id": 2400787508518417558,
-      "query_text": "SELECT id, k, ROW_NUMBER() OVER (PARTITION BY k ORDER BY c) AS rn FROM sbtest1 ORDER BY rn DESC LIMIT $1",
-      "schema_name": "public",
-      "execution_count": 50,
-      "rows_returned": 5000,
-      "avg_rows_per_call": 100.0,
-      "total_time_ms": 647.3343010000003,
-      "mean_time_ms": 12.946686020000001,
-      "stddev_time_ms": 1.4625752869512527,
-      "min_time_ms": 11.294055,
-      "max_time_ms": 17.574589000000003,
-      "coeff_of_variation": 0.11296908604193157,
-      "disk_spill_indicator": 0
-    },
-    {
-      "query_id": -58064517687412585,
-      "query_text": "SELECT a.c, COUNT(*) AS total FROM sbtest1 AS a JOIN sbtest1 AS b ON b.id = a.id WHERE a.k > $1 GROUP BY a.c HAVING COUNT(*) > $2 ORDER BY total DESC LIMIT $3",
-      "schema_name": "public",
-      "execution_count": 50,
-      "rows_returned": 0,
-      "avg_rows_per_call": 0.0,
-      "total_time_ms": 517.689962,
-      "mean_time_ms": 10.353799239999999,
-      "stddev_time_ms": 2.879922789888441,
-      "min_time_ms": 8.515198999999999,
-      "max_time_ms": 27.781985,
-      "coeff_of_variation": 0.2781513068905556,
-      "disk_spill_indicator": 0
-    },
-    {
-      "query_id": 1846686832555718276,
-      "query_text": "SELECT a.k, COUNT(*) AS cnt FROM sbtest1 a JOIN sbtest1 b ON b.id = a.id JOIN sbtest1 c ON c.id = a.id WHERE a.k < $1 GROUP BY a.k ORDER BY cnt DESC, a.k LIMIT $2",
-      "schema_name": "public",
-      "execution_count": 50,
-      "rows_returned": 5000,
-      "avg_rows_per_call": 100.0,
-      "total_time_ms": 274.314734,
-      "mean_time_ms": 5.4862946799999985,
-      "stddev_time_ms": 1.0612804493462686,
-      "min_time_ms": 4.941860999999999,
-      "max_time_ms": 10.992148,
-      "coeff_of_variation": 0.1934421155347545,
-      "disk_spill_indicator": 0
-    },
-    {
-      "query_id": -5580412542610240785,
-      "query_text": "SELECT id, CASE WHEN k % $1 = $2 THEN $3 WHEN k % $4 = $5 THEN $6 ELSE $7 END AS bucket FROM sbtest1 ORDER BY bucket, id DESC LIMIT $8",
-      "schema_name": "public",
-      "execution_count": 50,
-      "rows_returned": 10000,
-      "avg_rows_per_call": 200.0,
-      "total_time_ms": 182.29652299999995,
-      "mean_time_ms": 3.6459304599999993,
-      "stddev_time_ms": 0.39639273406323733,
-      "min_time_ms": 3.3604540000000003,
-      "max_time_ms": 5.48422,
-      "coeff_of_variation": 0.10872196779727866,
-      "disk_spill_indicator": 0
-    },
-    {
-      "query_id": -2209365685421286314,
-      "query_text": "SELECT a.id, b.id FROM sbtest1 a JOIN sbtest1 b ON b.c = a.c WHERE a.id BETWEEN $1 AND $2 ORDER BY a.id, b.id LIMIT $3",
-      "schema_name": "public",
-      "execution_count": 50,
-      "rows_returned": 5000,
-      "avg_rows_per_call": 100.0,
-      "total_time_ms": 174.41780400000002,
-      "mean_time_ms": 3.48835608,
-      "stddev_time_ms": 0.35397695154672654,
-      "min_time_ms": 3.200141,
-      "max_time_ms": 5.215949999999999,
-      "coeff_of_variation": 0.10147385858232871,
-      "disk_spill_indicator": 0
-    },
-    {
-      "query_id": 4958791658444919656,
-      "query_text": "SELECT $1 AS tipo, SUM(k) AS s FROM sbtest1 UNION ALL SELECT $2, AVG(id) FROM sbtest1 UNION ALL SELECT $3, COUNT(*) FROM sbtest1",
-      "schema_name": "public",
-      "execution_count": 50,
-      "rows_returned": 150,
-      "avg_rows_per_call": 3.0,
-      "total_time_ms": 125.578211,
-      "mean_time_ms": 2.51156422,
-      "stddev_time_ms": 0.9042079957472459,
-      "min_time_ms": 2.1784719999999997,
-      "max_time_ms": 8.605419,
-      "coeff_of_variation": 0.36001786796725666,
-      "disk_spill_indicator": 0
-    },
-    {
-      "query_id": -63546045030150458,
-      "query_text": "SELECT DISTINCT k, c FROM sbtest1 WHERE id BETWEEN $1 AND $2 ORDER BY k LIMIT $3",
-      "schema_name": "public",
-      "execution_count": 50,
-      "rows_returned": 25000,
-      "avg_rows_per_call": 500.0,
-      "total_time_ms": 63.78719,
-      "mean_time_ms": 1.2757437999999994,
-      "stddev_time_ms": 0.266209983809323,
-      "min_time_ms": 0.96612,
-      "max_time_ms": 2.251706,
-      "coeff_of_variation": 0.20867041157426994,
-      "disk_spill_indicator": 0
-    },
-    {
-      "query_id": 1852087220203776907,
-      "query_text": "SELECT pg_stat_statements_reset()",
-      "schema_name": "public",
-      "execution_count": 1,
-      "rows_returned": 1,
-      "avg_rows_per_call": 1.0,
-      "total_time_ms": 3.554859,
-      "mean_time_ms": 3.554859,
-      "stddev_time_ms": 0.0,
-      "min_time_ms": 3.554859,
-      "max_time_ms": 3.554859,
-      "coeff_of_variation": 0.0,
-      "disk_spill_indicator": 0
-    }
-  ],
-  "top_impact_queries": [
-    {
-      "query_id": -4771886699169262329,
-      "query_text": "SELECT COUNT(*) FROM sbtest1 a WHERE a.id = (SELECT MAX(b.id) FROM sbtest1 b WHERE b.k = a.k)",
-      "schema_name": "public",
-      "execution_count": 50,
-      "rows_returned": 50,
-      "avg_rows_per_call": 1.0,
-      "total_time_ms": 18509.523856000007,
-      "mean_time_ms": 370.1904771200001,
-      "stddev_time_ms": 20.70990940832331,
-      "min_time_ms": 340.112819,
-      "max_time_ms": 456.415896,
-      "coeff_of_variation": 0.055943928027111386,
-      "disk_spill_indicator": 0,
-      "canonic_query": "SELECT COUNT(*) FROM sbtest1 AS a WHERE a.id = (SELECT MAX(b.id) FROM sbtest1 AS b WHERE b.k = a.k)",
-      "selected_by": [
-        "time_high_impact"
-      ],
-      "ready_for_explain": true
-    },
-    {
-      "query_id": -1232716347889392665,
-      "query_text": "SELECT a.id, (SELECT COUNT(*) FROM sbtest1 b WHERE b.k = a.k) AS cnt FROM sbtest1 a WHERE a.id > $1 ORDER BY cnt DESC, a.id LIMIT $2",
-      "schema_name": "public",
-      "execution_count": 50,
-      "rows_returned": 5000,
-      "avg_rows_per_call": 100.0,
-      "total_time_ms": 2408.514354000001,
-      "mean_time_ms": 48.17028708000001,
-      "stddev_time_ms": 6.453020974405318,
-      "min_time_ms": 40.142258,
-      "max_time_ms": 68.779927,
-      "coeff_of_variation": 0.1339626845837207,
-      "disk_spill_indicator": 0,
-      "canonic_query": "SELECT a.id, (SELECT COUNT(*) FROM sbtest1 AS b WHERE b.k = a.k) AS cnt FROM sbtest1 AS a WHERE a.id > $1 ORDER BY cnt DESC, a.id LIMIT $2",
-      "selected_by": [
-        "time_high_impact"
-      ],
-      "ready_for_explain": true
-    },
-    {
-      "query_id": -4196604929975110208,
-      "query_text": "SELECT SUBSTRING(c, $1, $2) AS pref, COUNT(*) AS cnt FROM sbtest1 WHERE c LIKE $3 GROUP BY pref ORDER BY cnt DESC LIMIT $4",
-      "schema_name": "public",
-      "execution_count": 50,
-      "rows_returned": 2500,
-      "avg_rows_per_call": 50.0,
-      "total_time_ms": 753.0530359999999,
-      "mean_time_ms": 15.061060720000002,
-      "stddev_time_ms": 1.6463813921556458,
-      "min_time_ms": 13.913869,
-      "max_time_ms": 24.593337,
-      "coeff_of_variation": 0.1093137742927608,
-      "disk_spill_indicator": 0,
-      "canonic_query": "SELECT SUBSTRING(c FROM $1 FOR $2) AS pref, COUNT(*) AS cnt FROM sbtest1 WHERE c LIKE $3 GROUP BY pref ORDER BY cnt DESC LIMIT $4",
-      "selected_by": [
-        "time_high_impact"
-      ],
-      "ready_for_explain": true
-    },
-    {
-      "query_id": 2400787508518417558,
-      "query_text": "SELECT id, k, ROW_NUMBER() OVER (PARTITION BY k ORDER BY c) AS rn FROM sbtest1 ORDER BY rn DESC LIMIT $1",
-      "schema_name": "public",
-      "execution_count": 50,
-      "rows_returned": 5000,
-      "avg_rows_per_call": 100.0,
-      "total_time_ms": 647.3343010000003,
-      "mean_time_ms": 12.946686020000001,
-      "stddev_time_ms": 1.4625752869512527,
-      "min_time_ms": 11.294055,
-      "max_time_ms": 17.574589000000003,
-      "coeff_of_variation": 0.11296908604193157,
-      "disk_spill_indicator": 0,
-      "canonic_query": "SELECT id, k, ROW_NUMBER() OVER (PARTITION BY k ORDER BY c) AS rn FROM sbtest1 ORDER BY rn DESC LIMIT $1",
-      "selected_by": [
-        "time_high_impact"
-      ],
-      "ready_for_explain": true
-    },
-    {
-      "query_id": -58064517687412585,
-      "query_text": "SELECT a.c, COUNT(*) AS total FROM sbtest1 AS a JOIN sbtest1 AS b ON b.id = a.id WHERE a.k > $1 GROUP BY a.c HAVING COUNT(*) > $2 ORDER BY total DESC LIMIT $3",
-      "schema_name": "public",
-      "execution_count": 50,
-      "rows_returned": 0,
-      "avg_rows_per_call": 0.0,
-      "total_time_ms": 517.689962,
-      "mean_time_ms": 10.353799239999999,
-      "stddev_time_ms": 2.879922789888441,
-      "min_time_ms": 8.515198999999999,
-      "max_time_ms": 27.781985,
-      "coeff_of_variation": 0.2781513068905556,
-      "disk_spill_indicator": 0,
-      "canonic_query": "SELECT a.c, COUNT(*) AS total FROM sbtest1 AS a JOIN sbtest1 AS b ON b.id = a.id WHERE a.k > $1 GROUP BY a.c HAVING COUNT(*) > $2 ORDER BY total DESC LIMIT $3",
-      "selected_by": [
-        "time_high_impact"
-      ],
-      "ready_for_explain": true
-    },
-    {
-      "query_id": 1846686832555718276,
-      "query_text": "SELECT a.k, COUNT(*) AS cnt FROM sbtest1 a JOIN sbtest1 b ON b.id = a.id JOIN sbtest1 c ON c.id = a.id WHERE a.k < $1 GROUP BY a.k ORDER BY cnt DESC, a.k LIMIT $2",
-      "schema_name": "public",
-      "execution_count": 50,
-      "rows_returned": 5000,
-      "avg_rows_per_call": 100.0,
-      "total_time_ms": 274.314734,
-      "mean_time_ms": 5.4862946799999985,
-      "stddev_time_ms": 1.0612804493462686,
-      "min_time_ms": 4.941860999999999,
-      "max_time_ms": 10.992148,
-      "coeff_of_variation": 0.1934421155347545,
-      "disk_spill_indicator": 0,
-      "canonic_query": "SELECT a.k, COUNT(*) AS cnt FROM sbtest1 AS a JOIN sbtest1 AS b ON b.id = a.id JOIN sbtest1 AS c ON c.id = a.id WHERE a.k < $1 GROUP BY a.k ORDER BY cnt DESC, a.k LIMIT $2",
-      "selected_by": [
-        "time_high_impact"
-      ],
-      "ready_for_explain": true
-    },
-    {
-      "query_id": -5580412542610240785,
-      "query_text": "SELECT id, CASE WHEN k % $1 = $2 THEN $3 WHEN k % $4 = $5 THEN $6 ELSE $7 END AS bucket FROM sbtest1 ORDER BY bucket, id DESC LIMIT $8",
-      "schema_name": "public",
-      "execution_count": 50,
-      "rows_returned": 10000,
-      "avg_rows_per_call": 200.0,
-      "total_time_ms": 182.29652299999995,
-      "mean_time_ms": 3.6459304599999993,
-      "stddev_time_ms": 0.39639273406323733,
-      "min_time_ms": 3.3604540000000003,
-      "max_time_ms": 5.48422,
-      "coeff_of_variation": 0.10872196779727866,
-      "disk_spill_indicator": 0,
-      "canonic_query": "SELECT id, CASE WHEN k % $1 = $2 THEN $3 WHEN k % $4 = $5 THEN $6 ELSE $7 END AS bucket FROM sbtest1 ORDER BY bucket, id DESC LIMIT $8",
-      "selected_by": [
-        "time_high_impact"
-      ],
-      "ready_for_explain": true
-    },
-    {
-      "query_id": -2209365685421286314,
-      "query_text": "SELECT a.id, b.id FROM sbtest1 a JOIN sbtest1 b ON b.c = a.c WHERE a.id BETWEEN $1 AND $2 ORDER BY a.id, b.id LIMIT $3",
-      "schema_name": "public",
-      "execution_count": 50,
-      "rows_returned": 5000,
-      "avg_rows_per_call": 100.0,
-      "total_time_ms": 174.41780400000002,
-      "mean_time_ms": 3.48835608,
-      "stddev_time_ms": 0.35397695154672654,
-      "min_time_ms": 3.200141,
-      "max_time_ms": 5.215949999999999,
-      "coeff_of_variation": 0.10147385858232871,
-      "disk_spill_indicator": 0,
-      "canonic_query": "SELECT a.id, b.id FROM sbtest1 AS a JOIN sbtest1 AS b ON b.c = a.c WHERE a.id BETWEEN $1 AND $2 ORDER BY a.id, b.id LIMIT $3",
-      "selected_by": [
-        "time_high_impact"
-      ],
-      "ready_for_explain": true
-    },
-    {
-      "query_id": 4958791658444919656,
-      "query_text": "SELECT $1 AS tipo, SUM(k) AS s FROM sbtest1 UNION ALL SELECT $2, AVG(id) FROM sbtest1 UNION ALL SELECT $3, COUNT(*) FROM sbtest1",
-      "schema_name": "public",
-      "execution_count": 50,
-      "rows_returned": 150,
-      "avg_rows_per_call": 3.0,
-      "total_time_ms": 125.578211,
-      "mean_time_ms": 2.51156422,
-      "stddev_time_ms": 0.9042079957472459,
-      "min_time_ms": 2.1784719999999997,
-      "max_time_ms": 8.605419,
-      "coeff_of_variation": 0.36001786796725666,
-      "disk_spill_indicator": 0,
-      "canonic_query": "SELECT $1 AS tipo, SUM(k) AS s FROM sbtest1 UNION ALL SELECT $2, AVG(id) FROM sbtest1 UNION ALL SELECT $3, COUNT(*) FROM sbtest1",
-      "selected_by": [
-        "time_high_impact"
-      ],
-      "ready_for_explain": true
-    },
-    {
-      "query_id": -63546045030150458,
-      "query_text": "SELECT DISTINCT k, c FROM sbtest1 WHERE id BETWEEN $1 AND $2 ORDER BY k LIMIT $3",
-      "schema_name": "public",
-      "execution_count": 50,
-      "rows_returned": 25000,
-      "avg_rows_per_call": 500.0,
-      "total_time_ms": 63.78719,
-      "mean_time_ms": 1.2757437999999994,
-      "stddev_time_ms": 0.266209983809323,
-      "min_time_ms": 0.96612,
-      "max_time_ms": 2.251706,
-      "coeff_of_variation": 0.20867041157426994,
-      "disk_spill_indicator": 0,
-      "canonic_query": "SELECT DISTINCT k, c FROM sbtest1 WHERE id BETWEEN $1 AND $2 ORDER BY k LIMIT $3",
-      "selected_by": [
-        "time_high_impact"
-      ],
-      "ready_for_explain": true
-    }
-  ],
-  "non_explainable_candidates": [],
-  "locks": [
-    {
-      "process_id": 7239,
-      "table_name": "pg_roles",
-      "lock_mode": "AccessShareLock",
-      "is_granted": true
-    },
-    {
-      "process_id": 7239,
-      "table_name": "pg_stat_statements",
-      "lock_mode": "AccessShareLock",
-      "is_granted": true
-    },
-    {
-      "process_id": 7239,
-      "table_name": "pg_stat_all_tables",
-      "lock_mode": "AccessShareLock",
-      "is_granted": true
-    },
-    {
-      "process_id": 7239,
-      "table_name": "pg_stat_user_tables",
-      "lock_mode": "AccessShareLock",
-      "is_granted": true
-    },
-    {
-      "process_id": 7239,
-      "table_name": "pg_namespace_oid_index",
-      "lock_mode": "AccessShareLock",
-      "is_granted": true
-    },
-    {
-      "process_id": 7239,
-      "table_name": "pg_namespace_nspname_index",
-      "lock_mode": "AccessShareLock",
-      "is_granted": true
-    },
-    {
-      "process_id": 7239,
-      "table_name": "pg_index_indexrelid_index",
-      "lock_mode": "AccessShareLock",
-      "is_granted": true
-    },
-    {
-      "process_id": 7239,
-      "table_name": "pg_index_indrelid_index",
-      "lock_mode": "AccessShareLock",
-      "is_granted": true
-    },
-    {
-      "process_id": 7239,
-      "table_name": "pg_class_tblspc_relfilenode_index",
-      "lock_mode": "AccessShareLock",
-      "is_granted": true
-    },
-    {
-      "process_id": 7239,
-      "table_name": "pg_class_relname_nsp_index",
-      "lock_mode": "AccessShareLock",
-      "is_granted": true
-    },
-    {
-      "process_id": 7239,
-      "table_name": "pg_class_oid_index",
-      "lock_mode": "AccessShareLock",
-      "is_granted": true
-    },
-    {
-      "process_id": 7239,
-      "table_name": "pg_namespace",
-      "lock_mode": "AccessShareLock",
-      "is_granted": true
-    },
-    {
-      "process_id": 7239,
-      "table_name": "pg_index",
-      "lock_mode": "AccessShareLock",
-      "is_granted": true
-    },
-    {
-      "process_id": 7239,
-      "table_name": "pg_class",
-      "lock_mode": "AccessShareLock",
-      "is_granted": true
-    },
-    {
-      "process_id": 7239,
-      "table_name": "pg_stat_all_indexes",
-      "lock_mode": "AccessShareLock",
-      "is_granted": true
-    },
-    {
-      "process_id": 7239,
-      "table_name": "pg_stat_user_indexes",
-      "lock_mode": "AccessShareLock",
-      "is_granted": true
-    },
-    {
-      "process_id": 7239,
-      "table_name": null,
-      "lock_mode": "ExclusiveLock",
-      "is_granted": true
-    },
-    {
-      "process_id": 7239,
-      "table_name": "pg_authid",
-      "lock_mode": "AccessShareLock",
-      "is_granted": true
-    },
-    {
-      "process_id": 7239,
-      "table_name": "pg_db_role_setting_databaseid_rol_index",
-      "lock_mode": "AccessShareLock",
-      "is_granted": true
-    },
-    {
-      "process_id": 7239,
-      "table_name": "pg_authid_rolname_index",
-      "lock_mode": "AccessShareLock",
-      "is_granted": true
-    },
-    {
-      "process_id": 7239,
-      "table_name": "pg_db_role_setting",
-      "lock_mode": "AccessShareLock",
-      "is_granted": true
-    },
-    {
-      "process_id": 7239,
-      "table_name": "pg_locks",
-      "lock_mode": "AccessShareLock",
-      "is_granted": true
-    },
-    {
-      "process_id": 7239,
-      "table_name": "pg_authid_oid_index",
-      "lock_mode": "AccessShareLock",
-      "is_granted": true
-    }
-  ],
-  "active_queries": [
-    {
-      "process_id": 33,
-      "query_text": null,
-      "query_id": null,
-      "canonic_query": "Not available",
-      "transaction_start_time": null,
-      "blocking_pids": []
-    }
-  ],
   "indexes": [
     {
       "schema_name": "public",
       "table_name": "sbtest1",
       "index_name": "sbtest1_pkey",
-      "index_scans": 202786,
-      "last_index_scan": "2026-10-05 15:52:21.122657",
+      "index_scans": 475802,
+      "last_index_scan": "2026-10-05 17:18:22.218635+00:00",
       "index_ref": "CREATE UNIQUE INDEX sbtest1_pkey ON public.sbtest1 USING btree (id)",
       "index_size_bytes": 245760
     },
@@ -534,19 +13,402 @@
       "schema_name": "public",
       "table_name": "sbtest1",
       "index_name": "k_1",
-      "index_scans": 13504526,
-      "last_index_scan": "2026-09-30 19:09:34.937698",
+      "index_scans": 14116734,
+      "last_index_scan": "2026-10-05 17:18:22.218635+00:00",
       "index_ref": "CREATE INDEX k_1 ON public.sbtest1 USING btree (k)",
       "index_size_bytes": 229376
+    },
+    {
+      "schema_name": "ql_ci_load",
+      "table_name": "ql_ci",
+      "index_name": "ql_ci_pkey",
+      "index_scans": 32192,
+      "last_index_scan": "2026-10-05 17:04:18.782123+00:00",
+      "index_ref": "CREATE UNIQUE INDEX ql_ci_pkey ON ql_ci_load.ql_ci USING btree (id)",
+      "index_size_bytes": 131072
     }
   ],
   "tables": [
     {
       "schema_name": "public",
       "table_name": "sbtest1",
-      "seq_scans": 8624,
-      "idx_scans": 13707312,
+      "seq_scans": 268902,
+      "idx_scans": 14592536,
       "live_rows": 10000
+    },
+    {
+      "schema_name": "ql_ci_load",
+      "table_name": "ql_ci",
+      "seq_scans": 961,
+      "idx_scans": 32192,
+      "live_rows": 5000
+    }
+  ],
+  "statements": [
+    {
+      "query_id": -7148625560157330186,
+      "query_text": "SELECT DISTINCT\n    a.c,\n        COUNT(*) AS total\n    FROM sbtest1 AS a\n    JOIN sbtest1 AS b\n        ON b.id = a.id\n    WHERE a.k > 100\n      AND a.id = (\n          SELECT MIN(x.id)\n          FROM sbtest1 AS x\n          WHERE x.c = a.c\n      )\n    GROUP BY a.c\n    ORDER BY COUNT(*) DESC",
+      "execution_count": 4,
+      "rows_returned": 40000,
+      "avg_rows_per_call": "10000.000000",
+      "total_time_ms": 46650.511518,
+      "mean_time_ms": 11662.6278795,
+      "stddev_time_ms": 176.20846976282192,
+      "min_time_ms": 11413.022544,
+      "max_time_ms": 11879.483334,
+      "coeff_of_variation": 0.015108813518139646,
+      "disk_spill_indicator": 0,
+      "schema_name": "public"
+    },
+    {
+      "query_id": -4771886699169262329,
+      "query_text": "SELECT COUNT(*) FROM sbtest1 a WHERE a.id = (SELECT MAX(b.id) FROM sbtest1 b WHERE b.k = a.k)",
+      "execution_count": 30,
+      "rows_returned": 30,
+      "avg_rows_per_call": "1.000000",
+      "total_time_ms": 15302.135827,
+      "mean_time_ms": 510.07119423333336,
+      "stddev_time_ms": 27.479356235265477,
+      "min_time_ms": 463.19858800000003,
+      "max_time_ms": 581.8143,
+      "coeff_of_variation": 0.05387357009361908,
+      "disk_spill_indicator": 0,
+      "schema_name": "public"
+    },
+    {
+      "query_id": -1232716347889392665,
+      "query_text": "SELECT a.id, (SELECT COUNT(*) FROM sbtest1 b WHERE b.k = a.k) AS cnt FROM sbtest1 a WHERE a.id > $1 ORDER BY cnt DESC, a.id LIMIT $2",
+      "execution_count": 30,
+      "rows_returned": 3000,
+      "avg_rows_per_call": "100.000000",
+      "total_time_ms": 1875.556739,
+      "mean_time_ms": 62.51855796666667,
+      "stddev_time_ms": 11.30588795248297,
+      "min_time_ms": 52.008431,
+      "max_time_ms": 104.26131099999999,
+      "coeff_of_variation": 0.1808405107250072,
+      "disk_spill_indicator": 0,
+      "schema_name": "public"
+    },
+    {
+      "query_id": -4196604929975110208,
+      "query_text": "SELECT SUBSTRING(c, $1, $2) AS pref, COUNT(*) AS cnt FROM sbtest1 WHERE c LIKE $3 GROUP BY pref ORDER BY cnt DESC LIMIT $4",
+      "execution_count": 30,
+      "rows_returned": 1500,
+      "avg_rows_per_call": "50.000000",
+      "total_time_ms": 583.011794,
+      "mean_time_ms": 19.433726466666666,
+      "stddev_time_ms": 2.7329762748293995,
+      "min_time_ms": 16.524619,
+      "max_time_ms": 31.094974,
+      "coeff_of_variation": 0.14063058258626238,
+      "disk_spill_indicator": 0,
+      "schema_name": "public"
+    },
+    {
+      "query_id": 2400787508518417558,
+      "query_text": "SELECT id, k, ROW_NUMBER() OVER (PARTITION BY k ORDER BY c) AS rn FROM sbtest1 ORDER BY rn DESC LIMIT $1",
+      "execution_count": 30,
+      "rows_returned": 3000,
+      "avg_rows_per_call": "100.000000",
+      "total_time_ms": 520.389931,
+      "mean_time_ms": 17.346331033333335,
+      "stddev_time_ms": 3.570502623289515,
+      "min_time_ms": 14.246232,
+      "max_time_ms": 29.905685000000002,
+      "coeff_of_variation": 0.2058361861322898,
+      "disk_spill_indicator": 0,
+      "schema_name": "public"
+    },
+    {
+      "query_id": -58064517687412585,
+      "query_text": "SELECT a.c, COUNT(*) AS total FROM sbtest1 AS a JOIN sbtest1 AS b ON b.id = a.id WHERE a.k > $1 GROUP BY a.c HAVING COUNT(*) > $2 ORDER BY total DESC LIMIT $3",
+      "execution_count": 30,
+      "rows_returned": 0,
+      "avg_rows_per_call": "0.000000",
+      "total_time_ms": 374.710597,
+      "mean_time_ms": 12.490353233333334,
+      "stddev_time_ms": 2.972553734903449,
+      "min_time_ms": 10.502143,
+      "max_time_ms": 25.809683,
+      "coeff_of_variation": 0.23798796394088495,
+      "disk_spill_indicator": 0,
+      "schema_name": "public"
+    },
+    {
+      "query_id": 1846686832555718276,
+      "query_text": "SELECT a.k, COUNT(*) AS cnt FROM sbtest1 a JOIN sbtest1 b ON b.id = a.id JOIN sbtest1 c ON c.id = a.id WHERE a.k < $1 GROUP BY a.k ORDER BY cnt DESC, a.k LIMIT $2",
+      "execution_count": 30,
+      "rows_returned": 3000,
+      "avg_rows_per_call": "100.000000",
+      "total_time_ms": 202.96091499999994,
+      "mean_time_ms": 6.765363833333334,
+      "stddev_time_ms": 0.8984996356713075,
+      "min_time_ms": 5.616658,
+      "max_time_ms": 9.728399,
+      "coeff_of_variation": 0.13280876798441327,
+      "disk_spill_indicator": 0,
+      "schema_name": "public"
+    },
+    {
+      "query_id": -5580412542610240785,
+      "query_text": "SELECT id, CASE WHEN k % $1 = $2 THEN $3 WHEN k % $4 = $5 THEN $6 ELSE $7 END AS bucket FROM sbtest1 ORDER BY bucket, id DESC LIMIT $8",
+      "execution_count": 30,
+      "rows_returned": 6000,
+      "avg_rows_per_call": "200.000000",
+      "total_time_ms": 131.10255599999996,
+      "mean_time_ms": 4.3700852,
+      "stddev_time_ms": 0.5065915136831908,
+      "min_time_ms": 3.6180499999999998,
+      "max_time_ms": 6.12953,
+      "coeff_of_variation": 0.11592257141421196,
+      "disk_spill_indicator": 0,
+      "schema_name": "public"
+    },
+    {
+      "query_id": -2209365685421286314,
+      "query_text": "SELECT a.id, b.id FROM sbtest1 a JOIN sbtest1 b ON b.c = a.c WHERE a.id BETWEEN $1 AND $2 ORDER BY a.id, b.id LIMIT $3",
+      "execution_count": 30,
+      "rows_returned": 3000,
+      "avg_rows_per_call": "100.000000",
+      "total_time_ms": 126.282369,
+      "mean_time_ms": 4.209412300000001,
+      "stddev_time_ms": 0.8849310976903664,
+      "min_time_ms": 3.4573080000000003,
+      "max_time_ms": 6.9748730000000005,
+      "coeff_of_variation": 0.2102267572341075,
+      "disk_spill_indicator": 0,
+      "schema_name": "public"
+    },
+    {
+      "query_id": 4958791658444919656,
+      "query_text": "SELECT $1 AS tipo, SUM(k) AS s FROM sbtest1 UNION ALL SELECT $2, AVG(id) FROM sbtest1 UNION ALL SELECT $3, COUNT(*) FROM sbtest1",
+      "execution_count": 30,
+      "rows_returned": 90,
+      "avg_rows_per_call": "3.000000",
+      "total_time_ms": 90.43682299999999,
+      "mean_time_ms": 3.0145607666666665,
+      "stddev_time_ms": 0.48187590373765204,
+      "min_time_ms": 2.602427,
+      "max_time_ms": 5.1966529999999995,
+      "coeff_of_variation": 0.1598494576941249,
+      "disk_spill_indicator": 0,
+      "schema_name": "public"
+    },
+    {
+      "query_id": -63546045030150458,
+      "query_text": "SELECT DISTINCT k, c FROM sbtest1 WHERE id BETWEEN $1 AND $2 ORDER BY k LIMIT $3",
+      "execution_count": 30,
+      "rows_returned": 15000,
+      "avg_rows_per_call": "500.000000",
+      "total_time_ms": 44.288957,
+      "mean_time_ms": 1.4762985666666668,
+      "stddev_time_ms": 0.3649048602800171,
+      "min_time_ms": 1.149705,
+      "max_time_ms": 3.1169729999999998,
+      "coeff_of_variation": 0.24717551619923026,
+      "disk_spill_indicator": 0,
+      "schema_name": "public"
+    },
+    {
+      "query_id": 1852087220203776907,
+      "query_text": "SELECT pg_stat_statements_reset()",
+      "execution_count": 1,
+      "rows_returned": 1,
+      "avg_rows_per_call": "1.000000",
+      "total_time_ms": 0.203818,
+      "mean_time_ms": 0.203818,
+      "stddev_time_ms": 0.0,
+      "min_time_ms": 0.203818,
+      "max_time_ms": 0.203818,
+      "coeff_of_variation": 0.0,
+      "disk_spill_indicator": 0,
+      "schema_name": "public"
+    }
+  ],
+  "locks": [
+    {
+      "process_id": 16675,
+      "table_name": "k_1",
+      "lock_mode": "AccessShareLock",
+      "is_granted": true
+    },
+    {
+      "process_id": 16675,
+      "table_name": "sbtest1_pkey",
+      "lock_mode": "AccessShareLock",
+      "is_granted": true
+    },
+    {
+      "process_id": 16675,
+      "table_name": "sbtest1",
+      "lock_mode": "AccessShareLock",
+      "is_granted": true
+    },
+    {
+      "process_id": 16675,
+      "table_name": null,
+      "lock_mode": "ExclusiveLock",
+      "is_granted": true
+    },
+    {
+      "process_id": 16676,
+      "table_name": "pg_roles",
+      "lock_mode": "AccessShareLock",
+      "is_granted": true
+    },
+    {
+      "process_id": 16676,
+      "table_name": "pg_stat_statements",
+      "lock_mode": "AccessShareLock",
+      "is_granted": true
+    },
+    {
+      "process_id": 16676,
+      "table_name": "pg_stat_all_tables",
+      "lock_mode": "AccessShareLock",
+      "is_granted": true
+    },
+    {
+      "process_id": 16676,
+      "table_name": "pg_stat_user_tables",
+      "lock_mode": "AccessShareLock",
+      "is_granted": true
+    },
+    {
+      "process_id": 16676,
+      "table_name": "pg_namespace_oid_index",
+      "lock_mode": "AccessShareLock",
+      "is_granted": true
+    },
+    {
+      "process_id": 16676,
+      "table_name": "pg_namespace_nspname_index",
+      "lock_mode": "AccessShareLock",
+      "is_granted": true
+    },
+    {
+      "process_id": 16676,
+      "table_name": "pg_index_indexrelid_index",
+      "lock_mode": "AccessShareLock",
+      "is_granted": true
+    },
+    {
+      "process_id": 16676,
+      "table_name": "pg_index_indrelid_index",
+      "lock_mode": "AccessShareLock",
+      "is_granted": true
+    },
+    {
+      "process_id": 16676,
+      "table_name": "pg_class_tblspc_relfilenode_index",
+      "lock_mode": "AccessShareLock",
+      "is_granted": true
+    },
+    {
+      "process_id": 16676,
+      "table_name": "pg_class_relname_nsp_index",
+      "lock_mode": "AccessShareLock",
+      "is_granted": true
+    },
+    {
+      "process_id": 16676,
+      "table_name": "pg_class_oid_index",
+      "lock_mode": "AccessShareLock",
+      "is_granted": true
+    },
+    {
+      "process_id": 16676,
+      "table_name": "pg_namespace",
+      "lock_mode": "AccessShareLock",
+      "is_granted": true
+    },
+    {
+      "process_id": 16676,
+      "table_name": "pg_index",
+      "lock_mode": "AccessShareLock",
+      "is_granted": true
+    },
+    {
+      "process_id": 16676,
+      "table_name": "pg_class",
+      "lock_mode": "AccessShareLock",
+      "is_granted": true
+    },
+    {
+      "process_id": 16676,
+      "table_name": "pg_stat_all_indexes",
+      "lock_mode": "AccessShareLock",
+      "is_granted": true
+    },
+    {
+      "process_id": 16676,
+      "table_name": "pg_stat_user_indexes",
+      "lock_mode": "AccessShareLock",
+      "is_granted": true
+    },
+    {
+      "process_id": 16676,
+      "table_name": null,
+      "lock_mode": "ExclusiveLock",
+      "is_granted": true
+    },
+    {
+      "process_id": 16676,
+      "table_name": "pg_db_role_setting_databaseid_rol_index",
+      "lock_mode": "AccessShareLock",
+      "is_granted": true
+    },
+    {
+      "process_id": 16676,
+      "table_name": "pg_authid",
+      "lock_mode": "AccessShareLock",
+      "is_granted": true
+    },
+    {
+      "process_id": 16676,
+      "table_name": "pg_authid_rolname_index",
+      "lock_mode": "AccessShareLock",
+      "is_granted": true
+    },
+    {
+      "process_id": 16676,
+      "table_name": "pg_db_role_setting",
+      "lock_mode": "AccessShareLock",
+      "is_granted": true
+    },
+    {
+      "process_id": 16676,
+      "table_name": "pg_locks",
+      "lock_mode": "AccessShareLock",
+      "is_granted": true
+    },
+    {
+      "process_id": 16676,
+      "table_name": "pg_authid_oid_index",
+      "lock_mode": "AccessShareLock",
+      "is_granted": true
+    }
+  ],
+  "active_queries": [
+    {
+      "process_id": 16675,
+      "query_id": -7148625560157330186,
+      "transaction_start_time": "2026-10-05 17:18:22.329021",
+      "blocking_pids": [],
+      "canonic_query": "SELECT DISTINCT a.c, COUNT(*) AS total FROM sbtest1 AS a JOIN sbtest1 AS b ON b.id = a.id WHERE a.k > $1 AND a.id = (SELECT MIN(x.id) FROM sbtest1 AS x WHERE x.c = a.c) GROUP BY a.c ORDER BY COUNT(*) DESC"
+    },
+    {
+      "process_id": 33,
+      "query_id": null,
+      "transaction_start_time": null,
+      "blocking_pids": [],
+      "canonic_query": "Not available"
+    }
+  ],
+  "stats_reset_timestamp": [
+    {
+      "stats_reset": "2026-10-05 14:38:58.561978+00:00"
     }
   ],
   "columns": [
@@ -671,6 +533,12 @@
       "data_type": "double precision"
     },
     {
+      "schema_name": "ql_ci_load",
+      "table_name": "ql_ci",
+      "column_name": "k",
+      "data_type": "integer"
+    },
+    {
       "schema_name": "public",
       "table_name": "pg_stat_statements",
       "column_name": "max_plan_time",
@@ -705,6 +573,12 @@
       "table_name": "pg_stat_statements",
       "column_name": "temp_blks_read",
       "data_type": "bigint"
+    },
+    {
+      "schema_name": "ql_ci_load",
+      "table_name": "ql_ci",
+      "column_name": "id",
+      "data_type": "integer"
     },
     {
       "schema_name": "public",
@@ -765,6 +639,12 @@
       "table_name": "pg_stat_statements",
       "column_name": "stddev_exec_time",
       "data_type": "double precision"
+    },
+    {
+      "schema_name": "ql_ci_load",
+      "table_name": "ql_ci",
+      "column_name": "pad",
+      "data_type": "text"
     },
     {
       "schema_name": "public",
@@ -881,12 +761,309 @@
       "data_type": "bigint"
     }
   ],
-  "stats_reset_timestamp": [
+  "top_impact_queries": [
     {
-      "stats_reset": "2026-10-05 14:38:58.561978"
+      "query_id": -7148625560157330186,
+      "query_text": "SELECT DISTINCT\n    a.c,\n        COUNT(*) AS total\n    FROM sbtest1 AS a\n    JOIN sbtest1 AS b\n        ON b.id = a.id\n    WHERE a.k > 100\n      AND a.id = (\n          SELECT MIN(x.id)\n          FROM sbtest1 AS x\n          WHERE x.c = a.c\n      )\n    GROUP BY a.c\n    ORDER BY COUNT(*) DESC",
+      "execution_count": 4,
+      "rows_returned": 40000,
+      "avg_rows_per_call": "10000.000000",
+      "total_time_ms": 46650.511518,
+      "mean_time_ms": 11662.6278795,
+      "stddev_time_ms": 176.20846976282192,
+      "min_time_ms": 11413.022544,
+      "max_time_ms": 11879.483334,
+      "coeff_of_variation": 0.015108813518139646,
+      "disk_spill_indicator": 0,
+      "selected_by": [
+        "time_high_impact"
+      ],
+      "ready_for_explain": true,
+      "schema_name": "public",
+      "canonic_query": "SELECT DISTINCT a.c, COUNT(*) AS total FROM sbtest1 AS a JOIN sbtest1 AS b ON b.id = a.id WHERE a.k > $1 AND a.id = (SELECT MIN(x.id) FROM sbtest1 AS x WHERE x.c = a.c) GROUP BY a.c ORDER BY COUNT(*) DESC"
+    },
+    {
+      "query_id": -4771886699169262329,
+      "query_text": "SELECT COUNT(*) FROM sbtest1 a WHERE a.id = (SELECT MAX(b.id) FROM sbtest1 b WHERE b.k = a.k)",
+      "execution_count": 30,
+      "rows_returned": 30,
+      "avg_rows_per_call": "1.000000",
+      "total_time_ms": 15302.135827,
+      "mean_time_ms": 510.07119423333336,
+      "stddev_time_ms": 27.479356235265477,
+      "min_time_ms": 463.19858800000003,
+      "max_time_ms": 581.8143,
+      "coeff_of_variation": 0.05387357009361908,
+      "disk_spill_indicator": 0,
+      "selected_by": [
+        "time_high_impact"
+      ],
+      "ready_for_explain": true,
+      "schema_name": "public",
+      "canonic_query": "SELECT COUNT(*) FROM sbtest1 AS a WHERE a.id = (SELECT MAX(b.id) FROM sbtest1 AS b WHERE b.k = a.k)"
+    },
+    {
+      "query_id": -1232716347889392665,
+      "query_text": "SELECT a.id, (SELECT COUNT(*) FROM sbtest1 b WHERE b.k = a.k) AS cnt FROM sbtest1 a WHERE a.id > $1 ORDER BY cnt DESC, a.id LIMIT $2",
+      "execution_count": 30,
+      "rows_returned": 3000,
+      "avg_rows_per_call": "100.000000",
+      "total_time_ms": 1875.556739,
+      "mean_time_ms": 62.51855796666667,
+      "stddev_time_ms": 11.30588795248297,
+      "min_time_ms": 52.008431,
+      "max_time_ms": 104.26131099999999,
+      "coeff_of_variation": 0.1808405107250072,
+      "disk_spill_indicator": 0,
+      "selected_by": [
+        "time_high_impact"
+      ],
+      "ready_for_explain": true,
+      "schema_name": "public",
+      "canonic_query": "SELECT a.id, (SELECT COUNT(*) FROM sbtest1 AS b WHERE b.k = a.k) AS cnt FROM sbtest1 AS a WHERE a.id > $1 ORDER BY cnt DESC, a.id LIMIT $2"
+    },
+    {
+      "query_id": -4196604929975110208,
+      "query_text": "SELECT SUBSTRING(c, $1, $2) AS pref, COUNT(*) AS cnt FROM sbtest1 WHERE c LIKE $3 GROUP BY pref ORDER BY cnt DESC LIMIT $4",
+      "execution_count": 30,
+      "rows_returned": 1500,
+      "avg_rows_per_call": "50.000000",
+      "total_time_ms": 583.011794,
+      "mean_time_ms": 19.433726466666666,
+      "stddev_time_ms": 2.7329762748293995,
+      "min_time_ms": 16.524619,
+      "max_time_ms": 31.094974,
+      "coeff_of_variation": 0.14063058258626238,
+      "disk_spill_indicator": 0,
+      "selected_by": [
+        "time_high_impact"
+      ],
+      "ready_for_explain": true,
+      "schema_name": "public",
+      "canonic_query": "SELECT SUBSTRING(c FROM $1 FOR $2) AS pref, COUNT(*) AS cnt FROM sbtest1 WHERE c LIKE $3 GROUP BY pref ORDER BY cnt DESC LIMIT $4"
+    },
+    {
+      "query_id": 2400787508518417558,
+      "query_text": "SELECT id, k, ROW_NUMBER() OVER (PARTITION BY k ORDER BY c) AS rn FROM sbtest1 ORDER BY rn DESC LIMIT $1",
+      "execution_count": 30,
+      "rows_returned": 3000,
+      "avg_rows_per_call": "100.000000",
+      "total_time_ms": 520.389931,
+      "mean_time_ms": 17.346331033333335,
+      "stddev_time_ms": 3.570502623289515,
+      "min_time_ms": 14.246232,
+      "max_time_ms": 29.905685000000002,
+      "coeff_of_variation": 0.2058361861322898,
+      "disk_spill_indicator": 0,
+      "selected_by": [
+        "time_high_impact"
+      ],
+      "ready_for_explain": true,
+      "schema_name": "public",
+      "canonic_query": "SELECT id, k, ROW_NUMBER() OVER (PARTITION BY k ORDER BY c) AS rn FROM sbtest1 ORDER BY rn DESC LIMIT $1"
+    },
+    {
+      "query_id": -58064517687412585,
+      "query_text": "SELECT a.c, COUNT(*) AS total FROM sbtest1 AS a JOIN sbtest1 AS b ON b.id = a.id WHERE a.k > $1 GROUP BY a.c HAVING COUNT(*) > $2 ORDER BY total DESC LIMIT $3",
+      "execution_count": 30,
+      "rows_returned": 0,
+      "avg_rows_per_call": "0.000000",
+      "total_time_ms": 374.710597,
+      "mean_time_ms": 12.490353233333334,
+      "stddev_time_ms": 2.972553734903449,
+      "min_time_ms": 10.502143,
+      "max_time_ms": 25.809683,
+      "coeff_of_variation": 0.23798796394088495,
+      "disk_spill_indicator": 0,
+      "selected_by": [
+        "time_high_impact"
+      ],
+      "ready_for_explain": true,
+      "schema_name": "public",
+      "canonic_query": "SELECT a.c, COUNT(*) AS total FROM sbtest1 AS a JOIN sbtest1 AS b ON b.id = a.id WHERE a.k > $1 GROUP BY a.c HAVING COUNT(*) > $2 ORDER BY total DESC LIMIT $3"
+    },
+    {
+      "query_id": 1846686832555718276,
+      "query_text": "SELECT a.k, COUNT(*) AS cnt FROM sbtest1 a JOIN sbtest1 b ON b.id = a.id JOIN sbtest1 c ON c.id = a.id WHERE a.k < $1 GROUP BY a.k ORDER BY cnt DESC, a.k LIMIT $2",
+      "execution_count": 30,
+      "rows_returned": 3000,
+      "avg_rows_per_call": "100.000000",
+      "total_time_ms": 202.96091499999994,
+      "mean_time_ms": 6.765363833333334,
+      "stddev_time_ms": 0.8984996356713075,
+      "min_time_ms": 5.616658,
+      "max_time_ms": 9.728399,
+      "coeff_of_variation": 0.13280876798441327,
+      "disk_spill_indicator": 0,
+      "selected_by": [
+        "time_high_impact"
+      ],
+      "ready_for_explain": true,
+      "schema_name": "public",
+      "canonic_query": "SELECT a.k, COUNT(*) AS cnt FROM sbtest1 AS a JOIN sbtest1 AS b ON b.id = a.id JOIN sbtest1 AS c ON c.id = a.id WHERE a.k < $1 GROUP BY a.k ORDER BY cnt DESC, a.k LIMIT $2"
+    },
+    {
+      "query_id": -5580412542610240785,
+      "query_text": "SELECT id, CASE WHEN k % $1 = $2 THEN $3 WHEN k % $4 = $5 THEN $6 ELSE $7 END AS bucket FROM sbtest1 ORDER BY bucket, id DESC LIMIT $8",
+      "execution_count": 30,
+      "rows_returned": 6000,
+      "avg_rows_per_call": "200.000000",
+      "total_time_ms": 131.10255599999996,
+      "mean_time_ms": 4.3700852,
+      "stddev_time_ms": 0.5065915136831908,
+      "min_time_ms": 3.6180499999999998,
+      "max_time_ms": 6.12953,
+      "coeff_of_variation": 0.11592257141421196,
+      "disk_spill_indicator": 0,
+      "selected_by": [
+        "time_high_impact"
+      ],
+      "ready_for_explain": true,
+      "schema_name": "public",
+      "canonic_query": "SELECT id, CASE WHEN k % $1 = $2 THEN $3 WHEN k % $4 = $5 THEN $6 ELSE $7 END AS bucket FROM sbtest1 ORDER BY bucket, id DESC LIMIT $8"
+    },
+    {
+      "query_id": -2209365685421286314,
+      "query_text": "SELECT a.id, b.id FROM sbtest1 a JOIN sbtest1 b ON b.c = a.c WHERE a.id BETWEEN $1 AND $2 ORDER BY a.id, b.id LIMIT $3",
+      "execution_count": 30,
+      "rows_returned": 3000,
+      "avg_rows_per_call": "100.000000",
+      "total_time_ms": 126.282369,
+      "mean_time_ms": 4.209412300000001,
+      "stddev_time_ms": 0.8849310976903664,
+      "min_time_ms": 3.4573080000000003,
+      "max_time_ms": 6.9748730000000005,
+      "coeff_of_variation": 0.2102267572341075,
+      "disk_spill_indicator": 0,
+      "selected_by": [
+        "time_high_impact"
+      ],
+      "ready_for_explain": true,
+      "schema_name": "public",
+      "canonic_query": "SELECT a.id, b.id FROM sbtest1 AS a JOIN sbtest1 AS b ON b.c = a.c WHERE a.id BETWEEN $1 AND $2 ORDER BY a.id, b.id LIMIT $3"
+    },
+    {
+      "query_id": 4958791658444919656,
+      "query_text": "SELECT $1 AS tipo, SUM(k) AS s FROM sbtest1 UNION ALL SELECT $2, AVG(id) FROM sbtest1 UNION ALL SELECT $3, COUNT(*) FROM sbtest1",
+      "execution_count": 30,
+      "rows_returned": 90,
+      "avg_rows_per_call": "3.000000",
+      "total_time_ms": 90.43682299999999,
+      "mean_time_ms": 3.0145607666666665,
+      "stddev_time_ms": 0.48187590373765204,
+      "min_time_ms": 2.602427,
+      "max_time_ms": 5.1966529999999995,
+      "coeff_of_variation": 0.1598494576941249,
+      "disk_spill_indicator": 0,
+      "selected_by": [
+        "time_high_impact"
+      ],
+      "ready_for_explain": true,
+      "schema_name": "public",
+      "canonic_query": "SELECT $1 AS tipo, SUM(k) AS s FROM sbtest1 UNION ALL SELECT $2, AVG(id) FROM sbtest1 UNION ALL SELECT $3, COUNT(*) FROM sbtest1"
     }
   ],
+  "non_explainable_candidates": [],
   "canonic_explains": [
+    {
+      "query_id": -7148625560157330186,
+      "explain_source": "generic",
+      "canonical_plan": {
+        "logical_shape": {
+          "scans": 3,
+          "joins": 1,
+          "aggregates": 2,
+          "sorts": 2,
+          "subqueries": 1,
+          "distinct": 1
+        },
+        "physical_operations": [
+          {
+            "type": "distinct",
+            "access_method": null,
+            "relation": null,
+            "estimated_rows": 50,
+            "predicate": null,
+            "index_name": null
+          },
+          {
+            "type": "sort",
+            "access_method": null,
+            "relation": null,
+            "estimated_rows": 50,
+            "predicate": null,
+            "index_name": null
+          },
+          {
+            "type": "aggregate",
+            "access_method": null,
+            "relation": null,
+            "estimated_rows": 50,
+            "predicate": null,
+            "index_name": null
+          },
+          {
+            "type": "sort",
+            "access_method": null,
+            "relation": null,
+            "estimated_rows": 50,
+            "predicate": null,
+            "index_name": null
+          },
+          {
+            "type": "join",
+            "access_method": null,
+            "relation": null,
+            "estimated_rows": null,
+            "predicate": null,
+            "index_name": null
+          },
+          {
+            "type": "scan",
+            "access_method": "full_table_scan",
+            "relation": "a",
+            "estimated_rows": 50,
+            "predicate": "((k > 100) AND (id = (SubPlan 1)))",
+            "index_name": null
+          },
+          {
+            "type": "aggregate",
+            "access_method": null,
+            "relation": null,
+            "estimated_rows": 1,
+            "predicate": null,
+            "index_name": null
+          },
+          {
+            "type": "subquery",
+            "access_method": null,
+            "relation": null,
+            "estimated_rows": 1,
+            "predicate": null,
+            "index_name": null
+          },
+          {
+            "type": "scan",
+            "access_method": "full_table_scan",
+            "relation": "x",
+            "estimated_rows": 1,
+            "predicate": "(c = a.c)",
+            "index_name": null
+          },
+          {
+            "type": "scan",
+            "access_method": "index_lookup",
+            "relation": "b",
+            "estimated_rows": 1,
+            "predicate": "(id = a.id)",
+            "index_name": "sbtest1_pkey"
+          }
+        ],
+        "estimates": {
+          "total_cost": 4840765.2
+        }
+      }
+    },
     {
       "query_id": -4771886699169262329,
       "explain_source": "generic",
@@ -1433,49 +1610,7 @@
           "total_cost": 869.93
         }
       }
-    },
-    {
-      "query_id": -63546045030150458,
-      "explain_source": "generic",
-      "canonical_plan": {
-        "logical_shape": {
-          "scans": 1,
-          "joins": 0,
-          "aggregates": 0,
-          "sorts": 1,
-          "subqueries": 0,
-          "distinct": 1
-        },
-        "physical_operations": [
-          {
-            "type": "distinct",
-            "access_method": null,
-            "relation": null,
-            "estimated_rows": 50,
-            "predicate": null,
-            "index_name": null
-          },
-          {
-            "type": "sort",
-            "access_method": null,
-            "relation": null,
-            "estimated_rows": 50,
-            "predicate": null,
-            "index_name": null
-          },
-          {
-            "type": "scan",
-            "access_method": "index_lookup",
-            "relation": "sbtest1",
-            "estimated_rows": 50,
-            "predicate": "((id >= $1) AND (id <= $2))",
-            "index_name": "sbtest1_pkey"
-          }
-        ],
-        "estimates": {
-          "total_cost": 79.84
-        }
-      }
     }
-  ]
+  ],
+  "db_id": "querylens-db-01"
 }
