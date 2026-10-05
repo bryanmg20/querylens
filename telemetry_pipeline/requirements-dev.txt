@@ -1,0 +1,4 @@
+# Dependencias de desarrollo (tests, lint). Se instala junto a requirements.txt.
+-r requirements.txt
+
+pytest>=8.0

@@ -1,0 +1,169 @@
+name: pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    # Corre en cada push y PR. Sin servicios: si algo falla aqui, no se fusiona.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: telemetry_pipeline/requirements-dev.txt
+      - run: pip install -r telemetry_pipeline/requirements-dev.txt
+      - name: unit y contract
+        run: python -m pytest -m "not integration" --junitxml=report-unit.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: report-unit
+          path: report-unit.xml
+
+  integration:
+    # Solo en push a main. Levanta los motores reales del sandbox y corre el
+    # pipeline completo contra ellos, incluida la cola PGMQ.
+    needs: unit
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    services:
+      telemetry-postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: querylens_monitor
+          POSTGRES_PASSWORD: monitor_pass
+          POSTGRES_DB: ql_demo
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U querylens_monitor -d ql_demo"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+      telemetry-mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ql_root
+          MYSQL_DATABASE: ql_demo
+          MYSQL_USER: querylens_monitor
+          MYSQL_PASSWORD: monitor_pass
+        ports:
+          - 53306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -u root -pql_root"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 15
+
+      querylens-db:
+        image: ghcr.io/pgmq/pg17-pgmq:latest
+        env:
+          POSTGRES_USER: ql_user
+          POSTGRES_PASSWORD: ql_pass
+          POSTGRES_DB: ql_demo
+        ports:
+          - 55433:5432
+        options: >-
+          --health-cmd "pg_isready -U ql_user -d ql_demo"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      MONITOR_PG_HOST: 127.0.0.1
+      MONITOR_PG_PORT: "55432"
+      MONITOR_PG_DB: ql_demo
+      MONITOR_PG_USER: querylens_monitor
+      MONITOR_PG_PASSWORD: monitor_pass
+      MONITOR_MY_HOST: 127.0.0.1
+      MONITOR_MY_PORT: "53306"
+      MONITOR_MY_USER: querylens_monitor
+      MONITOR_MY_PASSWORD: monitor_pass
+      DB_HOST: 127.0.0.1
+      DB_PORT: "55433"
+      QUERYLENS_DB: ql_demo
+      QUERYLENS_USER: ql_user
+      QUERYLENS_PASSWORD: ql_pass
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: telemetry_pipeline/requirements-dev.txt
+      - run: pip install -r telemetry_pipeline/requirements-dev.txt
+
+      - name: espera a los tres motores
+        run: |
+          for i in $(seq 1 30); do
+            if docker exec "${{ job.services.telemetry-postgres.id }}" pg_isready -U querylens_monitor -d ql_demo > /dev/null 2>&1 \
+               && docker exec "${{ job.services.telemetry-mysql.id }}" mysqladmin ping -h 127.0.0.1 -u root -pql_root > /dev/null 2>&1 \
+               && docker exec "${{ job.services.querylens-db.id }}" pg_isready -U ql_user -d ql_demo > /dev/null 2>&1; then
+              echo "los tres motores responden"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "un motor no respondio a tiempo" >&2
+          exit 1
+
+      - name: Postgres de telemetry con pg_stat_statements y rol monitor
+        # shared_preload_libraries solo aplica tras reiniciar: se deja escrito en
+        # postgresql.auto.conf y se reinicia el contenedor de servicios.
+        run: |
+          docker exec -i "${{ job.services.telemetry-postgres.id }}" \
+            psql -U querylens_monitor -d ql_demo -v ON_ERROR_STOP=1 <<'SQL'
+          ALTER SYSTEM SET shared_preload_libraries = 'pg_stat_statements';
+          ALTER SYSTEM SET pg_stat_statements.track = 'all';
+          ALTER SYSTEM SET pg_stat_statements.max = '10000';
+          SQL
+          docker restart "${{ job.services.telemetry-postgres.id }}"
+          for i in $(seq 1 30); do
+            if docker exec "${{ job.services.telemetry-postgres.id }}" pg_isready -U querylens_monitor -d ql_demo > /dev/null 2>&1; then
+              break
+            fi
+            sleep 2
+          done
+          docker exec -i "${{ job.services.telemetry-postgres.id }}" \
+            psql -U querylens_monitor -d ql_demo -v ON_ERROR_STOP=1 -c \
+            "CREATE EXTENSION IF NOT EXISTS pg_stat_statements"
+
+      - name: tabla de carga en MySQL
+        # El rol de monitoreo no tiene CREATE en ql_demo: el DDL lo aplica root.
+        run: |
+          docker exec -i "${{ job.services.telemetry-mysql.id }}" mysql -uroot -pql_root <<'SQL'
+          CREATE DATABASE IF NOT EXISTS ql_demo;
+          USE ql_demo;
+          CREATE TABLE IF NOT EXISTS ql_ci (
+              id integer PRIMARY KEY,
+              k integer NOT NULL,
+              pad text
+          );
+          SQL
+
+      - name: carga de trabajo para poblar las vistas de estadisticas
+        # El pipeline explica candidatos reales: sin trafico, pg_stat_statements
+        # y performance_schema estan vacios y los tests se saltan.
+        run: |
+          python telemetry_pipeline/ci/load.py
+
+      - name: suite completa
+        run: python -m pytest -q --junitxml=report-integration.xml
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: report-integration
+          path: report-integration.xml

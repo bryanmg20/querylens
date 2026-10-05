@@ -57,7 +57,7 @@ tests/
 
 ## Cobertura de referencia
 
-- **Contrato (models/snapshot.py)**: cada snapshot de motor debe validar, los `query_id` deben llevar el tipo del motor (str en MySQL, int en Postgres), la dependencia `active_queries.query_id ∈ statements.query_id` (usada por `select_explain_ready`), y el round-trip `from_snapshot → to_json → model_validate_json` debe preservar el payload.
+- **Contrato (models/snapshot.py)**: cada snapshot de motor debe validar, los `query_id` deben llevar el tipo del motor (str en MySQL, int en Postgres), el tipo de `query_id` en `statements` y `top_impact_queries` (la intersección con `active_queries` ya no decide quién se explica), y el round-trip `from_snapshot → to_json → model_validate_json` debe preservar el payload.
 - **Unitarios**: cada stage de selección (top 10, inestables, disk spill, dedupe, explain-ready), canonic de queries con sqlglot y su fallback, normalización de locks/pids/timestamps, limpieza de predicados MySQL (cache, backticks, casts preservados), y el conteo de shapes de los normalizadores de plan.
 - **Arquitectura**: estrategias de collector sobre la base común, Factory, registry de normalizadores, firma única `execute` por stage, composición del Orchestrator, y el contrato del Facade `SnapshotPayload`.
 
@@ -71,20 +71,37 @@ python main.py    # vuelca el snapshot de cada motor a la cola PGMQ
 
 Y se exportan los nuevos JSON a `tests/golden/` (los originals son `snapshot_1.txt`/`snapshot_2.txt`). Un cambio de contrato debe acompañarse de la actualización de fixtures; si un snapshot deja de validar, la suite falla a propósito (golden master).
 
-## Integración continua sugerida
+## Integración continua
 
-```yaml
-# .github/workflows/pipeline.yml (ejemplo)
-on: [push, pull_request]
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
-      - run: pip install -r telemetry_pipeline/requirements.txt -r telemetry_pipeline/requirements-dev.txt
-      - run: cd telemetry_pipeline && python -m pytest
+`.github/workflows/pipeline.yml` define dos jobs:
+
+| Job | Cuándo | Qué corre | Servicios |
+|-----|--------|-----------|-----------|
+| `unit` | cada push y PR | `-m "not integration"` | ninguno |
+| `integration` | solo push a `main` | suite completa | Postgres 17 + MySQL 8 + PGMQ |
+
+`unit` es el que bloquea el merge. `integration` necesita `main` porque levanta tres motores y tarda.
+
+### Por qué las conexiones se parametrizaron
+
+`config/connections.py` tenía host, puerto y credenciales fijos. En CI los servicios corren en puertos internos distintos, así que los tests de integración se habrían saltado en silencio y el job habría reportado verde sin probar nada. Ahora cada motor lee del entorno con fallback al sandbox:
+
+| Variable | Motor | Default |
+|----------|-------|---------|
+| `MONITOR_PG_HOST` / `_PORT` / `_DB` / `_USER` / `_PASSWORD` | Postgres de telemetry | `localhost:5432/ql_demo`, `querylens_monitor` |
+| `MONITOR_MY_HOST` / `_PORT` / `_USER` / `_PASSWORD` | MySQL de telemetry | `localhost:3307`, `querylens_monitor` |
+| `DB_HOST` / `DB_PORT` / `QUERYLENS_DB` / `QUERYLENS_USER` / `QUERYLENS_PASSWORD` | base de la cola | `localhost:5432/ql_demo`, `ql_user` |
+
+MySQL no tiene variable de base a propósito: entra sin base por defecto porque el `EXPLAIN` depende del `USE` que emite `ExplainStage`.
+
+### Carga de trabajo en CI
+
+`pg_stat_statements` y `performance_schema` arrancan vacíos, y los tests que necesitan candidatos reales se saltan. `telemetry_pipeline/ci/load.py` crea una tabla mínima y genera tráfico antes de correr la suite. No es la batería del sandbox (`ql_sandbox/scripts/battery.sh`), es lo mínimo para que la capa de integración tenga material.
+
+### Correr la capa de integración en local
+
+```bash
+cd telemetry_pipeline && python -m pytest -m integration
 ```
 
-Los tests de integración real (contra bases/cola) quedan como paso futuro: requieren los contenedores `ql_postgres`/`ql_mysql`/PGMQ y son `pytest.mark.integration`.
+Se salta sola si los contenedores no están levantados. Con `.github/workflows` no es necesario levantarlos: el job lo hace.
