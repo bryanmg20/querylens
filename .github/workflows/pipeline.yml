@@ -97,6 +97,8 @@ jobs:
       QUERYLENS_DB: ql_demo
       QUERYLENS_USER: ql_user
       QUERYLENS_PASSWORD: ql_pass
+      APP_PG_USER: ql_app
+      APP_PG_PASSWORD: app_pass
 
     steps:
       - uses: actions/checkout@v4
@@ -141,6 +143,36 @@ jobs:
           docker exec -i "${{ job.services.telemetry-postgres.id }}" \
             psql -U querylens_monitor -d ql_demo -v ON_ERROR_STOP=1 -c \
             "CREATE EXTENSION IF NOT EXISTS pg_stat_statements"
+
+      - name: rol de aplicacion separado del monitor
+        # STATEMENTS_QUERY filtra userid != session_user. Si el trafico lo
+        # genera el propio monitor, el collector no ve nada y los tests de
+        # integracion se quedan sin material. Este rol replica la topologia del
+        # sandbox: ql_app genera trafico, querylens_monitor observa.
+        #
+        # El schema lo crea el superusuario del contenedor (POSTGRES_USER) y se
+        # lo cede a ql_app, para que los grants de lectura no dependan de que el
+        # rol monitor sea superusuario. Es lo mismo que hace
+        # ql_sandbox/init/init_postgres.sql.
+        run: |
+          docker exec -i "${{ job.services.telemetry-postgres.id }}" \
+            psql -U querylens_monitor -d ql_demo -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'ql_app') THEN
+              CREATE ROLE ql_app LOGIN PASSWORD 'app_pass';
+            END IF;
+          END
+          $$;
+          GRANT CONNECT ON DATABASE ql_demo TO ql_app;
+          CREATE SCHEMA IF NOT EXISTS ql_ci_load AUTHORIZATION ql_app;
+          GRANT USAGE ON SCHEMA ql_ci_load TO querylens_monitor;
+          -- ALTER DEFAULT PRIVILEGES es por rol: sin FOR ROLE aplicaria a las
+          -- tablas que crea el superusuario, no a las de ql_app, y el monitor
+          -- se quedaria sin permiso para explicar.
+          ALTER DEFAULT PRIVILEGES FOR ROLE ql_app IN SCHEMA ql_ci_load
+            GRANT SELECT ON TABLES TO querylens_monitor;
+          SQL
 
       - name: tabla de carga en MySQL
         # El rol de monitoreo no tiene CREATE en ql_demo: el DDL lo aplica root.

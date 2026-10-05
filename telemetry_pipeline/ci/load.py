@@ -8,8 +8,17 @@ Corre en CI antes de pytest. No es la bateria del sandbox (esa va en
 ql_sandbox/scripts/battery.sh); es lo minimo para que la capa de integracion
 tenga material y no se salte a si misma.
 
-Crea la tabla como el rol_duenio del motor (MONITOR_PG_USER en CI), porque el rol
-de monitoreo solo tiene lectura: en el sandbox el DDL lo hace ql_user.
+Para Postgres el DDL y el trafico los genera el rol de aplicacion (ql_app), que
+se crea en el paso del workflow. El rol de monitoreo (querylens_monitor) solo
+observa (lectura) y nunca genera el trafico observado, replicando la topologia
+del sandbox.
+
+El trafico tiene que generarlo un rol DISTINTO al de monitoreo. STATEMENTS_QUERY
+filtra userid != session_user, asi que si la carga corre como el monitor el
+collector no ve nada y los tests de integracion no tienen con que trabajar. Por
+eso APP_PG_USER existe: en CI se crea un rol de aplicacion aparte y la carga se
+conecta con el, replicando la topologia del sandbox (ql_app genera trafico,
+querylens_monitor observa).
 """
 import os
 import sys
@@ -23,6 +32,13 @@ from config.connections import (  # noqa: E402
     get_connection_mysql,
     get_connection_postgres,
 )
+
+# Rol de aplicacion para generar trafico en Postgres. El pipeline nunca se
+# conecta con el: solo existe para que haya consultas de otro userid que el
+# collector pueda observar.
+APP_PG_USER = os.getenv("APP_PG_USER", "ql_app")
+APP_PG_PASSWORD = os.getenv("APP_PG_PASSWORD", "app_pass")
+APP_PG_DB = os.getenv("MONITOR_PG_DB", "ql_demo")
 
 QUERIES = [
     "SELECT * FROM ql_ci WHERE id = 7",
@@ -71,12 +87,42 @@ def _count(engine, sql, use=None):
         return f"no verificable ({type(exc).__name__})"
 
 
+def _app_engine():
+    """Engine de aplicacion para Postgres.
+
+    Es separado a proposito del engine de monitoreo: el filtro de
+    STATEMENTS_QUERY es userid != session_user, y con el mismo rol la carga
+    seria invisible para el collector. El rol de aplicacion hace el DDL y el
+    trafico; el monitor solo observa y nunca escribe.
+    """
+    return create_engine(
+        f"postgresql+psycopg2://{APP_PG_USER}:{APP_PG_PASSWORD}"
+        f"@{os.getenv('MONITOR_PG_HOST', 'localhost')}"
+        f":{os.getenv('MONITOR_PG_PORT', '5432')}/{APP_PG_DB}"
+    )
+
+
 def load_postgres(rounds=40):
-    engine = get_connection_postgres()
-    with engine.begin() as conn:
-        conn.execute(text(DDL))
-        conn.execute(text(SEED))
-        conn.execute(text(f"ANALYZE {SCHEMA}.ql_ci"))
+    """DDL y trafico con el rol de aplicacion.
+
+    Falla duro si ese rol no conecta: caer de vuelta al monitor dejaria el
+    trafico con el mismo userid que el collector filtra, y los tests de
+    integracion pasarian sin ver nada. Prefiere romper aqui que en el pytest.
+    """
+    engine = _app_engine()
+    try:
+        with engine.begin() as conn:
+            conn.execute(text(DDL))
+            conn.execute(text(SEED))
+            conn.execute(text(f"ANALYZE {SCHEMA}.ql_ci"))
+    except Exception as exc:
+        raise RuntimeError(
+            f"el rol de aplicacion {APP_PG_USER!r} no pudo crear el schema "
+            f"{SCHEMA!r} ({type(exc).__name__}). En CI lo crea el paso 'rol de "
+            f"aplicacion separado del monitor'. Si se cae al rol monitor, el "
+            f"collector no ve el trafico y los tests de integracion pasan en "
+            f"vacio."
+        ) from exc
 
     seen = 0
     for _ in range(rounds):
@@ -94,7 +140,7 @@ def load_postgres(rounds=40):
                     return seen
         time.sleep(0.05)
 
-    total = _count(engine, "SELECT count(*) FROM pg_stat_statements WHERE query LIKE '%ql_ci%'")
+    total = _count(get_connection_postgres(), "SELECT count(*) FROM pg_stat_statements WHERE query LIKE '%ql_ci%'")
     print(f"postgres: {seen} ejecuciones, {total} entradas en pg_stat_statements")
 
 
