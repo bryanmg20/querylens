@@ -7,7 +7,6 @@ from collectors.mysql.collector import Mysql_Collector
 from collectors.postgres.collector import Postgres_Collector
 from models.snapshot import SnapshotPayload
 from orchestrator import Orchestrator
-from stages import selectors
 from stages.candidates import CandidatesStage
 from stages.collect import CollectStage
 from stages.enrich import EnrichStage
@@ -43,6 +42,19 @@ class TestCollectorsStrategy:
         pg = Postgres_Collector(engine=None)
         assert "calculate_stddev_coeff" in type(mysql).__dict__
         assert "calculate_stddev_coeff" not in type(pg).__dict__
+
+    def test_base_hooks_return_stats_unchanged(self):
+        """El default de la base es identidad: cada dialecto lo sobrescribe, pero
+        un hook nuevo debe poder apoyarse en esa base sin romper el contrato."""
+        collector = DB_Engine_Collector()
+        stats = {"k": "v"}
+        assert collector.normalize_engine_artifacts(stats) is stats
+        assert collector.mark_explainable(stats) is stats
+
+    def test_each_collector_specializes_both_hooks(self):
+        for cls in (Mysql_Collector, Postgres_Collector):
+            assert "mark_explainable" in cls.__dict__
+            assert "normalize_engine_artifacts" in cls.__dict__
 
 
 class TestEngineFactory:
@@ -100,20 +112,3 @@ class TestSnapshotFacade:
     def test_facade_rejects_invalid_payload(self):
         with pytest.raises(ValidationError):
             SnapshotPayload.from_snapshot({"db_id": "x", "statements": {"not": "list"}})
-
-
-class TestDeadCodeVitals:
-    def test_selector_functions_composed_by_stage(self):
-        for name in (
-            "select_high_impact_time_statements",
-            "select_unstable_statements",
-            "select_disk_spill_indicator",
-            "select_candidates_to_explain",
-            "select_explain_ready",
-        ):
-            assert callable(getattr(selectors, name))
-
-    def test_base_strategy_normalize_returns_stats_unchanged(self):
-        collector = DB_Engine_Collector()
-        stats = {"k": "v"}
-        assert collector.normalize_engine_artifacts(stats) is stats

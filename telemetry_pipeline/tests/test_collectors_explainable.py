@@ -7,16 +7,6 @@ from collectors.postgres.collector import Postgres_Collector
 pytestmark = pytest.mark.unit
 
 
-def _stats(samples):
-    return {
-        "top_impact_queries": [
-            {"query_id": i, "query_text": f"SELECT {i}"}
-            for i, sample in enumerate(samples)
-        ],
-        "_samples": samples,
-    }
-
-
 def _candidates_with_samples(samples):
     return {
         "top_impact_queries": [
@@ -32,6 +22,7 @@ def _candidates_with_samples(samples):
 
 class TestBaseDefault:
     def test_mark_explainable_is_noop(self):
+        """El default de la base no marca nada; cada dialecto lo sobrescribe."""
         stats = {"top_impact_queries": [{"query_id": 1}]}
         assert DB_Engine_Collector().mark_explainable(stats) is stats
         assert "ready_for_explain" not in stats["top_impact_queries"][0]

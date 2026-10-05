@@ -88,6 +88,18 @@ def test_candidate_without_text_skipped():
     assert stats["non_explainable_candidates"] == []
 
 
+def test_all_three_transient_keys_are_dropped():
+    stats = {
+        "high_impact_statements": [_statement(1)],
+        "unstable_statements": [_statement(1)],
+        "disk_spill_statements": [_statement(1)],
+    }
+    select_candidates_to_explain(stats)
+    assert "high_impact_statements" not in stats
+    assert "unstable_statements" not in stats
+    assert "disk_spill_statements" not in stats
+
+
 def test_explain_ready_starts_unresolved():
     stats = {
         "top_impact_queries": [
@@ -112,3 +124,35 @@ def test_explain_ready_default_false():
     }
     select_explain_ready(stats)
     assert stats["top_impact_queries"][0]["ready_for_explain"] is False
+
+
+def test_explain_ready_ignores_active_queries():
+    """Documenta un gap: la doc dice que marca los ids de active_queries, pero
+    el codigo los ignora y deja todo en False. Ver references/004."""
+    stats = {
+        "top_impact_queries": [{"query_id": 1, "query_text": "a"}],
+        "active_queries": [{"query_id": 1, "query_text": "a"}],
+    }
+    select_explain_ready(stats)
+    assert stats["top_impact_queries"][0]["ready_for_explain"] is False
+
+
+def test_explain_ready_dedups_by_query_id():
+    stats = {
+        "top_impact_queries": [
+            {"query_id": 1, "query_text": "a"},
+            {"query_id": 1, "query_text": "a"},
+        ],
+        "active_queries": [],
+    }
+    select_explain_ready(stats)
+    assert len(stats["top_impact_queries"]) == 1
+
+
+def test_explain_ready_skips_candidates_without_query_id():
+    stats = {
+        "top_impact_queries": [{"query_id": None, "query_text": "a"}],
+        "active_queries": [],
+    }
+    select_explain_ready(stats)
+    assert stats["top_impact_queries"] == []
