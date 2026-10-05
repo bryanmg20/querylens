@@ -72,13 +72,17 @@ class TestQueryTextIsRestored:
 
         Sin este paso, MySQL explainaria el digest con '?' y el motor responderia
         error de sintaxis, perdiendo el candidato.
+
+        El fixture tiene que partir los dos textos. Con statements y el
+        candidato identicos la restauracion es un no-op y el test pasaria
+        aunque la funcion no hiciera nada.
         """
         stats = _mysql_stats()
+        real = "SELECT `a` FROM `t` WHERE `b` = 42"
+        stats["statements"][0]["query_text"] = real
         stats["top_impact_queries"][0]["query_text"] = "SELECT `a` FROM `t` WHERE `b` = ?"
         NormalizeStage(Mysql_Collector(engine=None)).execute(stats)
-        assert stats["top_impact_queries"][0]["query_text"] == (
-            "SELECT `a` FROM `t` WHERE `b` = ?"
-        )
+        assert stats["top_impact_queries"][0]["query_text"] == real
 
     def test_candidate_without_matching_statement_keeps_its_text(self):
         """Si el query_id no esta en statements no hay nada que restaurar; el

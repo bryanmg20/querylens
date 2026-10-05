@@ -66,12 +66,37 @@ def test_collect_returns_every_declared_section(pg):
 
 
 def test_statements_exclude_the_monitoring_user_itself(pg):
+    """El collector no debe devolverse a si mismo.
+
+    El filtro de STATEMENTS_QUERY es por rol: userid != session_user. Para que
+    el test signifique algo hay que comparar contra la vista SIN filtro: si el
+    monitor ya no aparece ahi, no hay nada que excluir y el test pasa por vacuio.
+    """
     collector = Postgres_Collector(engine=pg)
     with pg.connect() as conn:
+        session_oid = conn.execute(text(
+            "SELECT oid FROM pg_roles WHERE rolname = session_user"
+        )).scalar()
+        # Sin filtro: lo que el motor tiene registrado para todos los roles.
+        sin_filtro = list(conn.execute(text(
+            "SELECT userid, query FROM pg_stat_statements"
+        )).mappings())
         stats = CollectStage(collector).execute({}, conn)
-    assert isinstance(stats["statements"], list)
-    usernames = {s.get("username") for s in stats["statements"] if "username" in s}
-    assert "querylens_monitor" not in usernames
+
+    assert session_oid is not None, "session_user deberia resolver a un rol"
+    assert sin_filtro, "pg_stat_statements deberia tener entradas para comparar"
+    propios = [r for r in sin_filtro if r["userid"] == session_oid]
+    assert propios, (
+        "el monitor no tiene statements propios registrados: este test no "
+        "puede distinguir un filtro que funciona de uno que no hace nada"
+    )
+    assert not [s for s in stats["statements"] if s["userid"] == session_oid], (
+        "el collector se esta devolviendo a si mismo"
+    )
+    for stmt in stats["statements"]:
+        assert stmt["query_text"] != "<insufficient privilege>", (
+            "falta pg_read_all_stats para el rol monitor"
+        )
 
 
 def test_schema_resolver_maps_the_demo_user_to_a_real_schema(pg):
@@ -150,13 +175,35 @@ def test_mysql_statements_expose_query_sample_text(my):
 
 
 def test_mysql_statements_exclude_internals(my):
+    """El digest table de MySQL no expone usuario: no hay filtro por rol posible.
+
+    Lo unico defendible es un filtro por forma de la sentencia, y tiene que
+    compararse contra el texto completo. La version anterior recortaba a 8
+    caracteres y luego buscaba 'PERFORMANCE_SCHEMA' (18 caracteres): era
+    imposible que fallara.
+    """
     from collectors.mysql.queries import STATEMENTS_QUERY
 
     with my.connect() as conn:
         rows = list(conn.execute(text(STATEMENTS_QUERY)).mappings())
-    prefixes = tuple((r["query_text"] or "").strip().upper()[:8] for r in rows)
-    assert not any(p.startswith("SET @@") for p in prefixes)
-    assert not any("PERFORMANCE_SCHEMA" in p for p in prefixes)
+    assert rows, "performance_schema deberia tener digests tras la bateria"
+    digests = [(r["query_text"] or "").strip().upper() for r in rows]
+    for digest in digests:
+        assert not digest.startswith("SET @@"), digest
+        assert "PERFORMANCE_SCHEMA" not in digest, digest
+        assert "INFORMATION_SCHEMA" not in digest, digest
+    # Lo que el propio collector emite contra el motor. Si esto aparece, el
+    # filtro de la query esta incompleto y hay que ampliarlo, no el test.
+    from ci.regenerate_goldens import PIPELINE_FINGERPRINT
+
+    # El fingerprint esta en minusculas y los digests llegan en mayusculas:
+    # comparar sin normalizar daria False siempre y el test pasaria en vacio.
+    fingerprint = tuple(f.upper() for f in PIPELINE_FINGERPRINT)
+    propias = [d for d in digests if d.startswith(fingerprint)]
+    assert not propias, (
+        f"el pipeline se cuela en statements: {propias}. "
+        "ampliar el filtro de collectors/mysql/queries.py"
+    )
 
 
 def test_mysql_explain_requires_the_use_statement_first(my):

@@ -252,10 +252,23 @@ def test_query_ids_carry_engine_type(mysql_snapshot, postgres_snapshot):
     assert isinstance(pg_stmt, int)
 
 
-def test_locks_boolean_coercion(mysql_snapshot):
-    payload = SnapshotPayload.from_snapshot(mysql_snapshot)
+def test_locks_boolean_coercion(mysql_snapshot, postgres_snapshot):
+    """El golden de MySQL suele llegar sin locks (no habia transaccion InnoDB
+    abierta al capturar), asi que el bucle sobre el no exertia presion. La
+    coercion se verifica donde hay datos y el vacio se comprueba aparte.
+    """
+    payload = SnapshotPayload.from_snapshot(postgres_snapshot)
+    assert payload.locks, (
+        "el golden de postgres deberia traer locks: sin ellos este test no "
+        "verifica la coercion de is_granted"
+    )
     for lock in payload.locks:
         assert lock.is_granted is True or lock.is_granted is False
+    assert all(lock.is_granted is not None for lock in payload.locks)
+
+    # MySQL: el contrato tiene que aceptar la lista vacia sin inventar valores.
+    vacio = SnapshotPayload.from_snapshot(mysql_snapshot)
+    assert vacio.locks == []
 
 
 def test_statements_carry_user_and_schema(postgres_snapshot, mysql_snapshot):

@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 from sqlalchemy import create_engine
 
@@ -21,9 +23,13 @@ class _FakeConn:
     def __init__(self, rows=None):
         self.sent = []
         self.rollback_calls = 0
-        self.rows = rows or [
+        # `rows=[]` tiene que significar "el motor no devolvio nada", no
+        # "usa el default": con `rows or [...]` una lista vacia es falsy y
+        # justamente el caso que el test de plan vacio necesita provocar quedaba
+        # inalcanzable, con una rama de produccion sin cubrir.
+        self.rows = [
             {"QUERY PLAN": '[{"Plan": {"Node Type": "Seq Scan", "Total Cost": 1.0}}]'},
-        ]
+        ] if rows is None else list(rows)
 
     def execute(self, stmt):
         self.sent.append(str(stmt))
@@ -251,11 +257,22 @@ def test_mysql_truncated_sample_rolls_back_without_aborting_cycle():
     assert stats["canonic_explains"] == []
 
 
-def test_mysql_no_plan_row_is_logged_and_skipped():
+def test_mysql_no_plan_row_is_logged_and_skipped(caplog):
+    """MySQL puede devolver un result set vacio en vez de un error.
+
+    El caso es distinto del de una excepcion: no hay traceback que lo delate, asi
+    que sin el log un plan perdido seria silencioso. El assert del log es lo que
+    distingue esta rama de la de error.
+    """
     conn = _FakeConn(rows=[])
     stats = _mysql_stats()
-    ExplainStage(_FakeMysqlCollector()).execute(stats, conn)
+    with caplog.at_level(logging.ERROR):
+        ExplainStage(_FakeMysqlCollector()).execute(stats, conn)
     assert stats["canonic_explains"] == []
+    assert any(
+        "returned no plan row" in r.message and f"query_id={stats['top_impact_queries'][0]['query_id']}" in r.message
+        for r in caplog.records
+    ), f"la rama de plan vacio no se disparo: {[r.message for r in caplog.records]}"
 
 
 def test_mysql_quotes_schema_identifier():
