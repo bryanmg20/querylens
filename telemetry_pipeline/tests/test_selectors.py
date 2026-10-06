@@ -3,7 +3,7 @@ import pytest
 from stages.selectors import (
     select_candidates_to_explain,
     select_disk_spill_indicator,
-    select_explain_ready,
+    init_ready_for_explain,
     select_high_impact_time_statements,
     select_unstable_statements,
 )
@@ -111,7 +111,7 @@ def test_explain_ready_starts_unresolved():
             {"query_id": 99, "query_text": "other"},
         ],
     }
-    select_explain_ready(stats)
+    init_ready_for_explain(stats)
     for ready in stats["top_impact_queries"]:
         assert ready["ready_for_explain"] is False
     assert stats["top_impact_queries"][0]["query_text"] == "old text"
@@ -122,7 +122,7 @@ def test_explain_ready_default_false():
         "top_impact_queries": [{"query_id": 2, "query_text": "x"}],
         "active_queries": [],
     }
-    select_explain_ready(stats)
+    init_ready_for_explain(stats)
     assert stats["top_impact_queries"][0]["ready_for_explain"] is False
 
 
@@ -133,7 +133,7 @@ def test_explain_ready_ignores_active_queries():
         "top_impact_queries": [{"query_id": 1, "query_text": "a"}],
         "active_queries": [{"query_id": 1, "query_text": "a"}],
     }
-    select_explain_ready(stats)
+    init_ready_for_explain(stats)
     assert stats["top_impact_queries"][0]["ready_for_explain"] is False
 
 
@@ -145,7 +145,7 @@ def test_explain_ready_dedups_by_query_id():
         ],
         "active_queries": [],
     }
-    select_explain_ready(stats)
+    init_ready_for_explain(stats)
     assert len(stats["top_impact_queries"]) == 1
 
 
@@ -154,5 +154,5 @@ def test_explain_ready_skips_candidates_without_query_id():
         "top_impact_queries": [{"query_id": None, "query_text": "a"}],
         "active_queries": [],
     }
-    select_explain_ready(stats)
+    init_ready_for_explain(stats)
     assert stats["top_impact_queries"] == []

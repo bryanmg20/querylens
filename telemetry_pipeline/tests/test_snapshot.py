@@ -176,7 +176,7 @@ class TestReadyForExplainDefault:
         assert row.ready_for_explain is False
 
     def test_default_applies_without_explicit_field(self):
-        """El campo no debe venir en el payload de select_explain_ready para que
+        """El campo no debe venir en el payload de init_ready_for_explain para que
         el default sea el que decide."""
         row = StatementCandidate.model_validate({
             "query_id": 1,

@@ -52,7 +52,7 @@ def _stats(*statements):
 
 class TestEveryStepRuns:
     def test_ready_for_explain_is_injected(self):
-        """Si select_explain_ready no corre, los candidatos salen sin el campo y
+        """Si init_ready_for_explain no corre, los candidatos salen sin el campo y
         ExplainStage los descarta todos en silencio."""
         stats = _stats(_statement(1), _statement(2))
         CandidatesStage(_BareCollector()).execute(stats)

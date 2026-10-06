@@ -14,64 +14,63 @@ def select_disk_spill_indicator(stats: Stats):
            
 
 def select_candidates_to_explain(stats: Stats):
-        candidates = {}
-        skipped_candidates = {}
+    candidates = {}
+    skipped_candidates = {}
 
-        statement_groups = [
-            ("time_high_impact", "high_impact_statements"),
-            ("unstable", "unstable_statements"),
-            ("disk_spill", "disk_spill_statements"),
-        ]
+    statement_groups = [
+        ("time_high_impact", "high_impact_statements"),
+        ("unstable", "unstable_statements"),
+        ("disk_spill", "disk_spill_statements"),
+    ]
 
-        explainable_commands = (
-            "SELECT", "WITH", "INSERT", "UPDATE", "DELETE"
-        )
+    explainable_commands = (
+        "SELECT", "WITH", "INSERT", "UPDATE", "DELETE"
+    )
 
-        for reason, stats_key in statement_groups:
-            statements = stats.get(stats_key) or []
+    for reason, stats_key in statement_groups:
+        statements = stats.get(stats_key) or []
 
-            for statement in statements:
-                query_id = statement.get("query_id")
-                query_text = statement.get("query_text")
+        for statement in statements:
+            query_id = statement.get("query_id")
+            query_text = statement.get("query_text")
 
-                if query_id is None or not query_text:
-                    continue
+            if query_id is None or not query_text:
+                continue
 
-                normalized_query = query_text.strip().upper()
+            normalized_query = query_text.strip().upper()
 
-                target = candidates
+            target = candidates
 
-                if not normalized_query.startswith(explainable_commands):
-                    target = skipped_candidates
+            if not normalized_query.startswith(explainable_commands):
+                target = skipped_candidates
 
-                if query_id not in target:
-                    target[query_id] = {
-                        **statement,
-                        "selected_by": [],
-                    }
+            if query_id not in target:
+                target[query_id] = {
+                    **statement,
+                    "selected_by": [],
+                }
 
-                selected_by = target[query_id]["selected_by"]
+            selected_by = target[query_id]["selected_by"]
 
-                if reason not in selected_by:
-                    selected_by.append(reason)
+            if reason not in selected_by:
+                selected_by.append(reason)
 
-        stats["top_impact_queries"] = list(candidates.values())
-        stats["non_explainable_candidates"] = list(
-            skipped_candidates.values()
-        )
+    stats["top_impact_queries"] = list(candidates.values())
+    stats["non_explainable_candidates"] = list(
+        skipped_candidates.values()
+    )
 
-        stats.pop("high_impact_statements", None)
-        stats.pop("unstable_statements", None)
-        stats.pop("disk_spill_statements", None)
+    stats.pop("high_impact_statements", None)
+    stats.pop("unstable_statements", None)
+    stats.pop("disk_spill_statements", None)
      
 
-def select_explain_ready(stats: Stats):
-        readys = {}
+def init_ready_for_explain(stats: Stats):
+    readys = {}
 
-        for candidate in stats.get("top_impact_queries", []):
+    for candidate in stats.get("top_impact_queries", []):
+        query_id = candidate.get('query_id')
+        if query_id is not None:
+            readys[query_id] = {**candidate, "ready_for_explain": False}
 
-            query_id = candidate.get('query_id')
-            if query_id is not None:
-                readys[query_id] = {**candidate, "ready_for_explain": False}
-
-        stats["top_impact_queries"] = list(readys.values())
+    stats["top_impact_queries"] = list(readys.values())
