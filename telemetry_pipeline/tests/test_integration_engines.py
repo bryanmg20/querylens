@@ -207,15 +207,23 @@ def test_mysql_statements_exclude_internals(my):
 
 
 def test_mysql_explain_requires_the_use_statement_first(my):
-    """El engine no trae base por defecto: sin USE el EXPLAIN falla con 1046."""
+    """El engine no trae base por defecto: sin USE el EXPLAIN falla con 1046.
+
+    La tabla del EXPLAIN la crea el propio test: sbtest1 es del sandbox
+    (sysbench) y no existe en CI, donde solo hay ql_ci.
+    """
     with my.connect() as conn:
         with pytest.raises(Exception) as no_use:
-            conn.execute(text("EXPLAIN FORMAT=JSON SELECT c FROM sbtest1 WHERE id = 5"))
+            conn.execute(text("EXPLAIN FORMAT=JSON SELECT c FROM ci_explain_probe WHERE id = 5"))
         assert "1046" in str(no_use.value)
 
         conn.execute(text("USE ql_demo"))
+        conn.execute(text(
+            "CREATE TABLE IF NOT EXISTS ci_explain_probe ("
+            "id integer PRIMARY KEY, c varchar(32))"
+        ))
         result = conn.execute(
-            text("EXPLAIN FORMAT=JSON SELECT c FROM sbtest1 WHERE id = 5")
+            text("EXPLAIN FORMAT=JSON SELECT c FROM ci_explain_probe WHERE id = 5")
         ).mappings().first()
     assert result is not None
     assert "query_block" in result["EXPLAIN"]
