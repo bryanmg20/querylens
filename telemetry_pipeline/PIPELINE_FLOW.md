@@ -29,9 +29,10 @@ main.py
   │     │     select_disk_spill_indicator()         disk_spill_indicator > 0
   │     │     select_candidates_to_explain()        dedupe por query_id + selected_by
   │     │                                           (SQL no explicable va a non_explainable_candidates)
-   │     │     select_explain_ready()                dedupe por query_id +
-   │     │                                           ready_for_explain=False (valor inicial;
-   │     │                                           no mira active_queries, se härga aquí)
+  │     │     init_ready_for_explain()               dedupe por query_id +
+  │     │                                           ready_for_explain=False (valor inicial;
+  │     │                                           no mira active_queries; la decisión
+  │     │                                           real es mark_explainable)
   │     │     collector.mark_explainable(stats)     → hook por motor: Postgres=True siempre,
   │     │                                           MySQL=True si query_sample_text no está vacío
   │     │
@@ -106,11 +107,15 @@ Los tests de arquitectura son **contratos estructurales**: validan "qué interfa
 
 - `stats["source"]` fue eliminado: el dialecto vive en el collector (`source_dialect`); replicarlo en el payload rompía la unicidad del evento en la cola.
 - `query_id` es `Union[str, int, None]`: MySQL lo emite como digest hex (string), Postgres como `queryid` bigint.
-- `ready_for_explain` es la puerta de entrada a `EXPLAIN`. `select_explain_ready` solo la inicializa en `False` y deduplica por `query_id`; la decisión real la toma `mark_explainable`, por motor: Postgres marca todo como listo porque `EXPLAIN (GENERIC_PLAN)` resuelve los placeholders `$1` sin conocer los valores; MySQL marca solo lo que tiene `QUERY_SAMPLE_TEXT`, porque su `EXPLAIN` necesita literales reales.
-- Antes (`c730da1`) la explicación exigía que el `query_id` del candidato estuviera en `active_queries`, es decir que la query se estuviera ejecutando en ese instante. Ese cruce ya no aplica desde `93beb5e`: cada motor produce el plan por su vía nativa sin necesitar la query en vivo, así que `select_explain_ready` ya no lee `active_queries` (aunque el nombre y la firma los conserven).
+- `ready_for_explain` es la puerta de entrada a `EXPLAIN`. `init_ready_for_explain` solo la inicializa en `False` y deduplica por `query_id`; la decisión real la toma `mark_explainable`, por motor: Postgres marca todo como listo porque `EXPLAIN (GENERIC_PLAN)` resuelve los placeholders `$1` sin conocer los valores; MySQL marca solo lo que tiene `QUERY_SAMPLE_TEXT`, porque su `EXPLAIN` necesita literales reales.
+- Antes (`c730da1`) la explicación exigía que el `query_id` del candidato estuviera en `active_queries`, es decir que la query se estuviera ejecutando en ese instante. Ese cruce ya no aplica desde `93beb5e`: cada motor produce el plan por su vía nativa sin necesitar la query en vivo, así que `init_ready_for_explain` ya no lee `active_queries` (aunque el nombre y la firma los conserven).
 - La asimetría es propia de cada motor, no una inconsistencia: `pg_stat_statements.query` ya viene normalizado con `$1` y `EXPLAIN (GENERIC_PLAN)` (PG16+) lo convierte en plan. `DIGEST_TEXT` de MySQL trae `?`, que no produce plan; `QUERY_SAMPLE_TEXT` trae la consulta con valores reales, que sí lo produce.
 - `EXPLAIN (GENERIC_PLAN)` requiere PostgreSQL 16+. En versiones anteriores el `EXPLAIN` falla, la excepción se captura por consulta, se hace `rollback` y el candidato queda fuera de `canonic_explains` sin abortar el ciclo.
 - `explain_source` viaja en `canonic_explains` para que el consumidor sepa con qué fidelidad se obtuvo el plan: `"generic"` (Postgres, plan sin valores concretos) o `"sample"` (MySQL, plan de una ejecución real).
 - `QUERY_SAMPLE_TEXT` se trunca a `performance_schema_max_digest_text_length` (1024 por defecto). Una consulta larga queda con SQL inválido: se trata igual que cualquier fallo de `EXPLAIN`, y aparece como no explicable.
-- Los scripts que medían la mecánica basada en logs quedaron en `research/` con su justificación escrita en `research/README.md`.
+- Los scripts que medían la mecánica basada en logs se descartaron; la justificación vive en `references/005_evaluacion_alternativas_query_real.md` (cobertura incompleta del slow log, permisos de FS, config del servidor, texto logueado ≠ texto planificado). La carpeta `research/` se eliminó del repo.
 - Se explica después de `CandidatesStage` y antes de `NormalizeStage`: el EXPLAIN usa el texto de estadísticas; la normalización (canonicalización/anonimización) ocurre después.
+
+## Nota sobre el README del repo
+
+`README.md` enlaza informes (`SegundoInforme.md`, `InformeFinal.md`, `instalacion.md`, `Desarrollo.md`, `plan_patterns.md`) que aún no existen **a propósito**: se escribirán cuando el proyecto los tenga. No son links rotos pendientes de arreglar ni código muerto de documentación.
