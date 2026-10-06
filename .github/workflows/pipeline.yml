@@ -123,6 +123,27 @@ jobs:
           echo "un motor no respondio a tiempo" >&2
           exit 1
 
+      - name: PGMQ en querylens-db
+        # Los services de Actions no montan volumenes: no llega
+        # querylens_database/init.sql. Se replica aqui lo que hace ese init
+        # en local (extension + cola analyze_job), de forma idempotente.
+        run: |
+          docker exec -i "${{ job.services.querylens-db.id }}" \
+            psql -U ql_user -d ql_demo -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE EXTENSION IF NOT EXISTS pgmq;
+          DO $$
+          BEGIN
+            IF NOT EXISTS (
+              SELECT 1 FROM pg_class c
+              JOIN pg_namespace n ON n.oid = c.relnamespace
+              WHERE n.nspname = 'pgmq' AND c.relname = 'q_analyze_job'
+            ) THEN
+              PERFORM pgmq.create('analyze_job');
+            END IF;
+          END
+          $$;
+          SQL
+
       - name: Postgres de telemetry con pg_stat_statements y rol monitor
         # shared_preload_libraries solo aplica tras reiniciar: se deja escrito en
         # postgresql.auto.conf y se reinicia el contenedor de servicios.
