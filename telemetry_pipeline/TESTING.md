@@ -63,6 +63,7 @@ tests/
 ├── test_explain_stage.py                # ExplainStage + schema context (unit)
 ├── test_integration_engines.py          # motores reales + cola (integration)
 ├── test_logger.py                       # logger degradación (unit)
+├── test_measure_overhead.py             # veredicto sobrecosto <5% (unit)
 ├── test_normalize.py                    # locks, pids, timestamps, predicados (unit)
 ├── test_normalize_stage.py              # NormalizeStage + hooks (unit)
 ├── test_orchestrator.py                 # composición de stages (unit)
@@ -119,6 +120,72 @@ cd telemetry_pipeline && python -m pytest -m integration
 ```
 
 Se salta sola si los contenedores no están levantados. Con `.github/workflows` no es necesario levantarlos: el job lo hace.
+
+## Sobrecosto de recolección (PrimerInforme)
+
+El informe exige un sobrecosto **inferior al 5 %** sobre la métrica de rendimiento de la carga observada. La validación es **manual y reproducible** con el sandbox; CI no la gatea (CI solo valida que las extracciones se encolan).
+
+### Métrica
+
+La carga observada es la **batería** (`ql_sandbox/scripts/battery.sh`: ~10 queries variadas contra `sbtest1` en PostgreSQL y MySQL).
+
+```
+impacto_pct = (t_batería_con_pipeline − t_batería_sola) / t_batería_sola × 100
+
+CUMPLE si impacto < 5.0   (inferior al 5 %)
+```
+
+Se mide **por motor**: primero solo PostgreSQL, luego solo MySQL, con el pipeline (`main.py`) corriendo en paralelo en cada caso.
+
+### Cómo correrlo
+
+```bash
+# 1. Sandbox arriba (PG + MySQL + sysbench + cola PGMQ)
+docker compose -f ql_sandbox/docker-compose.yml up -d
+docker compose up -d
+
+# 2. Dependencias del pipeline
+cd telemetry_pipeline
+pip install -r requirements-dev.txt
+
+# 3. Medición (perfil rápido ~minutos; sin args = 30 reps, más largo)
+python measure_overhead.py 10 quick
+```
+
+Salida esperada (resumen):
+
+```
+RESUMEN POR MOTOR
+  postgres   impacto=   +2.8%  -> CUMPLE
+  mysql      impacto=   +1.9%  -> CUMPLE
+  ...
+  VEREDICTO GLOBAL: CUMPLE
+JSON: logs/overhead_<timestamp>.json
+```
+
+| Exit code | Significado |
+|-----------|-------------|
+| `0` | CUMPLE (&lt; 5 % en ambos motores) |
+| `1` | Error o SIN_DATO (sandbox caído / stats no confiables) |
+| `2` | NO CUMPLE (≥ 5 % en al menos un motor) |
+
+### Qué reporta además del %
+
+| Fase | Contenido |
+|------|-----------|
+| A | CPU/RAM ocioso de `ql_postgres` / `ql_mysql` |
+| B | Duración de la batería de carga |
+| C | **Una** extracción del pipeline: wall, # statements del monitor, tiempo de servidor del monitor (PG filtrado por rol `querylens_monitor`; MySQL por `PIPELINE_FINGERPRINT`), CPU durante la corrida |
+| D | Duración sola vs con pipeline concurrente por motor + veredicto |
+
+El JSON queda en `telemetry_pipeline/logs/overhead_<timestamp>.json` para comparar runs.
+
+### Limitaciones conocidas
+
+- La métrica del 5 % usa la **duración wall de la batería** como proxy de rendimiento de la carga (la batería no emite QPS ni percentiles).
+- Con tráfico concurrente, el delta del monitor en fase C es una cota inferior del costo del pipeline (no atribuye planificación de otras sesiones).
+- MySQL sin `digest` poblado o con stats reseteadas en mitad de la corrida se marca `digest_reset_detected` y el tiempo del monitor va `null`.
+- Requiere Docker con `ql_sysbench` (no corre en el CI de GitHub Actions).
 
 ## Por qué hay dos requirements
 
