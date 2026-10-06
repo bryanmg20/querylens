@@ -32,10 +32,10 @@ jobs:
           path: report-unit.xml
 
   integration:
-    # Solo en push a develop. Levanta los motores reales del sandbox y corre el
-    # pipeline completo contra ellos, incluida la cola PGMQ.
+    # Corre en cada push (merge a cualquier rama). Los PR solo corren unit.
+    # Sin gate a develop: si algo falla aqui, no hay merge limpio.
     needs: unit
-    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
 
     services:
