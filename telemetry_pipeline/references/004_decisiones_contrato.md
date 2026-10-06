@@ -10,7 +10,7 @@ Decisiones de diseño del contrato de datos que emite el pipeline, validadas con
   - MySQL: `DIGEST_TEXT` trae `?`, que da error de sintaxis en `EXPLAIN`; se usa `QUERY_SAMPLE_TEXT`, que trae literales reales. Marca solo lo que tenga `query_sample_text` no vacío.
 - Verificado en capturas reales (golden): MySQL digest hex → string; Postgres `queryid` → bigint (p. ej. `-1859038224550094023`). Ambos aparecen en `statements` y en `active_queries` al mismo tiempo, pero esa coincidencia ya no condiciona nada.
 - Modelo: `QueryId = Union[str, int, None]`.
-- Lo que queda de `select_explain_ready` es solo inicializar `ready_for_explain=False` y deduplicar por `query_id`; la decisión real la sobrescribe `mark_explainable` justo después, en el mismo `CandidatesStage`.
+- Lo que queda de `init_ready_for_explain` (antes `select_explain_ready`, renombrado porque el nombre original prometía una decisión que no tomaba) es solo inicializar `ready_for_explain=False` y deduplicar por `query_id`; la decisión real la sobrescribe `mark_explainable` justo después, en el mismo `CandidatesStage`.
 
 ## disk_spill_indicator: divergencia de semántica entre motores
 
