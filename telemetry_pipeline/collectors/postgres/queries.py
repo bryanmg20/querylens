@@ -36,7 +36,8 @@ SELECT
     min_exec_time AS min_time_ms,
     max_exec_time AS max_time_ms,
     stddev_exec_time / NULLIF(mean_exec_time, 0) AS coeff_of_variation,
-    temp_blks_written AS disk_spill_indicator
+    temp_blks_written AS disk_spill_indicator,
+    stats_since AS counters_epoch
 FROM pg_stat_statements
 WHERE userid != (SELECT oid FROM pg_roles WHERE rolname = session_user)
 ORDER BY total_exec_time DESC;

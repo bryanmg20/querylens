@@ -74,7 +74,8 @@ SELECT
     CAST(ROUND(s.MIN_TIMER_WAIT / 1000000000.0, 6) AS DOUBLE)                  AS min_time_ms,
     CAST(ROUND(s.MAX_TIMER_WAIT / 1000000000.0, 6) AS DOUBLE)                  AS max_time_ms,
     NULL                                                                        AS coeff_of_variation,
-    CAST(s.SUM_CREATED_TMP_DISK_TABLES AS SIGNED)                               AS disk_spill_indicator
+    CAST(s.SUM_CREATED_TMP_DISK_TABLES AS SIGNED)                               AS disk_spill_indicator,
+    FIRST_SEEN AS counters_epoch
 FROM performance_schema.events_statements_summary_by_digest s
 WHERE s.DIGEST_TEXT IS NOT NULL
   AND s.DIGEST_TEXT NOT LIKE '%performance_schema%'
