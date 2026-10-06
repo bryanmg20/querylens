@@ -1,29 +1,34 @@
-"""Mide el sobrecosto del pipeline sobre las DBs del sandbox.
+"""Sobrecosto del pipeline bajo carga continua (PrimerInforme: < 5%).
 
-Cumple PrimerInforme.md: sobrecosto inferior al 5 % sobre la metrica de
-rendimiento de la carga observada. La metrica es la duracion de la bateria
-(workload controlado) con y sin el pipeline corriendo en paralelo.
+Mide honestamente: cronometra las queries REALES del load observado
+(continuous_load.sh) con y sin pipeline, y compara p95 de latencia.
 
-Fases:
-  A. linea base ociosa      -> CPU/RAM de los contenedores sin actividad
-  B. bateria de carga       -> stats pobladas + referencia de duracion
-  C. una extraccion         -> wall del pipeline + tiempo de servidor del
-                               monitor (delta filtrado por rol/fingerprint)
-  D. impacto por motor      -> bateria solo vs con pipeline concurrente
-                               (postgres y mysql por separado)
+Metodo (por motor, aislado):
+  1. load continuo SOLO del motor medido (cada query se tiena y se loguea)
+  2. ventana A: load solo       -> p50/p95 + QPS de la carga
+  3. ventana B: load + pipeline -> mismas metricas (pipeline cada EXTRACT_EVERY_S;
+     si cadencia >= ventana: 1 disparo a la MITAD, no al final)
+  4. sobrecosto_p95 = (p95_B - p95_A) / p95_A * 100
+     CUMPLE si sobrecosto_p95 < 5
 
-USO (sandbox arriba):
-  python measure_overhead.py [REPS] [quick]
+No hay valores fijos ni atajos: el veredicto sale de las queries medidas.
+Si no hay datos suficientes, el veredicto es SIN_DATO (exit 1), no CUMPLE.
+
+Secundario (evidencia, no define el veredicto): QPS, CPU/mem del contenedor,
+tiempo de servidor del monitor.
+
+Aislamiento: medir postgres solo corre run_engine("postgres") y el load es
+solo de postgres (viceversa para mysql).
+
+Uso:
+  python measure_overhead.py [MEASURE_S] [quick] [ROUNDS] [EXTRACT_EVERY_S]
   python measure_overhead.py 10 quick
+  python measure_overhead.py 20 3 10
 
-Exit codes:
-  0 = CUMPLE (< 5 % en ambos motores)
-  1 = error o SIN_DATO (sandbox caido, stats no confiables)
-  2 = NO CUMPLE (>= 5 % en al menos un motor)
+Exit: 0=CUMPLE, 1=error/SIN_DATO, 2=NO CUMPLE
 """
 
 import json
-import os
 import statistics
 import subprocess
 import sys
@@ -45,24 +50,89 @@ from config.connections import (  # noqa: E402
 )
 
 UMBRAL_SOBRECOSTO_PCT = 5.0
+DEFAULT_MEASURE_S = 15.0
+DEFAULT_ROUNDS = 3
+DEFAULT_EXTRACT_EVERY_S = 10.0
+WARMUP_S = 8.0
+# Con menos queries OK que esto en una ventana, el p95 es poco confiable
+# (se reporta igual, pero se avisa).
+MIN_SAMPLES_WARN = 20
 CONTAINERS = ["ql_postgres", "ql_mysql"]
+LABEL = {"ql_postgres": "postgres", "ql_mysql": "mysql"}
+FOCUS = {"postgres": "ql_postgres", "mysql": "ql_mysql"}
 STAT_INTERVAL = 1.5
-LOGS_DIR = PIPELINE / "logs"
 MONITOR_PG_ROLE = "querylens_monitor"
+BYTES_GB = 1e9
+LOAD_PID = "/tmp/ql_load.pid"
+LOAD_METRICS = "/tmp/ql_load_metrics.csv"
+LOGS = PIPELINE / "logs"
 
 
-def impact_pct(t_sola, t_con):
-    """Impacto relativo de la duracion de la carga: (con - sola) / sola."""
-    if t_sola is None or t_con is None or t_sola <= 0:
+# --- metricas puras ---------------------------------------------------------
+
+def percentile(sorted_vals, pct):
+    """Percentil lineal sobre una lista ya ordenada. pct en [0, 100]."""
+    if not sorted_vals:
         return None
-    return (t_con - t_sola) / t_sola * 100.0
+    if len(sorted_vals) == 1:
+        return float(sorted_vals[0])
+    k = (len(sorted_vals) - 1) * (pct / 100.0)
+    f = int(k)
+    c = min(f + 1, len(sorted_vals) - 1)
+    if f == c:
+        return float(sorted_vals[f])
+    return float(sorted_vals[f] + (sorted_vals[c] - sorted_vals[f]) * (k - f))
 
 
-def verdict(impact, umbral=UMBRAL_SOBRECOSTO_PCT):
-    """PrimerInforme: sobrecosto *inferior* al 5 %."""
-    if impact is None:
+def latency_stats(rows, window_s):
+    """p50/p95/QPS de las queries OK de una ventana.
+
+    rows: [{duration_ms, status}] leidos del CSV del load.
+    Solo status=0 entra al percentil; los fallos se cuentan aparte.
+    """
+    ok = [r["duration_ms"] for r in rows if r.get("status") == 0]
+    fails = sum(1 for r in rows if r.get("status") != 0)
+    if not ok:
+        return {
+            "n": 0, "failures": fails,
+            "p50_ms": None, "p95_ms": None, "mean_ms": None, "qps": None,
+        }
+    ok_sorted = sorted(ok)
+    return {
+        "n": len(ok),
+        "failures": fails,
+        "p50_ms": percentile(ok_sorted, 50),
+        "p95_ms": percentile(ok_sorted, 95),
+        "mean_ms": statistics.mean(ok),
+        "qps": (len(ok) / window_s) if window_s else None,
+    }
+
+
+def relative_overhead_pct(base, con):
+    """(con - base) / base * 100. Positivo = mas lento con pipeline."""
+    if base is None or con is None or base <= 0:
+        return None
+    return (con - base) / base * 100.0
+
+
+def qps_overhead_pct(qps_base, qps_con):
+    """(base - con) / base * 100. Positivo = menos throughput = mas lento."""
+    if qps_base is None or qps_con is None or qps_base <= 0:
+        return None
+    return (qps_base - qps_con) / qps_base * 100.0
+
+
+def cpu_overhead_pct(cpu_sola, cpu_con):
+    if cpu_sola is None or cpu_con is None:
+        return None
+    return cpu_con - cpu_sola
+
+
+def verdict(overhead_pct, umbral=UMBRAL_SOBRECOSTO_PCT):
+    """CUMPLE si overhead < umbral. None => SIN_DATO (no se inventa CUMPLE)."""
+    if overhead_pct is None:
         return "SIN_DATO"
-    return "CUMPLE" if impact < umbral else "NO CUMPLE"
+    return "CUMPLE" if overhead_pct < umbral else "NO CUMPLE"
 
 
 def overall_verdict(per_engine):
@@ -76,364 +146,472 @@ def overall_verdict(per_engine):
     return "CUMPLE"
 
 
+def mean_or_none(vals):
+    vals = [v for v in vals if v is not None]
+    return statistics.mean(vals) if vals else None
+
+
+# --- docker stats (secundario) ----------------------------------------------
+
 def _pct(s):
     return float(s.rstrip("%")) if "%" in s else 0.0
 
 
 def _bytes(s):
     s = (s or "").strip()
-    if s.endswith("GiB"):
-        return float(s[:-3]) * 2**30
-    if s.endswith("MiB"):
-        return float(s[:-3]) * 2**20
-    if s.endswith("KiB"):
-        return float(s[:-3]) * 2**10
-    if s.endswith("B"):
-        return float(s[:-1])
+    for suf, mult in (("GiB", 2**30), ("MiB", 2**20), ("KiB", 2**10), ("B", 1)):
+        if s.endswith(suf):
+            return float(s[: -len(suf)]) * mult
     return 0.0
 
 
-def _stats_now():
+def stats_now():
     try:
         out = subprocess.run(
-            ["docker", "stats", "--no-stream", "--format", "{{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}"],
+            ["docker", "stats", "--no-stream",
+             "--format", "{{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}"],
             capture_output=True, text=True, timeout=30,
         ).stdout
     except Exception:
         return {}
     res = {}
     for line in out.splitlines():
-        parts = line.split("\t")
-        if len(parts) >= 3:
-            res[parts[0]] = {"cpu": _pct(parts[1]), "mem": _bytes(parts[2].split()[0])}
+        p = line.split("\t")
+        if len(p) >= 3:
+            res[p[0]] = {"cpu": _pct(p[1]), "mem": _bytes(p[2].split()[0])}
     return res
 
 
 class Sampler:
     def __init__(self):
-        self.samples = []
-        self._stop = False
+        self.samples, self._stop = [], False
 
     def _loop(self):
         while not self._stop:
-            self.samples.append((time.time(), _stats_now()))
+            self.samples.append((time.time(), stats_now()))
             time.sleep(STAT_INTERVAL)
 
     def __enter__(self):
-        self._t = threading.Thread(target=self._loop, daemon=True)
-        self._t.start()
+        threading.Thread(target=self._loop, daemon=True).start()
         return self
 
     def __exit__(self, *exc):
         self._stop = True
-        self._t.join(timeout=8)
 
 
-def _agg_cpu(samples, names, idle_cpu=None):
-    cpus, nets, mems = [], [], []
-    for _, s in samples:
-        for n in names:
-            st = s.get(n)
-            if not st:
-                continue
-            c = st.get("cpu")
-            m = st.get("mem")
-            if c is not None:
-                cpus.append(c)
-                base = (idle_cpu or {}).get(n, 0.0)
-                nets.append(max(0.0, c - base))
-            if m is not None:
-                mems.append(m)
-    return {
-        "cpu_mean": statistics.mean(cpus) if cpus else None,
-        "cpu_mean_net": statistics.mean(nets) if nets else None,
-        "cpu_max": max(cpus) if cpus else None,
-        "mem_mean": statistics.mean(mems) if mems else None,
-        "mem_max": max(mems) if mems else None,
-    }
+def phase_cost(samples, containers=None):
+    """CPU/RAM promedio por contenedor en una ventana."""
+    out = {}
+    for name in containers or CONTAINERS:
+        cpus = [st[name]["cpu"] for _, st in samples
+                if name in st and st[name].get("cpu") is not None]
+        mems = [st[name]["mem"] for _, st in samples
+                if name in st and st[name].get("mem") is not None]
+        out[name] = {
+            "cpu_pct": statistics.mean(cpus) if cpus else None,
+            "mem_gb": (statistics.mean(mems) / BYTES_GB) if mems else None,
+            "cpu_peak_pct": max(cpus) if cpus else None,
+        }
+    return out
 
 
-def _battery(reps, engine="both"):
-    t0 = time.perf_counter()
+def phase_json(phase):
+    return {LABEL[n]: row for n, row in phase.items()}
+
+
+def _fmt(v, unit="%"):
+    return "n/a" if v is None else f"{v:.1f}{unit}"
+
+
+# --- load continuo + metricas de latencia -----------------------------------
+
+def start_load(engine="both"):
     subprocess.run(
-        ["docker", "exec", "ql_sysbench", "bash", "/scripts/battery.sh", str(reps), "0", engine],
-        check=True,
+        ["docker", "exec", "-d", "ql_sysbench", "bash",
+         "/scripts/continuous_load.sh", engine, "0"],
+        check=True, capture_output=True,
     )
-    return time.perf_counter() - t0
+    time.sleep(1)
+    ok = subprocess.run(
+        ["docker", "exec", "ql_sysbench", "bash", "-c",
+         f"test -f {LOAD_PID} && kill -0 $(cat {LOAD_PID})"],
+        capture_output=True,
+    )
+    if ok.returncode != 0:
+        raise RuntimeError("continuous_load.sh no arranco en ql_sysbench")
+    print(f"  load continuo OK (engine={engine})")
 
 
-def _pipeline():
-    """Una extraccion completa del agente (collect + validate + enqueue)."""
-    from main import main as run_main
+def stop_load():
+    subprocess.run(
+        ["docker", "exec", "ql_sysbench", "bash", "-c",
+         f"kill $(cat {LOAD_PID}) 2>/dev/null; rm -f {LOAD_PID}"],
+        capture_output=True,
+    )
+    time.sleep(1)
 
+
+def clear_load_metrics():
+    r = subprocess.run(
+        ["docker", "exec", "ql_sysbench", "bash", "-c",
+         f"echo 'ts_ms,engine,duration_ms,status' > {LOAD_METRICS}"],
+        capture_output=True,
+    )
+    if r.returncode != 0:
+        raise RuntimeError("no se pudo limpiar el CSV de latencias del load")
+
+
+def read_load_metrics(engine):
+    """Lee el CSV de latencias del load y devuelve rows de ese motor."""
+    out = subprocess.run(
+        ["docker", "exec", "ql_sysbench", "cat", LOAD_METRICS],
+        capture_output=True, text=True,
+    ).stdout
+    rows = []
+    for line in out.splitlines():
+        p = line.strip().split(",")
+        if len(p) < 4 or p[1] != engine:
+            continue
+        try:
+            rows.append({
+                "ts_ms": int(p[0]),
+                "duration_ms": float(p[2]),
+                "status": int(p[3]),
+            })
+        except ValueError:
+            continue
+    return rows
+
+
+def run_pipeline(engine):
+    """Una extracción SOLO del motor indicado (misma pieza que usa main)."""
+    from main import run_engine
     t0 = time.perf_counter()
-    run_main()
+    run_engine(engine)
     return time.perf_counter() - t0
 
 
-def _pg_snapshot(engine):
-    """Delta disponible del monitor vs total en pg_stat_statements.
+def measure_window(seconds):
+    with Sampler() as s:
+        time.sleep(seconds)
+    return s.samples
 
-    El rol monitor aparece en la vista: el collector lo excluye del snapshot
-    con userid != session_user, pero para medir su costo propio se filtra
-    explicitamente por rol.
+
+def measure_with_pipeline(seconds, extract_every_s, engine):
+    """Ventana con pipeline de `engine`.
+
+    Si cadencia >= ventana (1 sola extracción), se dispara a la MITAD
+    para que entre en la ventana de medición. Si entra más de una,
+    respeta la cadencia (t=N, 2N, ...).
     """
+    t0 = time.perf_counter()
+    deadline = t0 + seconds
+    mid = t0 + seconds / 2.0
+    cadence = extract_every_s if extract_every_s and extract_every_s > 0 else None
+    single_shot = cadence is None or cadence >= seconds
+    last, n = t0, 0
+    with Sampler() as s:
+        while True:
+            now = time.perf_counter()
+            if now >= deadline:
+                if n == 0:
+                    run_pipeline(engine)
+                    n = 1
+                    print(f"      extraccion #{n} @ t={now - t0:.1f}s (fallback fin)")
+                break
+            if single_shot:
+                if n == 0 and now >= mid:
+                    run_pipeline(engine)
+                    n = 1
+                    last = time.perf_counter()
+                    print(f"      extraccion #{n} @ t={now - t0:.1f}s (mitad)")
+            elif now - last >= cadence:
+                run_pipeline(engine)
+                n += 1
+                last = time.perf_counter()
+                print(f"      extraccion #{n} @ t={now - t0:.1f}s")
+            time.sleep(0.05)
+    return s.samples, n
+
+
+# --- monitor de servidor (fase B, secundario) -------------------------------
+
+def pg_snapshot(engine):
     with engine.connect() as c:
         return c.execute(text(
-            "SELECT "
-            "  count(*) FILTER (WHERE r.rolname = :role)::int AS mon_n, "
-            "  coalesce(sum(s.total_exec_time) FILTER (WHERE r.rolname = :role), 0) AS mon_ms, "
-            "  count(*)::int AS total_n, "
-            "  coalesce(sum(s.total_exec_time), 0) AS total_ms "
-            "FROM pg_stat_statements s "
-            "JOIN pg_roles r ON r.oid = s.userid"
+            "SELECT count(*) FILTER (WHERE r.rolname = :role)::int, "
+            "coalesce(sum(s.total_exec_time) FILTER (WHERE r.rolname = :role), 0), "
+            "count(*)::int, coalesce(sum(s.total_exec_time), 0) "
+            "FROM pg_stat_statements s JOIN pg_roles r ON r.oid = s.userid"
         ), {"role": MONITOR_PG_ROLE}).one()
 
 
-def _mysql_snapshot(engine):
-    """Delta del monitor (fingerprint del pipeline) vs total en digest."""
-    likes = []
-    params = {}
+def mysql_snapshot(engine):
+    likes, params = [], {}
     for i, prefix in enumerate(PIPELINE_FINGERPRINT):
-        key = f"p{i}"
-        likes.append(f"lower(digest_text) LIKE :{key}")
-        params[key] = prefix + "%"
-    monitor_where = " OR ".join(likes)
+        k = f"p{i}"
+        likes.append(f"lower(digest_text) LIKE :{k}")
+        params[k] = prefix + "%"
+    w = " OR ".join(likes)
     with engine.connect() as c:
         return c.execute(text(
-            "SELECT "
-            "  (SELECT count(*) FROM performance_schema.events_statements_summary_by_digest "
-            f"   WHERE {monitor_where}) AS mon_n, "
-            "  (SELECT coalesce(sum(sum_timer_wait), 0) "
-            f"   FROM performance_schema.events_statements_summary_by_digest "
-            f"   WHERE {monitor_where}) AS mon_wait_ps, "
-            "  count(*) AS total_n, "
-            "  coalesce(sum(sum_timer_wait), 0) AS total_wait_ps "
+            "SELECT (SELECT count(*) FROM performance_schema"
+            ".events_statements_summary_by_digest WHERE " + w + "), "
+            "(SELECT coalesce(sum(sum_timer_wait), 0) FROM performance_schema"
+            ".events_statements_summary_by_digest WHERE " + w + "), "
+            "count(*), coalesce(sum(sum_timer_wait), 0) "
             "FROM performance_schema.events_statements_summary_by_digest"
         ), params).one()
 
 
-def _print(k, v, unit=""):
-    print(f"  {k:<36} {v}{unit}")
+# --- utilidades ---------------------------------------------------------------
 
-
-def _preflight():
+def preflight():
     errors = []
-    checks = (
-        ("postgres", get_connection_postgres),
-        ("mysql", get_connection_mysql),
-        ("querylens_db (pgmq)", get_connection_querylens_db),
-    )
-    for name, factory in checks:
+    for name, factory in (("postgres", get_connection_postgres),
+                          ("mysql", get_connection_mysql),
+                          ("pgmq", get_connection_querylens_db)):
         try:
-            engine = factory()
-            with engine.connect() as c:
+            with factory().connect() as c:
                 c.execute(text("SELECT 1"))
-        except Exception as exc:
-            errors.append(f"{name}: {type(exc).__name__}: {str(exc)[:140]}")
-
-    try:
-        probe = subprocess.run(
-            ["docker", "exec", "ql_sysbench", "test", "-f", "/scripts/battery.sh"],
-            capture_output=True, text=True, timeout=15,
-        )
-        if probe.returncode != 0:
-            errors.append("ql_sysbench: no responde o falta /scripts/battery.sh")
-    except Exception as exc:
-        errors.append(f"ql_sysbench: {type(exc).__name__}: {str(exc)[:140]}")
-
+        except Exception as e:
+            errors.append(f"{name}: {type(e).__name__}: {str(e)[:120]}")
+    if subprocess.run(
+        ["docker", "exec", "ql_sysbench", "test", "-f", "/scripts/continuous_load.sh"],
+        capture_output=True,
+    ).returncode != 0:
+        errors.append("falta /scripts/continuous_load.sh")
     if errors:
         print("Sandbox no disponible:", file=sys.stderr)
         for e in errors:
             print(f"  - {e}", file=sys.stderr)
-        print(
-            "\nLevanta el banco de pruebas:\n"
-            "  docker compose -f ql_sandbox/docker-compose.yml up -d\n"
-            "  docker compose up -d\n"
-            "y exporta las credenciales del .env del repo si hace falta.",
-            file=sys.stderr,
-        )
+        print("docker compose -f ql_sandbox/docker-compose.yml up -d && docker compose up -d",
+              file=sys.stderr)
         return False
     return True
 
 
-def _write_json(payload):
-    LOGS_DIR.mkdir(exist_ok=True)
-    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    path = LOGS_DIR / f"overhead_{stamp}.json"
-    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
+def write_json(payload):
+    LOGS.mkdir(exist_ok=True)
+    path = LOGS / f"overhead_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False, default=str),
+                    encoding="utf-8")
     return path
 
 
-def run(reps=30):
-    print("=" * 72)
-    print(f"MEDICION DE SOBRECOSTO (bateria con {reps} reps por query)")
-    print(f"Umbral PrimerInforme: sobrecosto < {UMBRAL_SOBRECOSTO_PCT}%")
-    print("=" * 72)
+def _warn_low_n(label, stats):
+    if stats["n"] and stats["n"] < MIN_SAMPLES_WARN:
+        print(f"    [aviso] {label}: solo {stats['n']} queries OK "
+              f"(<{MIN_SAMPLES_WARN}); p95 poco confiable")
 
-    if not _preflight():
+
+# --- medicion ----------------------------------------------------------------
+
+def run(measure_s=DEFAULT_MEASURE_S, rounds=DEFAULT_ROUNDS,
+        extract_every_s=DEFAULT_EXTRACT_EVERY_S):
+    print("=" * 70)
+    print("SOBRECOSTO — carga continua (latencia p95 de la carga observada)")
+    print(f"ventana={measure_s:.0f}s rondas={rounds} "
+          f"pipeline_cada={extract_every_s:.0f}s warmup={WARMUP_S:.0f}s")
+    print(f"umbral: sobrecosto p95 < {UMBRAL_SOBRECOSTO_PCT}%")
+    print("Sin datos => SIN_DATO (exit 1), no se asume CUMPLE.")
+    print("=" * 70)
+    if not preflight():
         return 1
 
-    pg = get_connection_postgres()
-    my = get_connection_mysql()
+    pg, my = get_connection_postgres(), get_connection_mysql()
 
-    # A. linea base ociosa -------------------------------------------------
-    print("\n[A] Base ociosa (DBs sin actividad) - 6s")
-    with Sampler() as s:
-        time.sleep(6)
-    idle_cpu = {}
-    for n in CONTAINERS:
-        vals = [x[n]["cpu"] for _, x in s.samples if n in x]
-        idle_cpu[n] = statistics.mean(vals) if vals else 0.0
-    idle_agg = _agg_cpu(s.samples, CONTAINERS)
-    _print("cpu_mean pg/mysql", f"{idle_cpu.get('ql_postgres', 0):.1f}% / {idle_cpu.get('ql_mysql', 0):.1f}%")
-    _print("mem_mean", f"{(idle_agg['mem_mean'] or 0) / 1e9:.2f} GB")
+    print(f"\n[A] ocioso {WARMUP_S:.0f}s")
+    idle = phase_cost(measure_window(WARMUP_S))
+    for n, row in idle.items():
+        print(f"  {LABEL[n]:10} cpu={_fmt(row['cpu_pct'])} mem={_fmt(row['mem_gb'], 'GB')}")
 
-    # B. bateria de carga (stats + referencia) -----------------------------
-    print(f"\n[B] Bateria de carga ({reps} reps, ambos motores)")
-    with Sampler() as s:
-        t_batt_ref = _battery(reps, "both")
-    agg_b = _agg_cpu(s.samples, CONTAINERS, idle_cpu)
-    _print("duracion_bateria", f"{t_batt_ref:.1f}", " s")
-    _print("cpu(db) neta", f"{(agg_b['cpu_mean_net'] or 0):.1f}%")
-
-    # C. una extraccion: costo absoluto del pipeline -----------------------
-    print("\n[C] Una extraccion del pipeline tras la carga")
-    b_pg = _pg_snapshot(pg)
-    b_my = _mysql_snapshot(my)
-    with Sampler() as s:
-        t_pipe = _pipeline()
-    a_pg = _pg_snapshot(pg)
-    a_my = _mysql_snapshot(my)
-    agg_c = _agg_cpu(s.samples, CONTAINERS, idle_cpu)
-
-    mon_n_pg = max(0, a_pg.mon_n - b_pg.mon_n)
-    mon_ms_pg = max(0.0, float(a_pg.mon_ms - b_pg.mon_ms))
-    tot_ms_pg = max(0.0, float(a_pg.total_ms - b_pg.total_ms))
-    mon_n_my = max(0, a_my.mon_n - b_my.mon_n)
-    mon_wait_my = float(a_my.mon_wait_ps - b_my.mon_wait_ps)
-    tot_wait_my = float(a_my.total_wait_ps - b_my.total_wait_ps)
-    reset_my = b_my.mon_n > a_my.mon_n or mon_wait_my < 0
-    mon_s_my = max(0.0, mon_wait_my) / 1e12 if not reset_my else None
-    tot_s_my = max(0.0, tot_wait_my) / 1e12 if tot_wait_my >= 0 else None
-
-    try:
-        with get_connection_querylens_db().connect() as c:
-            enqueued = c.execute(text(
-                "SELECT count(*) FROM pgmq.q_analyze_job "
-                "WHERE enqueued_at > now() - interval '5 minutes'"
-            )).scalar()
-    except Exception:
-        enqueued = None
-
-    _print("duracion_pipeline", f"{t_pipe:.1f}", " s")
-    _print("cpu(db) neta", f"{(agg_c['cpu_mean_net'] or 0):.1f}%")
-    _print("pg: statements del monitor", f"{mon_n_pg}")
-    _print("pg: tiempo_db monitor", f"{mon_ms_pg / 1000.0:.3f}", " s")
-    _print("pg: tiempo_db ventana total", f"{tot_ms_pg / 1000.0:.3f}", " s")
-    if mon_s_my is None:
-        _print("mysql: tiempo_db monitor", "n/a", " (digest reseteado; delta no confiable)")
-    else:
-        _print("mysql: statements del monitor", f"{mon_n_my}")
-        _print("mysql: tiempo_db monitor", f"{mon_s_my:.3f}", " s")
-    if tot_s_my is not None:
-        _print("mysql: tiempo_db ventana total", f"{tot_s_my:.3f}", " s")
-    if enqueued is not None:
-        _print("mensajes encolados (5 min)", f"{enqueued}")
-
-    extraction = {
-        "wall_s": t_pipe,
-        "postgres": {
-            "monitor_statements": mon_n_pg,
-            "monitor_server_s": mon_ms_pg / 1000.0,
-            "window_total_server_s": tot_ms_pg / 1000.0,
-        },
-        "mysql": {
-            "monitor_statements": mon_n_my,
-            "monitor_server_s": mon_s_my,
-            "window_total_server_s": tot_s_my,
-            "digest_reset_detected": reset_my,
-        },
-        "cpu_pipeline_pct": agg_c["cpu_mean_net"],
-        "cpu_pipeline_peak_pct": agg_c["cpu_max"],
-        "enqueued_last_5min": enqueued,
-    }
-
-    # D. impacto por motor (bateria solo vs con pipeline) ------------------
-    engines_impact = {}
-    for engine_name in ("postgres", "mysql"):
-        print(f"\n[D] Impacto en {engine_name}: bateria solo vs con pipeline")
-        t_sola = _battery(reps, engine_name)
-        with Sampler() as s:
-            t0 = time.perf_counter()
-            proc = subprocess.Popen(
-                ["docker", "exec", "ql_sysbench", "bash", "/scripts/battery.sh",
-                 str(reps), "0", engine_name]
-            )
-            time.sleep(max(0.5, t_sola * 0.1))
-            t_pipe_conc = _pipeline()
-            proc.wait()
-            t_con = time.perf_counter() - t0
-        agg_d = _agg_cpu(s.samples, CONTAINERS, idle_cpu)
-        impact = impact_pct(t_sola, t_con)
-        v = verdict(impact)
-        _print("duracion_sola", f"{t_sola:.1f}", " s")
-        _print("duracion_con_pipeline", f"{t_con:.1f}", " s")
-        _print("overhead_latencia", f"{impact:+.1f}%" if impact is not None else "n/a")
-        _print("veredicto_motor", f"{v} (umbral < {UMBRAL_SOBRECOSTO_PCT}%)")
-        _print("cpu(db) neta", f"{(agg_d['cpu_mean_net'] or 0):.1f}%")
-        engines_impact[engine_name] = {
-            "t_sola_s": t_sola,
-            "t_con_s": t_con,
-            "pipeline_concurrent_wall_s": t_pipe_conc,
-            "impact_pct": impact,
-            "verdict": v,
-            "cpu_mean_net_pct": agg_d["cpu_mean_net"],
-            "cpu_peak_pct": agg_d["cpu_max"],
+    print("\n[B] 1 extraccion POR MOTOR (sin load, costo absoluto)")
+    b_pg, b_my = pg_snapshot(pg), mysql_snapshot(my)
+    abs_cost = {}
+    for engine in ("postgres", "mysql"):
+        focus = FOCUS[engine]
+        with Sampler() as s_pipe:
+            t_pipe = run_pipeline(engine)
+        a_pg, a_my = pg_snapshot(pg), mysql_snapshot(my)
+        cpu_abs = phase_cost(s_pipe.samples, containers=[focus])
+        mon = {
+            "wall_s": t_pipe,
+            "postgres": {
+                "monitor_statements": max(0, a_pg[0] - b_pg[0]),
+                "monitor_server_s": max(0.0, float(a_pg[1] - b_pg[1])) / 1000.0,
+            },
+            "mysql": {
+                "monitor_statements": max(0, a_my[0] - b_my[0]),
+                "monitor_server_s": max(0.0, float(a_my[1] - b_my[1])) / 1e12,
+                "digest_reset_detected": b_my[0] > a_my[0] or float(a_my[1] - b_my[1]) < 0,
+            },
+            "cpu": phase_json(cpu_abs),
         }
+        abs_cost[engine] = mon
+        print(f"  {engine:10} pipeline={t_pipe:.1f}s "
+              f"pg_monitor={mon['postgres']['monitor_server_s']:.3f}s "
+              f"mysql_monitor={mon['mysql']['monitor_server_s']:.3f}s "
+              f"cpu={_fmt(cpu_abs[focus]['cpu_pct'])}")
+        b_pg, b_my = a_pg, a_my
 
-    final = overall_verdict(engines_impact)
+    engines = {}
+    try:
+        for engine in ("postgres", "mysql"):
+            focus = FOCUS[engine]
+            print(f"\n[C] {engine} — load solo de {engine}, "
+                  f"{rounds} rondas, pipeline solo de {engine}")
+            start_load(engine)
+            print(f"  warmup load {WARMUP_S:.0f}s")
+            time.sleep(WARMUP_S)
 
-    print("\n" + "=" * 72)
-    print("RESUMEN POR MOTOR")
-    print("-" * 72)
-    for name, data in engines_impact.items():
-        imp = data["impact_pct"]
-        imp_s = f"{imp:+.1f}%" if imp is not None else "n/a"
-        print(f"  {name:<10} impacto={imp_s:>8}  -> {data['verdict']}")
-    print(f"\n  Extraccion: {t_pipe:.1f}s de wall; "
-          f"pg monitor={mon_ms_pg / 1000.0:.3f}s; "
-          f"mysql monitor={mon_s_my if mon_s_my is None else f'{mon_s_my:.3f}s'}")
-    print(f"  Umbral: < {UMBRAL_SOBRECOSTO_PCT}% (PrimerInforme)")
-    print(f"  VEREDICTO GLOBAL: {final}")
+            rows = []
+            for r in range(1, rounds + 1):
+                print(f"  ronda {r}/{rounds}")
 
-    payload = {
+                clear_load_metrics()
+                load_s = measure_window(measure_s)
+                cpu_load = phase_cost(load_s)
+                lat_load = latency_stats(read_load_metrics(engine), measure_s)
+                _warn_low_n("carga sola", lat_load)
+                print(f"    carga sola {measure_s:.0f}s -> "
+                      f"p95={_fmt(lat_load['p95_ms'], 'ms')} "
+                      f"qps={_fmt(lat_load['qps'], '')} "
+                      f"n={lat_load['n']} fails={lat_load['failures']} "
+                      f"cpu={_fmt(cpu_load[focus]['cpu_pct'])}")
+
+                clear_load_metrics()
+                con_s, n_ext = measure_with_pipeline(
+                    measure_s, extract_every_s, engine)
+                cpu_con = phase_cost(con_s)
+                lat_con = latency_stats(read_load_metrics(engine), measure_s)
+                _warn_low_n("carga+pipeline", lat_con)
+
+                p95_over = relative_overhead_pct(lat_load["p95_ms"], lat_con["p95_ms"])
+                qps_over = qps_overhead_pct(lat_load["qps"], lat_con["qps"])
+                cpu_over = cpu_overhead_pct(cpu_load[focus]["cpu_pct"],
+                                            cpu_con[focus]["cpu_pct"])
+                mem_o = None
+                if cpu_load[focus]["mem_gb"] is not None and cpu_con[focus]["mem_gb"] is not None:
+                    mem_o = cpu_con[focus]["mem_gb"] - cpu_load[focus]["mem_gb"]
+
+                print(f"    carga+pipeline -> "
+                      f"p95={_fmt(lat_con['p95_ms'], 'ms')} "
+                      f"qps={_fmt(lat_con['qps'], '')} "
+                      f"n={lat_con['n']} fails={lat_con['failures']} "
+                      f"extracciones={n_ext}")
+                print(f"    sobrecosto p95={_fmt(p95_over, '%')} "
+                      f"qps={_fmt(qps_over, '%')} "
+                      f"cpu={_fmt(cpu_over, ' pts%')} "
+                      f"mem={_fmt(mem_o, 'GB')}")
+
+                rows.append({
+                    "round": r,
+                    "latency_load": lat_load,
+                    "latency_con": lat_con,
+                    "p95_overhead_pct": p95_over,
+                    "qps_overhead_pct": qps_over,
+                    "cpu_load": phase_json(cpu_load),
+                    "cpu_con": phase_json(cpu_con),
+                    "cpu_overhead_pct": cpu_over,
+                    "mem_overhead_gb": mem_o,
+                    "extractions": n_ext,
+                })
+
+            # Promedio de los sobrecostos por ronda (cada ronda ya es un delta).
+            # Si alguna ronda no dio p95, queda fuera del promedio; si ninguna
+            # dio, el veredicto es SIN_DATO.
+            p95_mean = mean_or_none([r["p95_overhead_pct"] for r in rows])
+            qps_mean = mean_or_none([r["qps_overhead_pct"] for r in rows])
+            cpu_b = mean_or_none([r["cpu_load"][engine]["cpu_pct"] for r in rows])
+            cpu_a = mean_or_none([r["cpu_con"][engine]["cpu_pct"] for r in rows])
+            p95_base = mean_or_none([r["latency_load"]["p95_ms"] for r in rows])
+            p95_con = mean_or_none([r["latency_con"]["p95_ms"] for r in rows])
+            qps_base = mean_or_none([r["latency_load"]["qps"] for r in rows])
+            qps_con = mean_or_none([r["latency_con"]["qps"] for r in rows])
+            mem_b = mean_or_none([r["cpu_load"][engine]["mem_gb"] for r in rows])
+            mem_a = mean_or_none([r["cpu_con"][engine]["mem_gb"] for r in rows])
+            cpu_over = cpu_overhead_pct(cpu_b, cpu_a)
+            mem_d = (mem_a - mem_b) if mem_b is not None and mem_a is not None else None
+            # Veredicto SOLO con p95 de latencia. Sin p95 => SIN_DATO.
+            # QPS y CPU se reportan como evidencia, no rescatan el veredicto.
+            v = verdict(p95_mean)
+
+            print(f"  media: p95 {_fmt(p95_base, 'ms')} -> {_fmt(p95_con, 'ms')} "
+                  f"sobrecosto={_fmt(p95_mean, '%')} | "
+                  f"qps {_fmt(qps_base, '')} -> {_fmt(qps_con, '')} "
+                  f"sobrecosto={_fmt(qps_mean, '%')} | "
+                  f"cpu={_fmt(cpu_over, ' pts%')} -> {v}")
+
+            engines[engine] = {
+                "metric": "latency_p95_pct",
+                "umbral_pct": UMBRAL_SOBRECOSTO_PCT,
+                "rounds": rounds,
+                "measure_s": measure_s,
+                "extract_every_s": extract_every_s,
+                "p95_load_ms": p95_base,
+                "p95_con_ms": p95_con,
+                "p95_overhead_pct": p95_mean,
+                "qps_load": qps_base,
+                "qps_con": qps_con,
+                "qps_overhead_pct": qps_mean,
+                "cpu_load_pct": cpu_b,
+                "cpu_con_pct": cpu_a,
+                "cpu_overhead_pct": cpu_over,
+                "mem_load_gb": mem_b,
+                "mem_con_gb": mem_a,
+                "mem_overhead_gb": mem_d,
+                "verdict": v,
+                "round_details": rows,
+            }
+            stop_load()
+            print("  load detenido")
+    finally:
+        stop_load()
+
+    final = overall_verdict(engines)
+    print("\n" + "=" * 70)
+    print("RESUMEN (veredicto = sobrecosto p95 latencia de la carga)")
+    print("-" * 70)
+    for name, d in engines.items():
+        print(f"  {name:10} p95 {_fmt(d['p95_load_ms'], 'ms')} -> "
+              f"{_fmt(d['p95_con_ms'], 'ms')} "
+              f"sobrecosto={_fmt(d['p95_overhead_pct'], '%')} | "
+              f"qps={_fmt(d['qps_overhead_pct'], '%')} | "
+              f"cpu={_fmt(d['cpu_overhead_pct'], ' pts%')} "
+              f"rondas={d['rounds']} -> {d['verdict']}")
+    for name, m in abs_cost.items():
+        print(f"  fase B {name}: pipeline={m['wall_s']:.1f}s "
+              f"pg_monitor={m['postgres']['monitor_server_s']:.3f}s "
+              f"mysql_monitor={m['mysql']['monitor_server_s']:.3f}s")
+    print(f"  umbral p95 < {UMBRAL_SOBRECOSTO_PCT}% | GLOBAL: {final}")
+
+    path = write_json({
         "generated_at": datetime.now().isoformat(sep=" ", timespec="seconds"),
-        "reps": reps,
+        "method": "continuous_load_per_engine_latency",
+        "measure_s": measure_s,
+        "rounds": rounds,
+        "extract_every_s": extract_every_s,
+        "metric": "latency_p95_pct",
         "umbral_pct": UMBRAL_SOBRECOSTO_PCT,
         "verdict": final,
-        "idle": {
-            "cpu_pg_pct": idle_cpu.get("ql_postgres"),
-            "cpu_mysql_pct": idle_cpu.get("ql_mysql"),
-            "mem_mean_gb": (idle_agg["mem_mean"] or 0) / 1e9,
-        },
-        "battery_ref_s": t_batt_ref,
-        "extraction": extraction,
-        "engines": engines_impact,
-    }
-    path = _write_json(payload)
-    print(f"\nJSON: {path}")
-
-    if final == "CUMPLE":
-        return 0
-    if final == "NO CUMPLE":
-        return 2
-    return 1
+        "idle": phase_json(idle),
+        "extraction": abs_cost,
+        "engines": engines,
+    })
+    print(f"JSON: {path}")
+    return 0 if final == "CUMPLE" else (2 if final == "NO CUMPLE" else 1)
 
 
 if __name__ == "__main__":
-    quick = len(sys.argv) > 2 and sys.argv[2] == "quick"
-    reps = int(sys.argv[1]) if len(sys.argv) > 1 else 30
-    if quick and reps == 30:
-        reps = 10
-    sys.exit(run(reps=reps))
+    args = [a for a in sys.argv[1:] if a != "quick"]
+    quick = "quick" in sys.argv[1:]
+    measure_s = float(args[0]) if args else DEFAULT_MEASURE_S
+    rounds = int(args[1]) if len(args) > 1 else DEFAULT_ROUNDS
+    cadence = float(args[2]) if len(args) > 2 else DEFAULT_EXTRACT_EVERY_S
+    if quick:
+        if measure_s == DEFAULT_MEASURE_S:
+            measure_s = 10.0
+        if rounds == DEFAULT_ROUNDS:
+            rounds = 2
+    sys.exit(run(measure_s=measure_s, rounds=rounds, extract_every_s=cadence))

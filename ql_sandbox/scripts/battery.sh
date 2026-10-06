@@ -99,3 +99,4 @@ if (( NOISE > 0 )); then
 fi
 
 echo ">>> Battery done."
+echo "QUERIES_TOTAL=$((REPS * ${#QUERIES[@]}))"
