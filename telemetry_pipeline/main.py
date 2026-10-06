@@ -1,4 +1,5 @@
 from pydantic import ValidationError
+import json
 
 from config.connections import get_connection_mysql, get_connection_postgres, get_connection_querylens_db
 from collectors.factory import Engine_Factory
@@ -25,12 +26,15 @@ def run_engine(dialect: str):
     payload = Orchestrator(collector).run_pipeline()
 
     try:
-        snapshot = SnapshotPayload.from_snapshot(payload)
+        SnapshotPayload.from_snapshot(payload)
     except ValidationError as e:
         logger.error(f"{dialect} | snapshot_validation | {e}")
         return None
 
-    payload_json = snapshot.to_json()
+    # se valida contra el contrato pero se encola el payload crudo: todavia no
+    # esta en el modelo (counters_epoch y demas campos nuevos). Cuando entren a
+    # StatementRow, volver a snapshot.to_json().
+    payload_json = json.dumps(payload, default=str)
     msg_id = send_to_queue(payload_json, querylens_engine)
     print(f"Diccionario encolado con ID: {msg_id}")
     return msg_id
