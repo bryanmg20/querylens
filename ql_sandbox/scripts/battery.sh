@@ -8,12 +8,14 @@
 # from the logs.
 #
 # USAGE (from the sysbench container):
-#   bash /scripts/battery.sh [REPS] [NOISE]
+#   bash /scripts/battery.sh [REPS] [NOISE] [ENGINE]
 #   (default REP iteration count per query = 50)
 #   NOISE = cuantas queries baratas por motor se ejecutan DESPUES de la
 #   bateria, para simular produccion: el log sigue creciendo con trafico
 #   que NO entra al top-impact mientras el pipeline debe seguir encontrando
 #   las queries heavy por firma. Default 0 (sin ruido).
+#   ENGINE = postgres | mysql | both (default both). Permite medir el
+#   impacto del pipeline por motor (measure_overhead.py).
 #
 # It also gives a CLEAN measurement window:
 #   - truncates both logs (pg csvlog + mysql slow log)
@@ -25,11 +27,27 @@ set -euo pipefail
 
 REPS="${1:-50}"
 NOISE="${2:-0}"
+ENGINE="${3:-both}"
+
+if [[ "$ENGINE" != "both" && "$ENGINE" != "postgres" && "$ENGINE" != "mysql" ]]; then
+  echo "ENGINE debe ser postgres, mysql o both (recibido: $ENGINE)" >&2
+  exit 1
+fi
 
 export PGPASSWORD=ql_pass
 
 PSQL=(psql --host=postgres --port=5432 --username=ql_user --dbname=ql_demo --no-psqlrc --quiet --tuples-only --command)
 MYSQL=(mysql --host=mysql --port=3306 --user=app_user --password=app_pass --database=ql_demo --batch --skip-column-names -e)
+
+run_pg() {
+  [[ "$ENGINE" == "both" || "$ENGINE" == "postgres" ]] || return 0
+  "${PSQL[@]}" "$1" >/dev/null &
+}
+
+run_my() {
+  [[ "$ENGINE" == "both" || "$ENGINE" == "mysql" ]] || return 0
+  "${MYSQL[@]}" "$1" >/dev/null &
+}
 
 echo ">>> Truncating log windows..."
 truncate -s 0 /pg_logs/postgresql.csv 2>/dev/null || true
@@ -53,11 +71,11 @@ QUERIES=(
   "SELECT a.id, (SELECT COUNT(*) FROM sbtest1 b WHERE b.k = a.k) AS cnt FROM sbtest1 a WHERE a.id > 3000 ORDER BY cnt DESC, a.id LIMIT 100;"
 )
 
-echo ">>> Running ${#QUERIES[@]} varied queries x $REPS (postgres + mysql)..."
+echo ">>> Running ${#QUERIES[@]} varied queries x $REPS (engine=$ENGINE)..."
 for i in $(seq 1 "$REPS"); do
   for q in "${QUERIES[@]}"; do
-    "${PSQL[@]}" "$q" >/dev/null &
-    "${MYSQL[@]}" "$q" >/dev/null &
+    run_pg "$q"
+    run_my "$q"
     wait
   done
   if (( i % 5 == 0 )); then echo "  rep $i/$REPS"; fi
@@ -74,8 +92,8 @@ if (( NOISE > 0 )); then
   )
   for i in $(seq 1 "$NOISE"); do
     q="${NOISE_QUERIES[$((i % ${#NOISE_QUERIES[@]}))]}"
-    "${PSQL[@]}" "$q" >/dev/null &
-    "${MYSQL[@]}" "$q" >/dev/null &
+    run_pg "$q"
+    run_my "$q"
     wait
   done
 fi

@@ -1,44 +1,79 @@
 """Mide el sobrecosto del pipeline sobre las DBs del sandbox.
 
-Fases por motor (postgres + mysql):
-  A. linea base ociosa    -> CPU/RAM de los contenedores sin actividad
-  B. bateria sola         -> duracion + CPU/RAM del DB bajo el workload real
-  C. pipeline post-carga  -> declaraciones que el piipeline genera en la DB
-                            (pg_stat_statements / digest por ventana) + CPU/RAM
-  D. pipeline durante trafico -> impacto en latencia del workload (bateria
-                            con y sin pipeline concurrente)
+Cumple PrimerInforme.md: sobrecosto inferior al 5 % sobre la metrica de
+rendimiento de la carga observada. La metrica es la duracion de la bateria
+(workload controlado) con y sin el pipeline corriendo en paralelo.
 
-USO:
-  python measure_overhead.py [REPS]   # bateria con REPS repeticiones (default 30)
-  python measure_overhead.py 10 quick # perfil rapido
+Fases:
+  A. linea base ociosa      -> CPU/RAM de los contenedores sin actividad
+  B. bateria de carga       -> stats pobladas + referencia de duracion
+  C. una extraccion         -> wall del pipeline + tiempo de servidor del
+                               monitor (delta filtrado por rol/fingerprint)
+  D. impacto por motor      -> bateria solo vs con pipeline concurrente
+                               (postgres y mysql por separado)
+
+USO (sandbox arriba):
+  python measure_overhead.py [REPS] [quick]
+  python measure_overhead.py 10 quick
+
+Exit codes:
+  0 = CUMPLE (< 5 % en ambos motores)
+  1 = error o SIN_DATO (sandbox caido, stats no confiables)
+  2 = NO CUMPLE (>= 5 % en al menos un motor)
 """
 
+import json
 import os
 import statistics
 import subprocess
 import sys
 import threading
 import time
+from datetime import datetime
+from pathlib import Path
 
-from sqlalchemy import create_engine, text
+PIPELINE = Path(__file__).resolve().parent
+sys.path.insert(0, str(PIPELINE))
 
-PIPELINE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, PIPELINE)
+from sqlalchemy import text  # noqa: E402
+
+from ci.regenerate_goldens import PIPELINE_FINGERPRINT  # noqa: E402
 from config.connections import (  # noqa: E402
     get_connection_mysql,
     get_connection_postgres,
     get_connection_querylens_db,
 )
 
-PY = os.path.join(PIPELINE, "venv", "Scripts", "python.exe")
-MAIN = os.path.join(PIPELINE, "main.py")
+UMBRAL_SOBRECOSTO_PCT = 5.0
 CONTAINERS = ["ql_postgres", "ql_mysql"]
 STAT_INTERVAL = 1.5
+LOGS_DIR = PIPELINE / "logs"
+MONITOR_PG_ROLE = "querylens_monitor"
 
-QUICK = len(sys.argv) > 2 and sys.argv[2] == "quick"
-REPS = int(sys.argv[1]) if len(sys.argv) > 1 else 30
-if QUICK and REPS == 30:
-    REPS = 10
+
+def impact_pct(t_sola, t_con):
+    """Impacto relativo de la duracion de la carga: (con - sola) / sola."""
+    if t_sola is None or t_con is None or t_sola <= 0:
+        return None
+    return (t_con - t_sola) / t_sola * 100.0
+
+
+def verdict(impact, umbral=UMBRAL_SOBRECOSTO_PCT):
+    """PrimerInforme: sobrecosto *inferior* al 5 %."""
+    if impact is None:
+        return "SIN_DATO"
+    return "CUMPLE" if impact < umbral else "NO CUMPLE"
+
+
+def overall_verdict(per_engine):
+    states = [v.get("verdict") for v in per_engine.values() if v]
+    if not states:
+        return "SIN_DATO"
+    if "NO CUMPLE" in states:
+        return "NO CUMPLE"
+    if "SIN_DATO" in states:
+        return "SIN_DATO"
+    return "CUMPLE"
 
 
 def _pct(s):
@@ -95,9 +130,7 @@ class Sampler:
 
 
 def _agg_cpu(samples, names, idle_cpu=None):
-    cpus = []
-    nets = []
-    mems = []
+    cpus, nets, mems = [], [], []
     for _, s in samples:
         for n in names:
             st = s.get(n)
@@ -120,42 +153,126 @@ def _agg_cpu(samples, names, idle_cpu=None):
     }
 
 
-def _battery(reps):
-    t0 = time.time()
-    subprocess.run(["docker", "exec", "ql_sysbench", "bash", "/scripts/battery.sh", str(reps)], check=True)
-    return time.time() - t0
+def _battery(reps, engine="both"):
+    t0 = time.perf_counter()
+    subprocess.run(
+        ["docker", "exec", "ql_sysbench", "bash", "/scripts/battery.sh", str(reps), "0", engine],
+        check=True,
+    )
+    return time.perf_counter() - t0
 
 
 def _pipeline():
-    t0 = time.time()
-    subprocess.run([PY, MAIN], check=True)
-    return time.time() - t0
+    """Una extraccion completa del agente (collect + validate + enqueue)."""
+    from main import main as run_main
+
+    t0 = time.perf_counter()
+    run_main()
+    return time.perf_counter() - t0
 
 
 def _pg_snapshot(engine):
+    """Delta disponible del monitor vs total en pg_stat_statements.
+
+    El rol monitor aparece en la vista: el collector lo excluye del snapshot
+    con userid != session_user, pero para medir su costo propio se filtra
+    explicitamente por rol.
+    """
     with engine.connect() as c:
         return c.execute(text(
-            "SELECT count(*)::int AS n, coalesce(sum(total_exec_time),0) AS tt_ms "
-            "FROM pg_stat_statements"
-        )).one()
+            "SELECT "
+            "  count(*) FILTER (WHERE r.rolname = :role)::int AS mon_n, "
+            "  coalesce(sum(s.total_exec_time) FILTER (WHERE r.rolname = :role), 0) AS mon_ms, "
+            "  count(*)::int AS total_n, "
+            "  coalesce(sum(s.total_exec_time), 0) AS total_ms "
+            "FROM pg_stat_statements s "
+            "JOIN pg_roles r ON r.oid = s.userid"
+        ), {"role": MONITOR_PG_ROLE}).one()
 
 
 def _mysql_snapshot(engine):
+    """Delta del monitor (fingerprint del pipeline) vs total en digest."""
+    likes = []
+    params = {}
+    for i, prefix in enumerate(PIPELINE_FINGERPRINT):
+        key = f"p{i}"
+        likes.append(f"lower(digest_text) LIKE :{key}")
+        params[key] = prefix + "%"
+    monitor_where = " OR ".join(likes)
     with engine.connect() as c:
         return c.execute(text(
-            "SELECT count(*) AS n, coalesce(sum(sum_timer_wait),0) AS wait_ps "
+            "SELECT "
+            "  (SELECT count(*) FROM performance_schema.events_statements_summary_by_digest "
+            f"   WHERE {monitor_where}) AS mon_n, "
+            "  (SELECT coalesce(sum(sum_timer_wait), 0) "
+            f"   FROM performance_schema.events_statements_summary_by_digest "
+            f"   WHERE {monitor_where}) AS mon_wait_ps, "
+            "  count(*) AS total_n, "
+            "  coalesce(sum(sum_timer_wait), 0) AS total_wait_ps "
             "FROM performance_schema.events_statements_summary_by_digest"
-        )).one()
+        ), params).one()
 
 
 def _print(k, v, unit=""):
-    print(f"  {k:<34} {v}{unit}")
+    print(f"  {k:<36} {v}{unit}")
 
 
-def run(quick=False, reps=REPS):
+def _preflight():
+    errors = []
+    checks = (
+        ("postgres", get_connection_postgres),
+        ("mysql", get_connection_mysql),
+        ("querylens_db (pgmq)", get_connection_querylens_db),
+    )
+    for name, factory in checks:
+        try:
+            engine = factory()
+            with engine.connect() as c:
+                c.execute(text("SELECT 1"))
+        except Exception as exc:
+            errors.append(f"{name}: {type(exc).__name__}: {str(exc)[:140]}")
+
+    try:
+        probe = subprocess.run(
+            ["docker", "exec", "ql_sysbench", "test", "-f", "/scripts/battery.sh"],
+            capture_output=True, text=True, timeout=15,
+        )
+        if probe.returncode != 0:
+            errors.append("ql_sysbench: no responde o falta /scripts/battery.sh")
+    except Exception as exc:
+        errors.append(f"ql_sysbench: {type(exc).__name__}: {str(exc)[:140]}")
+
+    if errors:
+        print("Sandbox no disponible:", file=sys.stderr)
+        for e in errors:
+            print(f"  - {e}", file=sys.stderr)
+        print(
+            "\nLevanta el banco de pruebas:\n"
+            "  docker compose -f ql_sandbox/docker-compose.yml up -d\n"
+            "  docker compose up -d\n"
+            "y exporta las credenciales del .env del repo si hace falta.",
+            file=sys.stderr,
+        )
+        return False
+    return True
+
+
+def _write_json(payload):
+    LOGS_DIR.mkdir(exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    path = LOGS_DIR / f"overhead_{stamp}.json"
+    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
+    return path
+
+
+def run(reps=30):
     print("=" * 72)
     print(f"MEDICION DE SOBRECOSTO (bateria con {reps} reps por query)")
+    print(f"Umbral PrimerInforme: sobrecosto < {UMBRAL_SOBRECOSTO_PCT}%")
     print("=" * 72)
+
+    if not _preflight():
+        return 1
 
     pg = get_connection_postgres()
     my = get_connection_mysql()
@@ -169,22 +286,19 @@ def run(quick=False, reps=REPS):
         vals = [x[n]["cpu"] for _, x in s.samples if n in x]
         idle_cpu[n] = statistics.mean(vals) if vals else 0.0
     idle_agg = _agg_cpu(s.samples, CONTAINERS)
-    _print("cpu_mean", f"{idle_cpu.get('ql_postgres', 0):.1f}% / {idle_cpu.get('ql_mysql', 0):.1f}%", " (pg / mysql)")
-    _print("mem_mean", f"{idle_agg['mem_mean'] / 1e9:.2f} GB", "")
+    _print("cpu_mean pg/mysql", f"{idle_cpu.get('ql_postgres', 0):.1f}% / {idle_cpu.get('ql_mysql', 0):.1f}%")
+    _print("mem_mean", f"{(idle_agg['mem_mean'] or 0) / 1e9:.2f} GB")
 
-    # B. bateria sola ------------------------------------------------------
-    print(f"\n[B] Bateria sin pipeline ({reps} reps)")
+    # B. bateria de carga (stats + referencia) -----------------------------
+    print(f"\n[B] Bateria de carga ({reps} reps, ambos motores)")
     with Sampler() as s:
-        t_battery_only = _battery(reps)
+        t_batt_ref = _battery(reps, "both")
     agg_b = _agg_cpu(s.samples, CONTAINERS, idle_cpu)
-    _print("duracion_bateria", f"{t_battery_only:.1f}", " s")
-    _print("cpu(db) neta", f"{agg_b['cpu_mean_net']:.1f}%", " (promedio sobre el intervalo, pg+mysql)")
-    _print("cpu(db) pico", f"{agg_b['cpu_max']:.1f}%", "")
-    _print("mem(db)", f"{agg_b['mem_mean'] / 1e9:.2f}", " GB")
+    _print("duracion_bateria", f"{t_batt_ref:.1f}", " s")
+    _print("cpu(db) neta", f"{(agg_b['cpu_mean_net'] or 0):.1f}%")
 
-    # C. pipeline post-carga ------------------------------------------------
-    print(f"\n[C] Pipeline tras la bateria ({reps} reps de carga, luego pipeline)")
-    _battery(reps)
+    # C. una extraccion: costo absoluto del pipeline -----------------------
+    print("\n[C] Una extraccion del pipeline tras la carga")
     b_pg = _pg_snapshot(pg)
     b_my = _mysql_snapshot(my)
     with Sampler() as s:
@@ -192,72 +306,134 @@ def run(quick=False, reps=REPS):
     a_pg = _pg_snapshot(pg)
     a_my = _mysql_snapshot(my)
     agg_c = _agg_cpu(s.samples, CONTAINERS, idle_cpu)
-    stm_pg = a_pg.n - b_pg.n
-    tt_pg = (a_pg.tt_ms - b_pg.tt_ms) / 1000.0
-    stm_my = max(0, a_my.n - b_my.n)
-    tt_my_raw = float(a_my.wait_ps - b_my.wait_ps)
-    tt_my = max(0.0, tt_my_raw) / 1e12 if tt_my_raw > 0 else None
-    reset_note = " (contador de digests reiniciado; delta no confiable)" \
-        if (b_my.n > a_my.n or tt_my_raw < 0) else ""
-    with get_connection_querylens_db().connect() as c:
-        explains = c.execute(text(
-            "SELECT count(*) FROM pgmq.q_analyze_job "
-            "WHERE enqueued_at > now() - interval '5 minutes'"
-        )).scalar()
+
+    mon_n_pg = max(0, a_pg.mon_n - b_pg.mon_n)
+    mon_ms_pg = max(0.0, float(a_pg.mon_ms - b_pg.mon_ms))
+    tot_ms_pg = max(0.0, float(a_pg.total_ms - b_pg.total_ms))
+    mon_n_my = max(0, a_my.mon_n - b_my.mon_n)
+    mon_wait_my = float(a_my.mon_wait_ps - b_my.mon_wait_ps)
+    tot_wait_my = float(a_my.total_wait_ps - b_my.total_wait_ps)
+    reset_my = b_my.mon_n > a_my.mon_n or mon_wait_my < 0
+    mon_s_my = max(0.0, mon_wait_my) / 1e12 if not reset_my else None
+    tot_s_my = max(0.0, tot_wait_my) / 1e12 if tot_wait_my >= 0 else None
+
+    try:
+        with get_connection_querylens_db().connect() as c:
+            enqueued = c.execute(text(
+                "SELECT count(*) FROM pgmq.q_analyze_job "
+                "WHERE enqueued_at > now() - interval '5 minutes'"
+            )).scalar()
+    except Exception:
+        enqueued = None
+
     _print("duracion_pipeline", f"{t_pipe:.1f}", " s")
-    _print("cpu(db) neta", f"{agg_c['cpu_mean_net']:.1f}%", " (durante el pipeline)")
-    _print("cpu(db) pico", f"{agg_c['cpu_max']:.1f}%", "")
-    _print("mem(db) durante", f"{agg_c['mem_mean'] / 1e9:.2f}", " GB")
-    _print("pg: statements pipeline", f"{stm_pg}", "")
-    _print("pg: tiempo_db acumulado", f"{tt_pg:.3f}", " s")
-    _print("mysql: statements pipeline", f"{stm_my}", "")
-    if tt_my is None:
-        _print("mysql: tiempo_db acumulado", "n/a", reset_note)
+    _print("cpu(db) neta", f"{(agg_c['cpu_mean_net'] or 0):.1f}%")
+    _print("pg: statements del monitor", f"{mon_n_pg}")
+    _print("pg: tiempo_db monitor", f"{mon_ms_pg / 1000.0:.3f}", " s")
+    _print("pg: tiempo_db ventana total", f"{tot_ms_pg / 1000.0:.3f}", " s")
+    if mon_s_my is None:
+        _print("mysql: tiempo_db monitor", "n/a", " (digest reseteado; delta no confiable)")
     else:
-        _print("mysql: tiempo_db acumulado", f"{tt_my:.3f}", f" s{reset_note}")
+        _print("mysql: statements del monitor", f"{mon_n_my}")
+        _print("mysql: tiempo_db monitor", f"{mon_s_my:.3f}", " s")
+    if tot_s_my is not None:
+        _print("mysql: tiempo_db ventana total", f"{tot_s_my:.3f}", " s")
+    if enqueued is not None:
+        _print("mensajes encolados (5 min)", f"{enqueued}")
 
-    # D. impacto en latencia del workload ----------------------------------
-    print(f"\n[D] Pipeline concurrente con trafico (impacto en latencia)")
-    with Sampler() as s:
-        t0 = time.time()
-        proc = subprocess.Popen(["docker", "exec", "ql_sysbench", "bash", "/scripts/battery.sh", str(reps)])
-        time.sleep(max(0.5, t_battery_only * 0.1))
-        t_pipe_conc = _pipeline()
-        proc.wait()
-        t_batt_conc = time.time() - t0
-    agg_d = _agg_cpu(s.samples, CONTAINERS, idle_cpu)
-    impact = (t_batt_conc - t_battery_only) / t_battery_only * 100
-    _print("duracion_bateria con pipeline", f"{t_batt_conc:.1f}", " s")
-    _print("overhead latencia workload", f"{impact:+.1f}%", "")
-    _print("cpu(db) neta", f"{agg_d['cpu_mean_net']:.1f}%", "")
-    _print("cpu(db) pico", f"{agg_d['cpu_max']:.1f}%", "")
-
-    print("\n" + "=" * 72)
-    print("RESUMEN")
-    print("-" * 72)
-    if tt_my is None:
-        print(f"  Pipeline: {t_pipe:.1f}s de ejecucion, {stm_pg} statements postgres + "
-              f"{stm_my} mysql en la DB, {tt_pg:.3f}s de tiempo de servidor")
-    else:
-        print(f"  Pipeline: {t_pipe:.1f}s de ejecucion, {stm_pg} statements postgres + "
-              f"{stm_my} mysql en la DB, {tt_pg:.3f}s+{tt_my:.3f}s de tiempo de servidor")
-    print(f"  Impacto en latencia de trafico concurrente: {impact:+.1f}%")
-    print(f"  CPU pico DB bajo pipeline: {agg_c['cpu_max']:.1f}% (basal {idle_cpu.get('ql_postgres', 0):.1f}% / "
-          f"{idle_cpu.get('ql_mysql', 0):.1f}%)")
-    print(f"  Memoria DB: ocio {idle_agg['mem_mean'] / 1e9:.2f} GB -> pipeline "
-          f"{agg_c['mem_mean'] / 1e9:.2f} GB")
-    return {
-        "reps": reps,
-        "pipeline_s": t_pipe,
-        "db_statements": {"postgres": stm_pg, "mysql": stm_my},
-        "db_server_time_s": {"postgres": tt_pg, "mysql": tt_my},
-        "latency_impact_pct": impact,
+    extraction = {
+        "wall_s": t_pipe,
+        "postgres": {
+            "monitor_statements": mon_n_pg,
+            "monitor_server_s": mon_ms_pg / 1000.0,
+            "window_total_server_s": tot_ms_pg / 1000.0,
+        },
+        "mysql": {
+            "monitor_statements": mon_n_my,
+            "monitor_server_s": mon_s_my,
+            "window_total_server_s": tot_s_my,
+            "digest_reset_detected": reset_my,
+        },
         "cpu_pipeline_pct": agg_c["cpu_mean_net"],
         "cpu_pipeline_peak_pct": agg_c["cpu_max"],
-        "mem_idle_gb": idle_agg["mem_mean"] / 1e9,
-        "mem_pipeline_gb": agg_c["mem_mean"] / 1e9,
+        "enqueued_last_5min": enqueued,
     }
+
+    # D. impacto por motor (bateria solo vs con pipeline) ------------------
+    engines_impact = {}
+    for engine_name in ("postgres", "mysql"):
+        print(f"\n[D] Impacto en {engine_name}: bateria solo vs con pipeline")
+        t_sola = _battery(reps, engine_name)
+        with Sampler() as s:
+            t0 = time.perf_counter()
+            proc = subprocess.Popen(
+                ["docker", "exec", "ql_sysbench", "bash", "/scripts/battery.sh",
+                 str(reps), "0", engine_name]
+            )
+            time.sleep(max(0.5, t_sola * 0.1))
+            t_pipe_conc = _pipeline()
+            proc.wait()
+            t_con = time.perf_counter() - t0
+        agg_d = _agg_cpu(s.samples, CONTAINERS, idle_cpu)
+        impact = impact_pct(t_sola, t_con)
+        v = verdict(impact)
+        _print("duracion_sola", f"{t_sola:.1f}", " s")
+        _print("duracion_con_pipeline", f"{t_con:.1f}", " s")
+        _print("overhead_latencia", f"{impact:+.1f}%" if impact is not None else "n/a")
+        _print("veredicto_motor", f"{v} (umbral < {UMBRAL_SOBRECOSTO_PCT}%)")
+        _print("cpu(db) neta", f"{(agg_d['cpu_mean_net'] or 0):.1f}%")
+        engines_impact[engine_name] = {
+            "t_sola_s": t_sola,
+            "t_con_s": t_con,
+            "pipeline_concurrent_wall_s": t_pipe_conc,
+            "impact_pct": impact,
+            "verdict": v,
+            "cpu_mean_net_pct": agg_d["cpu_mean_net"],
+            "cpu_peak_pct": agg_d["cpu_max"],
+        }
+
+    final = overall_verdict(engines_impact)
+
+    print("\n" + "=" * 72)
+    print("RESUMEN POR MOTOR")
+    print("-" * 72)
+    for name, data in engines_impact.items():
+        imp = data["impact_pct"]
+        imp_s = f"{imp:+.1f}%" if imp is not None else "n/a"
+        print(f"  {name:<10} impacto={imp_s:>8}  -> {data['verdict']}")
+    print(f"\n  Extraccion: {t_pipe:.1f}s de wall; "
+          f"pg monitor={mon_ms_pg / 1000.0:.3f}s; "
+          f"mysql monitor={mon_s_my if mon_s_my is None else f'{mon_s_my:.3f}s'}")
+    print(f"  Umbral: < {UMBRAL_SOBRECOSTO_PCT}% (PrimerInforme)")
+    print(f"  VEREDICTO GLOBAL: {final}")
+
+    payload = {
+        "generated_at": datetime.now().isoformat(sep=" ", timespec="seconds"),
+        "reps": reps,
+        "umbral_pct": UMBRAL_SOBRECOSTO_PCT,
+        "verdict": final,
+        "idle": {
+            "cpu_pg_pct": idle_cpu.get("ql_postgres"),
+            "cpu_mysql_pct": idle_cpu.get("ql_mysql"),
+            "mem_mean_gb": (idle_agg["mem_mean"] or 0) / 1e9,
+        },
+        "battery_ref_s": t_batt_ref,
+        "extraction": extraction,
+        "engines": engines_impact,
+    }
+    path = _write_json(payload)
+    print(f"\nJSON: {path}")
+
+    if final == "CUMPLE":
+        return 0
+    if final == "NO CUMPLE":
+        return 2
+    return 1
 
 
 if __name__ == "__main__":
-    run(quick=QUICK, reps=REPS)
+    quick = len(sys.argv) > 2 and sys.argv[2] == "quick"
+    reps = int(sys.argv[1]) if len(sys.argv) > 1 else 30
+    if quick and reps == 30:
+        reps = 10
+    sys.exit(run(reps=reps))
