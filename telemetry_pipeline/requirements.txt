@@ -4,4 +4,3 @@ pymysql
 sqlglot
 python-dotenv
 pydantic
-pytest
