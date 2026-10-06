@@ -125,17 +125,21 @@ Se salta sola si los contenedores no están levantados. Con `.github/workflows` 
 
 El informe exige un sobrecosto **inferior al 5 %** sobre la métrica de rendimiento de la carga observada. La validación es **manual y reproducible** con el sandbox; CI no la gatea (CI solo valida que las extracciones se encolan).
 
-### Métrica
+Detalle completo de fases, JSON y limitaciones: [`MEASURE_OVERHEAD.md`](MEASURE_OVERHEAD.md).
 
-La carga observada es la **batería** (`ql_sandbox/scripts/battery.sh`: ~10 queries variadas contra `sbtest1` en PostgreSQL y MySQL).
+### Métrica del veredicto
+
+La carga observada es un **load continuo** (`ql_sandbox/scripts/continuous_load.sh`): while-true con las mismas queries variadas que `battery.sh` contra `sbtest1`. Cada query se **tiena** y se escribe en `/tmp/ql_load_metrics.csv` (`ts_ms,engine,duration_ms,status`). El load **no se detiene** durante la medición.
+
+El veredicto usa la **latencia p95** de esas queries OK, con y sin pipeline, bajo el mismo load:
 
 ```
-impacto_pct = (t_batería_con_pipeline − t_batería_sola) / t_batería_sola × 100
+sobrecosto_p95 = (p95_con − p95_sola) / p95_sola × 100
 
-CUMPLE si impacto < 5.0   (inferior al 5 %)
+CUMPLE si sobrecosto_p95 < 5.0
 ```
 
-Se mide **por motor**: primero solo PostgreSQL, luego solo MySQL, con el pipeline (`main.py`) corriendo en paralelo en cada caso.
+**No se asume CUMPLE sin datos** (`SIN_DATO` si no hay queries OK suficientes). QPS y CPU del contenedor se reportan como evidencia secundaria; no rescatan el veredicto. Veredicto global: ambos motores deben cumplir.
 
 ### Cómo correrlo
 
@@ -148,44 +152,90 @@ docker compose up -d
 cd telemetry_pipeline
 pip install -r requirements-dev.txt
 
-# 3. Medición (perfil rápido ~minutos; sin args = 30 reps, más largo)
-python measure_overhead.py 10 quick
+# 3. Medición (perfil rápido ~minutos)
+python measure_overhead.py 10 quick      # 10s por ventana, 2 rondas
+python measure_overhead.py 20           # 20s por ventana, 3 rondas, pipeline cada 10s
+python measure_overhead.py 20 3 10      # measure_s, rondas, cadencia (s)
 ```
 
-Salida esperada (resumen):
+Salida de resumen (formato; los números salen del JSON del run):
 
 ```
-RESUMEN POR MOTOR
-  postgres   impacto=   +2.8%  -> CUMPLE
-  mysql      impacto=   +1.9%  -> CUMPLE
-  ...
-  VEREDICTO GLOBAL: CUMPLE
+RESUMEN (veredicto = sobrecosto p95 latencia de la carga)
+  postgres   p95 <A>ms -> <B>ms sobrecosto=<X>% | qps=<Y>% | cpu=<Z> pts% rondas=<N> -> <VEREDICTO>
+  mysql      ...
+  fase B postgres: pipeline=...s pg_monitor=...s mysql_monitor=...s
+  fase B mysql: ...
+  umbral p95 < 5.0% | GLOBAL: <VEREDICTO>
 JSON: logs/overhead_<timestamp>.json
 ```
 
 | Exit code | Significado |
 |-----------|-------------|
-| `0` | CUMPLE (&lt; 5 % en ambos motores) |
-| `1` | Error o SIN_DATO (sandbox caído / stats no confiables) |
-| `2` | NO CUMPLE (≥ 5 % en al menos un motor) |
+| `0` | CUMPLE (sobrecosto p95 &lt; 5% en ambos motores) |
+| `1` | Error o SIN_DATO (sandbox caído / sin queries OK en la ventana) |
+| `2` | NO CUMPLE (sobrecosto p95 ≥ 5% en al menos un motor) |
+
+### Metodología (carga continua, aislada por motor)
+
+1. **[A]** Base ociosa: CPU/RAM de los contenedores sin carga.
+2. **[B]** Costo absoluto **por motor**: 1 extracción de `main.run_engine(dialect)` sin load + tiempo de servidor del monitor (PG: rol `querylens_monitor`; MySQL: `PIPELINE_FINGERPRINT`). El monitor del motor no medido debe quedar ~0.
+3. **[C]** Por motor, de forma aislada (`run_engine` solo de ese motor + load solo de ese motor):
+   - Warmup ~8 s del load de ese motor.
+   - N rondas con load siempre activo:
+     - Limpia el CSV; ventana `MEASURE_S` **sin** pipeline → p50/p95/QPS + CPU/mem.
+     - Limpia el CSV; ventana `MEASURE_S` **con** pipeline cada `EXTRACT_EVERY_S` (si cadencia ≥ ventana: 1 disparo a la mitad).
+     - `sobrecosto_p95` y deltas secundarios (qps, cpu pts%).
+4. Veredicto por motor: promedio de `sobrecosto_p95` de las rondas. Al final se detiene el load.
+
+**Sobrecosto ≤ 0:** en esa ventana la carga no se midió más lenta (puede ser ruido). No prueba que el pipeline sea gratis; prueba que **no se midió frenado ≥5%**.
 
 ### Qué reporta además del %
 
 | Fase | Contenido |
 |------|-----------|
-| A | CPU/RAM ocioso de `ql_postgres` / `ql_mysql` |
-| B | Duración de la batería de carga |
-| C | **Una** extracción del pipeline: wall, # statements del monitor, tiempo de servidor del monitor (PG filtrado por rol `querylens_monitor`; MySQL por `PIPELINE_FINGERPRINT`), CPU durante la corrida |
-| D | Duración sola vs con pipeline concurrente por motor + veredicto |
+| A | Base ociosa: CPU/RAM de cada contenedor |
+| B | 1 extracción sin load: wall, # statements del monitor, tiempo de servidor, CPU/mem del contenedor del motor |
+| C | Por motor, N rondas: p50/p95/QPS/n/failures de carga vs carga+pipeline, sobrecosto p95, sobrecosto QPS/CPU/mem, nº de extracciones |
 
-El JSON queda en `telemetry_pipeline/logs/overhead_<timestamp>.json` para comparar runs.
+El JSON queda en `telemetry_pipeline/logs/overhead_<timestamp>.json`:
+
+```json
+{
+  "method": "continuous_load_per_engine_latency",
+  "metric": "latency_p95_pct",
+  "umbral_pct": 5.0,
+  "verdict": "CUMPLE | NO CUMPLE | SIN_DATO",
+  "engines": {
+    "postgres": {
+      "metric": "latency_p95_pct",
+      "p95_load_ms": 506.5,
+      "p95_con_ms": 522.1,
+      "p95_overhead_pct": 3.1,
+      "qps_overhead_pct": 5.1,
+      "cpu_overhead_pct": 3.9,
+      "verdict": "CUMPLE",
+      "round_details": [
+        { "round": 1,
+          "latency_load": {"n": 87, "failures": 0, "p95_ms": 507.7, "qps": 8.7},
+          "latency_con":  {"n": 86, "failures": 0, "p95_ms": 489.8, "qps": 8.6},
+          "p95_overhead_pct": -3.5 }
+      ]
+    }
+  }
+}
+```
+
+Los campos van en `null` cuando no hay dato; el script **no** rellena con ceros ni inventa percentiles.
 
 ### Limitaciones conocidas
 
-- La métrica del 5 % usa la **duración wall de la batería** como proxy de rendimiento de la carga (la batería no emite QPS ni percentiles).
-- Con tráfico concurrente, el delta del monitor en fase C es una cota inferior del costo del pipeline (no atribuye planificación de otras sesiones).
-- MySQL sin `digest` poblado o con stats reseteadas en mitad de la corrida se marca `digest_reset_detected` y el tiempo del monitor va `null`.
-- Requiere Docker con `ql_sysbench` (no corre en el CI de GitHub Actions).
+- **Veredicto = p95 de latencia de la carga**, no CPU. Con contenedor saturado el delta de CPU se pierde en ruido de muestreo.
+- **Ventanas cortas = pocos samples.** Con 10 s puede haber pocas queries OK; el p95 se estabiliza con 20–30 s y 3+ rondas. El script avisa si `n < 20`.
+- **Ruido entre rondas:** una ronda puede dar ≥5% aunque el promedio sea <5%; el veredicto es el promedio (ver ejemplo real en `MEASURE_OVERHEAD.md`).
+- **Fase B CPU suele ir `n/a`:** el sampler de Docker es cada 1.5 s y la extracción dura ~0.3–0.6 s; a menudo no cae sample en la ventana. El wall y el monitor del servidor sí se reportan.
+- MySQL sin `digest` poblado: el tiempo del monitor va `null` (solo afecta fase B).
+- Requiere Docker con `ql_sysbench` (no corre en el CI de GitHub Actions). `scripts/` está montado en el contenedor, así que `continuous_load.sh` no requiere rebuild.
 
 ## Por qué hay dos requirements
 
