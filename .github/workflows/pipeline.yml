@@ -176,6 +176,10 @@ jobs:
 
       - name: tabla de carga en MySQL
         # El rol de monitoreo no tiene CREATE en ql_demo: el DDL lo aplica root.
+        # El GRANT replica ql_sandbox/init/init_mysql.sql: el user creado por la
+        # imagen solo recibe privilegios sobre MYSQL_DATABASE, no sobre
+        # performance_schema / information_schema, y sin SELECT ahi el collector
+        # no puede leer events_statements_summary_by_digest.
         run: |
           docker exec -i "${{ job.services.telemetry-mysql.id }}" mysql -uroot -pql_root <<'SQL'
           CREATE DATABASE IF NOT EXISTS ql_demo;
@@ -185,6 +189,10 @@ jobs:
               k integer NOT NULL,
               pad text
           );
+          GRANT SELECT ON *.* TO 'querylens_monitor'@'%';
+          GRANT PROCESS ON *.* TO 'querylens_monitor'@'%';
+          GRANT REPLICATION CLIENT ON *.* TO 'querylens_monitor'@'%';
+          FLUSH PRIVILEGES;
           SQL
 
       - name: carga de trabajo para poblar las vistas de estadisticas
