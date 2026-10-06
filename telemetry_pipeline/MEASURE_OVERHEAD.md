@@ -23,6 +23,163 @@ Es la pregunta directa del informe: **¿la carga observada se frenó?**
 
 ---
 
+## Qué es el p95 (explicación simple)
+
+El script no usa el promedio de todas las queries. Usa el **percentil 95**.
+
+Imaginá que en 10 segundos corrieron **100 queries** y anotaste cuánto tardó cada una. Si las ordenás de menor a mayor:
+
+```
+60, 65, 70, ..., 420, 458, 480, 510, 900, 950, 1100
+```
+
+| Cantidad | Tardaron menos de... | Nombre |
+|----------|----------------------|--------|
+| 50 de 100 (50 %) | ~90 ms | **p50** (mediana) |
+| 95 de 100 (95 %) | ~480 ms | **p95** |
+| 100 de 100 | 1100 ms | máximo |
+
+> **p95 = el tiempo tal que el 95 % de las queries fue más rápido que eso.**
+
+Las ~5 queries más lentas pueden tardar más; el p95 no las "esconde", las representa con ese corte.
+
+**¿Por qué no el promedio?** Con 100 queries, 5 lentas de ~900 ms apenas mueven el promedio (~130 ms), pero **sí** mueven el p95. El p95 mira la **cola de queries lentas**, que es lo que le importa al informe: ¿el pipeline frena las queries lentas de la carga observada?
+
+**Cómo se usa acá:**
+
+```
+ventana "carga sola":     100 queries → p95 = 434 ms
+ventana "carga+pipeline": 100 queries → p95 = 458 ms
+
+sobrecosto = (458 − 434) / 434 × 100 = 5.6 %
+```
+
+---
+
+## Qué significa un sobrecosto (+5.6 %, −9.1 %, etc.)
+
+### +5.6 % no es "hay más queries lentas"
+
+En cada ventana entran ~90–100 queries (la misma cantidad, las mismas 10 sentencias SQL). Lo que cambia es **cuánto tardaron** las que ya eran lentas:
+
+| | Carga sola | Con pipeline |
+|--|------------|--------------|
+| Queries rápidas (~60 ms) | ~60 ms | ~60–65 ms (casi igual) |
+| Cola del 5 % más lento | p95 = 434 ms | p95 = 458 ms |
+
+El pipeline compite por CPU/IO → esas pocas lentas se desplazan un poco → el corte del 95 % se corre hacia arriba. **La cantidad de lentas no aumenta.**
+
+### −9.1 % no es "el pipeline acelera"
+
+Significa que en **esa ventana de 10 s** el p95 salió más bajo que en la ventana "sola". Casi siempre es ruido (caché, solapamiento de queries, CPU del host). No prueba que el pipeline sea gratis.
+
+### Resumen de lectura
+
+| Sobrecosto p95 | Lectura honesta |
+|----------------|-----------------|
+| &lt; 0 | Esa ventana no se midió más lenta (puede ser ruido) |
+| 0 – 5 % | Frenado medido, pero **dentro** del umbral del informe |
+| ≥ 5 % | La carga se frenó ≥5 % en esa medición → candidato a NO CUMPLE |
+| `±` alto entre rondas | La media es poco confiable; replicar (ver sección seria) |
+
+---
+
+## Por qué no da el mismo número siempre
+
+"Las mismas consultas" = **el mismo SQL**, no las mismas condiciones de ejecución.
+
+| Factor | Qué pasa |
+|--------|----------|
+| Caché | Leer de disco (lento) vs memoria (rápido) no está siempre igual |
+| Competencia | En la ventana "con pipeline", la extracción roba recursos a las mismas tablas |
+| Conexión por query | El load hace `psql`/`mysql` por cada query: handshake variable |
+| Host/Docker | Scheduler, OneDrive, antivirus, otros procesos |
+| Trabajo de fondo | Autovacuum, checkpoints, logs |
+| Mezcla de queries | A veces entran más de las pesadas en una ventana de 10 s |
+
+Por eso el p95 de la **misma** carga puede dar 434 ms en una ventana y 468 ms en otra. El script promedia **varias rondas A/B** y reporta el **desvío** entre rondas; con `quick` (10 s, 2 rondas) el ruido se ve mucho.
+
+---
+
+## Cómo correr una medición seria
+
+`10 quick` sirve para probar que el sandbox funciona. **No sirve como evidencia del informe**: ventanas cortas, 2 rondas, 1 extracción.
+
+### Reglas de muestras
+
+| Parámetro | Mínimo aceptable | Recomendado (serio) |
+|-----------|------------------|---------------------|
+| Queries OK por ventana (`n`) | ≥ 100 | ≥ 200 |
+| Duración de ventana | 20 s | 30 s |
+| Rondas A/B | 3 | 5+ |
+| Pipeline por ventana | 1 | ≥ 2 (`extract_every_s ≤ measure_s / 2`) |
+| Desvío del sobrecosto entre rondas | — | &lt; 5 pts (si da más, replicar) |
+
+Con el load actual (~9 qps en postgres, ~16 en mysql):
+
+- 20 s → ~180 / ~320 queries por ventana
+- 30 s → ~270 / ~480 queries por ventana
+
+### Comando recomendado para el informe
+
+```bash
+# Serio (default sugerido): 30s por ventana, 5 rondas, pipeline cada 10s
+python measure_overhead.py 30 5 10
+
+# Más presión del pipeline (extracciones cada 5s)
+python measure_overhead.py 20 5 5
+
+# Solo probar que el sandbox está arriba (NO usar como evidencia)
+python measure_overhead.py 10 quick
+```
+
+Argumentos: `[MEASURE_S] [quick] [ROUNDS] [EXTRACT_EVERY_S]`.
+
+### Cómo saber si el resultado es confiable
+
+En el resumen y el JSON:
+
+```
+sobrecosto=3.1% ± 4.2% (min=-3.5% max=9.7%)  n_min=80
+```
+
+| Campo | Qué mirar |
+|-------|-----------|
+| `media ± desvío` | Si el desvío es grande (≥5 pts), la media no es un número fino |
+| `min` / `max` | Rango real entre rondas; si cruza el umbral de lado a lado, es frontera |
+| `n_min` | Menor cantidad de queries OK en una ventana; &lt; 100 → p95 poco confiable |
+| Avisos `[aviso]` | El script imprime si `n < 20` o si el desvío ≥ 5 pts |
+
+**Cómo interpretar la frontera (5 %):**
+
+| Situación | Qué hacer |
+|-----------|-----------|
+| Media ≤ 0 % y desvío moderado | CUMPLE robusto en ese run |
+| Media 0–3 % y desvío &lt; 5 pts | CUMPLE razonable; documentar n y rondas |
+| Media 3–5 % o desvío ≥ 5 pts | **Frontera**: repetir con `30 5 10` (o más rondas) antes de concluir |
+| Media ≥ 5 % en un motor | NO CUMPLE (exit 2) |
+| Cualquier cosa sin queries OK | SIN_DATO (exit 1); no inventar CUMPLE |
+
+### Qué reportar en el informe
+
+1. Comando exacto (`python measure_overhead.py 30 5 10`).
+2. Por motor: `p95 sola → p95 con`, **media ± desvío**, `n_min`, veredicto.
+3. GLOBAL y exit code.
+4. El JSON de `logs/overhead_<timestamp>.json` como evidencia.
+5. Limitación honesta: medición manual en Docker del sandbox, no en prod; CPU saturado puede esconder deltas; 1 motor aislado por corrida.
+
+### Aislamiento por motor
+
+Medir postgres NO corre el pipeline de mysql (ni su load). Se usa `main.run_engine(dialect)`, la misma pieza que usa `main()`, pero solo para el motor medido.
+
+| Exit code | Significado |
+|-----------|-------------|
+| `0` | CUMPLE (sobrecosto p95 < 5% en ambos motores) |
+| `1` | Error o SIN_DATO (sandbox caído / sin queries OK en la ventana) |
+| `2` | NO CUMPLE (sobrecosto p95 ≥ 5% en al menos un motor) |
+
+---
+
 ## Cómo se ejecuta
 
 ```bash
@@ -31,18 +188,12 @@ docker compose -f ql_sandbox/docker-compose.yml up -d
 docker compose up -d
 
 cd telemetry_pipeline
-python measure_overhead.py 10 quick      # perfil rápido (~2-3 min)
-python measure_overhead.py 20            # 20s por ventana, 3 rondas, pipeline cada 10s
-python measure_overhead.py 20 3 10       # measure_s, rondas, cadencia (s)
+python measure_overhead.py 10 quick      # solo sanity (~2-3 min); NO es evidencia del informe
+python measure_overhead.py 30 5 10      # medición seria: 30s, 5 rondas, pipeline cada 10s
+python measure_overhead.py 20 5 5       # más presión: 20s, 5 rondas, pipeline cada 5s
 ```
 
-**Aislamiento por motor:** medir postgres NO corre el pipeline de mysql (ni su load). Se usa `main.run_engine(dialect)`, la misma pieza que usa `main()`, pero solo para el motor medido.
-
-| Exit code | Significado |
-|-----------|-------------|
-| `0` | CUMPLE (sobrecosto p95 < 5% en ambos motores) |
-| `1` | Error o SIN_DATO (sandbox caído / sin queries OK en la ventana) |
-| `2` | NO CUMPLE (sobrecosto p95 ≥ 5% en al menos un motor) |
+Ver sección **Cómo correr una medición seria** arriba para muestras, varianza y qué reportar.
 
 ---
 
