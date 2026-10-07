@@ -15,7 +15,7 @@ def _to_naive_utc(dt):
     naive en hora del servidor. Fijar la sesión MySQL a +00:00 (init_command en
     config/connections) hace ambos UTC; este helper solo normaliza el lado que ya
     trae zona, para que counters_epoch, transaction_start_time, last_index_scan y
-    stats_reset viajen con el mismo formato sin offset que el lado MySQL.
+    server_start_time viajen con el mismo formato sin offset que el lado MySQL.
     """
     if isinstance(dt, datetime) and dt.tzinfo is not None:
         return dt.astimezone(timezone.utc).replace(tzinfo=None)
@@ -119,8 +119,8 @@ class ColumnRow(BaseModel):
     data_type: str
 
 
-class StatsResetRow(BaseModel):
-    stats_reset: Annotated[str | None, BeforeValidator(_to_iso)] = None
+class ServerStartRow(BaseModel):
+    server_start_time: Annotated[str | None, BeforeValidator(_to_iso)] = None
 
 
 class LogicalShape(BaseModel):
@@ -173,7 +173,7 @@ class SnapshotPayload(BaseModel):
     indexes: ListOrNone[IndexRow]
     tables: ListOrNone[TableRow]
     columns: ListOrNone[ColumnRow]
-    stats_reset_timestamp: ListOrNone[StatsResetRow]
+    server_start_timestamp: ListOrNone[ServerStartRow]
     canonic_explains: ListOrNone[CanonicExplain] = []
 
     @classmethod

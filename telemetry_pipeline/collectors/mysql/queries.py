@@ -15,6 +15,11 @@ SELECT
         GROUP_CONCAT(t.column_name ORDER BY t.seq_in_index SEPARATOR ', '),
         ')'
     )                                       AS index_ref,
+    # index_size_bytes es a nivel de TABLA, no de indice:
+    # information_schema.tables.index_length agrega el almacenamiento de todos
+    # los indices de la tabla, asi que se repite identico en cada fila de la
+    # misma tabla (verificado en vivo: PRIMARY y k_1 con el mismo 212992).
+    # No es el tamaño individual del indice; para eso no hay fuente directa.
     CAST(st.index_length AS SIGNED)         AS index_size_bytes
 FROM information_schema.statistics t
 LEFT JOIN performance_schema.table_io_waits_summary_by_index_usage io
@@ -142,11 +147,11 @@ WHERE t.processlist_user IS NOT NULL
 """
 
 
-STATS_RESET_QUERY = """
+SERVER_START_QUERY = """
 SELECT
     FROM_UNIXTIME(
         UNIX_TIMESTAMP() - variable_value
-    )                       AS stats_reset
+    )                       AS server_start_time
 FROM performance_schema.global_status
 WHERE variable_name = 'Uptime';
 """

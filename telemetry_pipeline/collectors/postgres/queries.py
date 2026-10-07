@@ -67,9 +67,9 @@ WHERE usesysid != (SELECT oid FROM pg_roles WHERE rolname = session_user);
 """
 
 
-STATS_RESET_QUERY = """
+SERVER_START_QUERY = """
 SELECT
-    pg_postmaster_start_time()                         AS stats_reset
+    pg_postmaster_start_time()                         AS server_start_time
 """
 
 COLUMNS_QUERY = """

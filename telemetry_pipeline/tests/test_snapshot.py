@@ -35,7 +35,7 @@ def _base(**overrides):
         "indexes": [],
         "tables": [],
         "columns": [],
-        "stats_reset_timestamp": [],
+        "server_start_timestamp": [],
         "canonic_explains": [],
     }
     snapshot.update(overrides)

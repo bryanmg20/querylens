@@ -62,6 +62,16 @@ Pendiente de decisión: en MySQL los `filesort` a disco no tienen indicador suma
 - **Decisión: no se usa como gate de encolado.** `stats_since`/`FIRST_SEEN` casi no cambian (solo en reset, evict o restart de las stats), mientras los contadores cambian en cada snapshot: usarlo como "ya lo leí" dejaría silenciosas a las bases cuyos contadores se reinician. Por eso se encola siempre y la retención de mensajes ya leídos queda del lado del consumidor.
 - Volumen consecuencia de esa decisión: ~8 KB por snapshot ⇒ 8 640 snapshots/día/base a 10 s ≈ 70 MB/día/base en PGMQ.
 
+## index_size_bytes: nivel tabla en MySQL
+
+- `index_size_bytes` se resuelve por índice (`st.index_length` en MySQL). El campo no significa "tamaño de ESTE índice": `index_length` de `information_schema.tables` agrega el almacenamiento de **todos** los índices de la tabla, así que la misma tabla repite el mismo valor en cada fila de su índice (verificado en vivo: PRIMARY y k_1 ambas reportan 212992). No existe fuente directa para el tamaño por índice.
+- Documentado como limitación: para comparar tamaños se recomienda usar `index_size_bytes` + `table_name` y deduplicar por tabla, o sentirse advertido de que el valor no es comparación entre índices.
+
+## server_start_timestamp: momento de arranque del servidor
+
+- Renombrado desde `stats_reset_timestamp`/`stats_reset` (ver CODE_REVIEW.md, hallazgo N-2): el valor NO es un reset de contadores. Postgres entrega `pg_postmaster_start_time()` y MySQL `now() - Uptime` — el instante en que arrancó el servidor de base de datos.
+- Sigue siendo `str | None` normalizado a ISO/UTC sin offset por `_to_iso`. Se conserva el shape de lista (una fila con un campo) para no tocar el contrato encolado más allá del nombre.
+
 ## Validación antes de encolar
 
 - El contrato se valida en la **frontera de emisión**, no al consumir: `SnapshotPayload.from_snapshot(payload)` y solo si pasa va `to_json()` → `pgmq.send`. Un payload inválido se traduce en `return None` + `logger.error(... snapshot_validation ...)` y **no llega a la cola** (no se encola basura para que la arregle otro).

@@ -77,6 +77,20 @@ def test_normalize_locks_true_false():
     assert stats["locks"][2]["is_granted"] is None
 
 
+def test_normalize_locks_none_section():
+    """N-1: CollectStage deja la seccion en None cuando la query de telemetry
+    falla; el loop no debe iterar sobre None sino tratarlo como vacio."""
+    stats = {"locks": None}
+    normalize_locks(stats)
+    assert stats["locks"] is None
+
+
+def test_normalize_blocking_pids_none_section():
+    stats = {"active_queries": None}
+    normalize_blocking_pids(stats)
+    assert stats["active_queries"] is None
+
+
 def test_clean_mysql_predicate_removes_cache_but_keeps_table():
     cleaned = clean_mysql_explain_predicate_dynamic("(<cache>(`sbtest1`.`id`)</cache> = 42)")
     assert "cache" not in cleaned

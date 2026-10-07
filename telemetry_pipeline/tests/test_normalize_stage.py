@@ -186,6 +186,27 @@ class TestEngineArtifacts:
         assert stats["locks"][0]["is_granted"] == "GRANTED"
 
 
+class TestNoneSectionsFromFailedCollect:
+    """N-1: CollectStage deja la seccion en None cuando su query de telemetry
+    falla (no distingue 'vacio' de 'no se pudo recolectar'). NormalizeStage debe
+    correr igual: antes crasheaba con TypeError al iterar sobre None."""
+
+    def test_mysql_survives_none_locks_and_active(self):
+        stats = _mysql_stats()
+        stats["active_queries"] = None
+        stats["locks"] = None
+        NormalizeStage(Mysql_Collector(engine=None)).execute(stats)
+        assert stats["top_impact_queries"][0]["canonic_query"]
+        assert stats["active_queries"] is None
+        assert stats["locks"] is None
+
+    def test_postgres_survives_none_active(self):
+        stats = _pg_stats()
+        stats["active_queries"] = None
+        NormalizeStage(Postgres_Collector(engine=None)).execute(stats)
+        assert stats["top_impact_queries"][0]["canonic_query"]
+
+
 class TestPredicateCanonicalization:
     def test_mysql_schema_is_stripped_from_predicate(self):
         """El predicate de MySQL trae el schema qualifying cada columna. Es lo que

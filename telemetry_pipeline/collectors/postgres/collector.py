@@ -5,7 +5,7 @@ from .queries import (
     STATEMENTS_QUERY,
     LOCKS_QUERY,
     ACTIVE_QUERIES_QUERY,
-    STATS_RESET_QUERY,
+SERVER_START_QUERY,
     COLUMNS_QUERY,
     SCHEMA_RESOLVER_QUERY
 )
@@ -24,7 +24,7 @@ class Postgres_Collector(DB_Engine_Collector):
                         "statements": STATEMENTS_QUERY,
                         "locks": LOCKS_QUERY,
                         "active_queries": ACTIVE_QUERIES_QUERY,
-                        "stats_reset_timestamp": STATS_RESET_QUERY,
+                        "server_start_timestamp": SERVER_START_QUERY,
                         "columns": COLUMNS_QUERY,
                         "schema_resolver": SCHEMA_RESOLVER_QUERY
                         }

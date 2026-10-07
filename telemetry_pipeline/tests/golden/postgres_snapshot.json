@@ -406,9 +406,9 @@
       "canonic_query": "Not available"
     }
   ],
-  "stats_reset_timestamp": [
+  "server_start_timestamp": [
     {
-      "stats_reset": "2026-10-05 14:38:58.561978+00:00"
+      "server_start_time": "2026-10-05 14:38:58.561978+00:00"
     }
   ],
   "columns": [

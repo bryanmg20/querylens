@@ -62,7 +62,7 @@ def test_collect_returns_every_declared_section(pg):
     for key, rows in stats.items():
         assert rows is not None, f"{key} fallo en el motor real"
     assert stats["columns"], "information_schema.columns no deberia venir vacio"
-    assert stats["stats_reset_timestamp"]
+    assert stats["server_start_timestamp"]
 
 
 def test_statements_exclude_the_monitoring_user_itself(pg):

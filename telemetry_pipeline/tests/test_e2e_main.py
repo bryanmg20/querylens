@@ -101,8 +101,8 @@ def test_sandbox_enqueues_one_consumable_snapshot_per_engine(monkeypatch, ql, sc
         assert reparsed.db_id == "querylens-db-01"
         assert isinstance(reparsed.statements, list)
         assert isinstance(reparsed.canonic_explains, list)
-    assert all(p["stats_reset_timestamp"] for p in payloads), (
-        "cada motor debe traer su marca de reinicio de estadisticas"
+    assert all(p["server_start_timestamp"] for p in payloads), (
+        "cada motor debe traer el momento de arranque del servidor"
     )
 
 

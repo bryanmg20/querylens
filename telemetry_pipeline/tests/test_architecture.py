@@ -32,7 +32,7 @@ class TestCollectorsStrategy:
         assert isinstance(collector.queries, dict)
         assert collector.queries.keys() >= {
             "indexes", "tables", "statements", "locks",
-            "active_queries", "stats_reset_timestamp", "columns",
+            "active_queries", "server_start_timestamp", "columns",
         }
         assert callable(collector.preprocess_statements)
         assert callable(collector.normalize_engine_artifacts)

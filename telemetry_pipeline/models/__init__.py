@@ -8,10 +8,10 @@ from .snapshot import (
     LockRow,
     LogicalShape,
     PhysicalOperation,
+    ServerStartRow,
     SnapshotPayload,
     StatementCandidate,
     StatementRow,
-    StatsResetRow,
     TableRow,
 )
 
@@ -28,6 +28,6 @@ __all__ = [
     "SnapshotPayload",
     "StatementCandidate",
     "StatementRow",
-    "StatsResetRow",
+    "ServerStartRow",
     "TableRow",
 ]

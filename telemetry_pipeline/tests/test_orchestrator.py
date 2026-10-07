@@ -90,7 +90,7 @@ _ROWS_BY_SQL = {
             "blocking_pids": "",
         }
     ],
-    "pg_postmaster_start_time": [{"stats_reset": "2026-01-01 09:00:00.000000"}],
+    "pg_postmaster_start_time": [{"server_start_time": "2026-01-01 09:00:00.000000"}],
     "information_schema.columns": [
         {
             "schema_name": "public",
@@ -168,7 +168,7 @@ def test_run_pipeline_populates_every_collected_section():
         "tables",
         "locks",
         "active_queries",
-        "stats_reset_timestamp",
+        "server_start_timestamp",
         "columns",
     ):
         assert stats[key], f"{key} deberia traer filas del fake"

@@ -52,7 +52,7 @@ def anonimize_query_text(stats: Stats):
 
 
 def normalize_querytext_active(stats: Stats, source_dialect="postgres"):
-    for stmt in stats.get("active_queries", []):
+    for stmt in stats.get("active_queries") or []:
         query_text = stmt.get("query_text")
         del stmt["query_text"]
         if not query_text:

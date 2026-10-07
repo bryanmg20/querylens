@@ -66,7 +66,7 @@ def normalize_active_query_timestamps(stats: Stats):
             stmt["transaction_start_time"] = _to_naive_utc(ts).isoformat(sep=" ", timespec="microseconds")
 
 def normalize_blocking_pids(stats: Stats):
-    for query in stats.get("active_queries", []):
+    for query in stats.get("active_queries") or []:
         blocking_pids = query.get("blocking_pids")
         if blocking_pids is not None:
             query["blocking_pids"] = [int(pid) for pid in blocking_pids.split(",") if pid.strip().isdigit()]
@@ -74,7 +74,7 @@ def normalize_blocking_pids(stats: Stats):
             query["blocking_pids"] = []
 
 def normalize_locks(stats: Stats):
-    for lock in stats.get("locks", []):
+    for lock in stats.get("locks") or []:
         is_granted = lock.get("is_granted")
         if is_granted == "GRANTED":
             lock["is_granted"] = True

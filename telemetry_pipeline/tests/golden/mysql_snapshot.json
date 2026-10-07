@@ -287,9 +287,9 @@
       "canonic_query": "SELECT DISTINCT a.c, COUNT(*) AS total FROM sbtest1 AS a JOIN sbtest1 AS b ON b.id = a.id WHERE a.k > $1 AND a.id = (SELECT MIN(x.id) FROM sbtest1 AS x WHERE x.c = a.c) GROUP BY a.c ORDER BY COUNT(*) DESC NULLS LAST"
     }
   ],
-  "stats_reset_timestamp": [
+  "server_start_timestamp": [
     {
-      "stats_reset": "2026-10-05 14:38:59"
+      "server_start_time": "2026-10-05 14:38:59"
     }
   ],
   "columns": [

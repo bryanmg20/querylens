@@ -87,3 +87,11 @@ def test_normalize_querytext_active_empty():
     stats = {"active_queries": [{"query_id": 1, "query_text": None}]}
     normalize_querytext_active(stats)
     assert stats["active_queries"][0]["canonic_query"] == "Not available"
+
+
+def test_normalize_querytext_active_none_section():
+    """N-1: CollectStage deja active_queries en None cuando falla; el loop no
+    debe crashear con TypeError por iterar sobre None."""
+    stats = {"active_queries": None}
+    normalize_querytext_active(stats)
+    assert stats["active_queries"] is None
