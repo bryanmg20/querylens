@@ -18,6 +18,9 @@ CREATE TABLE IF NOT EXISTS registered_databases (
     db_user TEXT NOT NULL,
     encrypted_password TEXT NOT NULL,
     database_name VARCHAR(255) NOT NULL,
+    -- Indica si la base de datos esta activa (TRUE) o no (FALSE). Es el
+    -- registro de seguimiento de su estado.
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
