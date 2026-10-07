@@ -53,6 +53,7 @@ class StatementRow(BaseModel):
     max_time_ms: float | None = None
     coeff_of_variation: float | None = None
     disk_spill_indicator: int | None = None
+    counters_epoch: Annotated[str | None, BeforeValidator(_to_iso)] = None
 
 
 class StatementCandidate(StatementRow):
