@@ -156,6 +156,8 @@ Cinco sitios dicen `"fallback a ENGINES"` y el docstring dice "main() cae a los 
 - `selectors.py:9,13`: `unstable_statements` y `disk_spill_statements` no tienen top-N (solo `high_impact` corta a 10). Una base con miles de queries inestables genera miles de `EXPLAIN` por ciclo, sobre la misma conexión, sin timeout (ver A-2).
 - Privacidad: `canonicalizers.anonimize_query_text` no anonimiza nada — el payload lleva `query_text` crudo con literales reales (Postgres) y `QUERY_SAMPLE_TEXT` con **valores concretos** (MySQL), y `canonicalize_query` degrada a `" ".join(query_text.split())` en cualquier fallo de parseo (`canonicalizers.py:27-28`), dejando el literal tal cual. Si el producto habla de anonimización, el nombre miente; si no, al menos renombrar la función y documentar que la cola contiene texto de consultas con datos reales (GDPR/retención).
 
+  **Precisión (fix M-10):** al momento de redactar este hallazgo, la afirmación MySQL era **incorrecta**: `StatementRow` no declaraba `query_sample_text` y `ConfigDict(extra="ignore")` lo descartaba en la validación, así que el sample **no viajaba** en el JSON encolado (verificado releyendo mensajes reales de la cola). Desde el fix, el campo está **declarado** (`str | None`) en `models/snapshot.py` y el payload sí lo lleva: valor con literales reales en MySQL, `null` explícito en Postgres. La conclusión se mantiene y ahora es **documentada decisión** en `references/004_decisiones_contrato.md` (sección *query_sample_text: campo declarado del contrato (y dato sensible)*): la cola contiene texto de consulta real de ambos motores. Lo que queda abierto es el rename de `anonimize_query_text` (MEDIA-7).
+
 ---
 
 ### MEDIA-11 — Contrato del consumidor: sin timestamp de captura y sin dialecto

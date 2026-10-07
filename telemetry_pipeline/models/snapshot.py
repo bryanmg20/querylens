@@ -56,6 +56,12 @@ QueryId = Union[str, int, None]
 class StatementRow(BaseModel):
     query_id: QueryId
     query_text: str
+    # Campo declarado a proposito: MySQL lo emite con literales reales
+    # (QUERY_SAMPLE_TEXT) y sirve para saber con que texto exacto se armo el
+    # EXPLAIN explain_source="sample". Postgres no produce la columna: en su
+    # payload vale null. Sin declararlo, ConfigDict(extra="ignore") lo
+    # descartaba silenciosamente y el consumidor no podia distinguirlo.
+    query_sample_text: str | None = None
     schema_name: str | None = None
     execution_count: int
     rows_returned: int
