@@ -43,6 +43,40 @@ venv\Scripts\python -m pytest
 | `python -m pytest --collect-only` | Listar tests sin ejecutarlos |
 | `python main_sandbox.py` | Extrae el par postgres/mysql fijo del sandbox y encola en `analyze_job` |
 | `python main.py` | Extrae solo las bases registradas y activas en `registered_databases` |
+| `python runner.py` | Daemon: repite `main.py` cada `EXTRACT_INTERVAL_S` (10 s por defecto) |
+| `EXTRACT_INTERVAL_S=3 python runner.py` | Igual, con otra cadencia (smoke rápido) |
+| `python ci/mutants.py main` | Mutación sobre `main.py` (debe matar todos) |
+| `python ci/mutants.py runner` | Mutación sobre `runner.py` |
+| `python ci/mutants.py sandbox` | Mutación sobre `main_sandbox.py` |
+
+## Correr la extracción en continuo
+
+```bash
+# 1. Una vuelta (el SELECT de registered_databases + extracción + encolado)
+python main.py
+
+# 2. Daemon: cada EXTRACT_INTERVAL_S vuelve a leer la tabla y extrae todo
+python runner.py                       # Ctrl+C / SIGTERM para parar (ciclo limpio)
+
+# 3. El mismo daemon en contenedor (telemetry_pipeline/Dockerfile)
+docker compose up -d --build pipeline
+docker logs -f querylens_pipeline
+docker compose logs -f pipeline
+
+# 4. Verificar que no acumula conexiones abiertas (dispose por ciclo)
+docker exec querylens_db psql -U ql_user -d ql_demo \
+  -c "SELECT count(*) FROM pg_stat_activity WHERE datname = 'ql_demo';"
+```
+
+| Detalle | Valor |
+|---------|-------|
+| Cadencia | `EXTRACT_INTERVAL_S` (default 10 s; vacío, 0, negativo o no numérico → 10 s con warning) |
+| Host/puerto de cada target | Sale de la fila de `registered_databases` (Fernet), no del env; `MONITOR_PG_*`/`MONITOR_MY_*` solo los usa `main_sandbox.py` |
+| Gate de encolado | **Ninguno**: se encola siempre. Retener/borrar los mensajes ya leídos de PGMQ es tarea del consumidor |
+| Cola | Solo produce: sin consumidor en `analyze_job` la cola crece (~8 KB por snapshot) |
+| Fallo de ciclo | backoff 10 → 20 → 40 → 60 s (tope), y vuelve al intervalo normal al volver a correr bien; un target que no conecta no dispara backoff (lo aislaba `run_targets()`) |
+| Parada | `SIGINT`/`SIGTERM`/`SIGBREAK` → termina tras el ciclo en curso (`returncode 0`) |
+| Log | `logs/pipeline.log` (5 MB × 3): INFO/ERROR siempre, el detalle de cada ciclo a DEBUG |
 
 ## Estructura
 
@@ -71,6 +105,7 @@ tests/
 ├── test_orchestrator.py                 # composición de stages (unit)
 ├── test_queries_contract.py             # SQL vs PIPELINE_FINGERPRINT (contract)
 ├── test_registered_targets.py           # registered_databases → Target (unit)
+├── test_runner.py                       # cadencia, backoff y parada del daemon (unit)
 ├── test_schema_resolver.py              # schema por rol (unit)
 ├── test_selectors.py                    # selectores de candidatos (unit)
 ├── test_select_candidates.py            # CandidatesStage end-to-end unit (unit)
@@ -81,7 +116,7 @@ tests/
 ## Cobertura de referencia
 
 - **Contrato (models/snapshot.py)**: cada snapshot de motor debe validar, los `query_id` deben llevar el tipo del motor (str en MySQL, int en Postgres), y el round-trip `from_snapshot → to_json → model_validate_json` debe preservar el payload.
-- **Unitarios**: cada stage de selección (top 10, inestables, disk spill, dedupe, `init_ready_for_explain`), canonic de queries con sqlglot y su fallback, normalización de locks/pids/timestamps, limpieza de predicados MySQL, `EXPLAIN` con schema context, conteo de shapes de los normalizadores de plan, y resolución de targets desde `registered_databases` (descifrado, mapeo de engine, filas rotas, aislamiento por target y qué hace `main()` cuando no hay nada registrado).
+- **Unitarios**: cada stage de selección (top 10, inestables, disk spill, dedupe, `init_ready_for_explain`), canonic de queries con sqlglot y su fallback, normalización de locks/pids/timestamps, limpieza de predicados MySQL, `EXPLAIN` con schema context, conteo de shapes de los normalizadores de plan, resolución de targets desde `registered_databases` (descifrado, mapeo de engine, filas rotas, aislamiento por target, `dispose()` de los engines y qué hace `main()` cuando no hay nada registrado), y el ciclo del daemon (cadencia desde env, espera anclada al inicio del ciclo sin ticks atrasados, backoff y log por transición).
 - **Arquitectura**: estrategias de collector sobre la base común, Factory, registry de normalizadores, firma única `execute` por stage, composición del Orchestrator, y el contrato del Facade `SnapshotPayload`.
 - **Integración**: un snapshot consumible por motor en PGMQ, sin claves transitorias en el payload, y aislamiento de motores caídos (un target que no conecta se loguea y el siguiente sigue encolando).
 

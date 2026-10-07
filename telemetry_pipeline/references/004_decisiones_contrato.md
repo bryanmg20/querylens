@@ -48,3 +48,22 @@ Pendiente de decisión: en MySQL los `filesort` a disco no tienen indicador suma
 - Verificado en vivo: con `search_path` que excluye la schema, `EXPLAIN SELECT * FROM sbtest1` falla con `relation does not exist`; con la schema incluida, genera plan.
 - `ExplainStage` ahora emite la sentencia de contexto antes de cada `EXPLAIN`: en Postgres `SET LOCAL search_path TO <schema_name>` (identificador citado con `identifier_preparer`; si el candidato no tiene `schema_name`, `SET LOCAL search_path TO DEFAULT`); en MySQL `USE <schema_name>` (la conexión no trae database por defecto y el digest no califica). Al ser `LOCAL`/`USE` por candidato y secuenciales, no afectan al resto del pipeline.
 - Limitación: para un rol con varias schemas reales, Postgres explora bajo la primera del `search_path`; y en MySQL no hay "reset a sin database" — un candidato sin `schema_name` hereda el `USE` del anterior.
+
+## db_id: la fila registrada manda sobre la constante
+
+- `db_id` nació como constante de código: `EnrichStage` escribía `DB_ID = "querylens-db-01"` en el `stats`, pensado para el par fijo del sandbox. Con el flujo de credenciales, `run_engine(dialect, factory, db_id)` **pisa ese valor con el `database_identifier` de la fila de `registered_databases`** (formato `db_<8hex>`), y lo pisa **antes** de `SnapshotPayload.from_snapshot`: la sustitución entra en la validación y viaja dentro del contrato, no se inyecta después.
+- `db_id=None` sigue siendo contrato válido y respeta la constante: es lo que usan `main_sandbox.py`, los tests y el job de CI. No se tocó `EnrichStage`, se sobreescribe encima.
+- La identidad del snapshot es lo **único** que sale de la fila hacia el payload. Host, puerto, usuario y password (Fernet) se usan únicamente para abrir la conexión: no hay credenciales, hosts ni `is_active` en el JSON encolado.
+- Fijado por `test_run_engine_usa_el_identifier_de_la_fila` (y la constante por `querylens-db-01` en la misma prueba).
+
+## counters_epoch: por statement, no sirve de gate
+
+- Campo por statement (`str | None`, con `BeforeValidator` que normaliza a ISO) con el momento en que arrancó la ventana de contadores: Postgres `stats_since AS counters_epoch` (`collectors/postgres/queries.py`), MySQL `FIRST_SEEN AS counters_epoch` (`collectors/mysql/queries.py`); la normalización a ISO/UTC es común en `stages/normalize.py` (`EPOCH_FIELDS = ("counters_epoch", "minmax_epoch")`).
+- **Decisión: no se usa como gate de encolado.** `stats_since`/`FIRST_SEEN` casi no cambian (solo en reset, evict o restart de las stats), mientras los contadores cambian en cada snapshot: usarlo como "ya lo leí" dejaría silenciosas a las bases cuyos contadores se reinician. Por eso se encola siempre y la retención de mensajes ya leídos queda del lado del consumidor.
+- Volumen consecuencia de esa decisión: ~8 KB por snapshot ⇒ 8 640 snapshots/día/base a 10 s ≈ 70 MB/día/base en PGMQ.
+
+## Validación antes de encolar
+
+- El contrato se valida en la **frontera de emisión**, no al consumir: `SnapshotPayload.from_snapshot(payload)` y solo si pasa va `to_json()` → `pgmq.send`. Un payload inválido se traduce en `return None` + `logger.error(... snapshot_validation ...)` y **no llega a la cola** (no se encola basura para que la arregle otro).
+- Como el fallo no lanza, `run_targets()` sigue con el resto de las filas: la validación es por target, igual que la conexión.
+- Fijado por `test_run_engine_rechaza_snapshot_invalido_sin_encolar`.

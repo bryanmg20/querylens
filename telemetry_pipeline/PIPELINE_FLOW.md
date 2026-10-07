@@ -106,6 +106,45 @@ Las credenciales no están más atadas a dos pares de variables de entorno. El f
 
 `main.py` no contiene ningún par de credenciales: decide contra qué correr leyendo la tabla, y si no hay nada registrado se detiene. El par `postgres`/`mysql` que usan `ql_sandbox`, los tests de integración y el job de CI vive literal en **`main_sandbox.py`**, con su propio `main()` y el mismo `run_targets()`. `test_e2e_main.py` ejercita ese par y una fila real de la tabla (la crea, la usa y la borra); `test_registered_targets.py` cubre el loader con mocks, sin abrir ninguna conexión.
 
+## Automatización (runner.py)
+
+`main.py` corre una vez; **`runner.py`** es el daemon que repite esa misma vuelta cada `EXTRACT_INTERVAL_S` (10 s por defecto, mismo criterio para todas las filas). Es el proceso que se despliega en contenedor.
+
+| Decisión | Implementación |
+|----------|----------------|
+| Cadencia | 10 s por defecto; cualquier env no usable (`vacío`, `abc`, `0`, `-3`, `inf`) vuelve a 10 s con warning |
+| Anclaje | La espera se mide **desde el inicio del ciclo**: si la vuelta duró 0,4 s espera 9,6 s; si duró más que el intervalo espera 0 y no se acumulan ticks atrasados (un solo hilo, nunca hay dos ciclos solapados) |
+| Gate de encolado | **Ninguno**: se encola siempre. La retención de PGMQ la resuelve el consumidor |
+| Fallo de ciclo | backoff 10 → 20 → 40 → 60 s (tope) y vuelve al intervalo normal tras una vuelta buena; un target que revienta ya lo aislaba `run_targets()` |
+| Ciclo de vida | `run_engine()` cierra los dos engines que creó (target y cola) en un `finally`: sin `dispose()`, cada 10 s dejaría pools abiertos y se agotaría `max_connections` |
+| Señales | `SIGINT`/`SIGTERM`/`SIGBREAK` marcan stop y el loop termina tras el ciclo en curso |
+| Logging | Estado de targets **por transición** (0↔N) a INFO —a 10 s un aviso por ciclo serían 8 640 al día—; detalle de cada vuelta (targets, duración) a DEBUG en `logs/pipeline.log` |
+| Sin targets | No llama a `run_targets`, solo re-consulta: la tabla puede llenarse mientras el daemon corre |
+
+Despliegue: `telemetry_pipeline/Dockerfile` (python:3.11-slim, compila `psycopg2` y purga el toolchain) y el servicio **`pipeline`** en `docker-compose.yml`, con `depends_on: postgres`, `restart: unless-stopped`, `host.docker.internal:host-gateway` (las filas registradas suelen apuntar al host) y `EXTRACT_INTERVAL_S=${EXTRACT_INTERVAL_S:-10}`. Los logs caen en el volumen `pipeline_logs`.
+
+### Qué hace y qué no hace (estado actual)
+
+Un ciclo es, completo:
+
+```
+load_registered_targets()        SELECT ... WHERE is_active   (1 conexión a la cola)
+  → si devuelve None/[]: log de transición y no extrae nada, re-consulta al siguiente ciclo
+  → si hay targets:    run_targets()                          (1 vuelta por fila: extrae,
+                                                               valida, encola, dispose)
+  → espera anclada al inicio del ciclo
+```
+
+Y explícitamente **no**:
+
+| No hace | Por qué |
+|---------|---------|
+| No lee `MONITOR_PG_*` / `MONITOR_MY_*` | El host, puerto, usuario y password de cada target salen de la fila (Fernet con `AUTH_ENCRYPTION_KEY`). Esas variables solo las consume `main_sandbox.py`; están en el servicio `pipeline` únicamente por si alguien corre esa entrada dentro del contenedor |
+| No consume `analyze_job` | Solo produce. **Sin consumidor la cola crece** (~8 KB por snapshot; 10 s × N bases = ~70 MB/día/base) — verificar con `SELECT count(*) FROM pgmq.q_analyze_job` |
+| No guarda estado entre ciclos | Sin dedupe ni gate por `counters_epoch`: cada vuelta emite un snapshot por base aunque nada haya cambiado. La retención de mensajes ya leídos es del consumidor |
+| No corre en paralelo | Un hilo, una vuelta a la vez; el aislamiento por target (dentro de `run_targets()`) es lo que evita que una base caída tape a las demás |
+| No decide nada del front/auth | Quién registra y activa filas es el auth service; el runner solo las lee. Si se agrega una fila mientras corre, la ve en el próximo ciclo |
+
 ## Patrones de diseño
 
 | Patrón | Dónde | Código |
