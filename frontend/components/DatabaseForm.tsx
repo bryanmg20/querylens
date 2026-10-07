@@ -12,7 +12,7 @@ import SignalTrace, { type TraceState } from "./SignalTrace";
 
 type RegisterFeedback =
   | { type: "idle" }
-  | { type: "success"; identifier: string }
+  | { type: "success"; identifier: string; alreadyRegistered: boolean }
   | { type: "error"; message: string };
 
 function buildDsnPreview(values: ConnectionFormValues): string {
@@ -67,7 +67,11 @@ export default function DatabaseForm() {
     setRegisterFeedback({ type: "idle" });
     try {
       const result = await registerDatabase(values);
-      setRegisterFeedback({ type: "success", identifier: result.database_identifier });
+      setRegisterFeedback({
+        type: "success",
+        identifier: result.data.database_identifier,
+        alreadyRegistered: result.alreadyRegistered,
+      });
     } catch (error) {
       setRegisterFeedback({
         type: "error",
@@ -166,7 +170,11 @@ export default function DatabaseForm() {
 
         {registerFeedback.type === "success" && (
           <div className="rounded border-l-2 border-signal bg-signal-soft px-3 py-2.5">
-            <p className="text-xs text-graphite-600">Registrada. Identificador asignado:</p>
+            <p className="text-xs text-graphite-600">
+              {registerFeedback.alreadyRegistered
+                ? "Esta conexión ya estaba registrada, se actualizó. Identificador:"
+                : "Registrada. Identificador asignado:"}
+            </p>
             <p className="mt-0.5 font-mono text-sm text-ink">{registerFeedback.identifier}</p>
           </div>
         )}

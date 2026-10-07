@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, String, Text, func
+from sqlalchemy import Boolean, DateTime, String, Text, func, true
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -15,6 +15,10 @@ class RegisteredDatabase(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     database_identifier: Mapped[str] = mapped_column(String(32), unique=True, nullable=False)
+    # Hash determinístico de engine+host+port+db_user+database_name (ver
+    # app/security.py::compute_connection_fingerprint). Permite detectar que
+    # una conexión ya fue registrada aunque host/port/db_user esten cifrados.
+    connection_fingerprint: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
     connection_name: Mapped[str] = mapped_column(String(255), nullable=False)
     engine: Mapped[str] = mapped_column(String(50), nullable=False, default="postgresql")
     # host, port y db_user se guardan cifrados (Fernet, ver app/security.py),

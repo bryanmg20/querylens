@@ -1,3 +1,5 @@
+import hashlib
+import hmac
 import uuid
 
 from cryptography.fernet import Fernet, InvalidToken
@@ -20,3 +22,28 @@ def decrypt_secret(token: str) -> str:
 
 def generate_database_identifier() -> str:
     return f"db_{uuid.uuid4().hex[:8]}"
+
+
+def compute_connection_fingerprint(
+    *, engine: str, host: str, port: int, username: str, database_name: str
+) -> str:
+    """Hash determinístico de los datos que identifican una conexión real.
+
+    host/port/username se cifran con Fernet (no determinístico), así que no se
+    puede usar un UNIQUE de Postgres sobre esas columnas para detectar
+    duplicados. Este hash normaliza y firma (HMAC) esos mismos campos en texto
+    plano antes de cifrarlos, y sí se puede indexar como UNIQUE.
+    """
+
+    normalized = "|".join(
+        [
+            engine.strip().lower(),
+            host.strip().lower(),
+            str(port).strip(),
+            username.strip().lower(),
+            database_name.strip().lower(),
+        ]
+    )
+    return hmac.new(
+        settings.auth_encryption_key.encode(), normalized.encode(), hashlib.sha256
+    ).hexdigest()

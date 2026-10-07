@@ -2,6 +2,7 @@ import type {
   ApiErrorResponse,
   ConnectionFormValues,
   DatabaseRegisteredResponse,
+  RegisterDatabaseResult,
   TestConnectionResponse,
 } from "@/types/database";
 
@@ -51,7 +52,7 @@ export async function testConnection(
 
 export async function registerDatabase(
   values: ConnectionFormValues
-): Promise<DatabaseRegisteredResponse> {
+): Promise<RegisterDatabaseResult> {
   const response = await fetch(`${AUTH_SERVICE_URL}/databases`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -62,5 +63,8 @@ export async function registerDatabase(
     throw new Error(await parseErrorMessage(response));
   }
 
-  return response.json();
+  // El auth-service responde 200 cuando la conexión ya existía (se
+  // actualizó en vez de crear una fila nueva) y 201 cuando es nueva.
+  const data = (await response.json()) as DatabaseRegisteredResponse;
+  return { data, alreadyRegistered: response.status === 200 };
 }

@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     auth_encryption_key: str
     cors_origins: str = "http://localhost:3000"
     connection_test_timeout_seconds: int = 5
+    # Cada cuántos segundos se revisa si las bases registradas están disponibles.
+    health_check_interval_seconds: int = 30
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

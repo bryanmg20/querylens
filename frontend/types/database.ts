@@ -39,7 +39,15 @@ export interface DatabaseRegisteredResponse {
   host: string;
   port: number;
   database_name: string;
+  is_active: boolean;
   created_at: string;
+}
+
+export interface RegisterDatabaseResult {
+  data: DatabaseRegisteredResponse;
+  // true cuando el backend respondió 200 (la conexión ya existía y se
+  // actualizó) en vez de 201 (fila nueva).
+  alreadyRegistered: boolean;
 }
 
 export interface ApiErrorResponse {
