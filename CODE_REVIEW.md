@@ -5,6 +5,8 @@
 **Método:** lectura completa de los módulos del pipeline, verificación de afirmaciones de los docs, revisión de la DDL, ejecución de la suite (`466 passed, 21 deselected` — las de integración requieren contenedores) y reproducción de los hallazgos sospechosos con scripts mínimos.
 **Contexto:** proyecto en desarrollo. Las severidades son relativas a ese estado: "Alta" = pierde datos o puede parar el daemon en producción.
 
+> **Actualizado (mismo día, rama `fix/pipeline-review-202610`, commit `bf13020`):** A-1, A-2 y M-4 resueltos; A-3 corregido en la parte de docs/medición/observabilidad y cerrado sin `LIMIT` por decisión (el límite real de retención es del consumidor; ver nota por hallazgo). Suite tras los cambios: **478 unit/contract + 21 integration, todo verde**. Pendientes: M-5 a M-13, B-1 a B-12 y la defensa en profundidad del `EXPLAIN`.
+
 ---
 
 ## Resumen ejecutivo
@@ -37,6 +39,8 @@ ValidationError: [('top_impact_queries',), ('non_explainable_candidates',), ('ca
 
 **Sugerencia:** defaults `=[]` en esos tres campos, o better: exponer en el payload lo que falló (`collect_errors: {key: msg}`) para que el consumidor distinga "vacío" de "falló".
 
+**Resuelto en `bf13020`:** defaults `=[]` en los tres campos derivados (`models/snapshot.py`); las 8 claves que escribe `CollectStage` siguen obligatorias. La vía `collect_errors` se dejó **fuera por decisión**: el log ya distingue "falló" de "vacío" y el campo nuevo exigía coordinar el contrato con el consumidor por un beneficio que hoy no se lee. Tests: `test_derived_sections_default_when_stage_skipped` (repro exacto: `statements=None` sin las 3 claves → valida).
+
 ---
 
 ### ALTA-2 — Cero timeouts + un solo hilo = una base colgada paraliza toda la extracción
@@ -48,6 +52,8 @@ ValidationError: [('top_impact_queries',), ('non_explainable_candidates',), ('ca
 - `runner` es secuencial por diseño: un target que no resuelve (firewall con DROP de paquetes, DNS colgado, `information_schema.columns` de MySQL con cientos de tablas sobre cargas altas) bloquea el ciclo y **todas las demás bases se quedan sin telemetría**. El backoff del runner no aplica: el ciclo nunca termina.
 
 **Sugerencia:** `connect_timeout` en las URLs (o `connect_args`), `statement_timeout` razonable en el target al abrir la sesión (p.ej. 15-30 s), y/o un tope de duración por target.
+
+**Resuelto en `bf13020`:** `connect_timeout=10` y `statement_timeout=30` al **arrancar la sesión**, no vía event listener — verificado empíricamente en el sandbox que el `rollback()` de collect/explain deshace un `SET` transaccional de Postgres (`5s → 0` tras rollback), así que el listener no servía. Postgres/cola: `options="-c statement_timeout=30000"`; MySQL: `init_command="SET SESSION max_execution_time=30000, time_zone='+00:00'"` + `read_timeout=40` (el `max_execution_time` no cubre EXPLAIN/USE). Builders únicos en `config/connections.py` reutilizados por `registered._engine`: una sola fuente. **Residual consciente:** no hay tope wall-clock por target (los acotes de abajo cortan cada sentencia; la alternativa cooperativa no interrumpe una en vuelo).
 
 ---
 
@@ -68,6 +74,8 @@ Los docs afirman "**~8 KB por snapshot; 10 s × N bases = ~70 MB/día/base**". C
 
 **Sugerencia:** `LIMIT` en statements (o enviar solo candidatos + agregados), omitir `columns`/`indexes`/`tables` si el consumidor no los usa en cada vuelta (mandarlos por cambio, no cada 10 s), y recalcular la cifra de retención de PGMQ con una medida real.
 
+**Parcial en `bf13020`:** docs corregidos — `PIPELINE_FLOW.md:143` y `TESTING.md:76` reemplazan el `~8 KB` (falso ~5×) por el rango medido 37–49 KB en 12-14 statements y la receta `SELECT count(*), pg_size_pretty(avg(pg_column_size(message)))`. Observabilidad: `main._log_payload_size` — DEBUG de bytes siempre, `WARNING` único por db_id al cruzar `PAYLOAD_WARN_BYTES` (1 MB), patrón de transición de `runner._report_state`. **No** se añadió `LIMIT`/omisión de secciones: truncar rompería la validación del consumidor y la retención de la cola es responsabilidad suya; la decisión quedó registrada en el propio `PIPELINE_FLOW.md:143`.
+
 ---
 
 ### MEDIA-4 — Timestamps con zona horaria "anulados" sin convertir a UTC
@@ -81,6 +89,8 @@ row[field] = ts.replace(tzinfo=None).isoformat(...)
 `replace(tzinfo=None)` no convierte: **descarta el offset**. `counters_epoch` de Postgres llega como `timestamptz` (psycopg2 lo renderiza en la TZ del cliente = UTC en el contenedor), mientras que MySQL `FIRST_SEEN` es `DATETIME` naive en la TZ del servidor. Si el servidor MySQL no está en UTC, las dos marcas de tiempo "se ven igual" pero no lo son. Esto contradice el propio comentario (`normalize.py:40-46`: "el consumidor puede compararlas entre motores sin parsear dos formatos").
 
 **Sugerencia:** `ts.astimezone(timezone.utc).replace(tzinfo=None)` en el lado aware, y forzar/ documentar `time_zone='+00:00'` en la sesión de MySQL.
+
+**Resuelto en `bf13020`:** helper único `_to_naive_utc` en `models/snapshot.py` (aware → UTC naive; el naive sin tocarse), aplicado en `_to_iso` (cubre `counters_epoch`, `transaction_start_time`, `last_index_scan`, `stats_reset`) y en `normalize_statement_epochs`/`normalize_active_query_timestamps`. El lado MySQL queda fijado a UTC por el `time_zone='+00:00'` del `init_command` de A-2 — las dos mitades del docstring ahora se cumplen. Tests: `normalize_statement_epochs` no tenía cobertura — ahora 2 casos, más casos de offset `-05:00` en active_queries y en `_to_iso` (`test_normalize.py`, `test_snapshot.py`).
 
 ---
 
@@ -216,8 +226,9 @@ Defense-in-depth que añadiría: aplicar el mismo filtro de prefijo **al texto q
 
 ## Prioridad sugerida
 
-1. **A-1** (defaults o `collect_errors`) — es la diferencia entre "pierdo una sección" y "pierdo el snapshot".
-2. **A-2** (timeouts) — es la diferencia entre "una base caída no molesta" y "el daemon se cuelga".
-3. **A-3** (límites de payload) — decidirlo antes de que haya consumidor y cola con días de retención.
-4. **M-6, M-7, M-8, M-4** — correcciones acotadas y de bajo riesgo.
-5. Lo demás, según avance el proyecto (B-10/B-9 son de despliegue, no de desarrollo).
+1. **M-6** (log/docstring anuncian un fallback que no existe) — engaña al operador sobre si hay extracción.
+2. **M-5** (error de recolección se publica como "sin datos") — el consumidor no distinguirá "vacío" de "no leí"; atado a decidir `captured_at`/`collect_errors`.
+3. **A-3 restante** (LIMIT o envío por cambio de `columns`/`indexes`/`tables`) — antes de que haya consumidor y cola con días de retención.
+4. **M-8, M-7** (f-strings en URLs; normalización duplicada en dos fuentes de verdad).
+5. **M-11, M-12, M-13** (contrato del consumidor; transacción abierta sobre el target; `USE` sin reset).
+6. Lo demás (M-9, M-10, B-1 a B-12, defensa en profundidad del `EXPLAIN`), según avance el proyecto (B-10/B-9 son de despliegue, no de desarrollo).
