@@ -26,11 +26,11 @@
 #     -  1 DELETE
 #
 # USAGE
-#   This script is executed automatically by the sysbench
-#   container when you run: docker compose up
+#   The sysbench container only installs the clients and waits, so this
+#   script must be run manually against the running container:
+#     docker exec ql_sysbench bash /scripts/run.sh
 #
-#   To inject load again without recreating the containers:
-#     docker compose start sysbench
+#   To inject load again without recreating the containers, run it again.
 #
 # TUNING
 #   Adjust the variables below to control data volume and load

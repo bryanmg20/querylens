@@ -121,6 +121,27 @@ cd telemetry_pipeline && python -m pytest -m integration
 
 Se salta sola si los contenedores no están levantados. Con `.github/workflows` no es necesario levantarlos: el job lo hace.
 
+#### MySQL se queda sin digests en cada `down`/`up`
+
+Los dos motores guardan sus estadísticas de statements en sitios distintos y no sobreviven igual a un reinicio del sandbox:
+
+| Motor | Dónde viven las stats | ¿Sobreviven a `docker compose down` + `up`? |
+|-------|----------------------|----------------------------------------------|
+| Postgres | `pg_stat_statements` con `pg_stat_statements.save=on` (default): se escribe en `postgres_data` | **Sí** |
+| MySQL | `events_statements_summary_by_digest` en `performance_schema` | **No** |
+
+`performance_schema` es memoria pura: *"Tables in the Performance Schema are in-memory tables that use no persistent on-disk storage. The contents are repopulated beginning at server startup and discarded at server shutdown"* (MySQL 8.0 Ref. Manual, §29). No hay variable que lo arregle (no existe `performance_schema*save*` ni `...dump*`; `SET PERSIST` persiste variables, no estadísticas) y el volumen `ql_sandbox_mysql_data` guarda los datos de `ql_demo`, no el `performance_schema`.
+
+Resultado: tras cada `down`, `up` o `restart`, `test_mysql_statements_expose_query_sample_text` y `test_mysql_statements_exclude_internals` **fallan** con `performance_schema deberia tener digests tras la batería`. `STATEMENTS_QUERY` solo ve la huella del propio pipeline y de la conexión del driver, y su `WHERE` la filtra a propósito (es telemetría interna, no de aplicación). En CI no ocurre: `ci/load.py` genera tráfico antes del pytest.
+
+Para repoblar los digests en local:
+
+```bash
+docker exec ql_sysbench bash /scripts/battery.sh 30 0 mysql
+```
+
+`battery.sh` **trunca** la tabla de digests al empezar (línea 59) para que log, `pg_stat_statements` y digests compartan ventana de medición: no es un fallo, es el script el que manda.
+
 ## Sobrecosto de recolección (PrimerInforme)
 
 El informe exige un sobrecosto **inferior al 5 %** sobre la métrica de rendimiento de la carga observada. La validación es **manual y reproducible** con el sandbox; CI no la gatea (CI solo valida que las extracciones se encolan).
