@@ -41,6 +41,8 @@ venv\Scripts\python -m pytest
 | `python -m pytest -v` | Verboso (funciones por nombre) |
 | `python -m pytest -k "mysql"` | Filtrar por palabra clave |
 | `python -m pytest --collect-only` | Listar tests sin ejecutarlos |
+| `python main_sandbox.py` | Extrae el par postgres/mysql fijo del sandbox y encola en `analyze_job` |
+| `python main.py` | Extrae solo las bases registradas y activas en `registered_databases` |
 
 ## Estructura
 
@@ -56,7 +58,7 @@ tests/
 ├── test_collectors_explainable.py       # mark_explainable por motor (unit)
 ├── test_collect_stage.py                # CollectStage + fallos aislados (unit)
 ├── test_connections.py                  # conexiones env-driven (unit)
-├── test_e2e_main.py                     # main + cola PGMQ (integration)
+├── test_e2e_main.py                     # main_sandbox + main + cola PGMQ (integration)
 ├── test_enqueue.py                      # pgmq.send parametrizado (unit)
 ├── test_explain_normalizer.py           # normalizadores de plan (unit)
 ├── test_explain_normalizer_variants.py  # variantes de plan PG/MySQL (unit)
@@ -68,6 +70,7 @@ tests/
 ├── test_normalize_stage.py              # NormalizeStage + hooks (unit)
 ├── test_orchestrator.py                 # composición de stages (unit)
 ├── test_queries_contract.py             # SQL vs PIPELINE_FINGERPRINT (contract)
+├── test_registered_targets.py           # registered_databases → Target (unit)
 ├── test_schema_resolver.py              # schema por rol (unit)
 ├── test_selectors.py                    # selectores de candidatos (unit)
 ├── test_select_candidates.py            # CandidatesStage end-to-end unit (unit)
@@ -78,9 +81,9 @@ tests/
 ## Cobertura de referencia
 
 - **Contrato (models/snapshot.py)**: cada snapshot de motor debe validar, los `query_id` deben llevar el tipo del motor (str en MySQL, int en Postgres), y el round-trip `from_snapshot → to_json → model_validate_json` debe preservar el payload.
-- **Unitarios**: cada stage de selección (top 10, inestables, disk spill, dedupe, `init_ready_for_explain`), canonic de queries con sqlglot y su fallback, normalización de locks/pids/timestamps, limpieza de predicados MySQL, `EXPLAIN` con schema context, y conteo de shapes de los normalizadores de plan.
+- **Unitarios**: cada stage de selección (top 10, inestables, disk spill, dedupe, `init_ready_for_explain`), canonic de queries con sqlglot y su fallback, normalización de locks/pids/timestamps, limpieza de predicados MySQL, `EXPLAIN` con schema context, conteo de shapes de los normalizadores de plan, y resolución de targets desde `registered_databases` (descifrado, mapeo de engine, filas rotas, aislamiento por target y qué hace `main()` cuando no hay nada registrado).
 - **Arquitectura**: estrategias de collector sobre la base común, Factory, registry de normalizadores, firma única `execute` por stage, composición del Orchestrator, y el contrato del Facade `SnapshotPayload`.
-- **Integración**: un snapshot consumible por motor en PGMQ, sin claves transitorias en el payload, y aislamiento de motores caídos.
+- **Integración**: un snapshot consumible por motor en PGMQ, sin claves transitorias en el payload, y aislamiento de motores caídos (un target que no conecta se loguea y el siguiente sigue encolando).
 
 ## Actualizar fixtures golden
 
@@ -108,6 +111,26 @@ Si cambia el contrato del snapshot, los fixtures se regeneran capturando de nuev
 | `DB_HOST` / `DB_PORT` / `QUERYLENS_DB` / `QUERYLENS_USER` / `QUERYLENS_PASSWORD` | base de la cola | `localhost:5432/ql_demo`, `ql_user` |
 
 MySQL no tiene variable de base a propósito: entra sin base por defecto porque el `EXPLAIN` depende del `USE` que emite `ExplainStage`.
+
+### Targets desde `registered_databases`
+
+Hay dos puntos de entrada y no se mezclan:
+
+| Entrada | Targets | Quién la usa |
+|---------|---------|--------------|
+| `python main.py` | lo que haya activo en `registered_databases` (select + descifrado Fernet con `AUTH_ENCRYPTION_KEY`) | producción |
+| `python main_sandbox.py` | el par fijo `postgres`/`mysql` por entorno (`MONITOR_PG_*` / `MONITOR_MY_*`) | `ql_sandbox`, tests de integración y el job de CI |
+
+`main.py` **no tiene fallback al par fijo**: si la tabla no existe, no hay filas activas o falta la clave, no se extrae nada y queda un `logger.warning`. Por eso los tests de ciclo van contra `main_sandbox.py` (en CI nunca hay tabla registrada) y `test_e2e_main.py` incluye además una prueba que **crea una fila real en la tabla, corre `main.main()` y la borra**, para que la entrada de producción no quede sin cubrir.
+
+Ver qué va a extraer `main.py`:
+
+```bash
+docker exec querylens_db psql -U ql_user -d ql_demo \
+  -c "SELECT database_identifier, engine, is_active, connection_name FROM registered_databases;"
+```
+
+`test_registered_targets.py` cubre el descifrado, el mapeo de engine, el aislamiento de filas rotas y los casos de fallback, con la base falsificada (no necesita contenedores). El detalle de cada decisión está en `PIPELINE_FLOW.md` § *Targets de conexión*.
 
 ### Carga de trabajo en CI
 

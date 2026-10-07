@@ -424,21 +424,31 @@ MUTANTS = [
 
     # ---- main.py ----
     mut("main.py",
-        'except ValidationError as e:\n            logger.error(f"{dialect} | snapshot_validation | {e}")\n            continue',
-        'except ValidationError as e:\n            logger.error(f"{dialect} | snapshot_validation | {e}")',
-        "main: no continuar tras snapshot invalido"),
+        '        logger.error(f"{dialect} | snapshot_validation | {e}")\n        return None',
+        '        logger.error(f"{dialect} | snapshot_validation | {e}")',
+        "main: romper ante un snapshot invalido (sin return None)"),
     mut("main.py",
         'payload_json = snapshot.to_json()',
         'payload_json = str(payload)',
         "main: encolar el dict crudo en vez del JSON"),
     mut("main.py",
+        '    if db_id:\n        payload["db_id"] = db_id',
+        '    if False:\n        payload["db_id"] = db_id',
+        "main: ignorar el database_identifier de la fila"),
+    mut("main.py",
+        '        try:\n            run_engine(target.dialect, target.factory, target.db_id)\n        except Exception as e:\n            label = target.db_id or target.dialect\n            logger.error(f"{label} | engine_failed | {e}")',
+        '        run_engine(target.dialect, target.factory, target.db_id)',
+        "main: no aislar un target que revienta"),
+
+    # ---- main_sandbox.py ----
+    mut("main_sandbox.py",
         'ENGINES = (\n    ("postgres", get_connection_postgres),\n    ("mysql", get_connection_mysql),\n)',
         'ENGINES = (\n    ("postgres", get_connection_postgres),\n)',
-        "main: dejar de procesar mysql"),
-    mut("main.py",
+        "sandbox: dejar de procesar mysql"),
+    mut("main_sandbox.py",
         'ENGINES = (\n    ("postgres", get_connection_postgres),\n    ("mysql", get_connection_mysql),\n)',
         'ENGINES = (\n    ("mysql", get_connection_mysql),\n)',
-        "main: dejar de procesar postgres"),
+        "sandbox: dejar de procesar postgres"),
 
     # ---- enrich.py ----
     mut("stages/enrich.py",

@@ -1,0 +1,155 @@
+"""Targets de extraccion leidos de registered_databases.
+
+El front y el auth service registran las bases del cliente en
+``registered_databases`` (querylens_database/registered_databases.sql) con
+host, puerto, usuario y password cifrados con Fernet; solo las filas con
+``is_active`` son candidatas. Este modulo hace ese select con la conexion de
+la cola (ql_user es dueño de la tabla), descifra con AUTH_ENCRYPTION_KEY y
+devuelve un Target por fila, para que main() ejecute el pipeline contra cada
+una.
+
+Si la tabla no existe (CI), no hay filas activas o falta la clave, devuelve
+None y main() cae a los ENGINES fijos del sandbox.
+"""
+import os
+from dataclasses import dataclass
+from typing import Callable
+
+from cryptography.fernet import Fernet, InvalidToken
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import URL, Engine
+
+from config.connections import get_connection_querylens_db
+from logger import get_logger
+
+logger = get_logger(__name__)
+
+SELECT_ACTIVE = """
+    SELECT database_identifier, engine, host, port, db_user,
+           encrypted_password, database_name
+    FROM registered_databases
+    WHERE is_active
+"""
+
+# El auth service solo admite Literal["postgresql", "mysql"]; el pipeline
+# habla en dialectos de Engine_Factory, que espera "postgres" y "mysql".
+DIALECTS = {
+    "postgresql": "postgres",
+    "postgres": "postgres",
+    "mysql": "mysql",
+}
+
+
+@dataclass(frozen=True)
+class Target:
+    """Una base a la que apuntar el pipeline."""
+
+    dialect: str
+    factory: Callable[[], Engine]
+    # database_identifier de la fila; None => constante DB_ID (ENGINES fijos).
+    db_id: str | None = None
+
+
+def _decipher(fernet: Fernet, token: str) -> str:
+    return fernet.decrypt((token or "").encode()).decode()
+
+
+def _build_target(row: dict, fernet: Fernet) -> Target | None:
+    identifier = row.get("database_identifier") or "?"
+
+    dialect = DIALECTS.get((row.get("engine") or "").strip().lower())
+    if dialect is None:
+        logger.error(
+            f"registered_targets | {identifier} | engine no soportado: {row.get('engine')!r}"
+        )
+        return None
+
+    try:
+        host = _decipher(fernet, row.get("host"))
+        port_raw = _decipher(fernet, row.get("port")).strip()
+        user = _decipher(fernet, row.get("db_user"))
+        password = _decipher(fernet, row.get("encrypted_password"))
+    except (InvalidToken, TypeError, ValueError) as exc:
+        logger.error(f"registered_targets | {identifier} | credencial indecifrable: {exc}")
+        return None
+
+    try:
+        port = int(port_raw) if port_raw else None
+    except ValueError:
+        logger.error(f"registered_targets | {identifier} | puerto invalido: {port_raw!r}")
+        return None
+
+    url = _target_url(dialect, user, password, host, port, row.get("database_name"))
+    return Target(dialect=dialect, factory=lambda url=url: _engine(dialect, url), db_id=identifier)
+
+
+def _target_url(
+    dialect: str, user: str, password: str, host: str, port: int | None, database_name: str
+) -> URL:
+    # URL.create en vez de f-string: la password viene de Fernet y puede
+    # contener '@', ':' o '/' que romperian el parseo de la URL.
+    driver = "postgresql+psycopg2" if dialect == "postgres" else "mysql+pymysql"
+    # MySQL se conecta sin base a proposito: ExplainStage emite el USE
+    # (mismo contrato que get_connection_mysql, ver test_connections.py).
+    database = database_name if dialect == "postgres" else None
+    return URL.create(
+        drivername=driver,
+        username=user,
+        password=password,
+        host=host,
+        port=port,
+        database=database,
+    )
+
+
+def _engine(dialect: str, url: URL) -> Engine:
+    if dialect == "mysql":
+        return create_engine(
+            url,
+            pool_size=1,
+            max_overflow=10,
+            pool_pre_ping=True,
+            echo=False,
+        )
+    return create_engine(url)
+
+
+def load_registered_targets() -> list[Target] | None:
+    """Targets activos de registered_databases, o None si hay que caer a ENGINES.
+
+    Devuelve None (no una lista vacia) cuando no hay con que trabajar: tabla
+    inexistente, sin filas activas, sin AUTH_ENCRYPTION_KEY o con la clave
+    ilegible. El motivo queda en el log.
+    """
+    key = os.getenv("AUTH_ENCRYPTION_KEY")
+    if not key:
+        logger.warning("registered_targets | sin AUTH_ENCRYPTION_KEY | fallback a ENGINES")
+        return None
+
+    try:
+        fernet = Fernet(key.encode())
+    except ValueError as exc:
+        logger.error(
+            f"registered_targets | AUTH_ENCRYPTION_KEY invalida: {exc} | fallback a ENGINES"
+        )
+        return None
+
+    try:
+        with get_connection_querylens_db().connect() as conn:
+            rows = conn.execute(text(SELECT_ACTIVE)).mappings().all()
+    except Exception as exc:
+        # En CI la tabla no existe y en un sandbox limpio puede faltar: no es
+        # un error del pipeline, es que no hay targets registrados todavia.
+        logger.warning(
+            f"registered_targets | no se pudo leer registered_databases "
+            f"({type(exc).__name__}: {str(exc)[:120]}) | fallback a ENGINES"
+        )
+        return None
+
+    targets = [t for t in (_build_target(dict(r), fernet) for r in rows) if t]
+    if not targets:
+        logger.info("registered_targets | sin filas activas utilizables | fallback a ENGINES")
+        return None
+
+    logger.info(f"registered_targets | {len(targets)} base(s) activa(s)")
+    return targets

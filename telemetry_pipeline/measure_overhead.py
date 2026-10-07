@@ -266,8 +266,9 @@ def read_load_metrics(engine):
 
 def run_pipeline(engine):
     from main import run_engine
+    from main_sandbox import ENGINES
     t0 = time.perf_counter()
-    run_engine(engine)
+    run_engine(engine, dict(ENGINES)[engine])
     return time.perf_counter() - t0
 
 

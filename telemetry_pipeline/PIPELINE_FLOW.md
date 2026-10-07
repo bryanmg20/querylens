@@ -5,9 +5,26 @@ Pipeline agentless de telemetría: captura métricas de `pg_stat_statements` (Po
 ## Flujo de extremo a extremo
 
 ```
-main.py
-  │  ENGINES = [("postgres", get_connection_postgres), ("mysql", get_connection_mysql)]
-  │  for dialect, engine_factory in ENGINES:
+dos puntos de entrada, una sola maquina de ejecucion:
+
+  main.py (integracion)                     main_sandbox.py (sandbox, tests y CI)
+    load_registered_targets()                 ENGINES = (("postgres", get_connection_postgres),
+      SELECT ... FROM registered_databases               ("mysql", get_connection_mysql))
+      WHERE is_active                       dos targets fijos resueltos con
+      Fernet(AUTH_ENCRYPTION_KEY) → Target    MONITOR_PG_* / MONITOR_MY_*
+      sin tabla / sin filas / sin clave       (la tabla no existe en CI y no
+      → None: no se extrae nada               hay filas registradas alli)
+          │                                        │
+          └──────────────────┬─────────────────────┘
+                             v
+               run_targets(targets)                             main.py
+                 por target: try run_engine(...) except → logger.error(... engine_failed)
+                             │
+                             v
+
+run_engine(dialect, connection_factory, db_id)                  main.py
+  │  db_id → payload["db_id"]   pisa la constante DB_ID de enrich con el
+  │                             database_identifier de la fila
   │
   ├─ Engine_Factory.create_collector(dialect, engine)        → collector (Strategy por motor)
   │     ├─ Mysql_Collector(engine)      source_dialect="mysql"
@@ -56,11 +73,13 @@ main.py
   │     │                                   conserva canonic_query ("Not available" si vacío)
   │     │
   │     └─ (5) EnrichStage.execute(stats)                     stages/enrich.py
-  │           stats["db_id"] = DB_ID        (identidad del job de análisis)
+  │           stats["db_id"] = DB_ID        (identidad del job de análisis;
+  │                                          run_engine lo pisa con el
+  │                                          database_identifier de la fila)
   │
   ├─ SnapshotPayload.from_snapshot(payload)                  models/snapshot.py
   │     valida el dict contra los modelos pydantic (11 secciones)
-  │     ValidationError → logger.error + continue (motor omitido, no aborta)
+  │     ValidationError → logger.error + return None (motor omitido, no aborta)
   │
   ├─ snapshot.to_json()                    → JSON canónico (model_dump_json)
   │
@@ -68,6 +87,24 @@ main.py
         SELECT * FROM pgmq.send('analyze_job', CAST(:payload AS JSONB))
         → msg_id (print en main)
 ```
+
+## Targets de conexión (registered_databases)
+
+Las credenciales no están más atadas a dos pares de variables de entorno. El front y el auth service registran cada base del cliente en `registered_databases` (DDL en `querylens_database/registered_databases.sql`, montado por `docker-compose.yml`) con host, puerto, usuario y password cifrados con Fernet. `config/registered.py` hace el `SELECT ... WHERE is_active`, descifra con `AUTH_ENCRYPTION_KEY` y devuelve un `Target` por fila.
+
+| Punto | Decisión |
+|-------|----------|
+| Conexión al select | `get_connection_querylens_db()` (`ql_user`, dueño de la tabla) |
+| Identidad en el snapshot | `database_identifier` de la fila (`db_<8hex>`); lo pisa `run_engine` **antes** de validar |
+| Motor | `postgresql\|postgres → "postgres"`, `mysql → "mysql"`; otro valor → log + skip de la fila |
+| URL | `sqlalchemy.engine.URL.create(...)` (la password viene de Fernet y puede traer `@`, `:`) |
+| Postgres | URL **con** `database_name` |
+| MySQL | URL **sin** base (el `USE` lo emite `ExplainStage`), `pool_size=1, max_overflow=10, pool_pre_ping=True` |
+| Fila indecifrable / puerto malo / engine desconocido | log + se omite esa fila, las demás siguen |
+| Fila que no conecta (host caído, rol rotado) | `run_targets()` lo atrapa por target: `logger.error(... engine_failed ...)` y sigue con el resto |
+| Sin tabla, 0 filas activas, sin clave o clave ilegible | `load_registered_targets()` devuelve `None` y `main()` no extrae nada (`logger.warning`) |
+
+`main.py` no contiene ningún par de credenciales: decide contra qué correr leyendo la tabla, y si no hay nada registrado se detiene. El par `postgres`/`mysql` que usan `ql_sandbox`, los tests de integración y el job de CI vive literal en **`main_sandbox.py`**, con su propio `main()` y el mismo `run_targets()`. `test_e2e_main.py` ejercita ese par y una fila real de la tabla (la crea, la usa y la borra); `test_registered_targets.py` cubre el loader con mocks, sin abrir ninguna conexión.
 
 ## Patrones de diseño
 

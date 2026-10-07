@@ -4,3 +4,4 @@ pymysql
 sqlglot
 python-dotenv
 pydantic
+cryptography
