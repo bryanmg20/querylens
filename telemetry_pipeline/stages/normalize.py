@@ -3,6 +3,7 @@ import re
 import sqlglot
 from sqlglot import exp
 
+from models.snapshot import _to_naive_utc
 from models.stats import Stats
 from stages import canonicalizers
 
@@ -37,19 +38,21 @@ EPOCH_SECTIONS = ("statements", "top_impact_queries", "non_explainable_candidate
 
 
 def normalize_statement_epochs(stats: Stats):
-    """Deja las fechas de contadores en un unico formato sin tz.
+    """Deja las fechas de contadores en un unico formato sin tz, en UTC.
 
     Postgres (`stats_since`, timestamptz) y MySQL (`FIRST_SEEN`, DATETIME) llegan
-    con tipos distintos: uno con zona y el otro naive. Se hornean a la misma
-    representacion que usa `normalize_active_query_timestamps`, asi el
-    consumidor puede compararlas entre motores sin parsear dos formatos.
+    con tipos distintos: uno con zona y el otro naive. La sesion MySQL se fija a
+    +00:00 (init_command en config/connections) y el timestamptz se pasa a UTC
+    (models.snapshot._to_naive_utc). Se hornean a la misma representacion que usa
+    `normalize_active_query_timestamps`, asi el consumidor puede compararlas
+    entre motores sin parsear dos formatos.
     """
     for section in EPOCH_SECTIONS:
         for row in stats.get(section) or []:
             for field in EPOCH_FIELDS:
                 ts = row.get(field)
                 if isinstance(ts, datetime):
-                    row[field] = ts.replace(tzinfo=None).isoformat(
+                    row[field] = _to_naive_utc(ts).isoformat(
                         sep=" ", timespec="microseconds"
                     )
 
@@ -60,7 +63,7 @@ def normalize_active_query_timestamps(stats: Stats):
         if ts is None:
             continue
         if isinstance(ts, datetime):
-            stmt["transaction_start_time"] = ts.replace(tzinfo=None).isoformat(sep=" ", timespec="microseconds")
+            stmt["transaction_start_time"] = _to_naive_utc(ts).isoformat(sep=" ", timespec="microseconds")
 
 def normalize_blocking_pids(stats: Stats):
     for query in stats.get("active_queries", []):

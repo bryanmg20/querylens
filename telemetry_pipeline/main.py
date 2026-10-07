@@ -10,6 +10,28 @@ from orchestrator import Orchestrator
 
 logger = get_logger(__name__)
 
+# Observabilidad del tamaño del payload, no un gate: el limite real de retencion
+# es del consumidor. Ver PIPELINE_FLOW ("Sin consumidor la cola crece").
+PAYLOAD_WARN_BYTES = 1_000_000
+_payload_warned: set[str] = set()
+
+
+def _log_payload_size(dialect: str, db_id: str | None, payload_json: str) -> None:
+    """DEBUG siempre; WARNING una vez por db_id al cruzar PAYLOAD_WARN_BYTES.
+
+    Transicion y no repeticion (mismo patron que runner._report_state): un
+    warning por ciclo serian ~8 640 lineas al dia mientras el estado persiste.
+    """
+    label = db_id or dialect
+    size_bytes = len(payload_json.encode("utf-8"))
+    logger.debug(f"{dialect} | payload | db_id={label} | {size_bytes} bytes")
+    if size_bytes > PAYLOAD_WARN_BYTES and label not in _payload_warned:
+        _payload_warned.add(label)
+        logger.warning(
+            f"{dialect} | payload | db_id={label} | {size_bytes} bytes (>"
+            f"{PAYLOAD_WARN_BYTES}); inviable la retencion larga sin consumidor"
+        )
+
 
 def _dispose(engine) -> None:
     """Cierra el pool de un engine.
@@ -59,6 +81,7 @@ def _cycle(dialect: str, target_engine, querylens_engine, db_id: str | None = No
         return None
 
     payload_json = snapshot.to_json()
+    _log_payload_size(dialect, db_id, payload_json)
     msg_id = send_to_queue(payload_json, querylens_engine)
     print(f"Diccionario encolado con ID: {msg_id}")
     return msg_id

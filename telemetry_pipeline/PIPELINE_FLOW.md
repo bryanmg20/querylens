@@ -140,7 +140,7 @@ Y explícitamente **no**:
 | No hace | Por qué |
 |---------|---------|
 | No lee `MONITOR_PG_*` / `MONITOR_MY_*` | El host, puerto, usuario y password de cada target salen de la fila (Fernet con `AUTH_ENCRYPTION_KEY`). Esas variables solo las consume `main_sandbox.py`; están en el servicio `pipeline` únicamente por si alguien corre esa entrada dentro del contenedor |
-| No consume `analyze_job` | Solo produce. **Sin consumidor la cola crece** (~8 KB por snapshot; 10 s × N bases = ~70 MB/día/base) — verificar con `SELECT count(*) FROM pgmq.q_analyze_job` |
+| No consume `analyze_job` | Solo produce. **Sin consumidor la cola crece**; el tamaño por snapshot **no está acotado** (va el payload completo: statements + candidatos + planes + columnas/índices/tablas). Medido en los fixtures golden: **37–49 KB con 12–14 statements** (~0,5–1 KB por statement adicional) → una base con cientos/miles de statements genera snapshots de cientos de KB a varios MB. Crecimiento ≈ `bytes_promedio × 8 640/día × nº de bases`. Verificar con `SELECT count(*), pg_size_pretty(avg(pg_column_size(message))::bigint) FROM pgmq.q_analyze_job` |
 | No guarda estado entre ciclos | Sin dedupe ni gate por `counters_epoch`: cada vuelta emite un snapshot por base aunque nada haya cambiado. La retención de mensajes ya leídos es del consumidor |
 | No corre en paralelo | Un hilo, una vuelta a la vez; el aislamiento por target (dentro de `run_targets()`) es lo que evita que una base caída tape a las demás |
 | No decide nada del front/auth | Quién registra y activa filas es el auth service; el runner solo las lee. Si se agrega una fila mientras corre, la ve en el próximo ciclo |

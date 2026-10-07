@@ -73,7 +73,7 @@ docker exec querylens_db psql -U ql_user -d ql_demo \
 | Cadencia | `EXTRACT_INTERVAL_S` (default 10 s; vacío, 0, negativo o no numérico → 10 s con warning) |
 | Host/puerto de cada target | Sale de la fila de `registered_databases` (Fernet), no del env; `MONITOR_PG_*`/`MONITOR_MY_*` solo los usa `main_sandbox.py` |
 | Gate de encolado | **Ninguno**: se encola siempre. Retener/borrar los mensajes ya leídos de PGMQ es tarea del consumidor |
-| Cola | Solo produce: sin consumidor en `analyze_job` la cola crece (~8 KB por snapshot) |
+| Cola | Solo produce: sin consumidor en `analyze_job` la cola crece (tamaño real por snapshot y receta de medición en `PIPELINE_FLOW.md`) |
 | Fallo de ciclo | backoff 10 → 20 → 40 → 60 s (tope), y vuelve al intervalo normal al volver a correr bien; un target que no conecta no dispara backoff (lo aislaba `run_targets()`) |
 | Parada | `SIGINT`/`SIGTERM`/`SIGBREAK` → termina tras el ciclo en curso (`returncode 0`) |
 | Log | `logs/pipeline.log` (5 MB × 3): INFO/ERROR siempre, el detalle de cada ciclo a DEBUG |

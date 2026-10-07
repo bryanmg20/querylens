@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -9,6 +9,7 @@ from stages.normalize import (
     normalize_blocking_pids,
     normalize_locks,
     normalize_predicate,
+    normalize_statement_epochs,
 )
 
 pytestmark = pytest.mark.unit
@@ -24,6 +25,30 @@ def test_normalize_active_query_timestamps_drop_tz():
     stats = {"active_queries": [{"transaction_start_time": datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)}]}
     normalize_active_query_timestamps(stats)
     assert stats["active_queries"][0]["transaction_start_time"] == "2026-01-01 12:00:00.000000"
+
+
+def test_normalize_active_query_timestamps_converts_non_utc_to_utc():
+    tz_bogota = timezone(timedelta(hours=-5))
+    stats = {"active_queries": [{"transaction_start_time": datetime(2026, 1, 1, 7, 0, tzinfo=tz_bogota)}]}
+    normalize_active_query_timestamps(stats)
+    assert stats["active_queries"][0]["transaction_start_time"] == "2026-01-01 12:00:00.000000"
+
+
+def test_normalize_statement_epochs_drop_tz():
+    stats = {
+        "statements": [{"query_id": 1, "counters_epoch": datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)}],
+    }
+    normalize_statement_epochs(stats)
+    assert stats["statements"][0]["counters_epoch"] == "2026-01-01 12:00:00.000000"
+
+
+def test_normalize_statement_epochs_converts_non_utc_to_utc():
+    tz_bogota = timezone(timedelta(hours=-5))
+    stats = {
+        "statements": [{"query_id": 1, "counters_epoch": datetime(2026, 1, 1, 7, 0, tzinfo=tz_bogota)}],
+    }
+    normalize_statement_epochs(stats)
+    assert stats["statements"][0]["counters_epoch"] == "2026-01-01 12:00:00.000000"
 
 
 def test_normalize_active_query_timestamps_none():

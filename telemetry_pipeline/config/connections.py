@@ -4,9 +4,43 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
+# Timeouts del pipeline real (ver PIPELINE_FLOW). VAN en el arranque de la
+# sesion (options/init_command), no via event listener: CollectStage y
+# ExplainStage hacen rollback() tras un error y un SET transaccional de
+# Postgres se desharía.
+CONNECT_TIMEOUT_S = 10      # libpq es ilimitado por defecto; cubre redes normales
+STATEMENT_TIMEOUT_S = 30    # la extraccion mide ~0,3-0,6 s por target -> margen x50
+READ_TIMEOUT_S = 40         # solo MySQL (socket): > statement_timeout, para que salte primero el del server
+
+
 def _env(name: str, default: str) -> str:
     value = os.getenv(name)
     return default if value is None or value == "" else value
+
+
+def postgres_connect_args() -> dict:
+    """connect_args para psycopg2/libpq. options aplica statement_timeout al
+    abrir la sesion (a salvo del rollback); connect_timeout tapa el 'infinito'
+    por defecto de libpq."""
+    return {
+        "connect_timeout": CONNECT_TIMEOUT_S,
+        "options": f"-c statement_timeout={STATEMENT_TIMEOUT_S * 1000}",
+    }
+
+
+def mysql_connect_args() -> dict:
+    """connect_args para pymysql. El init_command fija la sesion a UTC
+    (time_zone='+00:00': FIRST_SEEN/trx_started quedan comparables con el
+    timestamptz de Postgres) y max_execution_time como tope de SELECT. Ese
+    tope no cubre EXPLAIN/USE: read_timeout es el cinturon."""
+    return {
+        "connect_timeout": CONNECT_TIMEOUT_S,
+        "read_timeout": READ_TIMEOUT_S,
+        "init_command": (
+            f"SET SESSION max_execution_time={STATEMENT_TIMEOUT_S * 1000}, "
+            f"time_zone='+00:00'"
+        ),
+    }
 
 
 def get_connection_postgres() -> Engine:
@@ -22,7 +56,7 @@ def get_connection_postgres() -> Engine:
     db_password = _env("MONITOR_PG_PASSWORD", "monitor_pass")
 
     url = f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
-    return create_engine(url)
+    return create_engine(url, connect_args=postgres_connect_args())
 
 
 def get_connection_mysql() -> Engine:
@@ -46,7 +80,8 @@ def get_connection_mysql() -> Engine:
         pool_size=1,
         max_overflow=10,
         pool_pre_ping=True,
-        echo=False
+        echo=False,
+        connect_args=mysql_connect_args(),
     )
 
 
@@ -65,4 +100,4 @@ def get_connection_querylens_db() -> Engine:
     db_password = _env("QUERYLENS_PASSWORD", "ql_pass")
 
     url = f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
-    return create_engine(url)
+    return create_engine(url, connect_args=postgres_connect_args())

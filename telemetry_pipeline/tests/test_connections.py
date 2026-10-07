@@ -4,9 +4,14 @@ import pytest
 
 import config.connections as connections
 from config.connections import (
+    CONNECT_TIMEOUT_S,
+    READ_TIMEOUT_S,
+    STATEMENT_TIMEOUT_S,
     get_connection_mysql,
     get_connection_postgres,
     get_connection_querylens_db,
+    mysql_connect_args,
+    postgres_connect_args,
 )
 
 pytestmark = pytest.mark.unit
@@ -144,6 +149,61 @@ def test_mysql_engine_pool_is_limited_to_one_connection():
     assert engine.pool.size() == 1
     assert engine.pool._max_overflow == 10
     assert engine.pool._pre_ping is True
+
+
+def test_postgres_connect_args_apply_connect_and_statement_timeouts():
+    args = postgres_connect_args()
+    assert args["connect_timeout"] == CONNECT_TIMEOUT_S
+    assert args["options"] == f"-c statement_timeout={STATEMENT_TIMEOUT_S * 1000}"
+
+
+def test_mysql_connect_args_pin_session_to_utc_and_bound_selects():
+    args = mysql_connect_args()
+    assert args["connect_timeout"] == CONNECT_TIMEOUT_S
+    assert args["read_timeout"] == READ_TIMEOUT_S
+    assert args["init_command"] == (
+        f"SET SESSION max_execution_time={STATEMENT_TIMEOUT_S * 1000}, time_zone='+00:00'"
+    )
+
+
+def test_engines_apply_the_shared_connect_args(monkeypatch):
+    """La unica fuente de los timeouts es config.connections; las factorias solo
+    la cablean. Se comprueba capturando la llamada, sin atributos privados."""
+    seen = []
+    monkeypatch.setattr(
+        connections, "postgres_connect_args",
+        lambda: seen.append("pg") or postgres_connect_args(),
+    )
+    monkeypatch.setattr(
+        connections, "mysql_connect_args",
+        lambda: seen.append("my") or mysql_connect_args(),
+    )
+    get_connection_postgres()
+    get_connection_mysql()
+    get_connection_querylens_db()
+    assert seen == ["pg", "my", "pg"]
+
+
+def test_registered_engine_uses_the_same_timeout_wiring(monkeypatch):
+    import config.registered as registered
+    from sqlalchemy.engine import URL
+
+    seen = []
+    monkeypatch.setattr(
+        registered, "postgres_connect_args",
+        lambda: seen.append("pg") or postgres_connect_args(),
+    )
+    monkeypatch.setattr(
+        registered, "mysql_connect_args",
+        lambda: seen.append("my") or mysql_connect_args(),
+    )
+    url = URL.create(
+        drivername="postgresql+psycopg2", username="u", password="p",
+        host="h", port=5432,
+    )
+    registered._engine("postgres", url)
+    registered._engine("mysql", url)
+    assert seen == ["pg", "my"]
 
 
 def test_querylens_db_reads_credentials_from_environment(monkeypatch):

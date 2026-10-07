@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated, Literal, TypeVar, Union
 
 from pydantic import BeforeValidator, BaseModel, ConfigDict, Field
@@ -8,9 +8,23 @@ def _list_or_empty(value):
     return [] if value is None else value
 
 
+def _to_naive_utc(dt):
+    """Aware datetime -> UTC naíve; naive se deja tal cual.
+
+    Postgres entrega timestamptz en la zona de su sesión; MySQL entrega DATETIME
+    naive en hora del servidor. Fijar la sesión MySQL a +00:00 (init_command en
+    config/connections) hace ambos UTC; este helper solo normaliza el lado que ya
+    trae zona, para que counters_epoch, transaction_start_time, last_index_scan y
+    stats_reset viajen con el mismo formato sin offset que el lado MySQL.
+    """
+    if isinstance(dt, datetime) and dt.tzinfo is not None:
+        return dt.astimezone(timezone.utc).replace(tzinfo=None)
+    return dt
+
+
 def _to_iso(value):
     if isinstance(value, datetime):
-        return value.replace(tzinfo=None).isoformat(sep=" ", timespec="microseconds")
+        return _to_naive_utc(value).isoformat(sep=" ", timespec="microseconds")
     return value
 
 
@@ -148,15 +162,19 @@ class SnapshotPayload(BaseModel):
 
     db_id: str
     statements: ListOrNone[StatementRow]
-    top_impact_queries: ListOrNone[StatementCandidate]
-    non_explainable_candidates: ListOrNone[StatementCandidate]
+    # Las 3 claves derivadas tienen default [] a proposito: Orchestrator salta
+    # esas stages cuando statements vino en None (recoleccion fallida), asi que
+    # pueden no existir en la fuente sin que el snapshot sea invalido. Las 8
+    # claves que escribe CollectStage siguen obligatorias.
+    top_impact_queries: ListOrNone[StatementCandidate] = []
+    non_explainable_candidates: ListOrNone[StatementCandidate] = []
     locks: ListOrNone[LockRow]
     active_queries: ListOrNone[ActiveQueryRow]
     indexes: ListOrNone[IndexRow]
     tables: ListOrNone[TableRow]
     columns: ListOrNone[ColumnRow]
     stats_reset_timestamp: ListOrNone[StatsResetRow]
-    canonic_explains: ListOrNone[CanonicExplain]
+    canonic_explains: ListOrNone[CanonicExplain] = []
 
     @classmethod
     def from_snapshot(cls, stats):

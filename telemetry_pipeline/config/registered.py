@@ -19,7 +19,11 @@ from cryptography.fernet import Fernet, InvalidToken
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL, Engine
 
-from config.connections import get_connection_querylens_db
+from config.connections import (
+    get_connection_querylens_db,
+    mysql_connect_args,
+    postgres_connect_args,
+)
 from logger import get_logger
 
 logger = get_logger(__name__)
@@ -110,8 +114,9 @@ def _engine(dialect: str, url: URL) -> Engine:
             max_overflow=10,
             pool_pre_ping=True,
             echo=False,
+            connect_args=mysql_connect_args(),
         )
-    return create_engine(url)
+    return create_engine(url, connect_args=postgres_connect_args())
 
 
 def load_registered_targets() -> list[Target] | None:

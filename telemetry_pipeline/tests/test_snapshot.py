@@ -11,6 +11,8 @@ que la llamada no levante excepcion.
 """
 import pytest
 
+from datetime import datetime, timedelta, timezone
+
 from models.snapshot import (
     ActiveQueryRow,
     LockRow,
@@ -72,10 +74,14 @@ class TestListOrNone:
         y se convierte en lista vacia para no romper el payload. Una seccion
         ausente del todo es un snapshot mal formado y se rechaza.
 
-        El collector siempre emite las once claves (collect.py las escribe o las
-        pone en None), asi que en produccion no ocurre. Fijarlo evita que alguien
-        vuelva las secciones opcionales y deje pasar un snapshot truncado en
-        silencio, que es el fallo que este archivo previene.
+        El collector siempre emite sus 8 claves (collect.py las escribe o las
+        pone en None), asi que en produccion no ocurre. Las 3 claves derivadas
+        (top_impact_queries, non_explainable_candidates, canonic_explains) si
+        pueden faltar legitimamente: Orchestrator salta esas stages cuando
+        statements viene en None (ver test_derived_sections_default...).
+        Fijarlo evita que alguien vuelva las secciones opcionales y deje pasar
+        un snapshot truncado en silencio, que es el fallo que este archivo
+        previene.
         """
         raw = _base()
         del raw["locks"]
@@ -89,6 +95,21 @@ class TestListOrNone:
         payload = SnapshotPayload.from_snapshot(raw)
         assert payload.locks == []
         assert payload.active_queries == []
+
+    def test_derived_sections_default_when_stage_skipped(self):
+        """Default de las 3 claves derivadas: si statements vino en None,
+        Orchestrator no corre CandidatesStage/ExplainStage y esas claves no
+        existen en la fuente. Eso no debe invalidar el snapshot: el default
+        [] las completa. Las 8 claves del collector, en cambio, siguen yendo
+        escritas por CollectStage (o en None), nunca ausentes."""
+        raw = _base(statements=None)
+        del raw["top_impact_queries"]
+        del raw["non_explainable_candidates"]
+        del raw["canonic_explains"]
+        payload = SnapshotPayload.from_snapshot(raw)
+        assert payload.top_impact_queries == []
+        assert payload.non_explainable_candidates == []
+        assert payload.canonic_explains == []
 
 
 class TestLockCoercion:
@@ -250,6 +271,16 @@ class TestSerialization:
             "schema_name": None,
         }]))
         assert '"schema_name":null' in payload.to_json().replace(" ", "")
+
+    def test_aware_datetime_is_normalized_to_utc_naive(self):
+        tz_bogota = timezone(timedelta(hours=-5))
+        payload = SnapshotPayload.from_snapshot(_base(indexes=[{
+            "schema_name": "public",
+            "table_name": "tabla_medicion",
+            "index_name": "tabla_medicion_pkey",
+            "last_index_scan": datetime(2026, 1, 1, 7, 0, tzinfo=tz_bogota),
+        }]))
+        assert payload.indexes[0].last_index_scan == "2026-01-01 12:00:00.000000"
 
     def test_json_round_trips(self):
         payload = SnapshotPayload.from_snapshot(
