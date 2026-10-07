@@ -1,13 +1,25 @@
 import argparse
 import time
+from datetime import datetime, timezone
 
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from models import Hallazgo, Snapshot
+from anti_patterns.baseline_degradation import (
+    DEFAULT_BASELINE_WINDOW,
+    DEFAULT_MIN_CALLS,
+    compute_statement_samples,
+)
 from anti_patterns.engine import detect_all
 from querylens_connection import get_connection_querylens_db
-from storage import ensure_hallazgos_table, save_findings
+from storage import (
+    ensure_hallazgos_table,
+    ensure_statement_samples_table,
+    load_statement_history,
+    save_findings,
+    save_statement_samples,
+)
 from logger import get_logger
 
 logger = get_logger(__name__)
@@ -44,9 +56,17 @@ def process_job(engine: Engine, job: dict) -> list[Hallazgo]:
     msg_id = job["msg_id"]
     payload = job["message"]
     snapshot = Snapshot.from_dict(payload)
+    # el snapshot no trae hora de captura; enqueued_at es lo mas cercano y es
+    # estable entre reintentos del mismo job
+    captured_at = job.get("enqueued_at") or datetime.now(timezone.utc)
 
-    # Corre las 4 reglas y los reporta en logs y stdout
-    findings = detect_all(snapshot)
+    # la linea base necesita la serie de samples de jobs anteriores
+    history = load_statement_history(
+        engine, snapshot.db_id, captured_at, DEFAULT_BASELINE_WINDOW, DEFAULT_MIN_CALLS,
+    )
+
+    # Corre las reglas y los reporta en logs y stdout
+    findings = detect_all(snapshot, history=history)
 
     logger.info(
         "Job %s recibido | source=%s | enqueued_at=%s",
@@ -89,6 +109,8 @@ def process_job(engine: Engine, job: dict) -> list[Hallazgo]:
     print("----------------------------------\n")
 
     save_findings(engine, snapshot.db_id, findings)
+    # despues de detectar: si se guardaran antes, el snapshot actual entraria en su propia linea base
+    save_statement_samples(engine, snapshot.db_id, captured_at, compute_statement_samples(snapshot, history))
 
     return findings
 
@@ -98,6 +120,7 @@ def main(oneshot: bool = False) -> None:
     logger.info("Detection Engine iniciado. Escuchando cola '%s'...", QUEUE_NAME)
     engine = get_connection_querylens_db()
     ensure_hallazgos_table(engine)
+    ensure_statement_samples_table(engine)
 
     try:
         while True:

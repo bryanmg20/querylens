@@ -18,6 +18,7 @@ def _records(payload: Mapping[str, Any], key: str) -> list[Mapping[str, Any]]:
 class Statement:
     query_id: QueryId | None = None
     query_text: str | None = None
+    schema_name: str | None = None
     execution_count: int | None = None
     rows_returned: int | None = None
     avg_rows_per_call: float | None = None
@@ -182,6 +183,29 @@ class Snapshot:
             ],
             stats_reset_timestamp=_records(payload, "stats_reset_timestamp"),
         )
+
+
+@dataclass
+class StatementSample:
+    """Una fila de public.statement_samples: contadores acumulados de un
+    query_id en un snapshot, mas el intervalo contra el sample anterior."""
+
+    query_id: str
+    execution_count: int
+    total_time_ms: float
+    stats_reset: str | None = None
+    interval_calls: int | None = None
+    interval_mean_ms: float | None = None
+
+
+@dataclass
+class StatementHistory:
+    """Lo que la linea base necesita saber del pasado de un query_id."""
+
+    # ultimo sample guardado, contra el que se calcula el delta del snapshot actual
+    last_sample: StatementSample | None = None
+    # tiempos medios de los ultimos intervalos validos, del mas viejo al mas nuevo
+    recent_interval_means: list[float] = field(default_factory=list)
 
 
 @dataclass
