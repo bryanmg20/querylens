@@ -54,5 +54,39 @@ services:
       - auth-service
     restart: unless-stopped
 
+  pipeline:
+    # Daemon de extraccion (telemetry_pipeline/runner.py): cada
+    # EXTRACT_INTERVAL_S vuelve a leer registered_databases y extrae las filas
+    # activas. Sin consumidor en la cola, revisar el crecimiento de PGMQ.
+    build:
+      context: ./telemetry_pipeline
+    container_name: querylens_pipeline
+    environment:
+      # La cola vive en el servicio postgres de esta red: 5432 AQUI dentro,
+      # no ${DB_PORT} (que es el puerto publicado en el host).
+      DB_HOST: postgres
+      DB_PORT: 5432
+      QUERYLENS_DB: ${QUERYLENS_DB}
+      QUERYLENS_USER: ${QUERYLENS_USER}
+      QUERYLENS_PASSWORD: ${QUERYLENS_PASSWORD}
+      AUTH_ENCRYPTION_KEY: ${AUTH_ENCRYPTION_KEY}
+      EXTRACT_INTERVAL_S: ${EXTRACT_INTERVAL_S:-10}
+      # Solo los usa la entrada main_sandbox.py (no el runner): el sandbox
+      # publica 5432/3307 en el host, de ahi host.docker.internal.
+      MONITOR_PG_HOST: host.docker.internal
+      MONITOR_PG_PORT: 5432
+      MONITOR_MY_HOST: host.docker.internal
+      MONITOR_MY_PORT: 3307
+    extra_hosts:
+      # Las bases registradas apuntan a host.docker.internal cuando corren en
+      # la maquina del cliente (mismo motivo que auth-service).
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - pipeline_logs:/app/logs
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
 volumes:
   pgdata:
+  pipeline_logs:

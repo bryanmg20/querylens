@@ -439,6 +439,24 @@ MUTANTS = [
         '        try:\n            run_engine(target.dialect, target.factory, target.db_id)\n        except Exception as e:\n            label = target.db_id or target.dialect\n            logger.error(f"{label} | engine_failed | {e}")',
         '        run_engine(target.dialect, target.factory, target.db_id)',
         "main: no aislar un target que revienta"),
+    mut("main.py",
+        '    finally:\n        _dispose(target_engine)\n        _dispose(querylens_engine)',
+        '    finally:\n        pass',
+        "main: no hacer dispose de los engines"),
+
+    # ---- runner.py ----
+    mut("runner.py",
+        'self.stop.wait(max(0.0, started + self.interval - self.clock()))',
+        'self.stop.wait(self.interval)',
+        "runner: espera fija por ciclo (acumula ticks atrasados)"),
+    mut("runner.py",
+        '        if active == self._active:\n            return',
+        '        pass',
+        "runner: loguear el estado en cada ciclo"),
+    mut("runner.py",
+        '        self.backoff = min(self.backoff * 2, MAX_BACKOFF_S)',
+        '        self.backoff = self.backoff',
+        "runner: no subir el backoff tras un ciclo fallido"),
 
     # ---- main_sandbox.py ----
     mut("main_sandbox.py",

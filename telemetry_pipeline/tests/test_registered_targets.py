@@ -257,3 +257,63 @@ def test_run_engine_usa_el_identifier_de_la_fila(monkeypatch, postgres_snapshot)
 
     main.run_engine("postgres", lambda: mock.MagicMock())
     assert SnapshotPayload.model_validate_json(sent["json"]).db_id == "querylens-db-01"
+
+
+# ---------- ciclo de vida: el daemon no acumula pools abiertos ----------
+
+
+def _parchea_engines(monkeypatch, postgres_snapshot, **kwargs):
+    orchestrator = mock.MagicMock()
+    orchestrator.run_pipeline.return_value = dict(postgres_snapshot)
+    monkeypatch.setattr(main, "Orchestrator", mock.MagicMock(return_value=orchestrator))
+    monkeypatch.setattr(main, "Engine_Factory", mock.MagicMock())
+    monkeypatch.setattr(main, "send_to_queue", lambda *a, **k: 1)
+    monkeypatch.setattr(main, "get_connection_querylens_db", mock.MagicMock())
+    for name, value in kwargs.items():
+        monkeypatch.setattr(main, name, value)
+    return orchestrator
+
+
+def test_run_engine_dispone_los_dos_engines(monkeypatch, postgres_snapshot):
+    """Cada ciclo crea el pool del target y el de la cola: si runner.py los
+    deja abiertos, a las horas se agota max_connections."""
+    target_engine = mock.MagicMock()
+    queue_engine = mock.MagicMock()
+    _parchea_engines(
+        monkeypatch, postgres_snapshot, get_connection_querylens_db=lambda: queue_engine
+    )
+
+    main.run_engine("postgres", lambda: target_engine)
+
+    target_engine.dispose.assert_called_once()
+    queue_engine.dispose.assert_called_once()
+
+
+def test_run_engine_dispone_tambien_cuando_el_ciclo_falla(
+    monkeypatch, postgres_snapshot
+):
+    """El dispose va en un finally: un target que no conecta no debe dejar su
+    pool colgado hasta el proximo ciclo."""
+    target_engine = mock.MagicMock()
+    orchestrator = _parchea_engines(monkeypatch, postgres_snapshot)
+    orchestrator.run_pipeline.side_effect = RuntimeError("target caido")
+
+    with pytest.raises(RuntimeError, match="target caido"):
+        main.run_engine("postgres", lambda: target_engine)
+
+    target_engine.dispose.assert_called_once()
+
+
+def test_dispose_que_revienta_no_tumba_el_ciclo(
+    monkeypatch, postgres_snapshot, caplog
+):
+    """Un dispose roto se degrada a debug: el snapshot ya esta encolado."""
+    target_engine = mock.MagicMock()
+    target_engine.dispose.side_effect = OSError("pool ya cerrado")
+    _parchea_engines(monkeypatch, postgres_snapshot)
+
+    with caplog.at_level(logging.DEBUG, logger="main"):
+        msg_id = main.run_engine("postgres", lambda: target_engine)
+
+    assert msg_id == 1
+    assert any("dispose" in r.getMessage() for r in caplog.records)

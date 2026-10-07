@@ -11,16 +11,40 @@ from orchestrator import Orchestrator
 logger = get_logger(__name__)
 
 
+def _dispose(engine) -> None:
+    """Cierra el pool de un engine.
+
+    run_engine crea dos engines por llamada (el del target y el de la cola),
+    asi que un proceso que cicla como runner.py debe soltarlos: sin dispose,
+    cada ciclo deja pools abiertos y a las horas se agota max_connections.
+    Un engine ya dispuesto y vuelto a crear por el factory no pierde nada.
+    """
+    try:
+        engine.dispose()
+    except Exception as e:
+        logger.debug(f"dispose | {type(e).__name__}: {e}")
+
+
 def run_engine(dialect: str, connection_factory, db_id: str | None = None):
     """Collect -> validate -> enqueue para UN solo motor. Devuelve msg_id o None.
 
     Quien llama decide la credencial (el factory) y la identidad (db_id): este
     modulo no decide contra que bases correr. db_id=None respeta la constante
-    de enrich.
+    de enrich. Este wrapper es el que cuida el ciclo de vida: crea los dos
+    engines y los dispone al terminar, exitoso o no.
     """
-    creator = Engine_Factory()
+    target_engine = connection_factory()
     querylens_engine = get_connection_querylens_db()
-    collector = creator.create_collector(dialect, connection_factory())
+    try:
+        return _cycle(dialect, target_engine, querylens_engine, db_id)
+    finally:
+        _dispose(target_engine)
+        _dispose(querylens_engine)
+
+
+def _cycle(dialect: str, target_engine, querylens_engine, db_id: str | None = None):
+    creator = Engine_Factory()
+    collector = creator.create_collector(dialect, target_engine)
     payload = Orchestrator(collector).run_pipeline()
 
     # El database_identifier de la fila registrada manda sobre la constante de
@@ -61,6 +85,7 @@ def main():
     if not targets:
         logger.warning("main | sin bases registradas activas | nada que extraer")
         return
+    logger.info(f"main | {len(targets)} base(s) registrada(s) a extraer")
     run_targets(targets)
 
 

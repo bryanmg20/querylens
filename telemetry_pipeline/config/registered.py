@@ -151,5 +151,8 @@ def load_registered_targets() -> list[Target] | None:
         logger.info("registered_targets | sin filas activas utilizables | fallback a ENGINES")
         return None
 
-    logger.info(f"registered_targets | {len(targets)} base(s) activa(s)")
+    # Debug, no INFO: runner.py repite este SELECT cada 10 s y un resumen por
+    # ciclo son 8 640 lineas al dia. El estado lo reporta el runner (una sola
+    # vez, por transicion) y main.py, que corre una sola vez.
+    logger.debug(f"registered_targets | {len(targets)} base(s) activa(s)")
     return targets
