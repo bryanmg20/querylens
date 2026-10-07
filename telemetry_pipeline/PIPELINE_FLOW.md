@@ -36,7 +36,7 @@ run_engine(dialect, connection_factory, db_id)                  main.py
   │     │     for key, query in collector.queries:           ejecuta las consultas del motor
   │     │     stats[key] = list[dict] ; falla aislada con rollback {key: None}
   │     │     keys: indexes, tables, statements, locks, active_queries,
-  │     │           stats_reset_timestamp, columns
+  │     │           server_start_timestamp, columns
   │     │
   │     ├─ (2) CandidatesStage.execute(stats)                stages/candidates.py
   │     │     stats = collector.preprocess_statements(stats) → hook por motor (MySQL calcula
