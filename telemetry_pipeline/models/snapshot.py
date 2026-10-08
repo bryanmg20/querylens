@@ -62,6 +62,7 @@ class StatementRow(BaseModel):
     # payload vale null. Sin declararlo, ConfigDict(extra="ignore") lo
     # descartaba silenciosamente y el consumidor no podia distinguirlo.
     query_sample_text: str | None = None
+    database_name: str | None = None
     schema_name: str | None = None
     execution_count: int
     rows_returned: int
@@ -84,6 +85,7 @@ class StatementCandidate(StatementRow):
 
 class LockRow(BaseModel):
     process_id: int
+    database_name: str | None = None
     table_name: str | None = None
     lock_mode: str
     is_granted: Annotated[bool, BeforeValidator(_to_bool)]
@@ -91,6 +93,7 @@ class LockRow(BaseModel):
 
 class ActiveQueryRow(BaseModel):
     process_id: int
+    database_name: str | None = None
     query_text: str | None = None
     query_id: QueryId
     canonic_query: str | None = None

@@ -174,9 +174,9 @@ def test_duplicate_candidates_are_deduplicated():
 
 def test_query_id_never_appears_in_both_buckets_for_real_input():
     """Un query_id no puede estar en los dos buckets en ejecucion real: en ambos
-    motores el query_id determina el texto (el digest en MySQL, el queryid de
-    pg_stat_statements en Postgres), asi que la contradiccion exigiria dos
-    textos distintos para el mismo identificador.
+    motores el query_id determina el texto (el par schema/digest en MySQL, el
+    queryid de pg_stat_statements en Postgres), asi que la contradiccion
+    exigiria dos textos distintos para el mismo identificador.
 
     El codigo deduplica dentro de cada bucket, no entre los dos, asi que con
     entrada contradictoria un id aparece en ambos. Este test documenta la
@@ -192,7 +192,8 @@ def test_query_id_never_appears_in_both_buckets_for_real_input():
 
 def test_digest_is_the_query_id_on_mysql(mysql_snapshot):
     """La garantia real, sobre datos del motor: el texto es funcion del
-    query_id, asi que un id no puede tener dos textos."""
+    query_id (schema/digest en MySQL), asi que un id no puede tener dos
+    textos."""
     by_id = {}
     for statement in mysql_snapshot["statements"]:
         by_id.setdefault(statement["query_id"], set()).add(statement["query_text"])

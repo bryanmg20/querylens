@@ -66,10 +66,11 @@ WHERE t.table_schema NOT IN ('mysql', 'performance_schema', 'information_schema'
 
 STATEMENTS_QUERY = """
 SELECT
-    s.DIGEST                                                        AS query_id,
+    CONCAT(s.schema_name, '/', s.DIGEST)                                AS query_id,
     s.DIGEST_TEXT                                                   AS query_text,
     s.QUERY_SAMPLE_TEXT                                             AS query_sample_text,
     s.schema_name                                                     AS schema_name,
+    s.schema_name                                                     AS database_name,
     CAST(s.COUNT_STAR AS SIGNED)                                    AS execution_count,
     CAST(s.SUM_ROWS_SENT AS SIGNED)                                 AS rows_returned,
     CAST(ROUND(s.SUM_ROWS_SENT / NULLIF(s.COUNT_STAR, 0), 6) AS DOUBLE)        AS avg_rows_per_call,
@@ -114,6 +115,7 @@ ORDER BY s.SUM_TIMER_WAIT DESC;
 LOCKS_QUERY = """
 SELECT
     r.trx_mysql_thread_id   AS process_id,
+    l.object_schema         AS database_name,
     l.object_name           AS table_name,
     l.lock_mode             AS lock_mode,
     l.lock_status           AS is_granted
@@ -127,7 +129,8 @@ ACTIVE_QUERIES_QUERY = """
 SELECT
     t.processlist_id                AS process_id,
     s.SQL_TEXT                      AS query_text,
-    s.DIGEST                        AS query_id,
+    CONCAT(s.SCHEMA_NAME, '/', s.DIGEST) AS query_id,
+    s.SCHEMA_NAME                   AS database_name,
     trx.trx_started                 AS transaction_start_time,
     (
         SELECT GROUP_CONCAT(t2.processlist_id)

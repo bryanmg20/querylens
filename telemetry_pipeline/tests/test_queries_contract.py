@@ -2,7 +2,19 @@ import re
 
 import pytest
 
+from collectors.mysql.queries import (
+    ACTIVE_QUERIES_QUERY as MYSQL_ACTIVE_QUERIES_QUERY,
+)
+from collectors.mysql.queries import (
+    LOCKS_QUERY as MYSQL_LOCKS_QUERY,
+)
 from collectors.mysql.queries import STATEMENTS_QUERY
+from collectors.postgres.queries import (
+    ACTIVE_QUERIES_QUERY as PG_ACTIVE_QUERIES_QUERY,
+)
+from collectors.postgres.queries import (
+    LOCKS_QUERY as PG_LOCKS_QUERY,
+)
 from collectors.postgres.queries import STATEMENTS_QUERY as PG_STATEMENTS_QUERY
 
 pytestmark = pytest.mark.contract
@@ -68,3 +80,45 @@ def test_mysql_autofiltrado_cubre_toda_la_huella_del_pipeline():
             f"la huella {huella!r} no tiene filtro en STATEMENTS_QUERY: "
             "ampliar el filtro o el fingerprint, pero no dejarlos distintos"
         )
+
+
+def test_mysql_statement_id_is_qualified_by_schema():
+    """La PK de events_statements_summary_by_digest es (SCHEMA_NAME, DIGEST):
+    el mismo digest en dos esquemas son dos filas distintas. query_id copiaba
+    solo el digest, asi que una fila de cada par se descartaba por dedup. El
+    SID compuesto hace a cada fila unica y atribuida."""
+    assert re.search(
+        r"CONCAT\(s\.schema_name, '/', s\.DIGEST\)\s+AS query_id",
+        STATEMENTS_QUERY,
+    ), "query_id de MySQL debe ser {schema}/{digest}, no solo el digest"
+
+
+def test_mysql_statement_row_carries_database_name():
+    assert re.search(
+        r"s\.schema_name\s+AS database_name", STATEMENTS_QUERY
+    ), "El statement de MySQL debe declarar database_name (base = schema)"
+
+
+def test_mysql_active_query_id_is_qualified_by_schema():
+    """El query_id de una query activa tiene que ser comparable con el del
+    statement del que proviene: ambos compuestos por el mismo esquema."""
+    assert re.search(
+        r"CONCAT\(s\.SCHEMA_NAME, '/', s\.DIGEST\)\s+AS query_id",
+        MYSQL_ACTIVE_QUERIES_QUERY,
+    )
+
+
+def test_grid_sections_carry_database_name():
+    for query in (PG_STATEMENTS_QUERY, PG_LOCKS_QUERY, PG_ACTIVE_QUERIES_QUERY):
+        assert re.search(r"AS database_name", query)
+    for query in (MYSQL_LOCKS_QUERY, MYSQL_ACTIVE_QUERIES_QUERY):
+        assert re.search(r"AS database_name", query)
+    # pg_stat_activity ya expone datname; statements y locks necesitan union
+    # contra pg_database (pg_stat_statements.dbid / pg_locks.database).
+    assert re.search(r"pg_database", PG_STATEMENTS_QUERY)
+    assert re.search(r"pg_database", PG_LOCKS_QUERY)
+    assert re.search(r"d\.datname\s+AS database_name", PG_STATEMENTS_QUERY)
+    assert re.search(r"d\.datname\s+AS database_name", PG_LOCKS_QUERY)
+    assert re.search(r"datname\s+AS database_name", PG_ACTIVE_QUERIES_QUERY)
+    assert re.search(r"l\.object_schema\s+AS database_name", MYSQL_LOCKS_QUERY)
+    assert re.search(r"s\.SCHEMA_NAME\s+AS database_name", MYSQL_ACTIVE_QUERIES_QUERY)

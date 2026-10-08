@@ -1,4 +1,5 @@
 from collections import Counter
+import json
 
 import pytest
 
@@ -252,8 +253,15 @@ def test_explains_carry_engine_source(snapshot_fixture, request):
 
 
 def test_active_queries_have_canonic_field(mysql_snapshot):
-    active = mysql_snapshot["active_queries"]
-    assert any(a.get("canonic_query") for a in active)
+    """El golden de MySQL puede llegar sin sesiones activas (la bateria termina
+    y no deja nada corriendo; una captura es un instante), como le pasa a los
+    locks. Donde hay filas, query_text ya fue reemplazado por canonic_query; la
+    generacion en si se verifica en test_canonicalizers."""
+    active = mysql_snapshot["active_queries"] or []
+    assert isinstance(active, list)
+    for row in active:
+        assert "query_text" not in row
+        assert "canonic_query" in row
 
 
 def test_canonic_explains_have_canonic_query(mysql_snapshot):
@@ -315,3 +323,38 @@ def test_active_queries_blocking_pids(mysql_snapshot, postgres_snapshot):
         for row in payload.active_queries:
             assert isinstance(row.blocking_pids, list)
             assert all(isinstance(pid, int) for pid in row.blocking_pids)
+
+
+@pytest.mark.parametrize(
+    "snapshot_fixture",
+    ["mysql_snapshot", "postgres_snapshot"],
+)
+def test_rows_carry_database_name(snapshot_fixture, request):
+    """database_name atribuye cada fila a la base donde corrio, para que un
+    snapshot server-wide no mezcle filas de bases distintas bajo un solo db_id.
+    La columna debe viajar declarada y presente en cada seccion."""
+    raw = request.getfixturevalue(snapshot_fixture)
+    for stmt in raw["statements"]:
+        assert "database_name" in stmt, stmt["query_id"]
+    for lock in raw["locks"]:
+        assert "database_name" in lock
+    for active in raw["active_queries"] or []:
+        assert "database_name" in active
+    payload = SnapshotPayload.from_snapshot(raw)
+    dumped = payload.to_json().replace(" ", "")
+    assert '"database_name":' in dumped
+
+
+def test_mysql_database_name_matches_schema(mysql_snapshot):
+    """En MySQL no existe la distincion base/schema: la base del statement es su
+    schema_name. No deben divergir o un consumidor leeria dos bases distintas."""
+    for stmt in mysql_snapshot["statements"]:
+        assert stmt["database_name"] == stmt["schema_name"]
+
+
+def test_postgres_statements_attributed_to_target_database(postgres_snapshot):
+    """El golden de Postgres sale de la bateria en ql_demo: toda fila debe
+    estar atribuida a esa base, el sintoma del scope server-wide es justamente
+    que aparezcan datnames de otras bases."""
+    for stmt in postgres_snapshot["statements"]:
+        assert stmt["database_name"] == "ql_demo"

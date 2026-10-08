@@ -8,7 +8,7 @@ Decisiones de diseño del contrato de datos que emite el pipeline, validadas con
 - Cada motor resuelve el plan por su vía nativa, y el hook `mark_explainable` decide:
   - Postgres: `EXPLAIN (GENERIC_PLAN)` (PG16+) sobre `pg_stat_statements.query`, que ya viene con placeholders `$1`. Marca **todos** los candidatos como listos.
   - MySQL: `DIGEST_TEXT` trae `?`, que da error de sintaxis en `EXPLAIN`; se usa `QUERY_SAMPLE_TEXT`, que trae literales reales. Marca solo lo que tenga `query_sample_text` no vacío.
-- Verificado en capturas reales (golden): MySQL digest hex → string; Postgres `queryid` → bigint (p. ej. `-1859038224550094023`). Ambos aparecen en `statements` y en `active_queries` al mismo tiempo, pero esa coincidencia ya no condiciona nada.
+- Verificado en capturas reales (golden): MySQL `{schema}/{digest}` → string (p. ej. `ql_demo/864c221061d4…`, ver sección *alcance por base*); Postgres `queryid` → bigint (p. ej. `-1859038224550094023`). Ambos aparecen en `statements` y en `active_queries` al mismo tiempo, pero esa coincidencia ya no condiciona nada.
 - Modelo: `QueryId = Union[str, int, None]`.
 - Lo que queda de `init_ready_for_explain` (antes `select_explain_ready`, renombrado porque el nombre original prometía una decisión que no tomaba) es solo inicializar `ready_for_explain=False` y deduplicar por `query_id`; la decisión real la sobrescribe `mark_explainable` justo después, en el mismo `CandidatesStage`.
 
@@ -47,7 +47,19 @@ Pendiente de decisión: en MySQL los `filesort` a disco no tienen indicador suma
 - El EXPLAIN se ejecuta sobre el `query_text` del digest (sin calificar). La resolución de tablas queda determinada por el `search_path` de la conexión del pipeline, no por el del rol dueño de la query.
 - Verificado en vivo: con `search_path` que excluye la schema, `EXPLAIN SELECT * FROM sbtest1` falla con `relation does not exist`; con la schema incluida, genera plan.
 - `ExplainStage` ahora emite la sentencia de contexto antes de cada `EXPLAIN`: en Postgres `SET LOCAL search_path TO <schema_name>` (identificador citado con `identifier_preparer`; si el candidato no tiene `schema_name`, `SET LOCAL search_path TO DEFAULT`); en MySQL `USE <schema_name>` (la conexión no trae database por defecto y el digest no califica). Al ser `LOCAL`/`USE` por candidato y secuenciales, no afectan al resto del pipeline.
-- Limitación: para un rol con varias schemas reales, Postgres explora bajo la primera del `search_path`; y en MySQL no hay "reset a sin database" — un candidato sin `schema_name` hereda el `USE` del anterior.
+- Limitación: para un rol con varias schemas reales, Postgres explora bajo la primera del `search_path`.
+- MySQL: si el candidato trae `schema_name` se usa ese; si no, `database_name`; y si **ninguno** viene, el candidato se **salta con warning** — heredar el `USE` de un candidato anterior armaría el plan contra el schema equivocado (este par de reglas reemplaza la limitación vieja de "no hay reset a sin database" y cierra MEDIA-13).
+
+## Alcance por base: todo el servidor entra, atribuido por fila
+
+- **Antes:** las queries de recolección leen el **servidor completo** (en Postgres `pg_stat_statements` trae filas de todas las bases y `pg_locks`/`pg_stat_activity` son cluster-wide; en MySQL los digests cubren todos los schemas), pero el snapshot se publica bajo un solo `db_id`. No había forma de saber de qué base venía cada fila.
+- **Decisión (con el usuario):** no filtrar por base ("que entre todo"), **atribuir por fila**. `database_name` (`str | None`) es campo **declarado** del contrato en `StatementRow`, `LockRow` y `ActiveQueryRow`.
+  - Postgres: `pg_stat_statements.dbid → pg_database.datname`, `pg_locks.database → pg_database.datname` (NULL en advisory/txnid locks), `pg_stat_activity.datname`.
+  - MySQL: base == schema, sin distinción de niveles: `SCHEMA_NAME` del digest y `object_schema` de `data_locks`.
+- **query_id compuesto en MySQL:** la PK real de `events_statements_summary_by_digest` es `(SCHEMA_NAME, DIGEST)` — el mismo digest en dos schemas son **dos filas distintas**. `query_id` copiaba solo el digest y el dedup por `query_id` de `init_ready_for_explain` tiraba una de cada par. Ahora `query_id = CONCAT(schema_name, '/', DIGEST)` (la `/` no puede confundirse: los nombres de schema MySQL son nombres de directorio). Con `schema_name` NULL el `query_id` queda NULL (catch-all sin atribuir).
+- **EXPLAIN de un candidato de otra base (Postgres):** una conexión de Postgres no puede cambiar de base con `USE`; el plan solo se arma en el contexto real de la base. `ExplainStage` abre una **conexión dedicada por base** reutilizando las credenciales del target (`engine.url.set(database=db)`, `NullPool`, `postgres_connect_args`), cacheada por base durante el ciclo y con `dispose()` en `finally`. MySQL explica cualquier schema con `USE` en la misma conexión.
+- **Limitaciones (documentadas):** la resolución de schema de un candidato extranjero corre contra el catálogo **de la base conectada** (el answer es correcto para la base conectada; no se cambia de catálogo por candidato). `EXPLAIN` sobre otra base requiere que el rol monitor tenga privilegios ahí (en el sandbox `ql_user` es superusuario). Las queries de telemetría se ejecutan contra el servidor completo: el volumen depende de cuántas bases tenga el servidor.
+- Verificado en vivo con una base scratch (PG): un statement ejecutado en la 2ª base aparece en `statements` con `database_name` propio y su `EXPLAIN` corre contra esa base. Fijado por contratos de queries, unit de ruteo de `ExplainStage` y tests de snapshot sobre los goldens regenerados.
 
 ## query_sample_text: campo declarado del contrato (y dato sensible)
 

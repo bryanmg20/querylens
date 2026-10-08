@@ -227,10 +227,25 @@ def test_mysql_records_sample_explain_source():
 
 
 def test_mysql_skips_use_when_no_schema():
+    """Sin schema EN la fila (schema_name ni database_name) el candidato no se
+    explica: usar el USE de otro candidato anterior armaria el plan contra la
+    base equivocada. Mejor perder el plan que explicarlo mal atribuido."""
     conn = _FakeConn(rows=[{"EXPLAIN": '{"query_block": {"select_id": 1}}'}])
     stats = _mysql_stats(schema_name=None)
     ExplainStage(_FakeMysqlCollector()).execute(stats, conn)
-    assert "EXPLAIN FORMAT=JSON insert into sbtest1" in conn.sent[0]
+    assert [s for s in conn.sent if "EXPLAIN" in s] == []
+    assert stats["canonic_explains"] == []
+
+
+def test_mysql_falls_back_to_database_name_when_no_schema():
+    """La atribucion de MySQL usa schema_name; cuando la fila no lo trae, la
+    base del statement (database_name) sirve de contexto para el USE."""
+    conn = _FakeConn(rows=[{"EXPLAIN": '{"query_block": {"select_id": 1}}'}])
+    stats = _mysql_stats(schema_name=None)
+    stats["top_impact_queries"][0]["database_name"] = "ventas"
+    ExplainStage(_FakeMysqlCollector()).execute(stats, conn)
+    assert conn.sent[0] == "USE ventas"
+    assert "EXPLAIN FORMAT=JSON insert into sbtest1" in conn.sent[1]
 
 
 def test_mysql_truncated_sample_is_not_explainable():
@@ -363,3 +378,105 @@ def test_query_explain_is_dropped_from_snapshot():
     ExplainStage(_FakeCollector()).execute(stats, conn)
     assert "query_explain" not in stats
     assert stats["canonic_explains"]
+
+
+class _FakeForeignEngine:
+    def __init__(self, url, tracker=None):
+        self.url = url
+        self.connect_calls = 0
+        self.disposed = False
+        if tracker is not None:
+            tracker.append(self)
+
+    def connect(self):
+        self.connect_calls += 1
+        return _FakeConn()
+
+    def dispose(self):
+        self.disposed = True
+
+
+class _TrackerCollector(_FakeCollector):
+    def __init__(self, tracker=None):
+        self.tracker = tracker
+
+    @property
+    def engine(self):
+        return PG_ENGINE
+
+    @property
+    def source_dialect(self):
+        return "postgres"
+
+
+def _tracker_stage(tracker=None):
+    stage = ExplainStage(_TrackerCollector(tracker))
+    stage._foreign_engine_factory = lambda url: _FakeForeignEngine(url, tracker)
+    return stage
+
+
+def test_postgres_foreign_database_routes_to_dedicated_connection():
+    conn = _FakeConn()
+    stats = _stats(schema_name="public")
+    stats["top_impact_queries"][0]["database_name"] = "ventas"
+    created = []
+    stage = _tracker_stage(created)
+    stage.execute(stats, conn)
+    assert conn.sent == []
+    assert stats["canonic_explains"][0]["query_id"] == 1
+    assert len(created) == 1
+    assert created[0].url.database == "ventas"
+
+
+def test_postgres_same_database_uses_main_connection():
+    conn = _FakeConn()
+    stats = _stats(schema_name="public")
+    stats["top_impact_queries"][0]["database_name"] = "ql_demo"
+    stage = _tracker_stage()
+    stage.execute(stats, conn)
+    assert conn.sent[0] == "SET LOCAL search_path TO public"
+    assert stage._foreign_engines == {}
+
+
+def test_postgres_foreign_engine_is_reused_for_same_database():
+    conn = _FakeConn()
+    stats = _stats(schema_name="public")
+    stats["top_impact_queries"][0]["database_name"] = "ventas"
+    stats["top_impact_queries"].append(
+        {
+            "query_id": 5,
+            "query_text": "SELECT * FROM sbtest2 WHERE id = $1",
+            "ready_for_explain": True,
+            "schema_name": "public",
+            "database_name": "ventas",
+        }
+    )
+    created = []
+    stage = _tracker_stage(created)
+    stage.execute(stats, conn)
+    assert len(created) == 1
+    assert created[0].connect_calls == 2
+
+
+def test_postgres_foreign_engines_are_disposed_after_execute():
+    conn = _FakeConn()
+    stats = _stats(schema_name="public")
+    stats["top_impact_queries"][0]["database_name"] = "ventas"
+    created = []
+    stage = _tracker_stage(created)
+    stage.execute(stats, conn)
+    assert all(engine.disposed for engine in created)
+    assert stage._foreign_engines == {}
+
+
+def test_mysql_never_opens_foreign_connection():
+    """El ruteo por base es solo de Postgres: en MySQL una conexion cambia de
+    base con USE, asi que el mismo conn del ciclo sirve para todo. Si alguien
+    reutilizara _foreign_connection para mysql, abriria conexiones de mas."""
+    conn = _FakeConn(rows=[{"EXPLAIN": '{"query_block": {"select_id": 1}}'}])
+    stats = _mysql_stats()
+    stats["top_impact_queries"][0]["database_name"] = "ventas"
+    stage = ExplainStage(_FakeMysqlCollector())
+    stage.execute(stats, conn)
+    assert conn.sent[0] == "USE ql_demo"
+    assert stage._foreign_engines == {}

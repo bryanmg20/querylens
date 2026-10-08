@@ -19,6 +19,10 @@ def is_single_statement(query_text):
 class ExplainStage:
     def __init__(self, collector):
         self.collector = collector
+        self._foreign_engines = {}
+        # Seam para tests: inyecta un builder de "engine" (url -> engine) para
+        # probar el ruteo sin abrir conexiones reales contra otra base.
+        self._foreign_engine_factory = None
 
     @staticmethod
     def _search_path_sql(schema_name, engine):
@@ -28,67 +32,123 @@ class ExplainStage:
         return f"SET LOCAL search_path TO {quoted}"
 
     @staticmethod
-    def _schema_context_sql(schema_name, dialect, engine):
+    def _connected_database(engine):
+        return (engine.url.database or "").strip() or None
+
+    @staticmethod
+    def _schema_context_sql(schema_name, database_name, dialect, engine):
         if dialect == "postgres":
             return ExplainStage._search_path_sql(schema_name, engine)
-        if schema_name:
-            quoted = engine.dialect.identifier_preparer.quote(str(schema_name))
+        context = schema_name or database_name
+        if context:
+            quoted = engine.dialect.identifier_preparer.quote(str(context))
             return f"USE {quoted}"
         return None
+
+    def _connection_for(self, query, conn):
+        """Un candidato de Postgres que vive en otra base (database_name != la
+        base conectada del target) se explica en una conexion dedicada a esa
+        base: una conexion de Postgres no puede cambiar de base con USE, el
+        plan solo puede armarse en el contexto real de cada base."""
+        if self.collector.source_dialect != "postgres":
+            return conn
+        database_name = query.get("database_name")
+        if not database_name:
+            return conn
+        connected_db = self._connected_database(self.collector.engine)
+        if database_name == connected_db:
+            return conn
+        return self._foreign_connection(database_name)
+
+    def _foreign_connection(self, database_name):
+        from sqlalchemy import create_engine
+        from sqlalchemy.pool import NullPool
+
+        from config.connections import postgres_connect_args
+
+        engine = self._foreign_engines.get(database_name)
+        if engine is not None:
+            return engine.connect()
+        url = self.collector.engine.url.set(database=database_name)
+        if self._foreign_engine_factory is not None:
+            engine = self._foreign_engine_factory(url)
+        else:
+            engine = create_engine(
+                url, connect_args=postgres_connect_args(), poolclass=NullPool
+            )
+        self._foreign_engines[database_name] = engine
+        return engine.connect()
+
+    def _dispose_foreign_engines(self):
+        for engine in self._foreign_engines.values():
+            engine.dispose()
+        self._foreign_engines.clear()
 
     def execute(self, stats: Stats, conn):
         stats["query_explain"] = []
 
-        for query in stats.get("top_impact_queries", []):
-            query_id = query.get("query_id")
-            if query_id is None or not query.get("ready_for_explain"):
-                continue
+        try:
+            for query in stats.get("top_impact_queries", []):
+                query_id = query.get("query_id")
+                if query_id is None or not query.get("ready_for_explain"):
+                    continue
 
-            dialect = self.collector.source_dialect
-            query_text = (
-                query.get("query_text")
-                if dialect == "postgres"
-                else query.get("query_sample_text")
-            )
-            if not is_single_statement(query_text):
-                logger.warning(
-                    f"{dialect} | EXPLAIN | query_id={query_id} "
-                    "| skipped multi-statement query"
+                dialect = self.collector.source_dialect
+                query_text = (
+                    query.get("query_text")
+                    if dialect == "postgres"
+                    else query.get("query_sample_text")
                 )
-                continue
+                if not is_single_statement(query_text):
+                    logger.warning(
+                        f"{dialect} | EXPLAIN | query_id={query_id} "
+                        "| skipped multi-statement query"
+                    )
+                    continue
 
-            try:
                 context_sql = self._schema_context_sql(
                     query.get("schema_name"),
-                    self.collector.source_dialect,
+                    query.get("database_name"),
+                    dialect,
                     self.collector.engine,
                 )
-                if context_sql:
-                    conn.execute(text(context_sql))
-
-                if dialect == "postgres":
-                    result = conn.execute(
-                        text(f"EXPLAIN (GENERIC_PLAN, FORMAT JSON) {query_text}")
+                if dialect == "mysql" and not context_sql:
+                    logger.warning(
+                        f"mysql | EXPLAIN | query_id={query_id} "
+                        "| skipped: no schema context"
                     )
-                    stats["query_explain"].append({
-                        "query_id": query_id,
-                        "explain_source": "generic",
-                        "plan": [dict(row) for row in result.mappings()],
-                    })
-                else:
-                    result = conn.execute(text(f"EXPLAIN FORMAT=JSON {query_text}"))
-                    plan_row = next(result.mappings(), None)
-                    if plan_row is None:
-                        logger.error(f"mysql | EXPLAIN | query_id={query_id} | returned no plan row")
-                        continue
-                    stats["query_explain"].append({
-                        "query_id": query_id,
-                        "explain_source": "sample",
-                        "plan": json.loads(plan_row["EXPLAIN"]),
-                    })
-            except Exception as e:
-                conn.rollback()
-                logger.error(f"{dialect} | EXPLAIN | query_id={query_id} | {e}")
+                    continue
+
+                active = self._connection_for(query, conn)
+                try:
+                    if context_sql:
+                        active.execute(text(context_sql))
+
+                    if dialect == "postgres":
+                        result = active.execute(
+                            text(f"EXPLAIN (GENERIC_PLAN, FORMAT JSON) {query_text}")
+                        )
+                        stats["query_explain"].append({
+                            "query_id": query_id,
+                            "explain_source": "generic",
+                            "plan": [dict(row) for row in result.mappings()],
+                        })
+                    else:
+                        result = active.execute(text(f"EXPLAIN FORMAT=JSON {query_text}"))
+                        plan_row = next(result.mappings(), None)
+                        if plan_row is None:
+                            logger.error(f"mysql | EXPLAIN | query_id={query_id} | returned no plan row")
+                            continue
+                        stats["query_explain"].append({
+                            "query_id": query_id,
+                            "explain_source": "sample",
+                            "plan": json.loads(plan_row["EXPLAIN"]),
+                        })
+                except Exception as e:
+                    active.rollback()
+                    logger.error(f"{dialect} | EXPLAIN | query_id={query_id} | {e}")
+        finally:
+            self._dispose_foreign_engines()
 
         normalizer = EXPLAIN_NORMALIZERS[self.collector.source_dialect]()
         normalizer.normalize(stats)

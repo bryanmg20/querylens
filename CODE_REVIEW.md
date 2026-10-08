@@ -13,6 +13,13 @@
 > - **N-3 (MEDIA):** en MySQL, `index_size_bytes` no es el tamaño individual del índice: `st.index_length` es nivel tabla y se repite por fila de índice. Documentado en `collectors/mysql/queries.py` (comentario) y `references/004_decisiones_contrato.md`.
 > - **M-* diferidos por decisión del usuario:** no se tocaron M-5 a M-13 (incluido no añadir `collect_errors`/`captured_at`: el contrato "vacío" vs "falló" queda como está — un snapshot vacío encolado "no sirve para nada", según decisión).
 
+> **Hallazgo de alcance por servidor (misma rama; en la conversación era "N-1") — resuelto:** las queries de recolección leían el **servidor completo** (`pg_stat_statements` devuelve filas de todas las bases, `pg_locks`/`pg_stat_activity` son cluster-wide; MySQL digests todos los schemas), pero el snapshot pertenece a un solo `db_id`. Decisión del usuario: **todo entra, atribuido por fila**. Implementado y verificado:
+> - `database_name` es campo declarado del contrato (`StatementRow`, `LockRow`, `ActiveQueryRow`): `pg_stat_statements → pg_database.datname`, `pg_locks.database → pg_database.datname` (NULL para advisory/txnid), `pg_stat_activity.datname`, y en MySQL `SCHEMA_NAME`/`object_schema` (donde base == schema).
+> - MySQL `query_id` ya no es solo el digest hex: es `{schema}/{digest}`. La PK real de `events_statements_summary_by_digest` es `(SCHEMA_NAME, DIGEST)`: con el id solo-digest, el dedup por `query_id` descartaba una de cada par de filas con el mismo digest en dos schemas. El goldens regenerado trae ids `ql_demo/864c…`.
+> - Postgres no tiene `USE` propio: un candidato de otra base (`database_name !=` la base conectada del target) se explica en una **conexión dedicada a esa base** (engine por base con `NullPool` + `postgres_connect_args`, cacheado por base y `dispose()` en `finally` de `ExplainStage`). MySQL, en cambio, se explica con `USE {schema|database}` en la misma conexión.
+> - **Cierra MEDIA-13** con un giro respecto a la sugerencia original: en MySQL un candidato **sin contexto de schema** (ni `schema_name` ni `database_name`) **se salta con warning** en vez de heredar el `USE` del candidato anterior (heredarlo arma el plan contra el schema equivocado). Limitación documentada: la resolución de schema extranjero corre contra el catálogo de la base conectada, y `EXPLAIN` sobre otra base requiere privilegios del rol monitor ahí.
+> - Verificado en vivo con una base scratch (PG): un statement ejecutado en la 2ª base aparece en `statements` con `database_name` propio y obtiene su plan. Suite completa **520 passed**; goldens regenerados con `ci/regenerate_goldens.py`.
+
 ---
 
 ## Resumen ejecutivo
@@ -186,6 +193,8 @@ En Postgres, collect + candidatos + N `EXPLAIN` corren dentro de **una sola tran
 **Dónde:** `stages/explain.py:31-37`
 
 Postgres emite `SET LOCAL search_path TO DEFAULT` cuando no hay schema; MySQL devuelve `None` y **no emite nada**, dejando el `USE` del candidato anterior (el `USE` es estado de sesión y sobrevive a `rollback`). Si algún candidato llega sin `schema_name`, su `EXPLAIN` corre contra el esquema anterior. Hoy es de baja probabilidad (MySQL siempre trae `schema_name` del performance_schema), pero es una asimetría sin propósito.
+
+**Resuelto (fix de alcance por servidor):** en MySQL un candidato sin contexto de schema (`schema_name` nulo **y** `database_name` nulo) se **salta con warning**, en vez de heredar el `USE` de un candidato anterior que armaría el plan contra el schema equivocado. Si tiene `database_name` pero no `schema_name`, se usa ese como contexto del `USE`. Cambió el test `test_mysql_skips_use_when_no_schema` (ahora el EXPLAIN ni siquiera se emite) y se añadió el de fallback por `database_name`.
 
 ---
 
