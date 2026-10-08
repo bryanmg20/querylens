@@ -52,31 +52,21 @@ def test_postgres_golden_validates(postgres_snapshot):
     assert payload.db_id == postgres_snapshot["db_id"]
 
 
-def test_mysql_sample_text_survives_validation(mysql_snapshot):
-    """query_sample_text es campo declarado del contrato: el sample real de
-    MySQL (literal con valores) debe sobrevivir from_snapshot -> to_json.
+def test_payload_does_not_carry_query_sample_text(mysql_snapshot, postgres_snapshot):
+    """query_sample_text es flujo interno, NO es campo del contrato.
 
-    Si alguien lo volviera a tirar con extra='ignore', el consumidor perderia
-    el texto exacto con que se armo el plan explain_source="sample" y no
-    habria forma de saberlo desde el payload.
+    MySQL lo emite con literales reales (QUERY_SAMPLE_TEXT) para armar el plan
+    explain_source="sample"; Postgres no produce la columna. El requerimiento
+    del proyecto es NO persistir informacion sensible o real de las queries, asi
+    que el payload debe descartarlo en ambos motores y solo viajar los textos
+    normalizados (query_text con placeholders). extra='ignore' es el mecanismo,
+    este test es la reja: si alguien vuelve a declarar el campo, los literales
+    reales vuelven al JSON encolado.
     """
-    payload = SnapshotPayload.from_snapshot(mysql_snapshot)
-    assert all(
-        stmt.query_sample_text is not None
-        for stmt in payload.statements
-        if not stmt.query_text.lstrip().upper().startswith("SET ")
-    )
-    dumped = payload.to_json().replace(" ", "")
-    assert '"query_sample_text":' in dumped
-
-
-def test_postgres_sample_text_is_null(postgres_snapshot):
-    """Postgres no produce QUERY_SAMPLE_TEXT: el campo va explícito en null,
-    no ausente, porque to_json usa exclude_none=False."""
-    payload = SnapshotPayload.from_snapshot(postgres_snapshot)
-    for stmt in payload.statements:
-        assert stmt.query_sample_text is None
-    assert '"query_sample_text":null' in payload.to_json().replace(" ", "")
+    for snapshot in (mysql_snapshot, postgres_snapshot):
+        payload = SnapshotPayload.from_snapshot(snapshot)
+        dumped = payload.to_json().replace(" ", "")
+        assert '"query_sample_text"' not in dumped
 
 
 # La huella del pipeline: queries de driver y de explain, no de aplicacion.

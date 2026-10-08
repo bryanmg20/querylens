@@ -11,6 +11,11 @@ El orden importa: resetear stats, cargar trafico de aplicacion, recien ahi
 recolectar. Resetear sin cargar deja al pipeline solo, y entonces su propia
 huella es lo unico que hay.
 
+Privacidad: al escribir el golden se descarta `query_sample_text` de cada fila.
+MySQL lo produce con literales reales y solo se usa en memoria para armar el
+plan (mark_explainable/EXPLAIN): no debe quedar en el archivo de fixture ni en
+el JSON encolado (ver references/004_decisiones_contrato.md).
+
 USAGE (con los contenedores del sandbox arriba):
     python ci/regenerate_goldens.py
     python ci/regenerate_goldens.py --battery-reps 30
@@ -121,6 +126,15 @@ def report(name, stats):
         print(f"  AVISO: {len(untyped)} candidatos sin query_text")
 
 
+def strip_internal_sample(rows):
+    """query_sample_text es flujo interno (mark_explainable/EXPLAIN MySQL) y no
+    debe persistirse: trae literales reales y el requerimiento del proyecto es no
+    guardar informacion real de las queries. Se descarta al escribir el golden
+    (y SnapshotPayload lo descarta del payload con extra='ignore')."""
+    for row in rows or []:
+        row.pop("query_sample_text", None)
+
+
 def main():
     reps = 30
     if "--battery-reps" in sys.argv:
@@ -146,6 +160,13 @@ def main():
         if not stats.get("canonic_explains"):
             print(f"{dialect}: sin explains, no se escribe el golden")
             continue
+
+        for section in (
+            "statements",
+            "top_impact_queries",
+            "non_explainable_candidates",
+        ):
+            strip_internal_sample(stats.get(section))
 
         with engine_path(dialect, filename).open("w", encoding="utf-8") as handle:
             json.dump(stats, handle, indent=2, ensure_ascii=False, default=str)
