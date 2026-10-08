@@ -84,6 +84,20 @@ def test_pg_total_cost():
     assert stats["canonic_explains"][0]["canonical_plan"]["estimates"]["total_cost"] == 25.5
 
 
+def test_pg_output_rows_from_root_plan():
+    stats = {"query_explain": [{"query_id": 1, "plan": _pg_plan("Seq Scan", **{"Plan Rows": 42})}]}
+    EXPLAIN_NORMALIZERS["postgres"]().normalize(stats)
+    assert stats["canonic_explains"][0]["canonical_plan"]["estimates"]["output_rows"] == 42
+
+
+def test_pg_output_rows_none_when_missing():
+    stats = {"query_explain": [{"query_id": 1, "plan": [{"Plan": {
+        "Node Type": "Seq Scan", "Total Cost": 1.0, "Plans": [],
+    }}]}]}
+    EXPLAIN_NORMALIZERS["postgres"]().normalize(stats)
+    assert stats["canonic_explains"][0]["canonical_plan"]["estimates"]["output_rows"] is None
+
+
 def test_pg_empty_plan():
     stats = {"query_explain": [{"query_id": 1, "plan": []}]}
     EXPLAIN_NORMALIZERS["postgres"]().normalize(stats)
@@ -175,6 +189,54 @@ def test_mysql_total_cost():
     stats = {"query_explain": [{"query_id": 4, "plan": _mysql_table(_mysql_table_node("t"), query_cost=42.0)}]}
     EXPLAIN_NORMALIZERS["mysql"]().normalize(stats)
     assert stats["canonic_explains"][0]["canonical_plan"]["estimates"]["total_cost"] == 42.0
+
+
+def test_mysql_output_rows_from_single_table():
+    stats = {"query_explain": [{"query_id": 18, "plan": _mysql_table(
+        _mysql_table_node("t", rows_produced_per_join=123)
+    )}]}
+    EXPLAIN_NORMALIZERS["mysql"]().normalize(stats)
+    assert stats["canonic_explains"][0]["canonical_plan"]["estimates"]["output_rows"] == 123
+
+
+def test_mysql_output_rows_from_nested_loop_last_table():
+    stats = {"query_explain": [{"query_id": 19, "plan": {
+        "query_block": {
+            "cost_info": {"query_cost": "1"},
+            "nested_loop": [
+                {"table": _mysql_table_node("a", rows_produced_per_join=10)},
+                {"table": _mysql_table_node("b", rows_produced_per_join=20)},
+                {"table": _mysql_table_node("c", rows_produced_per_join=30)},
+            ],
+        }
+    }}]}
+    EXPLAIN_NORMALIZERS["mysql"]().normalize(stats)
+    assert stats["canonic_explains"][0]["canonical_plan"]["estimates"]["output_rows"] == 30
+
+
+def test_mysql_output_rows_from_ordering_operation_wrapper():
+    stats = {"query_explain": [{"query_id": 20, "plan": {
+        "query_block": {
+            "cost_info": {"query_cost": "1"},
+            "ordering_operation": {
+                "using_filesort": True,
+                "nested_loop": [
+                    {"table": _mysql_table_node("a", rows_produced_per_join=10)},
+                    {"table": _mysql_table_node("b", rows_produced_per_join=20)},
+                ],
+            },
+        }
+    }}]}
+    EXPLAIN_NORMALIZERS["mysql"]().normalize(stats)
+    assert stats["canonic_explains"][0]["canonical_plan"]["estimates"]["output_rows"] == 20
+
+
+def test_mysql_output_rows_none_when_missing():
+    stats = {"query_explain": [{"query_id": 21, "plan": {
+        "query_block": {"cost_info": {"query_cost": "1"}}
+    }}]}
+    EXPLAIN_NORMALIZERS["mysql"]().normalize(stats)
+    assert stats["canonic_explains"][0]["canonical_plan"]["estimates"]["output_rows"] is None
 
 
 def test_mysql_nested_loop():

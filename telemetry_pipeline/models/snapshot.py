@@ -142,6 +142,7 @@ class LogicalShape(BaseModel):
 
 class Estimates(BaseModel):
     total_cost: float | None = None
+    output_rows: Union[int, float] | None = None
 
 
 class PhysicalOperation(BaseModel):

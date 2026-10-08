@@ -127,9 +127,12 @@ class PostgresExplainNormalizer:
     def _plan_estimates(self, node):
         estimates = {
             "total_cost": None,
+            "output_rows": None,
         }
         if "Total Cost" in node:
             estimates["total_cost"] = to_number(node["Total Cost"])
+        if "Plan Rows" in node:
+            estimates["output_rows"] = to_number(node["Plan Rows"])
         return estimates
 
     def _scan_operation(self, node):
@@ -204,6 +207,14 @@ def _base_operation(operation_type):
 
 class MysqlExplainNormalizer:
 
+    WRAPPERS = (
+        "ordering_operation",
+        "grouping_operation",
+        "duplicates_removal",
+        "windowing",
+        "buffer_result",
+    )
+
     def normalize(self, stats: Stats) -> Stats:
         canonic_explains = []
 
@@ -220,11 +231,13 @@ class MysqlExplainNormalizer:
                 "physical_operations": [],
                 "estimates": {
                     "total_cost": None,
+                    "output_rows": None,
                 },
             }
 
             plan = explain.get("plan") or {}
             self._set_root_cost(plan, canonical_plan)
+            canonical_plan["estimates"]["output_rows"] = self._get_output_rows(plan)
             self._walk_plan(plan, canonical_plan)
 
             canonic_explains.append({
@@ -235,6 +248,36 @@ class MysqlExplainNormalizer:
 
         stats["canonic_explains"] = canonic_explains
         return stats
+
+    def _get_output_rows(self, plan):
+        query_block = plan.get("query_block") if isinstance(plan, dict) else None
+        if not isinstance(query_block, dict):
+            return None
+
+        def find_last_table(node):
+            if not isinstance(node, dict):
+                return None
+
+            if "nested_loop" in node:
+                nested_loop = node["nested_loop"]
+                if isinstance(nested_loop, list) and nested_loop:
+                    last_elem = nested_loop[-1]
+                    if isinstance(last_elem, dict) and "table" in last_elem:
+                        table = last_elem["table"]
+                        if isinstance(table, dict):
+                            return to_number(table.get("rows_produced_per_join"))
+            if "table" in node:
+                table = node["table"]
+                if isinstance(table, dict):
+                    return to_number(table.get("rows_produced_per_join"))
+
+            for w in self.WRAPPERS:
+                if w in node:
+                    return find_last_table(node[w])
+
+            return None
+
+        return find_last_table(query_block)
 
     def _set_root_cost(self, plan, canonical_plan):
         query_block = plan.get("query_block") if isinstance(plan, dict) else None
