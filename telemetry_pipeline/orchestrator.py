@@ -1,9 +1,13 @@
+from logger import get_logger
 from models.stats import Stats
+from stages.canonicalizers import redact_active_queries
 from stages.candidates import CandidatesStage
 from stages.collect import CollectStage
 from stages.enrich import EnrichStage
 from stages.explain import ExplainStage
 from stages.normalize import NormalizeStage
+
+logger = get_logger(__name__)
 
 
 class Orchestrator:
@@ -28,6 +32,16 @@ class Orchestrator:
                 self.candidates.execute(stats)
                 self.explain.execute(stats, conn)
                 self.normalize.execute(stats)
+            else:
+                # Q3: una falla de la seccion statements degrada el snapshot en
+                # silencio; se avisa para que no parezca una seccion legitima vacia.
+                logger.warning(
+                    "orchestrator | statements no disponibles | se omiten "
+                    "candidates/explain/normalize"
+                )
+                # Q4: la reja de privacidad corre siempre. Sin statements no hay
+                # normalizacion, pero active_queries.no puede viajar con texto real.
+                redact_active_queries(stats)
             self.enrich.execute(stats)
         self.collector.stats = stats
         return stats

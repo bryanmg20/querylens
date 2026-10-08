@@ -49,3 +49,13 @@ def normalize_querytext_active(stats: Stats, source_dialect="postgres"):
             continue
 
         stmt["canonic_query"] = canonicalize_query(query_text, source_dialect) or "Not available"
+
+
+def redact_active_queries(stats: Stats):
+    """Reja de privacidad del camino degradado (Q4): sin `statements` no hay
+    normalizacion disponible, pero el texto real de las queries activas nunca
+    puede viajar. Se descarta `query_text` y `canonic_query` queda en
+    "Not available" para que sea inconfundible que no hubo contexto."""
+    for stmt in stats.get("active_queries") or []:
+        stmt.pop("query_text", None)
+        stmt["canonic_query"] = "Not available"

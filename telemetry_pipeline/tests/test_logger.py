@@ -81,6 +81,20 @@ def test_level_is_info(isolated):
     assert log.level == logging.INFO
 
 
+def test_level_follows_ql_log_level_env(isolated, monkeypatch):
+    monkeypatch.setenv("QL_LOG_LEVEL", "DEBUG")
+    log = _fresh("test.logger.env")
+    get_logger(log.name)
+    assert log.level == logging.DEBUG
+
+
+def test_invalid_ql_log_level_falls_back_to_info(isolated, monkeypatch):
+    monkeypatch.setenv("QL_LOG_LEVEL", "GARBAGE")
+    log = _fresh("test.logger.bad_env")
+    get_logger(log.name)
+    assert log.level == logging.INFO
+
+
 def test_log_file_is_rotated_not_grown_forever(isolated):
     log = _fresh("test.logger.rotate")
     get_logger(log.name)

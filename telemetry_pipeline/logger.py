@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -44,6 +45,18 @@ def _build_file_handler():
     return handler
 
 
+def _level_from_env() -> int:
+    """Nivel por QL_LOG_LEVEL (DEBUG/INFO/WARNING/ERROR). Default INFO.
+
+    Mantiene el comportamiento historico (todo INFO salvo runner.py, que baja a
+    DEBUG por su cuenta) y habilita por proceso un nivel inferior: p. ej.
+    QL_LOG_LEVEL=DEBUG hace visible la linea DEBUG de tamano de payload de
+    main._log_payload_size, muerta desde que logger.py fija INFO a mansalva.
+    """
+    level = (os.getenv("QL_LOG_LEVEL") or "INFO").strip().upper()
+    return getattr(logging, level, logging.INFO)
+
+
 def get_logger(name: str) -> logging.Logger:
     """Devuelve un logger con salida propia del pipeline.
 
@@ -54,7 +67,7 @@ def get_logger(name: str) -> logging.Logger:
     su archivo, sin duplicar en la configuracion del host.
     """
     logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(_level_from_env())
     logger.propagate = False
 
     target = str(LOGS_DIR / "pipeline.log")

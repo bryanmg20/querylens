@@ -261,6 +261,27 @@ def test_statements_failure_still_enriches_with_db_id():
     assert stats["indexes"], "las demas secciones siguen collected"
 
 
+def test_statements_failure_redacts_active_queries():
+    """Q4: aunque statements falle, active_queries nunca viaja con query_text
+    real. Las demas secciones degradan, la privacidad no."""
+    conn = _FakeConn({"pg_stat_statements": RuntimeError("boom")})
+    stats, _, _ = _run(conn)
+
+    assert all("query_text" not in row for row in stats["active_queries"])
+    assert all(row["canonic_query"] == "Not available" for row in stats["active_queries"])
+
+
+def test_statements_failure_logs_degradation(caplog):
+    """Q3: la degradacion no puede ser silenciosa; se avisa con WARNING."""
+    import orchestrator as orchestrator_module
+
+    conn = _FakeConn({"pg_stat_statements": RuntimeError("boom")})
+    with caplog.at_level("WARNING", logger="orchestrator"):
+        _run(conn)
+    messages = [r.getMessage() for r in caplog.records if r.levelname == "WARNING"]
+    assert any("statements no disponibles" in m for m in messages)
+
+
 def test_empty_statements_list_is_not_treated_as_missing():
     stats, _, _ = _run(_FakeConn({"pg_stat_statements": []}))
     assert stats["statements"] == []
