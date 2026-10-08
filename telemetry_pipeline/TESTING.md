@@ -88,7 +88,7 @@ tests/
 │   └── postgres_snapshot.json           # snapshot real capturado en Postgres
 ├── test_architecture.py                 # patrones de diseño (contract)
 ├── test_candidates_stage.py             # selección + schema_resolver (unit)
-├── test_canonicalizers.py               # canonicalize, anonimización, active (unit)
+├── test_canonicalizers.py               # canonicalize, active (unit)
 ├── test_collectors_explainable.py       # mark_explainable por motor (unit)
 ├── test_collect_stage.py                # CollectStage + fallos aislados (unit)
 ├── test_connections.py                  # conexiones env-driven (unit)
@@ -165,7 +165,7 @@ docker exec querylens_db psql -U ql_user -d ql_demo \
   -c "SELECT database_identifier, engine, is_active, connection_name FROM registered_databases;"
 ```
 
-`test_registered_targets.py` cubre el descifrado, el mapeo de engine, el aislamiento de filas rotas y los casos de fallback, con la base falsificada (no necesita contenedores). El detalle de cada decisión está en `PIPELINE_FLOW.md` § *Targets de conexión*.
+`test_registered_targets.py` cubre el descifrado, el mapeo de engine, el aislamiento de filas rotas y los casos de "sin targets no se extrae nada", con la base falsificada (no necesita contenedores). El detalle de cada decisión está en `PIPELINE_FLOW.md` § *Targets de conexión*.
 
 ### Carga de trabajo en CI
 

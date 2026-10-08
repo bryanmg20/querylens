@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Engine, URL
 import os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -16,6 +16,29 @@ READ_TIMEOUT_S = 40         # solo MySQL (socket): > statement_timeout, para que
 def _env(name: str, default: str) -> str:
     value = os.getenv(name)
     return default if value is None or value == "" else value
+
+
+def _make_url(
+    drivername: str,
+    host: str,
+    port: int | None,
+    username: str,
+    password: str,
+    database: str | None = None,
+) -> URL:
+    """URL.create en vez de f-string: la password puede traer '@', ':', '?' o '/'
+    y un template roto haria que el driver parseara mal los componentes (el
+    password llega truncado). Cada componente viaja por separado y el driver
+    recibe el valor integro. Mismo criterio que config/registered.py.
+    """
+    return URL.create(
+        drivername=drivername,
+        username=username,
+        password=password,
+        host=host,
+        port=port,
+        database=database,
+    )
 
 
 def postgres_connect_args() -> dict:
@@ -55,7 +78,14 @@ def get_connection_postgres() -> Engine:
     db_user = _env("MONITOR_PG_USER", "querylens_monitor")
     db_password = _env("MONITOR_PG_PASSWORD", "monitor_pass")
 
-    url = f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+    url = _make_url(
+        drivername="postgresql+psycopg2",
+        host=db_host,
+        port=int(db_port) if db_port else None,
+        username=db_user,
+        password=db_password,
+        database=db_name,
+    )
     return create_engine(url, connect_args=postgres_connect_args())
 
 
@@ -73,7 +103,14 @@ def get_connection_mysql() -> Engine:
     db_user = _env("MONITOR_MY_USER", "querylens_monitor")
     db_password = _env("MONITOR_MY_PASSWORD", "monitor_pass")
 
-    url = f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/"
+    url = _make_url(
+        drivername="mysql+pymysql",
+        host=db_host,
+        port=int(db_port) if db_port else None,
+        username=db_user,
+        password=db_password,
+        database="",
+    )
 
     return create_engine(
         url,
@@ -99,5 +136,12 @@ def get_connection_querylens_db() -> Engine:
     db_user = _env("QUERYLENS_USER", "ql_user")
     db_password = _env("QUERYLENS_PASSWORD", "ql_pass")
 
-    url = f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+    url = _make_url(
+        drivername="postgresql+psycopg2",
+        host=db_host,
+        port=int(db_port) if db_port else None,
+        username=db_user,
+        password=db_password,
+        database=db_name,
+    )
     return create_engine(url, connect_args=postgres_connect_args())

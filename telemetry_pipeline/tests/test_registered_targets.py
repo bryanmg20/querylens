@@ -2,8 +2,8 @@
 
 Fernet es real (clave generada por test) pero la base esta falsificada: no se
 abre ninguna conexion, para que estas pruebas corran en el job de CI, que no
-crea la tabla. El contrato de la consulta y el fallback a ENGINES tambien se
-cubren aqui.
+crea la tabla. El contrato de la consulta y el caso "sin targets no se extrae
+nada" tambien se cubren aqui.
 """
 import logging
 from unittest import mock
@@ -78,7 +78,7 @@ def test_fila_mysql_va_sin_base(fernet, monkeypatch):
 
     assert target.dialect == "mysql"
     assert target.db_id == "db_ab12cd34"
-    assert target.factory().url.database is None, (
+    assert not target.factory().url.database, (
         "MySQL se conecta sin base: el USE lo emite ExplainStage"
     )
 
@@ -111,7 +111,7 @@ def test_puerto_invalido_se_omite(fernet, monkeypatch):
     assert registered.load_registered_targets() is None
 
 
-# ---------- sin tabla, sin clave: fallback a ENGINES ----------
+# ---------- sin tabla, sin clave: no se extrae nada (sin fallback) ----------
 
 
 def test_sin_tabla_devuelve_none(fernet, monkeypatch, caplog):
@@ -121,7 +121,7 @@ def test_sin_tabla_devuelve_none(fernet, monkeypatch, caplog):
         targets = registered.load_registered_targets()
 
     assert targets is None
-    assert any("fallback a ENGINES" in r.getMessage() for r in caplog.records)
+    assert any("no se extrae nada" in r.getMessage() for r in caplog.records)
 
 
 def test_sin_clave_devuelve_none(monkeypatch, caplog):

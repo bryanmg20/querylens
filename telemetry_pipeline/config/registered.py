@@ -9,7 +9,9 @@ devuelve un Target por fila, para que main() ejecute el pipeline contra cada
 una.
 
 Si la tabla no existe (CI), no hay filas activas o falta la clave, devuelve
-None y main() cae a los ENGINES fijos del sandbox.
+None y main() no extrae nada (el motivo queda en el log). No hay fallback a
+los ENGINES fijos del sandbox: son rutas separadas (main vs main_sandbox);
+implementar un fallback real queda pendiente, ver CODE_REVIEW M-6.
 """
 import os
 from dataclasses import dataclass
@@ -17,9 +19,10 @@ from typing import Callable
 
 from cryptography.fernet import Fernet, InvalidToken
 from sqlalchemy import create_engine, text
-from sqlalchemy.engine import URL, Engine
+from sqlalchemy.engine import Engine, URL
 
 from config.connections import (
+    _make_url,
     get_connection_querylens_db,
     mysql_connect_args,
     postgres_connect_args,
@@ -90,18 +93,18 @@ def _build_target(row: dict, fernet: Fernet) -> Target | None:
 def _target_url(
     dialect: str, user: str, password: str, host: str, port: int | None, database_name: str
 ) -> URL:
-    # URL.create en vez de f-string: la password viene de Fernet y puede
-    # contener '@', ':' o '/' que romperian el parseo de la URL.
+    # La password viene de Fernet y puede contener '@', ':', '?' o '/': el
+    # helper de connections usa URL.create y cada componente viaja por separado.
     driver = "postgresql+psycopg2" if dialect == "postgres" else "mysql+pymysql"
     # MySQL se conecta sin base a proposito: ExplainStage emite el USE
     # (mismo contrato que get_connection_mysql, ver test_connections.py).
-    database = database_name if dialect == "postgres" else None
-    return URL.create(
+    database = database_name if dialect == "postgres" else ""
+    return _make_url(
         drivername=driver,
-        username=user,
-        password=password,
         host=host,
         port=port,
+        username=user,
+        password=password,
         database=database,
     )
 
@@ -120,7 +123,8 @@ def _engine(dialect: str, url: URL) -> Engine:
 
 
 def load_registered_targets() -> list[Target] | None:
-    """Targets activos de registered_databases, o None si hay que caer a ENGINES.
+    """Targets activos de registered_databases, o None cuando no hay con que
+    trabajar (entonces main() no extrae nada y el motivo queda en el log).
 
     Devuelve None (no una lista vacia) cuando no hay con que trabajar: tabla
     inexistente, sin filas activas, sin AUTH_ENCRYPTION_KEY o con la clave
@@ -128,14 +132,14 @@ def load_registered_targets() -> list[Target] | None:
     """
     key = os.getenv("AUTH_ENCRYPTION_KEY")
     if not key:
-        logger.warning("registered_targets | sin AUTH_ENCRYPTION_KEY | fallback a ENGINES")
+        logger.warning("registered_targets | sin AUTH_ENCRYPTION_KEY | no se extrae nada")
         return None
 
     try:
         fernet = Fernet(key.encode())
     except ValueError as exc:
         logger.error(
-            f"registered_targets | AUTH_ENCRYPTION_KEY invalida: {exc} | fallback a ENGINES"
+            f"registered_targets | AUTH_ENCRYPTION_KEY invalida: {exc} | no se extrae nada"
         )
         return None
 
@@ -147,13 +151,13 @@ def load_registered_targets() -> list[Target] | None:
         # un error del pipeline, es que no hay targets registrados todavia.
         logger.warning(
             f"registered_targets | no se pudo leer registered_databases "
-            f"({type(exc).__name__}: {str(exc)[:120]}) | fallback a ENGINES"
+            f"({type(exc).__name__}: {str(exc)[:120]}) | no se extrae nada"
         )
         return None
 
     targets = [t for t in (_build_target(dict(r), fernet) for r in rows) if t]
     if not targets:
-        logger.info("registered_targets | sin filas activas utilizables | fallback a ENGINES")
+        logger.info("registered_targets | sin filas activas utilizables | no se extrae nada")
         return None
 
     # Debug, no INFO: runner.py repite este SELECT cada 10 s y un resumen por

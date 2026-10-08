@@ -1,3 +1,4 @@
+import json
 import logging
 
 import pytest
@@ -19,10 +20,28 @@ class _FakeResult:
         return iter(self._rows)
 
 
+class _Tx:
+    """begin() de SQLAlchemy: hace commit si el bloque sale limpio y rollback
+    si lanza. Los fakes de conexion imitan ese contrato en miniatura."""
+
+    def __init__(self, conn):
+        self._conn = conn
+
+    def __enter__(self):
+        return self._conn
+
+    def __exit__(self, exc_type, *exc):
+        if exc_type is None:
+            self._conn.commit()
+        else:
+            self._conn.rollback()
+
+
 class _FakeConn:
     def __init__(self, rows=None):
         self.sent = []
         self.rollback_calls = 0
+        self.commit_calls = 0
         # `rows=[]` tiene que significar "el motor no devolvio nada", no
         # "usa el default": con `rows or [...]` una lista vacia es falsy y
         # justamente el caso que el test de plan vacio necesita provocar quedaba
@@ -34,6 +53,12 @@ class _FakeConn:
     def execute(self, stmt):
         self.sent.append(str(stmt))
         return _FakeResult(self.rows)
+
+    def begin(self):
+        return _Tx(self)
+
+    def commit(self):
+        self.commit_calls += 1
 
     def rollback(self):
         self.rollback_calls += 1
@@ -159,11 +184,12 @@ class _FailingConn(_FakeConn):
         return _FakeResult(self.rows)
 
 
-def test_postgres_explain_error_rolls_back_and_skips():
+def test_postgres_explain_error_rolls_back_the_short_transaction():
     conn = _FailingConn()
     stats = _stats(schema_name="public")
     ExplainStage(_FakeCollector()).execute(stats, conn)
     assert conn.rollback_calls == 1
+    assert conn.commit_calls == 0
     assert stats["canonic_explains"] == []
 
 
@@ -246,6 +272,24 @@ def test_mysql_falls_back_to_database_name_when_no_schema():
     ExplainStage(_FakeMysqlCollector()).execute(stats, conn)
     assert conn.sent[0] == "USE ventas"
     assert "EXPLAIN FORMAT=JSON insert into sbtest1" in conn.sent[1]
+
+
+def test_mysql_canonical_plan_carries_the_real_explain_content():
+    """El canonical_plan debe reflejar el JSON que devolvio el motor, no una
+    constante (mutation "mysql devuelve plan fijo"): si ExplainStage hardcodeara
+    el plan, la relation 'sbtest1' de la muestra nunca llegaria al snapshot."""
+    conn = _FakeConn(rows=[{"EXPLAIN": json.dumps({
+        "query_block": {
+            "cost_info": {"query_cost": "42.0"},
+            "table": {"table_name": "sbtest1", "access_type": "ALL"},
+        }
+    })}])
+    stats = _mysql_stats()
+    ExplainStage(_FakeMysqlCollector()).execute(stats, conn)
+    plan = stats["canonic_explains"][0]["canonical_plan"]
+    assert plan["physical_operations"][0]["relation"] == "sbtest1"
+    assert plan["logical_shape"]["scans"] == 1
+    assert plan["estimates"]["total_cost"] == 42.0
 
 
 def test_mysql_truncated_sample_is_not_explainable():
@@ -378,6 +422,33 @@ def test_query_explain_is_dropped_from_snapshot():
     ExplainStage(_FakeCollector()).execute(stats, conn)
     assert "query_explain" not in stats
     assert stats["canonic_explains"]
+
+
+def test_postgres_commits_the_short_transaction_per_candidate():
+    """Cada candidato abre su propia transaccion corta (M-12): un exit limpio la
+    commitea. Sin el commit, el SET LOCAL/EXPLAIN quedarian en la transaccion
+    larga del ciclo y las lecturas del servidor quedarian abiertas hasta el fin."""
+    conn = _FakeConn()
+    stats = _stats()
+    stats["top_impact_queries"].append(
+        {
+            "query_id": 8,
+            "query_text": "SELECT * FROM t2 WHERE id = $1",
+            "ready_for_explain": True,
+            "schema_name": "public",
+        }
+    )
+    ExplainStage(_FakeCollector()).execute(stats, conn)
+    assert conn.commit_calls == 2
+
+
+def test_postgres_explain_error_rolls_back_the_short_transaction():
+    conn = _FailingConn()
+    stats = _stats(schema_name="public")
+    ExplainStage(_FakeCollector()).execute(stats, conn)
+    assert conn.rollback_calls == 1
+    assert conn.commit_calls == 0
+    assert stats["canonic_explains"] == []
 
 
 class _FakeForeignEngine:

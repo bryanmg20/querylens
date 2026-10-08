@@ -121,31 +121,36 @@ class ExplainStage:
 
                 active = self._connection_for(query, conn)
                 try:
-                    if context_sql:
-                        active.execute(text(context_sql))
+                    # Transaccion corta por candidato (M-12): el collect ya hizo
+                    # COMMIT sobre esta conexion; el BEGIN...COMMIT aísla el
+                    # contexto (SET LOCAL / USE) + EXPLAIN. En Postgres SET LOCAL
+                    # es transaccional y se deshace al cerrar; en MySQL el USE es
+                    # estado de sesion y sobrevive al COMMIT.
+                    with active.begin():
+                        if context_sql:
+                            active.execute(text(context_sql))
 
-                    if dialect == "postgres":
-                        result = active.execute(
-                            text(f"EXPLAIN (GENERIC_PLAN, FORMAT JSON) {query_text}")
-                        )
-                        stats["query_explain"].append({
-                            "query_id": query_id,
-                            "explain_source": "generic",
-                            "plan": [dict(row) for row in result.mappings()],
-                        })
-                    else:
-                        result = active.execute(text(f"EXPLAIN FORMAT=JSON {query_text}"))
-                        plan_row = next(result.mappings(), None)
-                        if plan_row is None:
-                            logger.error(f"mysql | EXPLAIN | query_id={query_id} | returned no plan row")
-                            continue
-                        stats["query_explain"].append({
-                            "query_id": query_id,
-                            "explain_source": "sample",
-                            "plan": json.loads(plan_row["EXPLAIN"]),
-                        })
+                        if dialect == "postgres":
+                            result = active.execute(
+                                text(f"EXPLAIN (GENERIC_PLAN, FORMAT JSON) {query_text}")
+                            )
+                            stats["query_explain"].append({
+                                "query_id": query_id,
+                                "explain_source": "generic",
+                                "plan": [dict(row) for row in result.mappings()],
+                            })
+                        else:
+                            result = active.execute(text(f"EXPLAIN FORMAT=JSON {query_text}"))
+                            plan_row = next(result.mappings(), None)
+                            if plan_row is None:
+                                logger.error(f"mysql | EXPLAIN | query_id={query_id} | returned no plan row")
+                                continue
+                            stats["query_explain"].append({
+                                "query_id": query_id,
+                                "explain_source": "sample",
+                                "plan": json.loads(plan_row["EXPLAIN"]),
+                            })
                 except Exception as e:
-                    active.rollback()
                     logger.error(f"{dialect} | EXPLAIN | query_id={query_id} | {e}")
         finally:
             self._dispose_foreign_engines()

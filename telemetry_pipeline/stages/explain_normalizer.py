@@ -140,7 +140,7 @@ class PostgresExplainNormalizer:
             "Bitmap Heap Scan": "index_lookup",
             "Bitmap Index Scan": "index_lookup",
         }
-        operation = self._base_operation("scan")
+        operation = _base_operation("scan")
         operation["access_method"] = access_methods[node["Node Type"]]
         operation["relation"] = node.get("Alias") or node.get("Relation Name")
         field_mapping = {
@@ -153,11 +153,11 @@ class PostgresExplainNormalizer:
         return operation
 
     def _join_operation(self, node):
-        operation = self._base_operation("join")
+        operation = _base_operation("join")
         return operation
 
     def _aggregate_operation(self, node):
-        operation = self._base_operation("aggregate")
+        operation = _base_operation("aggregate")
         self._copy_fields(operation, node, {
             "Filter": "predicate",
             "Plan Rows": "estimated_rows",
@@ -165,14 +165,14 @@ class PostgresExplainNormalizer:
         return operation
 
     def _sort_operation(self, node):
-        operation = self._base_operation("sort")
+        operation = _base_operation("sort")
         self._copy_fields(operation, node, {
             "Plan Rows": "estimated_rows",
         })
         return operation
 
     def _subquery_operation(self, node):
-        operation = self._base_operation("subquery")
+        operation = _base_operation("subquery")
         self._copy_fields(operation, node, {
             "Filter": "predicate",
             "Plan Rows": "estimated_rows",
@@ -180,28 +180,27 @@ class PostgresExplainNormalizer:
         return operation
 
     def _distinct_operation(self, node):
-        operation = self._base_operation("distinct")
+        operation = _base_operation("distinct")
         self._copy_fields(operation, node, {
             "Plan Rows": "estimated_rows",
         })
         return operation
 
     @staticmethod
-    def _base_operation(operation_type):
-        return {
-            "type": operation_type,
-            "access_method": None,
-            "relation": None,
-            "estimated_rows": None,
-            "predicate": None,
-            "index_name": None,
-        }
-
-    @staticmethod
     def _copy_fields(operation, node, field_mapping):
         for source_field, canonical_field in field_mapping.items():
             if source_field in node:
                 operation[canonical_field] = node[source_field]
+
+def _base_operation(operation_type):
+    return {
+        "type": operation_type,
+        "access_method": None,
+        "relation": None,
+        "estimated_rows": None,
+        "predicate": None,
+        "index_name": None,
+    }
 
 class MysqlExplainNormalizer:
 
@@ -292,7 +291,7 @@ class MysqlExplainNormalizer:
             "ref": "index_lookup",
         }
 
-        operation = self._base_operation("scan")
+        operation = _base_operation("scan")
 
         if "access_type" in node:
             operation["access_method"] = access_methods.get(access_type)
@@ -311,39 +310,28 @@ class MysqlExplainNormalizer:
         return operation
 
     def _join_operation(self, node):
-        operation = self._base_operation("join")
+        operation = _base_operation("join")
         if isinstance(node, dict):
             operation["predicate"] = _flag(node, "join_condition")
         return operation
 
     def _aggregate_operation(self, node):
-        operation = self._base_operation("aggregate")
+        operation = _base_operation("aggregate")
         if isinstance(node, dict):
             operation["predicate"] = _flag(node, "using_temporary_table")
         return operation
 
     def _sort_operation(self, node):
-        operation = self._base_operation("sort")
+        operation = _base_operation("sort")
         if isinstance(node, dict):
             operation["predicate"] = _flag(node, "using_filesort")
         return operation
 
     def _subquery_operation(self, node):
-        return self._base_operation("subquery")
+        return _base_operation("subquery")
 
     def _distinct_operation(self, node):
-        return self._base_operation("distinct")
-
-    @staticmethod
-    def _base_operation(operation_type):
-        return {
-            "type": operation_type,
-            "access_method": None,
-            "relation": None,
-            "estimated_rows": None,
-            "predicate": None,
-            "index_name": None,
-        }
+        return _base_operation("distinct")
 
 
 EXPLAIN_NORMALIZERS = {

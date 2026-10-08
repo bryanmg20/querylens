@@ -31,6 +31,16 @@ class Mysql_Collector(DB_Engine_Collector):
         return self.calculate_stddev_coeff(stats)
 
     def calculate_stddev_coeff(self, stats: Stats | None = None) -> Stats:
+        """stddev_time_ms es una estimacion, no una medida (MySQL no la expone).
+
+        La regla es heuristico: stddev ~= (max - mean) / sqrt(count), un spread
+        plaussible si el max se da entre los extremos de una distribucion. No
+        cambia la semantica del snapshot: alimenta el ranking de impacto y point
+        alla donde el consumidor lo use, pero no se debe leer como desviacion
+        estadistica real. El guard max_time > mean*1000 descarta outliers por
+        orden de magnitud (tupla aislada lenta); documentado en
+        references/004_decisiones_contrato.md (M-9).
+        """
         import math
 
         if stats is None:

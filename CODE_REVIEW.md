@@ -5,6 +5,8 @@
 **Método:** lectura completa de los módulos del pipeline, verificación de afirmaciones de los docs, revisión de la DDL, ejecución de la suite (`466 passed, 21 deselected` — las de integración requieren contenedores) y reproducción de los hallazgos sospechosos con scripts mínimos.
 **Contexto:** proyecto en desarrollo. Las severidades son relativas a ese estado: "Alta" = pierde datos o puede parar el daemon en producción.
 
+> **Actualizado (misma rama, ronda M-6 a M-12):** M-6 resuelto (los textos del fallback ya no engañan, y la implementación real queda anotada como pendiente); **M-7 parcial** (`_base_operation` único y `anonimize_query_text` eliminada; quedan las duplicaciones de normalización y del engine); M-8 resuelto (helper `URL.create` único + test de password round-trip); M-9 resuelto como documentación; M-12 resuelto (commit tras collect + transacción corta por EXPLAIN); M-5 y A-3 quedan con **notas sin cambio de contrato**; M-11 diferida. Mutation de los módulos tocados: 0 sobrevivientes. Suite **520 passed**. Detalles por hallazgo abajo.
+
 > **Actualizado (mismo día, rama `fix/pipeline-review-202610`, commit `bf13020`):** A-1, A-2 y M-4 resueltos; A-3 corregido en la parte de docs/medición/observabilidad y cerrado sin `LIMIT` por decisión (el límite real de retención es del consumidor; ver nota por hallazgo). Suite tras los cambios: **478 unit/contract + 21 integration, todo verde**. Pendientes: M-5 a M-13, B-1 a B-12 y la defensa en profundidad del `EXPLAIN`.
 
 > **Revisión adversarial posterior (mismo día) — N-1 a N-3 resueltos; M-* diferidos:** una segunda pasada verificando los supuestos de la revisión frontal encontró 3 hallazgos nuevos, todos corregidos en el working tree:
@@ -89,6 +91,8 @@ Los docs afirman "**~8 KB por snapshot; 10 s × N bases = ~70 MB/día/base**". C
 
 **Parcial en `bf13020`:** docs corregidos — `PIPELINE_FLOW.md:143` y `TESTING.md:76` reemplazan el `~8 KB` (falso ~5×) por el rango medido 37–49 KB en 12-14 statements y la receta `SELECT count(*), pg_size_pretty(avg(pg_column_size(message)))`. Observabilidad: `main._log_payload_size` — DEBUG de bytes siempre, `WARNING` único por db_id al cruzar `PAYLOAD_WARN_BYTES` (1 MB), patrón de transición de `runner._report_state`. **No** se añadió `LIMIT`/omisión de secciones: truncar rompería la validación del consumidor y la retención de la cola es responsabilidad suya; la decisión quedó registrada en el propio `PIPELINE_FLOW.md:143`.
 
+**Nota (ronda M-6 a M-12):** el polling de **10 s** (`runner.py:40` `interval_from_env`, fijado por `test_runner.py:52`) es el default pensado para **pruebas y sandbox**. Para producción la cadencia prevista es **30–60 s** — se deja como decisión de deploy, sin tocar el código ni el contrato.
+
 ---
 
 ### MEDIA-4 — Timestamps con zona horaria "anulados" sin convertir a UTC
@@ -113,6 +117,8 @@ row[field] = ts.replace(tzinfo=None).isoformat(...)
 
 Si falla la query de `locks`, el payload llega con `locks: []`. El consumidor no puede distinguir "la base no tiene locks" de "no pude leer los locks". Combinado con A-1: el único fallo que se nota es el de `statements`, y se nota porque **no** llega nada. Además el snapshot no tiene **timestamp de captura** (ver MEDIA-11).
 
+**Nota (ronda M-6 a M-12, sin cambio de contrato):** se verificó en el código que los fallos por permisos **sí quedan en el log**: `CollectStage` captura por sección, hace `rollback()`, deja `stats[key] = None` y emite `logger.error(f"{dialect} | collect_telemetry | query={key} | {error del driver}")` — un `permission denied` del rol monitor aparece ahí con su mensaje. Sigue sin añadirse `collect_errors` ni `captured_at` (decisión del usuario, ver MEDIA-11).
+
 ---
 
 ### MEDIA-6 — El log y el docstring anuncian un fallback que no existe
@@ -122,6 +128,8 @@ Si falla la query de `locks`, el payload llega con `locks: []`. El consumidor no
 Cinco sitios dicen `"fallback a ENGINES"` y el docstring dice "main() cae a los ENGINES fijos del sandbox". `main.py` **no hace ningún fallback**: devuelve `None` y no extrae nada (`TESTING.md:159` lo reconoce explícitamente). Quien opere el daemon leerá "fallback a ENGINES" en el log y asumirá que sí se está extrayendo del par sandbox.
 
 **Sugerencia:** cambiar los mensajes a `"sin targets registrados | no se extrae nada"` (y el docstring), o implementar el fallback si era la intención.
+
+**Resuelto (ronda M-6 a M-12):** el docstring del módulo y los 4 mensajes de `config/registered.py` ya dicen `"no se extrae nada"` y ninguno anuncia un fallback; el test `test_registered_targets.py` fija el texto. La **implementación de un fallback real** (e.g. hacia los ENGINES fijos del sandbox) queda **pendiente explícitamente**: el docstring de `registered.py` apunta a este hallazgo, y `main()` y `main_sandbox.py` siguen siendo rutas separadas.
 
 ---
 
@@ -134,6 +142,8 @@ Cinco sitios dicen `"fallback a ENGINES"` y el docstring dice "main() cae a los 
 
 **Sugerencia:** que un lado sea la única fuente (misma función usada por etapa y modelo), extraer `_base_operation` compartido, y borrar o renombrar `anonimize_query_text` (ver MEDIA-10).
 
+**Resuelto (parcial, ronda M-6 a M-12):** `_base_operation` pasó a una **función de módulo única** en `stages/explain_normalizer.py` (las dos copias idénticas estaban en las clases Postgres/MySQL); `anonimize_query_text` se **eliminó** — era un no-op confirmado (los candidatos copian `query_text` con `{**statement}`). Se quitaron sus tests (2 en `test_canonicalizers.py` + `TestQueryTextIsRestored` en `test_normalize_stage.py`), el mutante que la protegía y la mención en `PIPELINE_FLOW.md`. **Quedan abiertas** las otras dos duplicaciones: `normalize_locks`/`normalize_blocking_pids`/`normalize_statement_epochs` (etapa) vs los validadores pydantic (`_to_bool`/`_to_int_list`/`_to_iso`), y la construcción del engine (MySQL con `pool_size=1` rodada dos veces; Postgres divergiendo en `pre_ping`).
+
 ---
 
 ### MEDIA-8 — `connections.py` arma URLs con f-string; `registered.py` usa `URL.create` por exactamente el motivo que este ignora
@@ -143,6 +153,8 @@ Cinco sitios dicen `"fallback a ENGINES"` y el docstring dice "main() cae a los 
 `registered.py` comenta: *"URL.create en vez de f-string: la password viene de Fernet y puede contener '@', ':' o '/' que romperían el parseo"*. Las tres conexiones de `connections.py` (incluida la de la **cola**, la más crítica) siguen con f-string. Si `QUERYLENS_PASSWORD` o `MONITOR_*_PASSWORD` contienen caracteres especiales, la URL se parsea mal y el pipeline no puede ni arrancar/enecolar.
 
 **Sugerencia:** migrar las tres a `URL.create` (mismo patrón ya probado por `test_registered_targets.py:70`).
+
+**Resuelto (ronda M-6 a M-12):** helper `_make_url` único en `config/connections.py` que usa `URL.create` (cada componente viaja por separado), usado por las tres factorías y por `registered._target_url`. Test de regresión: `test_password_with_special_characters_survives_round_trip` compara `url.password` contra el valor original con `@:` `?` `/` (la f-string habría truncado al driver). MySQL conserva el `database=""` (sin default, para el `USE` del EXPLAIN).
 
 ---
 
@@ -156,6 +168,8 @@ Cinco sitios dicen `"fallback a ENGINES"` y el docstring dice "main() cae a los 
 
 **Sugerencia:** documentar la fórmula como aproximación en el propio código, alinear los umbrales por motor o usar percentiles (p95/p50) que ambos motores exponen de forma homogénea.
 
+**Resuelto como documentación (ronda M-6 a M-12):** la fórmula se documenta como **heurística, no medida** en `collectors/mysql/collector.py` (docstring de `calculate_stddev_coeff`, incluido el guard `max > mean*1000` como descarte de outliers por orden de magnitud) y en `references/004_decisiones_contrato.md` (sección nueva `stddev_time_ms / coeff_of_variation`). **No se cambiaron valores ni umbrales** (decisión con el usuario); la parte de "el mismo umbral `coeff > 2` para semánticas distintas" sigue documentada como está.
+
 ---
 
 ### MEDIA-10 — Candidatos sin límite, y "anonimización" que no anonimiza
@@ -163,7 +177,7 @@ Cinco sitios dicen `"fallback a ENGINES"` y el docstring dice "main() cae a los 
 - `selectors.py:9,13`: `unstable_statements` y `disk_spill_statements` no tienen top-N (solo `high_impact` corta a 10). Una base con miles de queries inestables genera miles de `EXPLAIN` por ciclo, sobre la misma conexión, sin timeout (ver A-2).
 - Privacidad: `canonicalizers.anonimize_query_text` no anonimiza nada — el payload lleva `query_text` crudo con literales reales (Postgres) y `QUERY_SAMPLE_TEXT` con **valores concretos** (MySQL), y `canonicalize_query` degrada a `" ".join(query_text.split())` en cualquier fallo de parseo (`canonicalizers.py:27-28`), dejando el literal tal cual. Si el producto habla de anonimización, el nombre miente; si no, al menos renombrar la función y documentar que la cola contiene texto de consultas con datos reales (GDPR/retención).
 
-  **Precisión (fix M-10) + revertida (decisión de privacidad):** al momento de redactar este hallazgo, la afirmación MySQL era **incorrecta**: `StatementRow` no declaraba `query_sample_text` y `ConfigDict(extra="ignore")` lo descartaba en la validación, así que el sample **no viajaba** en el JSON encolado (verificado releyendo mensajes reales de la cola). El fix M-10 lo **declaró** (`str | None`) y el payload empezó a llevarlo con literales reales. Eso fue un **error, no una corrección**: el requerimiento del proyecto es no conservar información sensible o real sobre las queries, y el sample hacía exactamente eso fuera del contrato. **Revertido:** `query_sample_text` volvió a ser solo flujo interno (lo usan `mark_explainable` y el `EXPLAIN FORMAT=JSON` de MySQL en memoria); no es campo de `StatementRow`, no sale de la cola (solo viajan los textos normalizados con placeholders) y al escribir los goldens se descarta de cada fila (`ci/regenerate_goldens.py`). Documentado como decisión en `references/004_decisiones_contrato.md`. El nombre `anonimize_query_text` sigue siendo impreciso en menor grado; su rename es el MEDIA-7.
+  **Precisión (fix M-10) + revertida (decisión de privacidad):** al momento de redactar este hallazgo, la afirmación MySQL era **incorrecta**: `StatementRow` no declaraba `query_sample_text` y `ConfigDict(extra="ignore")` lo descartaba en la validación, así que el sample **no viajaba** en el JSON encolado (verificado releyendo mensajes reales de la cola). El fix M-10 lo **declaró** (`str | None`) y el payload empezó a llevarlo con literales reales. Eso fue un **error, no una corrección**: el requerimiento del proyecto es no conservar información sensible o real sobre las queries, y el sample hacía exactamente eso fuera del contrato. **Revertido:** `query_sample_text` volvió a ser solo flujo interno (lo usan `mark_explainable` y el `EXPLAIN FORMAT=JSON` de MySQL en memoria); no es campo de `StatementRow`, no sale de la cola (solo viajan los textos normalizados con placeholders) y al escribir los goldens se descarta de cada fila (`ci/regenerate_goldens.py`). Documentado como decisión en `references/004_decisiones_contrato.md`. La otra mitad de MEDIA-10 — la parte "top-N" (`selectors.py:9,13` — `unstable_statements` y `disk_spill_statements` sin límite) — **sigue abierta**.
 
 ---
 
@@ -185,6 +199,8 @@ Cinco sitios dicen `"fallback a ENGINES"` y el docstring dice "main() cae a los 
 En Postgres, collect + candidatos + N `EXPLAIN` corren dentro de **una sola transacción de solo lectura** que se abre cada 10 s: mantiene activo un snapshot que puede retrasar el vacuum (horizonte de `xmin`) en bases con escritura intensiva. En MySQL (REPEATABLE READ, autocommit off) retiene historial de filas. Además, cualquier `rollback` por error en `ExplainStage` descarta también el `SET LOCAL search_path` del resto de la iteración (se re-emas, pero solo si la iteración sobrevive).
 
 **Sugerencia:** commit tras el collect (o `SET TRANSACTION READ ONLY` + tiempo acotado), y en Postgres usar `SET LOCAL` dentro de la transacción del explain únicamente.
+
+**Resuelto (ronda M-6 a M-12):** `orchestrator.py` hace `conn.commit()` **justo tras el collect** (la transacción de lectura del target se cierra ya: no retiene snapshot/vacuum en Postgres ni undo/MVCC en MySQL durante el EXPLAIN y el encolado). `ExplainStage` envuelve contexto + EXPLAIN en **`with active.begin()` por candidato** (`BEGIN → SET LOCAL/USE → EXPLAIN → COMMIT`; `rollback` en fallo). En Postgres el `SET LOCAL` queda confinado a esa transacción (se deshace al commit); en MySQL el `USE` es estado de sesión y sobrevive al commit — mismo contrato de antes, sin la fuga de search_path al siguiente candidato. Tests: `test_collect_commits_the_read_transaction_before_explain` (orden commit-vs-EXPLAIN), `test_postgres_commits_the_short_transaction_per_candidate`, `test_postgres_explain_error_rolls_back_the_short_transaction`. Mutantes `orchestrator: no commit tras collect` y `explain: sin transaccion corta por candidato` añadidos y muertos.
 
 ---
 

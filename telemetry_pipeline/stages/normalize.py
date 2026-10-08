@@ -20,7 +20,6 @@ class NormalizeStage:
         self.collector = collector
 
     def execute(self, stats: Stats) -> Stats:
-        canonicalizers.anonimize_query_text(stats)
         canonicalizers.create_canonic_queries(
             stats,
             self.collector.source_dialect,

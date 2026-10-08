@@ -1,7 +1,7 @@
 """NormalizeStage: los tres pasos que el snapshot necesita para ser comparable.
 
 El stage encadena cuatro transformaciones sobre stats. Si un paso deja de correr
-no hay excepcion: el snapshot sale con el texto sin anonimizar, con los locks
+no hay excepcion: el snapshot sale con el texto sin canonicar, con los locks
 como texto de MySQL, o con los predicados de MySQL sin normalizar. En los tres
 casos el pipeline termina igual y el snapshot llega al consumidor con un formato
 distinto al que espera, que es donde el fallo se vuelve caro y dificil de
@@ -28,7 +28,7 @@ def _pg_stats():
         }],
         "top_impact_queries": [{
             "query_id": 1,
-            "query_text": "SELECT `a` FROM `t` WHERE `b` = 42",
+            "query_text": "SELECT a FROM t WHERE b = 42",
             "schema_name": "public",
         }],
         "active_queries": [{
@@ -63,36 +63,6 @@ def _mysql_stats():
     }
 
 
-class TestQueryTextIsRestored:
-    def test_top_impact_gets_the_real_statement_text(self):
-        """anonimize_query_text restaura el query_text de statements sobre el
-        candidato. El nombre dice 'anonimize' pero lo que hace es recuperar el
-        texto real: ExplainStage necesita una query ejecutable, y el digest de
-        MySQL tiene los parametros como ?.
-
-        Sin este paso, MySQL explainaria el digest con '?' y el motor responderia
-        error de sintaxis, perdiendo el candidato.
-
-        El fixture tiene que partir los dos textos. Con statements y el
-        candidato identicos la restauracion es un no-op y el test pasaria
-        aunque la funcion no hiciera nada.
-        """
-        stats = _mysql_stats()
-        real = "SELECT `a` FROM `t` WHERE `b` = 42"
-        stats["statements"][0]["query_text"] = real
-        stats["top_impact_queries"][0]["query_text"] = "SELECT `a` FROM `t` WHERE `b` = ?"
-        NormalizeStage(Mysql_Collector(engine=None)).execute(stats)
-        assert stats["top_impact_queries"][0]["query_text"] == real
-
-    def test_candidate_without_matching_statement_keeps_its_text(self):
-        """Si el query_id no esta en statements no hay nada que restaurar; el
-        texto propio se conserva en vez de quedar en None."""
-        stats = _mysql_stats()
-        stats["top_impact_queries"][0]["query_id"] = "otro_digest"
-        NormalizeStage(Mysql_Collector(engine=None)).execute(stats)
-        assert stats["top_impact_queries"][0]["query_text"] is not None
-
-
 class TestCanonicQueryIsBuilt:
     def test_mysql_candidate_gets_canonic_query(self):
         """canonic_query es la forma con parametros: es lo que permite comparar
@@ -108,8 +78,8 @@ class TestCanonicQueryIsBuilt:
         esta limpieza, la misma query produce dos canonic_query distintos segun
         el motor y el cruce entre motores se rompe.
 
-        El texto tiene que estar en statements: anonimize_query_text corre antes
-        y restaura el query_text real sobre el candidato.
+        El texto llega de los seletores: el candidato ya es un copy del statement
+        (los candidatos no re-viven del digest en este punto).
         """
         stats = _mysql_stats()
         distinctrow = "SELECT DISTINCTROW `k` FROM `sbtest1`"

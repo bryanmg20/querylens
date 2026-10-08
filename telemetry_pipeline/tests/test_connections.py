@@ -144,6 +144,21 @@ def test_mysql_engine_has_no_default_database():
     )
 
 
+def test_password_with_special_characters_survives_round_trip(monkeypatch):
+    """La construccion con f-string trunca passwords con '@', ':', '?' o '/'
+    (el driver parsea mal); URL.create lleva cada componente por separado y el
+    valor debe llegar integro al motor. Se compara el atributo url.password,
+    no el render: asi el test tambien fallaria si el motor guardara la version
+    codificada en vez de la original."""
+    for var in _MONITOR_MY_VARS:
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setenv("MONITOR_MY_USER", "u")
+    monkeypatch.setenv("MONITOR_MY_PASSWORD", "p@ss:word/x?q")
+    url = get_connection_mysql().url
+    assert url.username == "u"
+    assert url.password == "p@ss:word/x?q"
+
+
 def test_mysql_engine_pool_is_limited_to_one_connection():
     engine = get_connection_mysql()
     assert engine.pool.size() == 1

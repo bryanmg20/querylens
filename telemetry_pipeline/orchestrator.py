@@ -19,6 +19,11 @@ class Orchestrator:
         stats: Stats = {}
         with self.collector.engine.connect() as conn:
             self.collect.execute(stats, conn)
+            # M-12: cerrar ya la transaccion de lectura. El snapshot no necesita
+            # la conexion del target abierta mas alla del collect; mantenerla
+            # abierta retiene vacuum/snapshot en Postgres y undo/MVCC en MySQL
+            # durante el EXPLAIN y el encolado.
+            conn.commit()
             if stats.get("statements") is not None:
                 self.candidates.execute(stats)
                 self.explain.execute(stats, conn)

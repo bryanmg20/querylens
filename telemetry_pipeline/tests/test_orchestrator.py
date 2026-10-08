@@ -112,16 +112,35 @@ class _FakeResult:
         return iter(self._rows)
 
 
+class _Tx:
+    """begin() de SQLAlchemy: commit si el bloque sale limpio, rollback si no."""
+
+    def __init__(self, conn):
+        self._conn = conn
+
+    def __enter__(self):
+        return self._conn
+
+    def __exit__(self, exc_type, *exc):
+        if exc_type is None:
+            self._conn.commit()
+        else:
+            self._conn.rollback()
+
+
 class _FakeConn:
     def __init__(self, overrides=None):
         self.sent = []
+        self.events = []
         self.rollback_calls = 0
+        self.commit_calls = 0
         self.closed = False
         self._overrides = overrides or {}
 
     def execute(self, stmt):
         sql = str(stmt)
         self.sent.append(sql)
+        self.events.append(f"sql:{sql}")
         for needle, rows in self._overrides.items():
             if needle in sql:
                 if isinstance(rows, Exception):
@@ -132,8 +151,16 @@ class _FakeConn:
                 return _FakeResult(rows)
         return _FakeResult([])
 
+    def begin(self):
+        return _Tx(self)
+
+    def commit(self):
+        self.commit_calls += 1
+        self.events.append("commit")
+
     def rollback(self):
         self.rollback_calls += 1
+        self.events.append("rollback")
 
 
 class _FakeEngine:
@@ -179,6 +206,14 @@ def test_run_pipeline_selects_and_explains_candidates():
     assert [c["query_id"] for c in stats["top_impact_queries"]] == [111, 222]
     assert all(c["ready_for_explain"] is True for c in stats["top_impact_queries"])
     assert {e["query_id"] for e in stats["canonic_explains"]} == {111, 222}
+
+
+def test_run_pipeline_canonicalizes_candidate_queries():
+    """NormalizeStage deja su huella en los candidatos (canonic_query). Sin el
+    el snapshot sigue siendo 'valido' para el contrato (campo opcional), asi que
+    el orquestador debe fijar esa salida para que el mutante no sobreviva."""
+    stats, _, _ = _run(_FakeConn())
+    assert all(c["canonic_query"] for c in stats["top_impact_queries"])
 
 
 def test_run_pipeline_resolves_schema_and_strips_userid():
@@ -280,3 +315,17 @@ def test_reuses_one_connection_for_every_stage():
     set_calls = [s for s in conn.sent if s.startswith("SET LOCAL search_path")]
     assert len(explain_calls) == 2
     assert len(set_calls) == 2
+
+
+def test_collect_commits_the_read_transaction_before_explain():
+    """El collect cierra su transaccion ya (M-12): no deja un snapshot/vacuum
+    abierto durante el EXPLAIN. El commit del orquestador debe ir antes del
+    primer EXPLAIN; los explica luego abren su propia transaccion corta."""
+    conn = _FakeConn()
+    _run(conn)
+    first_commit = next(i for i, e in enumerate(conn.events) if e == "commit")
+    first_explain = next(
+        i for i, e in enumerate(conn.events) if e.startswith("sql:EXPLAIN")
+    )
+    assert first_commit < first_explain
+    assert conn.commit_calls >= 3  # 1 del orquestador + 2 de transacciones cortas

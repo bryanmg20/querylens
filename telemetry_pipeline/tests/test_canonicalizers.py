@@ -1,7 +1,6 @@
 import pytest
 
 from stages.canonicalizers import (
-    anonimize_query_text,
     canonicalize_query,
     clean_mysql_sintax,
     create_canonic_queries,
@@ -55,24 +54,6 @@ def test_create_canonic_queries_clean_mysql():
     }
     create_canonic_queries(stats, source_dialect="mysql", clean_mysql=True)
     assert "DISTINCTROW" not in stats["top_impact_queries"][0]["canonic_query"]
-
-
-def test_anonimize_recovers_text_from_statements():
-    stats = {
-        "statements": [{"query_id": 5, "query_text": "full text"}],
-        "top_impact_queries": [{"query_id": 5, "query_text": "?"}],
-    }
-    anonimize_query_text(stats)
-    assert stats["top_impact_queries"][0]["query_text"] == "full text"
-
-
-def test_anonimize_keeps_query_when_unknown():
-    stats = {
-        "statements": [{"query_id": 5, "query_text": "full"}],
-        "top_impact_queries": [{"query_id": 6, "query_text": "?"}],
-    }
-    anonimize_query_text(stats)
-    assert stats["top_impact_queries"][0]["query_text"] == "?"
 
 
 def test_normalize_querytext_active_drops_key():

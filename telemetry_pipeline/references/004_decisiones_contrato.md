@@ -67,7 +67,19 @@ Pendiente de decisión: en MySQL los `filesort` a disco no tienen indicador suma
 - **No es campo del contrato.** Un `query_sample_text` en el payload **es un bug, no una feature**: el requerimiento del proyecto es no conservar información sensible o real sobre las queries, y el fix de M-10 que lo declaró en `StatementRow` y lo hizo viajar en el JSON encolado fue un error — se revirtió. `ConfigDict(extra="ignore")` lo descarta al validar (`models/snapshot.py`), y es la reja que lo deja fuera: la cola solo ve textos normalizados (`query_text` de Postgres con `$1`, `DIGEST_TEXT` de MySQL con `?`).
 - Los goldens se escriben sin la clave (`ci/regenerate_goldens.py` descarta `query_sample_text` de cada fila al volcar), para que el repo tampoco conserve los literales de la batería.
 - Todo lo demás que este campo significó se mantiene: `explain_source="sample"` sigue avisando que el plan se armó sobre el texto real de una muestra, y `QUERY_SAMPLE_TEXT` se trunca a `performance_schema_max_digest_text_length` (1024 por defecto) — un texto cortado puede quedar con SQL inválido y no explicarse (no es un fallo de contrato).
-- **Privacidad (decisión documentada, ajusta el MEDIA-10 de CODE_REVIEW.md):** la cola PGMQ **no** contiene literales de datos reales: `query_text` (Postgres, normalizado con `$1`) y `DIGEST_TEXT` (MySQL, con `?`) son textos con placeholders; el `QUERY_SAMPLE_TEXT` con valores reales no sale de la memoria del ciclo. Sigue aplicando el GDPR/retención del propio `query_text`, y el nombre `anonimize_query_text` sigue mintiendo en menor grado (su rename es el MEDIA-7).
+- **Privacidad (decisión documentada, ajusta el MEDIA-10 de CODE_REVIEW.md):** la cola PGMQ **no** contiene literales de datos reales: `query_text` (Postgres, normalizado con `$1`) y `DIGEST_TEXT` (MySQL, con `?`) son textos con placeholders; el `QUERY_SAMPLE_TEXT` con valores reales no sale de la memoria del ciclo. Sigue aplicando el GDPR/retención del propio `query_text`. La función `anonimize_query_text` — que "prometía" anonimizar — se **eliminó**: era un no-op (ver MEDIA-7).
+
+## stddev_time_ms / coeff_of_variation: estimación, no medida (M-9)
+
+- MySQL no expone la desviación estándar de la latencia por digest; `calculate_stddev_coeff` (`collectors/mysql/collector.py`) la **estima** con la regla heurística `stddev ≈ (max - mean) / sqrt(count)`, un spread plausible si el máximo se dio en los extremos de la distribución. No debe leerse como desviación estadística real.
+- El guard `max_time > mean * 1000` descarta outliers por orden de magnitud (una ejecución aislada lenta): en ese caso `stddev_time_ms` y `coeff_of_variation` quedan en `None` en lugar de ensuciar el ranking.
+- **Contrato afectado:** consume el ranking de impacto y queda expuesto en el snapshot; documentado como decisión (M-9 de CODE_REVIEW.md), no se cambian los valores.
+
+## Transacción del target: commit tras collect + EXPLAIN en tx corta (M-12)
+
+- El ciclo no mantiene una transacción abierta sobre el target: `Orchestrator` hace `conn.commit()` **justo tras el collect** (la parte de solo-lectura de telemetría). Antes el `with engine.connect()` de `orchestrator.py` abría una transacción que abarcaba collect + N explíca + encolado: en Postgres retenía un snapshot durante todo el ciclo (horizonte de `xmin`, retrasa vacuum) y en MySQL acumulaba undo/MVCC.
+- `ExplainStage` corre cada candidato en una **transacción corta propia**: `BEGIN → SET LOCAL search_path / USE → EXPLAIN → COMMIT` (rollback en fallo). Es lo que vuelve funcional al `SET LOCAL` de Postgres — confinado a la tx del candidato, se deshace al commit — y deja el `USE` de MySQL intacto (estado de sesión, sobrevive al commit).
+- No cambia el contrato del snapshot ni el de la cola: es un detalle de la sesión de recolección. Fijado por los tests de `test_explain_stage.py` (commit/rollback por candidato) y `test_orchestrator.py` (commit del orquestador antes del primer EXPLAIN).
 
 ## db_id: la fila registrada manda sobre la constante
 
