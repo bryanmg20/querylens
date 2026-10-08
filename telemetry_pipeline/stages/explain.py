@@ -152,6 +152,15 @@ class ExplainStage:
                             })
                 except Exception as e:
                     logger.error(f"{dialect} | EXPLAIN | query_id={query_id} | {e}")
+                finally:
+                    # N-2: la conexion extranjera (abierta con engine.connect()
+                    # en _foreign_connection) no la cierra ningun `with`: el
+                    # `with active.begin()` cierra la TRANSACCION, no la
+                    # conexion, y dispose() no toca lo enganchado. Hay que
+                    # cerrarla explicitamente. El guard es clave: conn (la
+                    # conexion compartida del ciclo) la cierra el orchestrator.
+                    if active is not conn:
+                        active.close()
         finally:
             self._dispose_foreign_engines()
 

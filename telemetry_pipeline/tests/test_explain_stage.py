@@ -42,6 +42,7 @@ class _FakeConn:
         self.sent = []
         self.rollback_calls = 0
         self.commit_calls = 0
+        self.close_calls = 0
         # `rows=[]` tiene que significar "el motor no devolvio nada", no
         # "usa el default": con `rows or [...]` una lista vacia es falsy y
         # justamente el caso que el test de plan vacio necesita provocar quedaba
@@ -62,6 +63,9 @@ class _FakeConn:
 
     def rollback(self):
         self.rollback_calls += 1
+
+    def close(self):
+        self.close_calls += 1
 
 
 class _FakeCollector:
@@ -456,12 +460,15 @@ class _FakeForeignEngine:
         self.url = url
         self.connect_calls = 0
         self.disposed = False
+        self.created_conns = []
         if tracker is not None:
             tracker.append(self)
 
     def connect(self):
         self.connect_calls += 1
-        return _FakeConn()
+        conn = _FakeConn()
+        self.created_conns.append(conn)
+        return conn
 
     def dispose(self):
         self.disposed = True
@@ -538,6 +545,50 @@ def test_postgres_foreign_engines_are_disposed_after_execute():
     stage.execute(stats, conn)
     assert all(engine.disposed for engine in created)
     assert stage._foreign_engines == {}
+
+
+def test_postgres_foreign_connection_is_closed_after_execute():
+    """N-2: el `with active.begin()` cierra la transaccion, no la conexion.
+    La conexion extranjera (creada con engine.connect() en _foreign_connection)
+    tiene que cerrarse explicitamente; sin esto queda enganchada hasta que el
+    GC la finalize. La compartida del ciclo NO se toca: la cierra el orchestrator.
+    """
+    conn = _FakeConn()
+    stats = _stats(schema_name="public")
+    stats["top_impact_queries"][0]["database_name"] = "ventas"
+    created = []
+    stage = _tracker_stage(created)
+    stage.execute(stats, conn)
+    assert created[0].created_conns[0].close_calls == 1
+    assert conn.close_calls == 0
+
+
+def test_postgres_shared_connection_is_never_closed_by_the_stage():
+    conn = _FakeConn()
+    stats = _stats(schema_name="public")
+    stats["top_impact_queries"][0]["database_name"] = "ql_demo"
+    stage = _tracker_stage()
+    stage.execute(stats, conn)
+    assert conn.close_calls == 0
+
+
+def test_postgres_foreign_connection_is_closed_even_when_explain_fails():
+    class _FailingForeignEngine(_FakeForeignEngine):
+        def connect(self):
+            self.connect_calls += 1
+            conn = _FailingConn()
+            self.created_conns.append(conn)
+            return conn
+
+    conn = _FakeConn()
+    stats = _stats(schema_name="public")
+    stats["top_impact_queries"][0]["database_name"] = "ventas"
+    created = []
+    stage = ExplainStage(_TrackerCollector(None))
+    stage._foreign_engine_factory = lambda url: _FailingForeignEngine(url, created)
+    stage.execute(stats, conn)
+    assert created[0].created_conns[0].close_calls == 1
+    assert conn.close_calls == 0
 
 
 def test_mysql_never_opens_foreign_connection():
