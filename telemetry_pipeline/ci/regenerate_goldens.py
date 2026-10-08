@@ -30,6 +30,8 @@ from pathlib import Path
 PIPELINE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PIPELINE))
 
+from models.snapshot import SnapshotPayload
+
 GOLDEN_DIR = PIPELINE / "tests" / "golden"
 REPO_ROOT = PIPELINE.parent
 
@@ -168,10 +170,23 @@ def main():
         ):
             strip_internal_sample(stats.get(section))
 
+        # Q2: el golden se escribe con el PAYLOAD VALIDADO, no con stats crudo.
+        # Antes se volcaba `stats` con default=str: el fixture no era el documento
+        # que viaja a PGMQ y los tests de contrato validaban otra cosa (p. ej. un
+        # server_start_time con offset de zona que el contrato prohibe). Desde aqui
+        # el golden es exactamente lo que SnapshotPayload.to_json() encolaria:
+        # extra='ignore' cae el query_sample_text, los validadores normalizan
+        # timestamps y bools, y los campos derivados (canonic_query, db_id) quedan.
+        payload = SnapshotPayload.from_snapshot(stats)
+        payload_json = payload.to_json()
+
         with engine_path(dialect, filename).open("w", encoding="utf-8") as handle:
-            json.dump(stats, handle, indent=2, ensure_ascii=False, default=str)
+            json.dump(json.loads(payload_json), handle, indent=2, ensure_ascii=False)
             handle.write("\n")
-        print(f"{dialect}: escrito {filename}")
+        print(
+            f"{dialect}: escrito {filename} (payload validado, "
+            f"{len(payload_json.encode('utf-8'))} bytes)"
+        )
 
 
 def engine_path(dialect, filename):

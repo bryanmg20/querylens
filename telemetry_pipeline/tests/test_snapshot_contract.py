@@ -245,12 +245,14 @@ def test_explains_carry_engine_source(snapshot_fixture, request):
 def test_active_queries_have_canonic_field(mysql_snapshot):
     """El golden de MySQL puede llegar sin sesiones activas (la bateria termina
     y no deja nada corriendo; una captura es un instante), como le pasa a los
-    locks. Donde hay filas, query_text ya fue reemplazado por canonic_query; la
-    generacion en si se verifica en test_canonicalizers."""
+    locks. Donde hay filas, el texto real nunca sobrevive: el campo query_text es
+    opcional en el contrato y to_json lo emite como null cuando no hubo contexto;
+    canonic_query lleva el texto normalizado o "Not available". La generacion en
+    si se verifica en test_canonicalizers."""
     active = mysql_snapshot["active_queries"] or []
     assert isinstance(active, list)
     for row in active:
-        assert "query_text" not in row
+        assert row.get("query_text") is None
         assert "canonic_query" in row
 
 
