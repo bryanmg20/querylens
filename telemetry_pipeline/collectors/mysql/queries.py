@@ -114,17 +114,23 @@ ORDER BY s.SUM_TIMER_WAIT DESC;
 
 LOCKS_QUERY = """
 SELECT
-    r.trx_mysql_thread_id   AS process_id,
+    t.processlist_id        AS process_id,
     l.object_schema         AS database_name,
     l.object_name           AS table_name,
     l.lock_mode             AS lock_mode,
     l.lock_status           AS is_granted
 FROM performance_schema.data_locks l
-LEFT JOIN information_schema.innodb_trx r
-       ON CAST(r.trx_id AS CHAR) = l.engine_transaction_id
-LEFT JOIN performance_schema.threads t
-       ON t.processlist_id = r.trx_mysql_thread_id
+# El hilo sale directo de data_locks.thread_id, no de information_schema.innodb_trx;
+# innodb_trx es un cache (refresco ~100 ms) que se materializa antes de leer
+# data_locks, asi que las transacciones nuevas quedaban sin par y process_id
+# llegaba NULL -> LockRow rechazaba el snapshot completo. Verificado en vivo con
+# carga FOR UPDATE, 48/60 lecturas con NULL via innodb_trx, 0/60 via thread_id.
+JOIN performance_schema.threads t
+  ON t.thread_id = l.thread_id
 WHERE l.object_schema NOT IN ('mysql', 'performance_schema', 'information_schema', 'sys')
+  # Hilos de fondo (sin processlist_id) no tienen proceso de cliente que reportar
+  # y LockRow.process_id es int obligatorio.
+  AND t.processlist_id IS NOT NULL
   AND (t.processlist_user IS NULL OR t.processlist_user != (SELECT SUBSTRING_INDEX(CURRENT_USER(), '@', 1)));
 """
 

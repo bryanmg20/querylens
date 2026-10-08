@@ -148,3 +148,21 @@ def test_mysql_locks_query_excludes_pipeline_user():
     assert "processlist_user !=" in MYSQL_LOCKS_QUERY
     assert "performance_schema.threads" in MYSQL_LOCKS_QUERY
     assert "JOIN performance_schema.threads" in MYSQL_LOCKS_QUERY or "LEFT JOIN performance_schema.threads" in MYSQL_LOCKS_QUERY
+
+# --- Lock rows sin process_id: el hilo sale de data_locks, no de innodb_trx ---
+
+
+def test_mysql_locks_query_resolves_thread_from_data_locks():
+    """innodb_trx es un cache que se materializa antes que data_locks: las
+    transacciones nuevas quedaban sin par y process_id llegaba NULL, lo que
+    tiraba el snapshot completo (LockRow.process_id es int obligatorio).
+    Verificado en vivo con carga FOR UPDATE: 48/60 lecturas con NULL."""
+    assert "JOIN information_schema.innodb_trx" not in MYSQL_LOCKS_QUERY
+    assert re.search(r"ON\s+t\.thread_id\s*=\s*l\.thread_id", MYSQL_LOCKS_QUERY)
+    assert re.search(r"t\.processlist_id\s+AS process_id", MYSQL_LOCKS_QUERY)
+
+
+def test_mysql_locks_query_never_emits_null_process_id():
+    """Los hilos de fondo no tienen processlist_id; sin este filtro su fila
+    invalidaria el snapshot entero en vez de omitirse."""
+    assert "t.processlist_id IS NOT NULL" in MYSQL_LOCKS_QUERY
