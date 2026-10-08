@@ -69,6 +69,18 @@ def test_repeated_calls_do_not_duplicate_handlers(isolated):
     assert len(log.handlers) == 1
 
 
+def test_rebuilt_handler_for_same_file_is_not_added_twice(isolated):
+    """addHandler ya ignora el MISMO objeto; lo que protege `already_writing`
+    es otro handler hacia el mismo archivo (modulo recargado, singleton
+    reconstruido). Sin la comprobacion cada linea se escribiria dos veces."""
+    isolated.mkdir(parents=True, exist_ok=True)
+    log = _fresh("test.logger.rebuilt")
+    get_logger(log.name)
+    logger_module._file_handler = None  # p. ej. importlib.reload(logger)
+    get_logger(log.name)
+    assert len(log.handlers) == 1
+
+
 def test_pipeline_does_not_propagate_to_root_logger(isolated):
     log = _fresh("test.logger.propagate")
     get_logger(log.name)
