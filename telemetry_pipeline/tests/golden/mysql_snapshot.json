@@ -9,14 +9,14 @@
       "execution_count": 30,
       "rows_returned": 30,
       "avg_rows_per_call": 1.0,
-      "total_time_ms": 6385.9644,
-      "mean_time_ms": 212.8655,
-      "stddev_time_ms": 12.571182080509908,
-      "min_time_ms": 178.6985,
-      "max_time_ms": 281.7207,
-      "coeff_of_variation": 0.05905692599556954,
+      "total_time_ms": 6279.6395,
+      "mean_time_ms": 209.3213,
+      "stddev_time_ms": 13.770238045981634,
+      "min_time_ms": 176.9521,
+      "max_time_ms": 284.744,
+      "coeff_of_variation": 0.06578517353934661,
       "disk_spill_indicator": 0,
-      "counters_epoch": "2026-10-08 14:52:39.877322"
+      "counters_epoch": "2026-10-08 16:47:44.680973"
     },
     {
       "query_id": "ql_demo/1db394432abe3db3d3021befcb36d8b03a99e8e1b37938716ece3738b5fbcffd",
@@ -26,14 +26,14 @@
       "execution_count": 30,
       "rows_returned": 3000,
       "avg_rows_per_call": 100.0,
-      "total_time_ms": 3674.1816,
-      "mean_time_ms": 122.4727,
-      "stddev_time_ms": 5.852196437919697,
-      "min_time_ms": 103.1931,
-      "max_time_ms": 154.5265,
-      "coeff_of_variation": 0.04778368108092413,
+      "total_time_ms": 3791.9298,
+      "mean_time_ms": 126.3977,
+      "stddev_time_ms": 30.85500089128719,
+      "min_time_ms": 105.0981,
+      "max_time_ms": 295.3975,
+      "coeff_of_variation": 0.2441104615929498,
       "disk_spill_indicator": 0,
-      "counters_epoch": "2026-10-08 14:52:40.937192"
+      "counters_epoch": "2026-10-08 16:47:45.952266"
     },
     {
       "query_id": "ql_demo/d6431f200291c19f481376073ee77aaa488b28737a86ecbcbe07fd1a5c09e217",
@@ -43,14 +43,14 @@
       "execution_count": 30,
       "rows_returned": 3000,
       "avg_rows_per_call": 100.0,
-      "total_time_ms": 1560.9712,
-      "mean_time_ms": 52.0324,
-      "stddev_time_ms": 4.44725156308178,
-      "min_time_ms": 46.2949,
-      "max_time_ms": 76.391,
-      "coeff_of_variation": 0.08547081362923448,
+      "total_time_ms": 1686.299,
+      "mean_time_ms": 56.21,
+      "stddev_time_ms": 6.919652930241516,
+      "min_time_ms": 44.6895,
+      "max_time_ms": 94.1105,
+      "coeff_of_variation": 0.12310359242557402,
       "disk_spill_indicator": 0,
-      "counters_epoch": "2026-10-08 14:52:39.535887"
+      "counters_epoch": "2026-10-08 16:47:44.290944"
     },
     {
       "query_id": "ql_demo/efa2f5a7c25efdbdce3f61208ffa0f36a40f2beca8e6fef639afd89543fa4103",
@@ -60,14 +60,14 @@
       "execution_count": 30,
       "rows_returned": 0,
       "avg_rows_per_call": 0.0,
-      "total_time_ms": 1179.2567,
-      "mean_time_ms": 39.3086,
-      "stddev_time_ms": 25.452009980196067,
-      "min_time_ms": 30.3593,
-      "max_time_ms": 178.715,
-      "coeff_of_variation": 0.6474921513408279,
+      "total_time_ms": 1293.6566,
+      "mean_time_ms": 43.1219,
+      "stddev_time_ms": 33.23525706685597,
+      "min_time_ms": 30.1436,
+      "max_time_ms": 225.1589,
+      "coeff_of_variation": 0.7707280306956784,
       "disk_spill_indicator": 0,
-      "counters_epoch": "2026-10-08 14:52:39.441052"
+      "counters_epoch": "2026-10-08 16:47:44.172031"
     },
     {
       "query_id": "ql_demo/8aa34322c96b11e0f4362bb2d63df80a389fb3c598cc25a5b3f0ec166fbcf3e0",
@@ -77,14 +77,14 @@
       "execution_count": 30,
       "rows_returned": 3000,
       "avg_rows_per_call": 100.0,
-      "total_time_ms": 525.814,
-      "mean_time_ms": 17.5271,
-      "stddev_time_ms": 0.8254544089974524,
-      "min_time_ms": 15.7187,
-      "max_time_ms": 22.0483,
-      "coeff_of_variation": 0.047095892018500056,
+      "total_time_ms": 547.4184,
+      "mean_time_ms": 18.2473,
+      "stddev_time_ms": 2.3206639613122224,
+      "min_time_ms": 15.575,
+      "max_time_ms": 30.9581,
+      "coeff_of_variation": 0.12717848456002928,
       "disk_spill_indicator": 0,
-      "counters_epoch": "2026-10-08 14:52:40.654041"
+      "counters_epoch": "2026-10-08 16:47:45.549548"
     },
     {
       "query_id": "ql_demo/191237201273a605ac2e63c367320605a666878f33f2a1ba0135744a90aeb2df",
@@ -94,14 +94,14 @@
       "execution_count": 30,
       "rows_returned": 1500,
       "avg_rows_per_call": 50.0,
-      "total_time_ms": 365.2277,
-      "mean_time_ms": 12.1743,
-      "stddev_time_ms": 0.9121588898505202,
-      "min_time_ms": 10.0632,
-      "max_time_ms": 17.1704,
-      "coeff_of_variation": 0.07492495583733932,
+      "total_time_ms": 386.6551,
+      "mean_time_ms": 12.8885,
+      "stddev_time_ms": 2.436087361597144,
+      "min_time_ms": 10.5524,
+      "max_time_ms": 26.2315,
+      "coeff_of_variation": 0.18901248101774015,
       "disk_spill_indicator": 0,
-      "counters_epoch": "2026-10-08 14:52:39.619210"
+      "counters_epoch": "2026-10-08 16:47:44.390167"
     },
     {
       "query_id": "ql_demo/5da1c1966009fd7dc4f26a331e2d3f0ba513a85a62879d6d25e20354e1ca812b",
@@ -111,14 +111,14 @@
       "execution_count": 30,
       "rows_returned": 3000,
       "avg_rows_per_call": 100.0,
-      "total_time_ms": 246.4211,
-      "mean_time_ms": 8.214,
-      "stddev_time_ms": 0.8074343368555322,
-      "min_time_ms": 6.8922,
-      "max_time_ms": 12.6365,
-      "coeff_of_variation": 0.09829977317452303,
+      "total_time_ms": 229.3675,
+      "mean_time_ms": 7.6456,
+      "stddev_time_ms": 1.2845189418611156,
+      "min_time_ms": 6.5206,
+      "max_time_ms": 14.6812,
+      "coeff_of_variation": 0.16800760461718056,
       "disk_spill_indicator": 0,
-      "counters_epoch": "2026-10-08 14:52:40.742371"
+      "counters_epoch": "2026-10-08 16:47:45.671816"
     },
     {
       "query_id": "ql_demo/e09de071700e20397f986cb8612876d2d16d255924601bb9d2c84ba61f0e3bba",
@@ -128,14 +128,14 @@
       "execution_count": 30,
       "rows_returned": 6000,
       "avg_rows_per_call": 200.0,
-      "total_time_ms": 126.9663,
-      "mean_time_ms": 4.2322,
-      "stddev_time_ms": 0.21865084495606238,
-      "min_time_ms": 3.6255,
-      "max_time_ms": 5.4298,
-      "coeff_of_variation": 0.05166363710506649,
+      "total_time_ms": 130.6906,
+      "mean_time_ms": 4.3564,
+      "stddev_time_ms": 0.7045720405560623,
+      "min_time_ms": 3.6156,
+      "max_time_ms": 8.2155,
+      "coeff_of_variation": 0.16173263257645357,
       "disk_spill_indicator": 0,
-      "counters_epoch": "2026-10-08 14:52:40.684418"
+      "counters_epoch": "2026-10-08 16:47:45.594734"
     },
     {
       "query_id": "ql_demo/cf95e53cd6dd0adc4e13db5dca6dfd42dbfb5ab983972f3c4fd2cf86cc8dc4b8",
@@ -145,14 +145,14 @@
       "execution_count": 30,
       "rows_returned": 15000,
       "avg_rows_per_call": 500.0,
-      "total_time_ms": 87.584,
-      "mean_time_ms": 2.9195,
-      "stddev_time_ms": 0.26367363918298686,
-      "min_time_ms": 2.235,
-      "max_time_ms": 4.3637,
-      "coeff_of_variation": 0.09031465633943718,
+      "total_time_ms": 94.567,
+      "mean_time_ms": 3.1522,
+      "stddev_time_ms": 0.6206244299091037,
+      "min_time_ms": 2.1165,
+      "max_time_ms": 6.5515,
+      "coeff_of_variation": 0.19688612077568166,
       "disk_spill_indicator": 0,
-      "counters_epoch": "2026-10-08 14:52:40.782414"
+      "counters_epoch": "2026-10-08 16:47:45.742522"
     },
     {
       "query_id": null,
@@ -162,14 +162,14 @@
       "execution_count": 1,
       "rows_returned": 0,
       "avg_rows_per_call": 0.0,
-      "total_time_ms": 1.4406,
-      "mean_time_ms": 1.4406,
+      "total_time_ms": 2.3967,
+      "mean_time_ms": 2.3967,
       "stddev_time_ms": null,
-      "min_time_ms": 1.4406,
-      "max_time_ms": 1.4406,
+      "min_time_ms": 2.3967,
+      "max_time_ms": 2.3967,
       "coeff_of_variation": null,
       "disk_spill_indicator": 0,
-      "counters_epoch": "2026-10-08 14:53:15.338860"
+      "counters_epoch": "2026-10-08 16:48:19.569710"
     }
   ],
   "top_impact_queries": [
@@ -181,14 +181,14 @@
       "execution_count": 30,
       "rows_returned": 30,
       "avg_rows_per_call": 1.0,
-      "total_time_ms": 6385.9644,
-      "mean_time_ms": 212.8655,
-      "stddev_time_ms": 12.571182080509908,
-      "min_time_ms": 178.6985,
-      "max_time_ms": 281.7207,
-      "coeff_of_variation": 0.05905692599556954,
+      "total_time_ms": 6279.6395,
+      "mean_time_ms": 209.3213,
+      "stddev_time_ms": 13.770238045981634,
+      "min_time_ms": 176.9521,
+      "max_time_ms": 284.744,
+      "coeff_of_variation": 0.06578517353934661,
       "disk_spill_indicator": 0,
-      "counters_epoch": "2026-10-08 14:52:39.877322",
+      "counters_epoch": "2026-10-08 16:47:44.680973",
       "canonic_query": "SELECT COUNT(*) FROM sbtest1 AS a WHERE a.id = (SELECT MAX(b.id) FROM sbtest1 AS b WHERE b.k = a.k)",
       "selected_by": [
         "time_high_impact"
@@ -203,14 +203,14 @@
       "execution_count": 30,
       "rows_returned": 3000,
       "avg_rows_per_call": 100.0,
-      "total_time_ms": 3674.1816,
-      "mean_time_ms": 122.4727,
-      "stddev_time_ms": 5.852196437919697,
-      "min_time_ms": 103.1931,
-      "max_time_ms": 154.5265,
-      "coeff_of_variation": 0.04778368108092413,
+      "total_time_ms": 3791.9298,
+      "mean_time_ms": 126.3977,
+      "stddev_time_ms": 30.85500089128719,
+      "min_time_ms": 105.0981,
+      "max_time_ms": 295.3975,
+      "coeff_of_variation": 0.2441104615929498,
       "disk_spill_indicator": 0,
-      "counters_epoch": "2026-10-08 14:52:40.937192",
+      "counters_epoch": "2026-10-08 16:47:45.952266",
       "canonic_query": "SELECT a.id, (SELECT COUNT(*) FROM sbtest1 AS b WHERE b.k = a.k) AS cnt FROM sbtest1 AS a WHERE a.id > $1 ORDER BY cnt DESC NULLS LAST, a.id NULLS FIRST LIMIT $2",
       "selected_by": [
         "time_high_impact"
@@ -225,14 +225,14 @@
       "execution_count": 30,
       "rows_returned": 3000,
       "avg_rows_per_call": 100.0,
-      "total_time_ms": 1560.9712,
-      "mean_time_ms": 52.0324,
-      "stddev_time_ms": 4.44725156308178,
-      "min_time_ms": 46.2949,
-      "max_time_ms": 76.391,
-      "coeff_of_variation": 0.08547081362923448,
+      "total_time_ms": 1686.299,
+      "mean_time_ms": 56.21,
+      "stddev_time_ms": 6.919652930241516,
+      "min_time_ms": 44.6895,
+      "max_time_ms": 94.1105,
+      "coeff_of_variation": 0.12310359242557402,
       "disk_spill_indicator": 0,
-      "counters_epoch": "2026-10-08 14:52:39.535887",
+      "counters_epoch": "2026-10-08 16:47:44.290944",
       "canonic_query": "SELECT id, k, ROW_NUMBER() OVER (PARTITION BY k ORDER BY c NULLS FIRST) AS rn FROM sbtest1 ORDER BY rn DESC NULLS LAST LIMIT $1",
       "selected_by": [
         "time_high_impact"
@@ -247,14 +247,14 @@
       "execution_count": 30,
       "rows_returned": 0,
       "avg_rows_per_call": 0.0,
-      "total_time_ms": 1179.2567,
-      "mean_time_ms": 39.3086,
-      "stddev_time_ms": 25.452009980196067,
-      "min_time_ms": 30.3593,
-      "max_time_ms": 178.715,
-      "coeff_of_variation": 0.6474921513408279,
+      "total_time_ms": 1293.6566,
+      "mean_time_ms": 43.1219,
+      "stddev_time_ms": 33.23525706685597,
+      "min_time_ms": 30.1436,
+      "max_time_ms": 225.1589,
+      "coeff_of_variation": 0.7707280306956784,
       "disk_spill_indicator": 0,
-      "counters_epoch": "2026-10-08 14:52:39.441052",
+      "counters_epoch": "2026-10-08 16:47:44.172031",
       "canonic_query": "SELECT a.c, COUNT(*) AS total FROM sbtest1 AS a JOIN sbtest1 AS b ON b.id = a.id WHERE a.k > $1 GROUP BY a.c HAVING COUNT(*) > $2 ORDER BY total DESC NULLS LAST LIMIT $3",
       "selected_by": [
         "time_high_impact"
@@ -269,14 +269,14 @@
       "execution_count": 30,
       "rows_returned": 3000,
       "avg_rows_per_call": 100.0,
-      "total_time_ms": 525.814,
-      "mean_time_ms": 17.5271,
-      "stddev_time_ms": 0.8254544089974524,
-      "min_time_ms": 15.7187,
-      "max_time_ms": 22.0483,
-      "coeff_of_variation": 0.047095892018500056,
+      "total_time_ms": 547.4184,
+      "mean_time_ms": 18.2473,
+      "stddev_time_ms": 2.3206639613122224,
+      "min_time_ms": 15.575,
+      "max_time_ms": 30.9581,
+      "coeff_of_variation": 0.12717848456002928,
       "disk_spill_indicator": 0,
-      "counters_epoch": "2026-10-08 14:52:40.654041",
+      "counters_epoch": "2026-10-08 16:47:45.549548",
       "canonic_query": "SELECT a.id, b.id FROM sbtest1 AS a JOIN sbtest1 AS b ON b.c = a.c WHERE a.id BETWEEN $1 AND $2 ORDER BY a.id NULLS FIRST, b.id NULLS FIRST LIMIT $3",
       "selected_by": [
         "time_high_impact"
@@ -291,14 +291,14 @@
       "execution_count": 30,
       "rows_returned": 1500,
       "avg_rows_per_call": 50.0,
-      "total_time_ms": 365.2277,
-      "mean_time_ms": 12.1743,
-      "stddev_time_ms": 0.9121588898505202,
-      "min_time_ms": 10.0632,
-      "max_time_ms": 17.1704,
-      "coeff_of_variation": 0.07492495583733932,
+      "total_time_ms": 386.6551,
+      "mean_time_ms": 12.8885,
+      "stddev_time_ms": 2.436087361597144,
+      "min_time_ms": 10.5524,
+      "max_time_ms": 26.2315,
+      "coeff_of_variation": 0.18901248101774015,
       "disk_spill_indicator": 0,
-      "counters_epoch": "2026-10-08 14:52:39.619210",
+      "counters_epoch": "2026-10-08 16:47:44.390167",
       "canonic_query": "SELECT SUBSTRING ( `c` , ?, ... ) AS `pref` , COUNT ( * ) AS `cnt` FROM `sbtest1` WHERE `c` LIKE ? GROUP BY `pref` ORDER BY `cnt` DESC LIMIT ?",
       "selected_by": [
         "time_high_impact"
@@ -313,14 +313,14 @@
       "execution_count": 30,
       "rows_returned": 3000,
       "avg_rows_per_call": 100.0,
-      "total_time_ms": 246.4211,
-      "mean_time_ms": 8.214,
-      "stddev_time_ms": 0.8074343368555322,
-      "min_time_ms": 6.8922,
-      "max_time_ms": 12.6365,
-      "coeff_of_variation": 0.09829977317452303,
+      "total_time_ms": 229.3675,
+      "mean_time_ms": 7.6456,
+      "stddev_time_ms": 1.2845189418611156,
+      "min_time_ms": 6.5206,
+      "max_time_ms": 14.6812,
+      "coeff_of_variation": 0.16800760461718056,
       "disk_spill_indicator": 0,
-      "counters_epoch": "2026-10-08 14:52:40.742371",
+      "counters_epoch": "2026-10-08 16:47:45.671816",
       "canonic_query": "SELECT a.k, COUNT(*) AS cnt FROM sbtest1 AS a JOIN sbtest1 AS b ON b.id = a.id JOIN sbtest1 AS c ON c.id = a.id WHERE a.k < $1 GROUP BY a.k ORDER BY cnt DESC NULLS LAST, a.k NULLS FIRST LIMIT $2",
       "selected_by": [
         "time_high_impact"
@@ -335,14 +335,14 @@
       "execution_count": 30,
       "rows_returned": 6000,
       "avg_rows_per_call": 200.0,
-      "total_time_ms": 126.9663,
-      "mean_time_ms": 4.2322,
-      "stddev_time_ms": 0.21865084495606238,
-      "min_time_ms": 3.6255,
-      "max_time_ms": 5.4298,
-      "coeff_of_variation": 0.05166363710506649,
+      "total_time_ms": 130.6906,
+      "mean_time_ms": 4.3564,
+      "stddev_time_ms": 0.7045720405560623,
+      "min_time_ms": 3.6156,
+      "max_time_ms": 8.2155,
+      "coeff_of_variation": 0.16173263257645357,
       "disk_spill_indicator": 0,
-      "counters_epoch": "2026-10-08 14:52:40.684418",
+      "counters_epoch": "2026-10-08 16:47:45.594734",
       "canonic_query": "SELECT id, CASE WHEN k % $1 = $2 THEN $3 WHEN k % $4 = $5 THEN $6 ELSE $7 END AS bucket FROM sbtest1 ORDER BY bucket NULLS FIRST, id DESC NULLS LAST LIMIT $8",
       "selected_by": [
         "time_high_impact"
@@ -357,14 +357,14 @@
       "execution_count": 30,
       "rows_returned": 15000,
       "avg_rows_per_call": 500.0,
-      "total_time_ms": 87.584,
-      "mean_time_ms": 2.9195,
-      "stddev_time_ms": 0.26367363918298686,
-      "min_time_ms": 2.235,
-      "max_time_ms": 4.3637,
-      "coeff_of_variation": 0.09031465633943718,
+      "total_time_ms": 94.567,
+      "mean_time_ms": 3.1522,
+      "stddev_time_ms": 0.6206244299091037,
+      "min_time_ms": 2.1165,
+      "max_time_ms": 6.5515,
+      "coeff_of_variation": 0.19688612077568166,
       "disk_spill_indicator": 0,
-      "counters_epoch": "2026-10-08 14:52:40.782414",
+      "counters_epoch": "2026-10-08 16:47:45.742522",
       "canonic_query": "SELECT DISTINCT k, c FROM sbtest1 WHERE id BETWEEN $1 AND $2 ORDER BY k NULLS FIRST LIMIT $3",
       "selected_by": [
         "time_high_impact"
@@ -408,7 +408,7 @@
       "schema_name": "ql_demo",
       "table_name": "sbtest1",
       "index_name": "k_1",
-      "index_scans": 40039560,
+      "index_scans": 40049280,
       "last_index_scan": null,
       "index_ref": "CREATE INDEX k_1 ON ql_demo.sbtest1 USING btree (k)",
       "index_size_bytes": 212992
@@ -417,7 +417,7 @@
       "schema_name": "ql_demo",
       "table_name": "sbtest1",
       "index_name": "PRIMARY",
-      "index_scans": 787290,
+      "index_scans": 788775,
       "last_index_scan": null,
       "index_ref": "CREATE UNIQUE INDEX PRIMARY ON ql_demo.sbtest1 USING btree (id)",
       "index_size_bytes": 212992
@@ -441,9 +441,9 @@
     {
       "schema_name": "ql_demo",
       "table_name": "sbtest1",
-      "seq_scans": 42027360,
-      "idx_scans": 40826850,
-      "live_rows": 9680
+      "seq_scans": 42039045,
+      "idx_scans": 40838055,
+      "live_rows": 9684
     }
   ],
   "columns": [
@@ -480,12 +480,6 @@
     {
       "schema_name": "ql_demo",
       "table_name": "sbtest1",
-      "column_name": "c",
-      "data_type": "char"
-    },
-    {
-      "schema_name": "ql_demo",
-      "table_name": "sbtest1",
       "column_name": "id",
       "data_type": "int"
     },
@@ -498,13 +492,19 @@
     {
       "schema_name": "ql_demo",
       "table_name": "sbtest1",
+      "column_name": "c",
+      "data_type": "char"
+    },
+    {
+      "schema_name": "ql_demo",
+      "table_name": "sbtest1",
       "column_name": "pad",
       "data_type": "char"
     }
   ],
   "server_start_timestamp": [
     {
-      "server_start_time": "2026-10-08 13:37:33.000000"
+      "server_start_time": "2026-10-08 15:18:36.000000"
     }
   ],
   "canonic_explains": [
@@ -525,7 +525,7 @@
             "type": "scan",
             "access_method": "index_lookup",
             "relation": "a",
-            "estimated_rows": 9680,
+            "estimated_rows": 9684,
             "predicate": "(a.id = (SELECT MAX(b.id) FROM sbtest1 AS b WHERE (b.k = a.k)))",
             "index_name": "k_1"
           },
@@ -547,7 +547,7 @@
           }
         ],
         "estimates": {
-          "total_cost": 1008.25
+          "total_cost": 1008.65
         }
       }
     },
@@ -576,7 +576,7 @@
             "type": "scan",
             "access_method": "index_lookup",
             "relation": "a",
-            "estimated_rows": 4840,
+            "estimated_rows": 4842,
             "predicate": "(a.id > $1)",
             "index_name": "PRIMARY"
           },
@@ -590,7 +590,7 @@
           }
         ],
         "estimates": {
-          "total_cost": 969.55
+          "total_cost": 969.95
         }
       }
     },
@@ -619,13 +619,13 @@
             "type": "scan",
             "access_method": "full_table_scan",
             "relation": "sbtest1",
-            "estimated_rows": 9680,
+            "estimated_rows": 9684,
             "predicate": null,
             "index_name": null
           }
         ],
         "estimates": {
-          "total_cost": 10688.25
+          "total_cost": 10692.65
         }
       }
     },
@@ -670,7 +670,7 @@
             "type": "scan",
             "access_method": "full_table_scan",
             "relation": "a",
-            "estimated_rows": 4840,
+            "estimated_rows": 4842,
             "predicate": "(a.k > $1)",
             "index_name": null
           },
@@ -678,13 +678,13 @@
             "type": "scan",
             "access_method": "index_lookup",
             "relation": "b",
-            "estimated_rows": 4840,
+            "estimated_rows": 4842,
             "predicate": null,
             "index_name": "PRIMARY"
           }
         ],
         "estimates": {
-          "total_cost": 2702.25
+          "total_cost": 2703.35
         }
       }
     },
@@ -729,13 +729,13 @@
             "type": "scan",
             "access_method": "full_table_scan",
             "relation": "b",
-            "estimated_rows": 3585472,
+            "estimated_rows": 3586953,
             "predicate": "(b.c = a.c)",
             "index_name": null
           }
         ],
         "estimates": {
-          "total_cost": 3586529.56
+          "total_cost": 3588011.16
         }
       }
     },
@@ -778,7 +778,7 @@
           }
         ],
         "estimates": {
-          "total_cost": 1008.25
+          "total_cost": 1008.65
         }
       }
     },
@@ -823,7 +823,7 @@
             "type": "scan",
             "access_method": "index_lookup",
             "relation": "a",
-            "estimated_rows": 3619,
+            "estimated_rows": 3623,
             "predicate": "(a.k < $1)",
             "index_name": "k_1"
           },
@@ -831,7 +831,7 @@
             "type": "scan",
             "access_method": "index_lookup",
             "relation": "b",
-            "estimated_rows": 3619,
+            "estimated_rows": 3623,
             "predicate": null,
             "index_name": "PRIMARY"
           },
@@ -839,13 +839,13 @@
             "type": "scan",
             "access_method": "index_lookup",
             "relation": "c",
-            "estimated_rows": 3619,
+            "estimated_rows": 3623,
             "predicate": null,
             "index_name": "PRIMARY"
           }
         ],
         "estimates": {
-          "total_cost": 3258.24
+          "total_cost": 3261.84
         }
       }
     },
@@ -874,13 +874,13 @@
             "type": "scan",
             "access_method": "index_lookup",
             "relation": "sbtest1",
-            "estimated_rows": 9680,
+            "estimated_rows": 9684,
             "predicate": null,
             "index_name": "k_1"
           }
         ],
         "estimates": {
-          "total_cost": 1008.25
+          "total_cost": 1008.65
         }
       }
     },
@@ -917,13 +917,13 @@
             "type": "scan",
             "access_method": "index_lookup",
             "relation": "sbtest1",
-            "estimated_rows": 4840,
+            "estimated_rows": 4842,
             "predicate": "(sbtest1.id BETWEEN $1 AND $2)",
             "index_name": "k_1"
           }
         ],
         "estimates": {
-          "total_cost": 969.55
+          "total_cost": 969.95
         }
       }
     }
