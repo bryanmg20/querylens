@@ -63,7 +63,9 @@ FROM pg_locks l
 LEFT JOIN pg_class c ON c.oid = l.relation
 LEFT JOIN pg_database d ON d.oid = l.database
 JOIN pg_stat_activity a ON a.pid = l.pid
-WHERE a.usesysid != (SELECT oid FROM pg_roles WHERE rolname = session_user);
+-- IS DISTINCT FROM y no !=: los procesos de fondo (autovacuum) tienen usesysid
+-- NULL y con != se descartaban; su pid llega en blocking_pids de quien bloquean.
+WHERE a.usesysid IS DISTINCT FROM (SELECT oid FROM pg_roles WHERE rolname = session_user);
 """
 
 

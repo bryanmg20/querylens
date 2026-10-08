@@ -170,7 +170,10 @@ def test_pg_statements_query_keeps_other_statements(query_text):
 def test_pg_locks_query_excludes_pipeline_user():
     """C-6: PG LOCKS_QUERY must filter out locks from the monitoring user (session_user)."""
     assert "session_user" in PG_LOCKS_QUERY
-    assert "usesysid !=" in PG_LOCKS_QUERY
+    # IS DISTINCT FROM: con != un usesysid NULL (autovacuum y demas procesos
+    # de fondo) daba NULL y sus locks desaparecian del snapshot.
+    assert "usesysid IS DISTINCT FROM" in PG_LOCKS_QUERY
+    assert "usesysid !=" not in PG_LOCKS_QUERY
     assert "pg_stat_activity" in PG_LOCKS_QUERY
     assert "JOIN pg_stat_activity" in PG_LOCKS_QUERY
 
