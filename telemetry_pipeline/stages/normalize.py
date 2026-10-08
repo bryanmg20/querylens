@@ -106,7 +106,7 @@ def clean_mysql_explain_predicate_dynamic(pred_text):
         # no los puede conservar: se reemplazan por placeholders $n, igual que
         # canonicalize_query hace con query_text. NULL/TRUE/FALSE no son datos
         # y dejan el predicado legible, asi que no se tocan.
-        for node in list(ast.find_all(exp.Literal, exp.Parameter)):
+        for node in list(ast.find_all(*canonicalizers.DATA_LITERAL_NODES, exp.Parameter)):
             node.replace(exp.Placeholder())
         canonic = ast.sql(dialect='postgres', identify=False, comments=False)
 
@@ -140,4 +140,8 @@ def clean_mysql_explain_predicate_dynamic(pred_text):
         return cleaned
 
 
-_LITERAL_RE = re.compile(r"'(?:''|[^'])*'|\b\d+(?:\.\d+)?\b")
+# Hex/bit primero: 0xDEAD o X'0A' deben caer enteros en un solo $n, no dejar el
+# prefijo (X$1) ni partirse en digitos sueltos.
+_LITERAL_RE = re.compile(
+    r"\b[xXbB]'[^']*'|'(?:''|[^'])*'|\b0[xXbB][0-9a-fA-F]+\b|\b\d+(?:\.\d+)?\b"
+)

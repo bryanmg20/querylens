@@ -1,17 +1,24 @@
+from sqlglot import exp
+
 from models.stats import Stats
+
+# Nodos de sqlglot que cargan un dato real de la query. HexString/BitString/
+# ByteString no son exp.Literal: sin ellos 0xDEADBEEF, X'..', b'..' y E'..'
+# viajaban crudos a la cola (UUIDs/hashes en columnas BINARY). Fuente unica
+# para canonicalize_query y para los predicados de plan de MySQL.
+DATA_LITERAL_NODES = (exp.Literal, exp.HexString, exp.BitString, exp.ByteString)
 
 
 def canonicalize_query(query_text, source_dialect="postgres"):
     import re
     import sqlglot
-    from sqlglot import exp
 
     if not query_text:
         return None
 
     try:
         ast = sqlglot.parse_one(query_text, read=source_dialect)
-        for node in list(ast.find_all(exp.Literal, exp.Boolean, exp.Null, exp.Parameter)):
+        for node in list(ast.find_all(*DATA_LITERAL_NODES, exp.Boolean, exp.Null, exp.Parameter)):
             node.replace(exp.Placeholder())
         canonic = ast.sql(dialect="postgres", identify=False, comments=False)
 

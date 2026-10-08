@@ -167,3 +167,32 @@ def test_normalize_predicate_runs_over_plan():
     assert ops[0]["predicate"] == "(t.id = $1)"
     assert "`" not in ops[0]["predicate"]
     assert ops[1]["predicate"] is None
+
+@pytest.mark.parametrize(
+    "predicate, secret",
+    [
+        ("(t.c = 0x41424344)", "41424344"),
+        ("(t.c = X'0A1B')", "0A1B"),
+        ("(t.f = b'1010')", "1010"),
+    ],
+)
+def test_clean_mysql_predicate_redacts_hex_and_bit_literals(predicate, secret):
+    """EXPLAIN de MySQL muestra los valores de columnas binarias como hex: era
+    un canal de fuga igual que los strings (N-1)."""
+    cleaned = clean_mysql_explain_predicate_dynamic(predicate)
+    assert secret not in cleaned.upper()
+    assert "$1" in cleaned
+
+
+@pytest.mark.parametrize(
+    "predicate, expected",
+    [
+        ("t.c = 0xDEAD AND ((", "t.c = $1 AND (("),
+        ("t.c = X'0A1B' AND ((", "t.c = $1 AND (("),
+        ("t.f = b'1010' AND ((", "t.f = $1 AND (("),
+    ],
+)
+def test_clean_mysql_predicate_redacts_hex_on_fallback_path(predicate, expected):
+    """El fallback por regex tampoco puede dejar el hex: ni crudo ni partido
+    (X$1 o 0x$1 seguirian delatando la forma del dato)."""
+    assert clean_mysql_explain_predicate_dynamic(predicate) == expected

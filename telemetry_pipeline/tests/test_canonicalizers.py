@@ -76,3 +76,21 @@ def test_normalize_querytext_active_none_section():
     stats = {"active_queries": None}
     normalize_querytext_active(stats)
     assert stats["active_queries"] is None
+
+@pytest.mark.parametrize(
+    "query_text, dialect, secret",
+    [
+        ("SELECT * FROM u WHERE token = 0xDEADBEEF", "mysql", "DEADBEEF"),
+        ("SELECT * FROM u WHERE id = X'0A1B'", "mysql", "0A1B"),
+        ("SELECT * FROM u WHERE f = b'1010'", "mysql", "1010"),
+        ("SELECT * FROM u WHERE id = X'1F2E'", "postgres", "1F2E"),
+        ("SELECT * FROM u WHERE f = B'0110'", "postgres", "0110"),
+    ],
+)
+def test_canonicalize_query_redacts_hex_and_bit_literals(query_text, dialect, secret):
+    """HexString/BitString no son exp.Literal en sqlglot: sin cubrirlos, el
+    valor (UUIDs/hashes de columnas BINARY) viajaba crudo en canonic_query de
+    active_queries."""
+    q = canonicalize_query(query_text, dialect)
+    assert secret not in q.upper()
+    assert "$1" in q
