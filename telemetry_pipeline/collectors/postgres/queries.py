@@ -55,7 +55,9 @@ SELECT
     l.granted AS is_granted
 FROM pg_locks l
 LEFT JOIN pg_class c ON c.oid = l.relation
-LEFT JOIN pg_database d ON d.oid = l.database;
+LEFT JOIN pg_database d ON d.oid = l.database
+JOIN pg_stat_activity a ON a.pid = l.pid
+WHERE a.usesysid != (SELECT oid FROM pg_roles WHERE rolname = session_user);
 """
 
 

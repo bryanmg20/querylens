@@ -129,3 +129,22 @@ def test_grid_sections_carry_database_name():
     # CURRENT_SCHEMA es la columna real de events_statements_current (SCHEMA_NAME
     # solo existe en las tablas summary; ver test_mysql_active_query_id_...).
     assert re.search(r"s\.CURRENT_SCHEMA\s+AS database_name", MYSQL_ACTIVE_QUERIES_QUERY)
+
+
+# --- C-6 regression: LOCKS_QUERY filters out pipeline's own locks ---
+
+
+def test_pg_locks_query_excludes_pipeline_user():
+    """C-6: PG LOCKS_QUERY must filter out locks from the monitoring user (session_user)."""
+    assert "session_user" in PG_LOCKS_QUERY
+    assert "usesysid !=" in PG_LOCKS_QUERY
+    assert "pg_stat_activity" in PG_LOCKS_QUERY
+    assert "JOIN pg_stat_activity" in PG_LOCKS_QUERY
+
+
+def test_mysql_locks_query_excludes_pipeline_user():
+    """C-6: MySQL LOCKS_QUERY must filter out locks from the monitoring user (CURRENT_USER)."""
+    assert "CURRENT_USER" in MYSQL_LOCKS_QUERY
+    assert "processlist_user !=" in MYSQL_LOCKS_QUERY
+    assert "performance_schema.threads" in MYSQL_LOCKS_QUERY
+    assert "JOIN performance_schema.threads" in MYSQL_LOCKS_QUERY or "LEFT JOIN performance_schema.threads" in MYSQL_LOCKS_QUERY

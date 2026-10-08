@@ -55,13 +55,17 @@ def run_engine(dialect: str, connection_factory, db_id: str | None = None):
     de enrich. Este wrapper es el que cuida el ciclo de vida: crea los dos
     engines y los dispone al terminar, exitoso o no.
     """
-    target_engine = connection_factory()
-    querylens_engine = get_connection_querylens_db()
+    target_engine = None
+    querylens_engine = None
     try:
+        target_engine = connection_factory()
+        querylens_engine = get_connection_querylens_db()
         return _cycle(dialect, target_engine, querylens_engine, db_id)
     finally:
-        _dispose(target_engine)
-        _dispose(querylens_engine)
+        if target_engine is not None:
+            _dispose(target_engine)
+        if querylens_engine is not None:
+            _dispose(querylens_engine)
 
 
 def _cycle(dialect: str, target_engine, querylens_engine, db_id: str | None = None):

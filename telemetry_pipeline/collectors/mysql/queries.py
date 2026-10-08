@@ -122,7 +122,10 @@ SELECT
 FROM performance_schema.data_locks l
 LEFT JOIN information_schema.innodb_trx r
        ON CAST(r.trx_id AS CHAR) = l.engine_transaction_id
-WHERE l.object_schema NOT IN ('mysql', 'performance_schema', 'information_schema', 'sys');
+LEFT JOIN performance_schema.threads t
+       ON t.processlist_id = r.trx_mysql_thread_id
+WHERE l.object_schema NOT IN ('mysql', 'performance_schema', 'information_schema', 'sys')
+  AND (t.processlist_user IS NULL OR t.processlist_user != (SELECT SUBSTRING_INDEX(CURRENT_USER(), '@', 1)));
 """
 
 ACTIVE_QUERIES_QUERY = """

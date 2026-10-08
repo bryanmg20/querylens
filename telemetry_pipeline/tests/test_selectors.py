@@ -156,3 +156,27 @@ def test_explain_ready_skips_candidates_without_query_id():
     }
     init_ready_for_explain(stats)
     assert stats["top_impact_queries"] == []
+
+
+# --- C-1 regression: selectors must not crash when statements=None ---
+
+
+def test_select_high_impact_handles_none_statements():
+    """C-1: select_high_impact_time_statements must not crash on stats['statements']=None."""
+    stats = {"statements": None}
+    select_high_impact_time_statements(stats)
+    assert stats["high_impact_statements"] == []
+
+
+def test_select_unstable_handles_none_statements():
+    """C-1: select_unstable_statements must not crash on stats['statements']=None."""
+    stats = {"statements": None}
+    select_unstable_statements(stats)
+    assert stats["unstable_statements"] == []
+
+
+def test_select_disk_spill_handles_none_statements():
+    """C-1: select_disk_spill_indicator must not crash on stats['statements']=None."""
+    stats = {"statements": None}
+    select_disk_spill_indicator(stats)
+    assert stats["disk_spill_statements"] == []

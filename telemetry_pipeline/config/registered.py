@@ -20,6 +20,7 @@ from typing import Callable
 from cryptography.fernet import Fernet, InvalidToken
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine, URL
+from sqlalchemy.exc import OperationalError, ProgrammingError
 
 from config.connections import (
     _make_url,
@@ -30,6 +31,26 @@ from config.connections import (
 from logger import get_logger
 
 logger = get_logger(__name__)
+
+_QUEUE_ENGINE: Engine | None = None
+
+
+def _get_queue_engine() -> Engine:
+    """Singleton engine para la base de la cola (ql_demo).
+    Evita recrear pools cada 10s en runner.py."""
+    global _QUEUE_ENGINE
+    if _QUEUE_ENGINE is None:
+        _QUEUE_ENGINE = get_connection_querylens_db()
+    return _QUEUE_ENGINE
+
+
+def _reset_queue_engine() -> None:
+    """Solo para tests: permite reinyectar un mock en el proximo ciclo."""
+    global _QUEUE_ENGINE
+    if _QUEUE_ENGINE is not None:
+        _QUEUE_ENGINE.dispose()
+    _QUEUE_ENGINE = None
+
 
 SELECT_ACTIVE = """
     SELECT database_identifier, engine, host, port, db_user,
@@ -144,13 +165,19 @@ def load_registered_targets() -> list[Target] | None:
         return None
 
     try:
-        with get_connection_querylens_db().connect() as conn:
+        with _get_queue_engine().connect() as conn:
             rows = conn.execute(text(SELECT_ACTIVE)).mappings().all()
-    except Exception as exc:
-        # En CI la tabla no existe y en un sandbox limpio puede faltar: no es
-        # un error del pipeline, es que no hay targets registrados todavia.
+    except ProgrammingError as exc:
+        # Tabla no existe (CI/sandbox limpio): no es error del pipeline.
         logger.warning(
-            f"registered_targets | no se pudo leer registered_databases "
+            f"registered_targets | tabla registered_databases no existe "
+            f"({type(exc).__name__}) | no se extrae nada"
+        )
+        return None
+    except OperationalError as exc:
+        # Falla real de conexion (red, auth, timeout, etc.): esto ES un error.
+        logger.error(
+            f"registered_targets | fallo de conexion a la cola "
             f"({type(exc).__name__}: {str(exc)[:120]}) | no se extrae nada"
         )
         return None

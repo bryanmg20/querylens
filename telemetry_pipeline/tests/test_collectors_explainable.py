@@ -90,6 +90,16 @@ class TestMysqlMarkExplainable:
         ]
 
 
+class TestMysqlCalculateStddevCoeff:
+    def test_handles_none_statements(self):
+        """C-1: calculate_stddev_coeff must not crash when stats['statements']=None."""
+        collector = Mysql_Collector(engine=None)
+        stats = {"statements": None}
+        result = collector.calculate_stddev_coeff(stats)
+        assert result is stats  # returns same dict
+        assert stats["statements"] is None  # unchanged
+
+
 class TestStatementsQueryContract:
     def test_mysql_selects_query_sample_text(self):
         from collectors.mysql.queries import STATEMENTS_QUERY

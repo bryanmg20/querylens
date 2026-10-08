@@ -46,7 +46,7 @@ class Mysql_Collector(DB_Engine_Collector):
         if stats is None:
             stats = self.stats
 
-        for stmt in stats.get("statements", []):
+        for stmt in stats.get("statements") or []:
             mean = float(stmt.get('mean_time_ms') or 0)
             count = int(stmt.get('execution_count') or 0)
             max_time = float(stmt.get('max_time_ms') or 0)

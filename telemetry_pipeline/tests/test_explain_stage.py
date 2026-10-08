@@ -602,3 +602,55 @@ def test_mysql_never_opens_foreign_connection():
     stage.execute(stats, conn)
     assert conn.sent[0] == "USE ql_demo"
     assert stage._foreign_engines == {}
+
+
+# --- C-7 regression: is_single_statement handles semicolons in literals ---
+
+
+def test_is_single_statement_basic():
+    from stages.explain import is_single_statement
+
+    assert is_single_statement("SELECT 1") is True
+    assert is_single_statement("SELECT 1;") is True
+    assert is_single_statement("SELECT 1; SELECT 2") is False
+
+
+def test_is_single_statement_semicolon_in_single_quoted_string():
+    from stages.explain import is_single_statement
+
+    # Semicolon inside single-quoted string should NOT count as separator
+    assert is_single_statement("SELECT * FROM t WHERE c = 'a;b'") is True
+    assert is_single_statement("SELECT * FROM t WHERE c = 'a;b';") is True  # trailing semicolon OK
+
+
+def test_is_single_statement_semicolon_in_double_quoted_string():
+    from stages.explain import is_single_statement
+
+    # Semicolon inside double-quoted string should NOT count as separator
+    assert is_single_statement('SELECT * FROM t WHERE c = "a;b"') is True
+
+
+def test_is_single_statement_semicolon_in_dollar_quoted_string():
+    from stages.explain import is_single_statement
+
+    # Postgres dollar-quoted strings
+    assert is_single_statement("SELECT $$a;b$$") is True
+    assert is_single_statement("SELECT $tag$a;b$tag$") is True
+
+
+def test_is_single_statement_semicolon_in_comment_is_separator():
+    from stages.explain import is_single_statement
+
+    # Semicolon before comment IS a separator (two statements)
+    assert is_single_statement("SELECT 1; -- comment") is False
+    # Semicolon inside comment after statement end is OK
+    assert is_single_statement("SELECT 1 -- comment;") is True
+
+
+def test_is_single_statement_escaped_quotes():
+    from stages.explain import is_single_statement
+
+    # Escaped single quotes '' inside string
+    assert is_single_statement("SELECT 'it''s;ok'") is True
+    # Escaped double quotes "" inside string
+    assert is_single_statement('SELECT "it""s;ok"') is True

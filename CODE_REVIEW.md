@@ -29,6 +29,16 @@
 > - **Quedan abiertos de esa ronda (no tocados):** N-3 (`runner.py:34` fija DEBUG y anula `QL_LOG_LEVEL` para su módulo), N-5 (`load_dotenv(override=True)` en import), N-6 (`LOCKS_QUERY` incluye los locks del propio pipeline), N-7 (dos focos del patrón `or []` residual: `selectors.py:5`, `mysql/collector.py:49`), N-8 (una excepción de lectura de la cola se disfraza de "sin bases" y repite WARNING cada ciclo).
 > - **Correcciones al informe:** B-6 queda **resuelto-implícito** con `QL_LOG_LEVEL` (Q1, `b890bdf`): el `debug` de `registered.py` ya es alcanzable desde el env (queda el matiz de N-3: `runner.py:34` lo ignora para su propio módulo). Y el mutante `selectors: no inyectar ready_for_explain` estaba en INVALIDOS (`ci/mutants.py:204` esperaba 16 espacios, el código tiene 12 desde que se reescribió `init_ready_for_explain`): corregido, ahora 42/42 muertos en `normalize` y 22/22 en `explain`.
 > - **Siguen vigentes sin cambios:** A-3 restante (LIMIT / envío por cambio de secciones), M-5, M-7 parcial (duplicación de normalización y de engine), M-11 (`captured_at`/`source_dialect`), la defensa en profundidad del `EXPLAIN` (prefijo sobre `query_sample_text`) y B-1 a B-12 — salvo B-6, corregido arriba. De esta ronda: N-3 y N-5 a N-8. **Pendiente del usuario:** regenerar los goldens con el sandbox (`ci/regenerate_goldens.py`); el parche offline de N-1 debe coincidir.
+>
+> **Actualizado (2026-10-08, auditoría C-1 a C-7):** **los 7 hallazgos críticos C-1 a C-7 están RESUELTOS** con fixes y tests de regresión:
+> - **C-1** (`selectors.py:5`, `mysql/collector.py:49`): `statements=None` ya no crashea — patrón `or []` en `select_high_impact_time_statements`, `select_unstable_statements`, `select_disk_spill_indicator`, y `calculate_stddev_coeff`. Tests: `test_selectors.py::test_select_high_impact_handles_none_statements`, `test_select_unstable_handles_none_statements`, `test_select_disk_spill_handles_none_statements`, `test_collectors_explainable.py::TestMysqlCalculateStddevCoeff::test_handles_none_statements`.
+> - **C-2** (`registered.py:149`): excepción genérica reemplazada por `ProgrammingError` (WARNING "tabla no existe") vs `OperationalError` (ERROR "falla real de conexión"). Test: `test_registered_targets.py::test_load_registered_targets_operational_error_logged_as_error`.
+> - **C-3** (`canonicalizers.py:27-28`): **inválido** — el código ya devolvía `"Not available"` constante, no texto crudo.
+> - **C-4** (`registered.py:147`): engine de cola cacheado como singleton módulo (`_get_queue_engine` + `_reset_queue_engine`). Test: `test_load_registered_targets_reuses_queue_engine`.
+> - **C-5** (`main.py:58-64`): engines creados **dentro** del `try`; `finally` dispone solo los que se crearon. Test: `test_run_engine_disposes_target_even_if_queue_engine_fails`.
+> - **C-6** (`collectors/postgres/queries.py:49-59`, `collectors/mysql/queries.py:115-126`): `LOCKS_QUERY` filtra usuario del pipeline (`session_user` / `CURRENT_USER`) via join a `pg_stat_activity` / `performance_schema.threads`. Tests: `test_queries_contract.py::test_pg_locks_query_excludes_pipeline_user`, `test_mysql_locks_query_excludes_pipeline_user`.
+> - **C-7** (`explain.py:14-16`): `is_single_statement` reescrito con máquina de estados que ignora `;` en comillas simples, dobles y dollar-quoted (Postgres). Tests: `test_explain_stage.py::test_is_single_statement_*` (7 casos).
+> Suite completa: **547 tests passed**.
 
 ---
 
@@ -273,3 +283,83 @@ Defense-in-depth que añadiría: aplicar el mismo filtro de prefijo **al texto q
 4. **M-8, M-7** (f-strings en URLs; normalización duplicada en dos fuentes de verdad).
 5. **M-11, M-12, M-13** (contrato del consumidor; transacción abierta sobre el target; `USE` sin reset).
 6. Lo demás (M-9, M-10, B-1 a B-12, defensa en profundidad del `EXPLAIN`), según avance el proyecto (B-10/B-9 son de despliegue, no de desarrollo).
+
+---
+
+## Plan de acción consolidado (verificación 2026-10-08)
+
+### Contexto clave: dos entry points, un solo pipeline
+| Entry point | Qué es | `db_id` | Intervalo | Destino |
+|-------------|--------|---------|-----------|---------|
+| `main_sandbox.py` | Sandbox / CI / `measure_overhead` | Hardcodeado `"querylens-db-01"` | N/A (una corrida) | **No va a producción** |
+| `main.py` | Producción | `database_identifier` de `registered_databases` (pisa constante ANTES de validar) | N/A (una corrida) | Llamado por `runner.py` |
+| `runner.py` | Daemon producción | Hereda de `main.py` | `EXTRACT_INTERVAL_S` (default 10s = **pruebas**; prod 30-60s via env) | **Proceso que se despliega** |
+
+**El consumidor de `q_analyze_job` NO está en este repo** — es un servicio externo separado (los tests simulan consumo con `pgmq.read`, ver `test_e2e_main.py:172`). El pipeline solo produce.
+
+---
+
+### CAJA 1 — CRÍTICOS: Rompen funcionalidad, seguridad, pérdida de datos HOY
+
+| # | Hallazgo | Archivo:línea | Acción concreta | Estado |
+|---|----------|---------------|-----------------|--------|
+| **C-1** | `statements=None` crashea `selectors.py:5` y `mysql/collector.py:49` | `stages/selectors.py:5`, `collectors/mysql/collector.py:49` | `or []` en `select_high_impact_time_statements`, `select_unstable_statements`, `select_disk_spill_indicator`, `calculate_stddev_coeff` | ✅ **RESUELTO** |
+| **C-2** | Excepción genérica en `load_registered_targets` disfraza fallos reales como "sin bases" | `config/registered.py:149-155` | Diferenciar `ProgrammingError` (tabla no existe) vs `OperationalError` (falla real) | ✅ **RESUELTO** |
+| **C-3** | `canonicalize_query` fallback devuelve texto crudo con literales | `stages/canonicalizers.py:27-28` | **Inválido** — código ya devuelve `"Not available"` | 🚫 **INVÁLIDO** |
+| **C-4** | Engine de cola recreado cada 10s sin `dispose()` | `config/registered.py:147` | Cachear engine singleton (`_get_queue_engine` + `_reset_queue_engine`) | ✅ **RESUELTO** |
+| **C-5** | `target_engine` creado antes del `try` — leak si falla cola | `main.py:58-64` | Mover creación dentro del `try` | ✅ **RESUELTO** |
+| **C-6** | `LOCKS_QUERY` no filtra locks del propio pipeline (MySQL y PG) | `collectors/mysql/queries.py:115-126`, `collectors/postgres/queries.py:49-59` | Añadir filtro por usuario/rol via join a `pg_stat_activity` / `performance_schema.threads` | ✅ **RESUELTO** |
+| **C-7** | `is_single_statement` falso positivo con `;` en literal/comentario | `stages/explain.py:14-16` | Máquina de estados que ignora `;` en comillas simples/dobles/dollar-quoted | ✅ **RESUELTO** |
+
+---
+
+### CAJA 2 — IMPORTANTES: Robustez, observabilidad, deuda técnica
+
+| # | Hallazgo | Archivo:línea | Acción |
+|---|----------|---------------|--------|
+| **I-1** | Normalización duplicada: etapa vs validadores pydantic | `stages/normalize.py:59-82` vs `models/snapshot.py:25-46` | Unificar: que etapa use validadores pydantic (o viceversa). Una sola fuente de verdad. |
+| **I-2** | Engine MySQL construido 2 veces; PG diverge en `pool_pre_ping` | `config/connections.py:115-122` vs `config/registered.py:113-122` | Unificar builders: una sola factory por motor, reutilizada por `connections.py` y `registered.py`. |
+| **I-3** | `runner.py:34` fija `DEBUG` hardcodeado, ignora `QL_LOG_LEVEL` | `runner.py:34` | Leer `QL_LOG_LEVEL` via `logger._level_from_env()` en lugar de `logging.DEBUG` hardcodeado. |
+| **I-4** | `load_dotenv(override=True)` en import de módulo | `config/connections.py:128` | Quitar `override=True`; cargar `.env` solo en entrypoints (`main.py`, `runner.py`, `main_sandbox.py`). |
+| **I-5** | `.get` inseguro en `normalize_predicate` | `stages/normalize.py:85` | Cambiar `explain.get("canonical_plan", [])` por `explain.get("canonical_plan", {})`. |
+| **I-6** | Deps sin pin en `requirements.txt` (7 deps) | `telemetry_pipeline/requirements.txt:1-7` | Pinnear versiones mínimas compatibles (ej. `sqlalchemy>=2.0,<3.0`, `pydantic>=2.0,<3.0`, etc.). |
+| **I-7** | Puertos publicados en `0.0.0.0` | `docker-compose.yml:12,44` | Cambiar a `127.0.0.1:5432` y `127.0.0.1:8000` (o `${DB_HOST:-127.0.0.1}`). |
+| **I-8** | Rol compartido auth-service/pipeline | `docker-compose.yml:26-29,69-72` | Crear rol `querylens_pipeline` con `SELECT` en `registered_databases` + `pgmq.send`; separar credenciales. |
+| **I-9** | `print()` en camino caliente | `main.py:86` | Cambiar a `logger.info(f"Diccionario encolado con ID: {msg_id}")`. |
+| **I-10** | Superusuario `postgres` innecesario en `init.sql` | `querylens_database/init.sql:2` | Eliminar `CREATE ROLE postgres WITH SUPERUSER LOGIN`; `pg_partman` no se usa. |
+| **I-11** | Índice duplicado en `registered_databases` | `querylens_database/registered_databases.sql:6,28` | Eliminar `CREATE INDEX idx_registered_databases_identifier` (ya existe por `UNIQUE`). |
+| **I-12** | DDL solo en primer arranque, sin migraciones | `docker-compose.yml:15-16` | Documentar que cambios de DDL requieren migración manual; evaluar herramienta (alembic, golang-migrate, SQL puro versionado). |
+| **I-13** | Defensa EXPLAIN: sin filtro sobre `query_sample_text` (MySQL) | `stages/explain.py:97-101` | Aplicar filtro de prefijo (`SELECT/WITH/INSERT/UPDATE/DELETE`) también a `query_sample_text` antes de EXPLAIN. |
+
+---
+
+### CAJA 3 — DECISIONES DOCUMENTADAS (by design, no tocar)
+
+| # | Tema | Documentación | Nota |
+|---|------|---------------|------|
+| **D-1** | Cola sin consumidor → crece sin límite | `PIPELINE_FLOW.md:153`, `references/004_decisiones_contrato.md:100` | Retención = consumidor. `_log_payload_size` avisa a 1MB. |
+| **D-2** | Intervalo 10s default (pruebas) | `PIPELINE_FLOW.md:202`, `runner.py:36` | Prod = 30-60s via `EXTRACT_INTERVAL_S` env. |
+| **D-3** | Sin `LIMIT` en queries de recolección | `PIPELINE_FLOW.md:153` | Truncar rompería validación consumidor. |
+| **D-4** | Sin `captured_at`/`source_dialect`/`collect_errors` | `references/004_decisiones_contrato.md` | Decisión usuario: "snapshot vacío no sirve"; log distingue fallo vs vacío. |
+| **D-5** | EXPLAIN con `search_path` reducido | `references/004_decisiones_contrato.md:46-54` | Limitación conocida: refs no calificadas pueden fallar. Reintenta cada ciclo. |
+| **D-6** | `db_id` hardcodeado en sandbox | `stages/enrich.py:3`, `main_sandbox.py:22` | **A propósito**: sandbox usa constante; prod la pisa con `database_identifier` real. |
+
+---
+
+### CAJA 4 — FALSOS POSITIVOS (review original se equivocó)
+
+| # | Hallazgo original | Por qué NO es problema |
+|---|-------------------|------------------------|
+| **FP-1** | MEDIA-11: "sin `source_dialect` ni `captured_at`" | Sandbox hardcodea `db_id` a propósito; prod usa `database_identifier` real. Consumidor agnóstico al motor. |
+| **FP-2** | B-6: "`QL_LOG_LEVEL` no cableado" | Resuelto en `b890bdf`/`041b7e2`: compose tiene `QL_LOG_LEVEL`, `logger.py:_level_from_env()` lo lee. Solo `runner.py` lo ignora (I-3). |
+| **FP-3** | Mutante `selectors: no inyectar ready_for_explain` en INVÁLIDOS | Corregido en `9027b2f`: 42/42 mutantes muertos en `normalize`, 22/22 en `explain`. |
+| **FP-4** | MEDIA-10: "`query_sample_text` viaja en payload" | **Falso**: `StatementRow` no lo declara; `extra="ignore"` lo descarta. Test `test_payload_does_not_carry_query_sample_text` lo verifica. |
+
+---
+
+### Orden de ejecución sugerido
+
+1. ~~**C-1 a C-7** (funcionalidad/seguridad crítica — 1-2 días)~~ ✅ **COMPLETADO**
+2. **I-1, I-2, I-3, I-4, I-6** (robustez core — 1 día)
+3. **I-5, I-7, I-8, I-9, I-10, I-11, I-12, I-13** (despliegue/calidad — según sprint)
+4. **CAJA 3 y 4** — no requieren acción (documentadas / falsas)

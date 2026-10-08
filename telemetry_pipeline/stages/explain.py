@@ -11,9 +11,79 @@ logger = get_logger(__name__)
 EXPLAIN_NORMALIZERS = en.EXPLAIN_NORMALIZERS
 
 
-def is_single_statement(query_text):
-    trimmed = (query_text or "").rstrip().rstrip(";").strip()
-    return ";" not in trimmed
+def is_single_statement(query_text: str | None) -> bool:
+    """Return True if query_text contains exactly one SQL statement.
+
+    A semicolon inside a string literal (single or double quoted) or
+    a dollar-quoted string (Postgres) does NOT count as a statement separator.
+    """
+    if not query_text:
+        return False
+
+    trimmed = query_text.rstrip()
+    if trimmed.endswith(";"):
+        trimmed = trimmed[:-1]
+
+    in_single = False
+    in_double = False
+    in_dollar = False
+    dollar_tag = ""
+    i = 0
+    while i < len(trimmed):
+        ch = trimmed[i]
+
+        # Dollar-quoted strings (Postgres): $tag$...$tag$
+        if not in_single and not in_double and not in_dollar:
+            if ch == "$":
+                # Look ahead for tag
+                j = i + 1
+                tag = "$"
+                while j < len(trimmed) and (trimmed[j].isalnum() or trimmed[j] == "_"):
+                    tag += trimmed[j]
+                    j += 1
+                if j < len(trimmed) and trimmed[j] == "$":
+                    tag += "$"
+                    in_dollar = True
+                    dollar_tag = tag
+                    i = j
+                    i += 1
+                    continue
+
+        elif in_dollar:
+            if trimmed[i:].startswith(dollar_tag):
+                in_dollar = False
+                dollar_tag = ""
+                i += len(dollar_tag) - 1
+                i += 1
+                continue
+
+        # Single-quoted strings (handles escaped '' as well)
+        if ch == "'" and not in_double and not in_dollar:
+            if not in_single:
+                in_single = True
+            elif i + 1 < len(trimmed) and trimmed[i + 1] == "'":
+                # Escaped single quote ''
+                i += 1
+            else:
+                in_single = False
+
+        # Double-quoted strings (handles escaped "" as well)
+        elif ch == '"' and not in_single and not in_dollar:
+            if not in_double:
+                in_double = True
+            elif i + 1 < len(trimmed) and trimmed[i + 1] == '"':
+                # Escaped double quote ""
+                i += 1
+            else:
+                in_double = False
+
+        # Semicolon outside any string = statement separator
+        if ch == ";" and not in_single and not in_double and not in_dollar:
+            return False
+
+        i += 1
+
+    return True
 
 
 class ExplainStage:

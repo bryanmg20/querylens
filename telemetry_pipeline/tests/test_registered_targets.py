@@ -10,6 +10,7 @@ from unittest import mock
 
 import pytest
 from cryptography.fernet import Fernet
+from sqlalchemy.exc import ProgrammingError
 
 import main
 from config import registered
@@ -46,7 +47,9 @@ def _patch_db(monkeypatch, rows=(), error=None):
     else:
         ctx = engine.connect.return_value.__enter__.return_value
         ctx.execute.return_value.mappings.return_value.all.return_value = list(rows)
-    monkeypatch.setattr(registered, "get_connection_querylens_db", lambda: engine)
+    monkeypatch.setattr(registered, "_get_queue_engine", lambda: engine)
+    # Reset cache before each test
+    registered._reset_queue_engine()
     return engine
 
 
@@ -115,7 +118,7 @@ def test_puerto_invalido_se_omite(fernet, monkeypatch):
 
 
 def test_sin_tabla_devuelve_none(fernet, monkeypatch, caplog):
-    _patch_db(monkeypatch, error=Exception('relation "registered_databases" does not exist'))
+    _patch_db(monkeypatch, error=ProgrammingError('relation "registered_databases" does not exist', None, None))
 
     with caplog.at_level(logging.WARNING):
         targets = registered.load_registered_targets()
@@ -317,3 +320,66 @@ def test_dispose_que_revienta_no_tumba_el_ciclo(
 
     assert msg_id == 1
     assert any("dispose" in r.getMessage() for r in caplog.records)
+
+
+# --- C-2 regression: OperationalError logged as ERROR, not WARNING ---
+
+
+def test_load_registered_targets_operational_error_logged_as_error(
+    fernet, monkeypatch, caplog
+):
+    """C-2: OperationalError (real connection failure) must be logged as ERROR."""
+    from sqlalchemy.exc import OperationalError
+
+    engine = mock.MagicMock()
+    engine.connect.side_effect = OperationalError("connection refused", None, None)
+    monkeypatch.setattr(registered, "_get_queue_engine", lambda: engine)
+    registered._reset_queue_engine()
+
+    with caplog.at_level(logging.ERROR):
+        targets = registered.load_registered_targets()
+
+    assert targets is None
+    assert any("fallo de conexion" in r.getMessage() for r in caplog.records)
+    # Ensure it's ERROR level, not WARNING
+    error_records = [r for r in caplog.records if r.levelno >= logging.ERROR]
+    assert any("fallo de conexion" in r.getMessage() for r in error_records)
+
+
+# --- C-4 regression: queue engine is cached, not recreated per call ---
+
+
+def test_load_registered_targets_reuses_queue_engine(fernet, monkeypatch):
+    """C-4: _get_queue_engine must return the same engine instance on subsequent calls."""
+    engine1 = mock.MagicMock()
+    engine2 = mock.MagicMock()
+    call_count = [0]
+
+    def factory():
+        call_count[0] += 1
+        return engine1 if call_count[0] == 1 else engine2
+
+    monkeypatch.setattr(registered, "get_connection_querylens_db", factory)
+    registered._reset_queue_engine()
+
+    e1 = registered._get_queue_engine()
+    e2 = registered._get_queue_engine()
+
+    assert e1 is e2
+    assert call_count[0] == 1  # factory called only once
+
+
+# --- C-5 regression: target_engine created inside try block ---
+
+
+def test_run_engine_disposes_target_even_if_queue_engine_fails(monkeypatch, postgres_snapshot):
+    """C-5: If get_connection_querylens_db() raises, target_engine must still be disposed."""
+    target_engine = mock.MagicMock()
+    orchestrator = _parchea_engines(monkeypatch, postgres_snapshot)
+    # Make queue engine creation fail
+    monkeypatch.setattr(main, "get_connection_querylens_db", lambda: (_ for _ in ()).throw(RuntimeError("queue down")))
+
+    with pytest.raises(RuntimeError, match="queue down"):
+        main.run_engine("postgres", lambda: target_engine)
+
+    target_engine.dispose.assert_called_once()
