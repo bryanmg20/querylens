@@ -4,8 +4,9 @@ logs/
 .vscode
 draft/
 .env
-ql_sandbox/pg_logs/
-ql_sandbox/mysql_logs/
 node_modules/
 .next/
 *.tsbuildinfo
+.claude/
+graphify-out/
+/CLAUDE.md

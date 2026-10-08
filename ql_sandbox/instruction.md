@@ -92,17 +92,21 @@ docker compose down      # apaga: MySQL pierde los digests (ver arriba)
 docker compose down -v   # apaga y borra los volúmenes: pierde ql_demo y las stats de PG
 ```
 
-## Logs de queries lentas (fuente del pipeline)
+## Logs de statements (retirados)
 
-El sandbox deja los **logs de statements reales** en bind mounts locales que el pipeline lee:
+El sandbox ya **no** escribe el log de todas las sentencias de PostgreSQL
+(`log_min_duration_statement=0`, csvlog en `pg_logs/`) ni el slow log de MySQL
+(`long-query-time=0` en `mysql_logs/`). Eran la fuente de la "Opción B" (leer el
+texto real desde logs del servidor), descartada: el pipeline obtiene el plan con
+`EXPLAIN` directo en cada motor. Ver
+`telemetry_pipeline/references/005_evaluacion_alternativas_query_real.md`.
 
-| Motor | Configuración (`docker-compose.yml`) | Archivo local |
-|-------|--------------------------------------|---------------|
-| PostgreSQL | `log_min_duration_statement=0` + `log_destination=csvlog` | `pg_logs/postgresql.csv` |
-| MySQL | `slow_query_log=ON`, `long-query-time=0`, `log_output=FILE` | `mysql_logs/ql-slow.log` |
+## Permisos del rol monitor
 
-Umbrales de desarrollo: `0` captura todo (el sandbox sirve para ver volumen, no
-para simular un umbral de producción; súbelo si el archivo crece demasiado). El
-pipeline lee los dos con `telemetry_pipeline/config/logs.py`; si el archivo no
-existe o no matchea, avanza sin él. Recrea los contenedores
-(`docker compose up -d --force-recreate`) tras cambiar los umbrales.
+`querylens_monitor` es **solo lectura** (`SELECT` + lectura de estadísticas): el
+pipeline explica únicamente `SELECT`/`WITH`. Los candidatos `INSERT`/`UPDATE`/
+`DELETE` viajan en `non_explainable_candidates`, sin plan.
+
+Los scripts de `init/` solo corren al crear el volumen: un sandbox creado antes
+de este cambio conserva los grants DML hasta recrearlo (`docker compose down -v`)
+o revocarlos a mano.

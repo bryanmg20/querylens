@@ -4,23 +4,21 @@
 #
 # Runs ~10 different statement types against PostgreSQL and
 # MySQL so they rank in the top-impact candidates of the
-# pipeline, then they should be recovered as "real queries"
-# from the logs.
+# pipeline.
 #
 # USAGE (from the sysbench container):
 #   bash /scripts/battery.sh [REPS] [NOISE] [ENGINE]
 #   (default REP iteration count per query = 50)
 #   NOISE = cuantas queries baratas por motor se ejecutan DESPUES de la
-#   bateria, para simular produccion: el log sigue creciendo con trafico
+#   bateria, para simular produccion: las estadisticas siguen creciendo con trafico
 #   que NO entra al top-impact mientras el pipeline debe seguir encontrando
 #   las queries heavy por firma. Default 0 (sin ruido).
 #   ENGINE = postgres | mysql | both (default both). Permite medir el
 #   impacto del pipeline por motor (measure_overhead.py).
 #
 # It also gives a CLEAN measurement window:
-#   - truncates both logs (pg csvlog + mysql slow log)
 #   - resets pg_stat_statements / digest summary
-# so that:  log window == stats window == battery window.
+# so that:  stats window == battery window.
 # ============================================================
 
 set -euo pipefail
@@ -48,10 +46,6 @@ run_my() {
   [[ "$ENGINE" == "both" || "$ENGINE" == "mysql" ]] || return 0
   "${MYSQL[@]}" "$1" >/dev/null &
 }
-
-echo ">>> Truncating log windows..."
-truncate -s 0 /pg_logs/postgresql.csv 2>/dev/null || true
-truncate -s 0 /mysql_logs/ql-slow.log 2>/dev/null || true
 
 echo ">>> Resetting stats windows..."
 "${PSQL[@]}" "SELECT pg_stat_statements_reset();" >/dev/null

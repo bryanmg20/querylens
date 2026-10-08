@@ -45,7 +45,6 @@ BEGIN
     LOOP
         EXECUTE format('GRANT USAGE ON SCHEMA %I TO querylens_monitor', s);
         EXECUTE format('GRANT SELECT ON ALL TABLES IN SCHEMA %I TO querylens_monitor', s);
-        EXECUTE format('GRANT INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA %I TO querylens_monitor', s);
     END LOOP;
 END
 $$;
@@ -53,8 +52,8 @@ $$;
 -- Acceso a schemas que se creen en el futuro
 ALTER DEFAULT PRIVILEGES GRANT USAGE ON SCHEMAS TO querylens_monitor;
 ALTER DEFAULT PRIVILEGES GRANT SELECT ON TABLES TO querylens_monitor;
--- EXPLAIN de sentencias de escritura exige el permiso DML aunque no ejecute la modificación
-ALTER DEFAULT PRIVILEGES GRANT INSERT, UPDATE, DELETE ON TABLES TO querylens_monitor;
+-- Solo lectura a proposito: el pipeline explica unicamente SELECT/WITH
+-- (stages/selectors.py EXPLAINABLE_COMMANDS). Sin INSERT/UPDATE/DELETE.
 
 -- -----------------------------------------------
 -- Permisos ql_user
