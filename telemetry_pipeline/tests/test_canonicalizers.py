@@ -24,7 +24,7 @@ def test_canonicalize_query_empty_returns_none():
 def test_canonicalize_query_fallback_on_parse_error():
     text = "  SELECT %s WHERE ---  "
     q = canonicalize_query(text, "postgres")
-    assert q == " ".join(text.split())
+    assert q == "Not available"
 
 
 def test_canonicalize_query_mysql_dialect():

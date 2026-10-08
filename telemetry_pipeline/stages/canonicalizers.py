@@ -25,7 +25,7 @@ def canonicalize_query(query_text, source_dialect="postgres"):
 
         return re.sub(r"%s", replace_placeholder, canonic).replace('"', "")
     except Exception:
-        return " ".join(query_text.split())
+        return "Not available"
 
 
 def clean_mysql_sintax(query):
