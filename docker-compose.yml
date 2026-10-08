@@ -78,6 +78,9 @@ services:
       QUERYLENS_PASSWORD: ${QUERYLENS_PASSWORD}
       AUTH_ENCRYPTION_KEY: ${AUTH_ENCRYPTION_KEY}
       EXTRACT_INTERVAL_S: ${EXTRACT_INTERVAL_S:-10}
+      # Nivel de log del daemon (DEBUG/INFO/WARNING/ERROR). DEBUG habilita la
+      # linea de tamano de payload de main._log_payload_size.
+      QL_LOG_LEVEL: ${QL_LOG_LEVEL:-INFO}
       # Solo los usa la entrada main_sandbox.py (no el runner): el sandbox
       # publica 5432/3307 en el host, de ahi host.docker.internal.
       MONITOR_PG_HOST: host.docker.internal
