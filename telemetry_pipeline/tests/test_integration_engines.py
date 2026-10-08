@@ -23,6 +23,7 @@ from enqueue import send_to_queue
 from models.snapshot import SnapshotPayload
 from orchestrator import Orchestrator
 from stages.collect import CollectStage
+from stages.sql_text import is_explainable_command
 
 pytestmark = pytest.mark.integration
 
@@ -123,12 +124,18 @@ def test_schema_resolver_maps_the_demo_user_to_a_real_schema(pg):
 def test_generic_plan_explain_is_supported_by_the_engine(pg):
     collector = Postgres_Collector(engine=pg)
     with pg.connect() as conn:
-        rows = conn.execute(text(collector.queries["statements"])).mappings().first()
-    if rows is None:
-        pytest.skip("pg_stat_statements vacio: corre la bateria primero")
+        rows = conn.execute(text(collector.queries["statements"])).mappings().all()
+    # Misma puerta que ExplainStage: el rol monitor es de solo lectura, asi que
+    # un FOR UPDATE o un DML del top daria permission denied, no un plan.
+    statement = next(
+        (r for r in rows if is_explainable_command(r["query_text"], "postgres")),
+        None,
+    )
+    if statement is None:
+        pytest.skip("sin SELECT/WITH explicables en pg_stat_statements: corre la bateria primero")
     with pg.connect() as conn:
         result = conn.execute(text(
-            f"EXPLAIN (GENERIC_PLAN, FORMAT JSON) {rows['query_text']}"
+            f"EXPLAIN (GENERIC_PLAN, FORMAT JSON) {statement['query_text']}"
         )).mappings().first()
     assert result is not None
     assert "QUERY PLAN" in result
