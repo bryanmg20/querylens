@@ -131,6 +131,39 @@ def test_grid_sections_carry_database_name():
     assert re.search(r"s\.CURRENT_SCHEMA\s+AS database_name", MYSQL_ACTIVE_QUERIES_QUERY)
 
 
+def _pg_role_command_filter():
+    """La regex POSIX del WHERE de STATEMENTS_QUERY, traducida a Python
+    (\\M de Postgres = fin de palabra = \\b)."""
+    match = re.search(r"s\.query !~\* '([^']+)'", PG_STATEMENTS_QUERY)
+    assert match, "STATEMENTS_QUERY debe filtrar los comandos de roles"
+    return re.compile(match.group(1).replace(r"\M", r"\b"), re.IGNORECASE)
+
+
+@pytest.mark.parametrize("query_text", [
+    "CREATE ROLE app LOGIN PASSWORD 'secret'",
+    "ALTER ROLE app PASSWORD 'secret'",
+    "create user app with password 'secret'",
+    "  ALTER USER app ENCRYPTED PASSWORD 'secret'",
+    "CREATE USER MAPPING FOR app SERVER s OPTIONS (user 'u', password 'secret')",
+    "ALTER GROUP g ADD USER app",
+])
+def test_pg_statements_query_drops_role_commands(query_text):
+    """pg_stat_statements guarda el PASSWORD de los comandos de roles sin
+    normalizar (verificado en vivo): esas filas no pueden llegar a la cola."""
+    assert _pg_role_command_filter().search(query_text)
+
+
+@pytest.mark.parametrize("query_text", [
+    "SELECT id FROM users WHERE password = $1",
+    "UPDATE users SET password = $1 WHERE id = $2",
+    "CREATE TABLE roles (id int)",
+    "CREATE INDEX ON users (email)",
+    "SELECT * FROM user_roles",
+])
+def test_pg_statements_query_keeps_other_statements(query_text):
+    assert not _pg_role_command_filter().search(query_text)
+
+
 # --- C-6 regression: LOCKS_QUERY filters out pipeline's own locks ---
 
 

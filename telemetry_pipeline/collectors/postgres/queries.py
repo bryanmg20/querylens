@@ -42,6 +42,12 @@ SELECT
 FROM pg_stat_statements s
 LEFT JOIN pg_database d ON d.oid = s.dbid
 WHERE userid != (SELECT oid FROM pg_roles WHERE rolname = session_user)
+  -- Comandos de roles: pg_stat_statements no normaliza su PASSWORD '...'
+  -- (verificado: CREATE ROLE x PASSWORD 'secret' queda literal) y la cola no
+  -- puede llevar credenciales. No son candidatos a EXPLAIN ni pesan en el
+  -- impacto. USER cubre tambien USER MAPPING ... OPTIONS (password '...').
+  -- No se filtra por la palabra password: borraria SELECT ... WHERE password = $1.
+  AND s.query !~* '^\\s*(CREATE|ALTER)\\s+(ROLE|USER|GROUP)\\M'
 ORDER BY total_exec_time DESC;
 """
 
