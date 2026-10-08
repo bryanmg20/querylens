@@ -24,8 +24,8 @@ def mut(path, old, new, name):
 MUTANTS = [
     # ---- mysql queries: active_queries sobre events_statements_current ----
     mut("collectors/mysql/queries.py",
-        'CONCAT(s.CURRENT_SCHEMA, \'/\', s.DIGEST) AS query_id,',
-        'CONCAT(s.SCHEMA_NAME, \'/\', s.DIGEST) AS query_id,',
+        'CONCAT(COALESCE(s.CURRENT_SCHEMA, \'\'), \'/\', s.DIGEST) AS query_id,',
+        'CONCAT(COALESCE(s.SCHEMA_NAME, \'\'), \'/\', s.DIGEST) AS query_id,',
         "queries/mysql: usar SCHEMA_NAME en active_queries (1054 siempre)"),
     mut("collectors/mysql/queries.py",
         's.CURRENT_SCHEMA                AS database_name,',

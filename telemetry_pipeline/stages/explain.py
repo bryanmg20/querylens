@@ -46,9 +46,17 @@ class ExplainStage:
         """Un candidato de Postgres que vive en otra base (database_name != la
         base conectada del target) se explica en una conexion dedicada a esa
         base: una conexion de Postgres no puede cambiar de base con USE, el
-        plan solo puede armarse en el contexto real de cada base."""
+        plan solo puede armarse en el contexto real de cada base.
+
+        MySQL sin schema (la app corrio la query sin base por defecto) va a una
+        sesion nueva sin base: la conexion compartida arrastra el USE del
+        candidato anterior y armaria el plan de una query sin calificar contra
+        otra base. Sin base, la query calificada (base.tabla) se explica igual
+        que corrio, y la sin calificar falla como fallo en la app."""
         if self.collector.source_dialect != "postgres":
-            return conn
+            if query.get("schema_name") or query.get("database_name"):
+                return conn
+            return self._foreign_connection("")
         database_name = query.get("database_name")
         if not database_name:
             return conn
@@ -61,7 +69,7 @@ class ExplainStage:
         from sqlalchemy import create_engine
         from sqlalchemy.pool import NullPool
 
-        from config.connections import postgres_connect_args
+        from config.connections import mysql_connect_args, postgres_connect_args
 
         engine = self._foreign_engines.get(database_name)
         if engine is not None:
@@ -70,9 +78,12 @@ class ExplainStage:
         if self._foreign_engine_factory is not None:
             engine = self._foreign_engine_factory(url)
         else:
-            engine = create_engine(
-                url, connect_args=postgres_connect_args(), poolclass=NullPool
+            connect_args = (
+                postgres_connect_args()
+                if self.collector.source_dialect == "postgres"
+                else mysql_connect_args()
             )
+            engine = create_engine(url, connect_args=connect_args, poolclass=NullPool)
         self._foreign_engines[database_name] = engine
         return engine.connect()
 
@@ -119,13 +130,6 @@ class ExplainStage:
                     dialect,
                     self.collector.engine,
                 )
-                if dialect == "mysql" and not context_sql:
-                    logger.warning(
-                        f"mysql | EXPLAIN | query_id={query_id} "
-                        "| skipped: no schema context"
-                    )
-                    continue
-
                 active = self._connection_for(query, conn)
                 try:
                     # Transaccion corta por candidato (M-12): el collect ya hizo

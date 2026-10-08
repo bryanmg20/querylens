@@ -66,7 +66,9 @@ WHERE t.table_schema NOT IN ('mysql', 'performance_schema', 'information_schema'
 
 STATEMENTS_QUERY = """
 SELECT
-    CONCAT(s.schema_name, '/', s.DIGEST)                                AS query_id,
+    # COALESCE: una sesion sin base por defecto deja SCHEMA_NAME NULL y
+    # CONCAT(NULL, ...) anulaba el query_id entero (la fila nunca era candidata).
+    CONCAT(COALESCE(s.schema_name, ''), '/', s.DIGEST)                  AS query_id,
     s.DIGEST_TEXT                                                   AS query_text,
     s.QUERY_SAMPLE_TEXT                                             AS query_sample_text,
     s.schema_name                                                     AS schema_name,
@@ -138,7 +140,7 @@ ACTIVE_QUERIES_QUERY = """
 SELECT
     t.processlist_id                AS process_id,
     s.SQL_TEXT                      AS query_text,
-    CONCAT(s.CURRENT_SCHEMA, '/', s.DIGEST) AS query_id,
+    CONCAT(COALESCE(s.CURRENT_SCHEMA, ''), '/', s.DIGEST) AS query_id,
     s.CURRENT_SCHEMA                AS database_name,
     trx.trx_started                 AS transaction_start_time,
     (

@@ -256,15 +256,39 @@ def test_mysql_records_sample_explain_source():
     assert stats["canonic_explains"][0]["explain_source"] == "sample"
 
 
-def test_mysql_skips_use_when_no_schema():
-    """Sin schema EN la fila (schema_name ni database_name) el candidato no se
-    explica: usar el USE de otro candidato anterior armaria el plan contra la
-    base equivocada. Mejor perder el plan que explicarlo mal atribuido."""
+def _mysql_tracker_stage(tracker):
+    stage = ExplainStage(_FakeMysqlCollector())
+    stage._foreign_engine_factory = lambda url: _FakeMysqlForeignEngine(url, tracker)
+    return stage
+
+
+def test_mysql_no_schema_explains_on_a_fresh_session_without_database():
+    """Sin schema (la app corrio la query sin base por defecto) el candidato se
+    explica en una sesion nueva sin base, sin USE: la conexion compartida
+    arrastra el USE del candidato anterior y armaria el plan contra otra base."""
     conn = _FakeConn(rows=[{"EXPLAIN": '{"query_block": {"select_id": 1}}'}])
     stats = _mysql_stats(schema_name=None)
-    ExplainStage(_FakeMysqlCollector()).execute(stats, conn)
-    assert [s for s in conn.sent if "EXPLAIN" in s] == []
-    assert stats["canonic_explains"] == []
+    created = []
+    stage = _mysql_tracker_stage(created)
+    stage.execute(stats, conn)
+    assert conn.sent == []
+    assert len(created) == 1
+    assert not created[0].url.database
+    fresh = created[0].created_conns[0]
+    assert not any(s.startswith("USE") for s in fresh.sent)
+    assert "EXPLAIN FORMAT=JSON select c from sbtest1" in fresh.sent[0]
+    assert fresh.close_calls == 1
+    assert created[0].disposed
+    assert stats["canonic_explains"][0]["query_id"] == 7
+
+
+def test_mysql_with_schema_keeps_the_shared_connection():
+    conn = _FakeConn(rows=[{"EXPLAIN": '{"query_block": {"select_id": 1}}'}])
+    stats = _mysql_stats(schema_name="ql_demo")
+    created = []
+    _mysql_tracker_stage(created).execute(stats, conn)
+    assert created == []
+    assert conn.sent[0] == "USE ql_demo"
 
 
 def test_mysql_falls_back_to_database_name_when_no_schema():
@@ -472,6 +496,14 @@ class _FakeForeignEngine:
 
     def dispose(self):
         self.disposed = True
+
+
+class _FakeMysqlForeignEngine(_FakeForeignEngine):
+    def connect(self):
+        self.connect_calls += 1
+        conn = _FakeConn(rows=[{"EXPLAIN": '{"query_block": {"select_id": 1}}'}])
+        self.created_conns.append(conn)
+        return conn
 
 
 class _TrackerCollector(_FakeCollector):

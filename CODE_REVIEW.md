@@ -242,6 +242,8 @@ Postgres emite `SET LOCAL search_path TO DEFAULT` cuando no hay schema; MySQL de
 
 **Resuelto (fix de alcance por servidor):** en MySQL un candidato sin contexto de schema (`schema_name` nulo **y** `database_name` nulo) se **salta con warning**, en vez de heredar el `USE` de un candidato anterior que armaría el plan contra el schema equivocado. Si tiene `database_name` pero no `schema_name`, se usa ese como contexto del `USE`. Cambió el test `test_mysql_skips_use_when_no_schema` (ahora el EXPLAIN ni siquiera se emite) y se añadió el de fallback por `database_name`.
 
+**Revisado (2026-10-08):** saltar perdía el plan de queries reales. Una sesión de la app sin base por defecto deja `SCHEMA_NAME` NULL, y además `CONCAT(NULL, '/', DIGEST)` anulaba el `query_id`, así que esas filas ni llegaban a candidatas (verificado en vivo). Ahora `query_id = CONCAT(COALESCE(schema, ''), '/', DIGEST)` (statements y active_queries) y el candidato sin contexto se explica en una **sesión nueva sin base y sin `USE`** (`ExplainStage._connection_for`, engine `NullPool` cerrado en `finally`). No hereda el `USE` anterior. Una query que corrió sin base solo pudo ir calificada (`base.tabla`); una sin calificar falla con 1046 y MySQL no la registra en el digest (verificado). Test: `test_mysql_no_schema_explains_on_a_fresh_session_without_database`. Verificado en vivo: id `/92cb…`, plan con `sbtest1`.
+
 ---
 
 ### BAJAS

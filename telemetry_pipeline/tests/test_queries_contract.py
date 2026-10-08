@@ -86,9 +86,10 @@ def test_mysql_statement_id_is_qualified_by_schema():
     """La PK de events_statements_summary_by_digest es (SCHEMA_NAME, DIGEST):
     el mismo digest en dos esquemas son dos filas distintas. query_id copiaba
     solo el digest, asi que una fila de cada par se descartaba por dedup. El
-    SID compuesto hace a cada fila unica y atribuida."""
+    SID compuesto hace a cada fila unica y atribuida. COALESCE: una sesion sin
+    base por defecto deja SCHEMA_NAME NULL y CONCAT(NULL, ...) anulaba el id."""
     assert re.search(
-        r"CONCAT\(s\.schema_name, '/', s\.DIGEST\)\s+AS query_id",
+        r"CONCAT\(COALESCE\(s\.schema_name, ''\), '/', s\.DIGEST\)\s+AS query_id",
         STATEMENTS_QUERY,
     ), "query_id de MySQL debe ser {schema}/{digest}, no solo el digest"
 
@@ -108,7 +109,7 @@ def test_mysql_active_query_id_is_qualified_by_schema():
     con 1054 y active_queries queda en None.
     """
     assert re.search(
-        r"CONCAT\(s\.CURRENT_SCHEMA, '/', s\.DIGEST\)\s+AS query_id",
+        r"CONCAT\(COALESCE\(s\.CURRENT_SCHEMA, ''\), '/', s\.DIGEST\)\s+AS query_id",
         MYSQL_ACTIVE_QUERIES_QUERY,
     )
 
