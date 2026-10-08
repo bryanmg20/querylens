@@ -128,6 +128,44 @@ if not _env_path.exists():
 load_dotenv(dotenv_path=_env_path, override=True)
 
 
+def get_connection_mysql_app() -> Engine:
+    """Motor de aplicacion MySQL: genera el trafico que el monitor observa.
+
+    Mismo servidor que el motor de monitoreo (MONITOR_MY_HOST/PORT), pero con
+    credenciales de rol de aplicacion (APP_MY_*). El rol app es distinto del
+    monitor a proposito: ACTIVE_QUERIES_QUERY excluye el CURRENT_USER, asi que la
+    carga tiene que venir de otro rol para que el collector la vea. En el sandbox
+    es app_user (lo crea MYSQL_USER del compose); en CI lo crea el workflow
+    ('rol de aplicacion MySQL' -> ql_mysql_app).
+
+    Returns:
+        sqlalchemy.engine.Engine: SQLAlchemy engine instance.
+    """
+    db_host = _env("MONITOR_MY_HOST", "localhost")
+    db_port = _env("MONITOR_MY_PORT", "3307")
+    db_user = _env("APP_MY_USER", "app_user")
+    db_password = _env("APP_MY_PASSWORD", "app_pass")
+    db_name = _env("APP_MY_DB", "ql_demo")
+
+    url = _make_url(
+        drivername="mysql+pymysql",
+        host=db_host,
+        port=int(db_port) if db_port else None,
+        username=db_user,
+        password=db_password,
+        database=db_name,
+    )
+
+    return create_engine(
+        url,
+        pool_size=1,
+        max_overflow=10,
+        pool_pre_ping=True,
+        echo=False,
+        connect_args=mysql_connect_args(),
+    )
+
+
 def get_connection_querylens_db() -> Engine:
     """Create a SQLAlchemy engine for the PostgreSQL database using environment variables."""
     db_host = _env("DB_HOST", "localhost")

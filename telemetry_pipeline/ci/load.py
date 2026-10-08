@@ -19,6 +19,12 @@ collector no ve nada y los tests de integracion no tienen con que trabajar. Por
 eso APP_PG_USER existe: en CI se crea un rol de aplicacion aparte y la carga se
 conecta con el, replicando la topologia del sandbox (ql_app genera trafico,
 querylens_monitor observa).
+
+MySQL replica la misma topologia con APP_MY_USER (ql_mysql_app en CI, app_user en
+el sandbox): el trafico lo genera el rol app, el monitor solo observa. Para los
+digests de statements el rol monitor alcanzaria igual (el filtro de MySQL es por
+forma de texto, no por rol), pero active_queries excluye el CURRENT_USER, asi que
+esa carga tiene que venir de un rol distinto.
 """
 import os
 import sys
@@ -30,6 +36,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config.connections import (  # noqa: E402
     get_connection_mysql,
+    get_connection_mysql_app,
     get_connection_postgres,
 )
 
@@ -39,6 +46,14 @@ from config.connections import (  # noqa: E402
 APP_PG_USER = os.getenv("APP_PG_USER", "ql_app")
 APP_PG_PASSWORD = os.getenv("APP_PG_PASSWORD", "app_pass")
 APP_PG_DB = os.getenv("MONITOR_PG_DB", "ql_demo")
+
+# Rol de aplicacion para generar trafico en MySQL: mismo criterio que Postgres.
+# En el sandbox es app_user (lo crea MYSQL_USER del compose); en CI lo crea el
+# paso 'rol de aplicacion MySQL' del workflow (ql_mysql_app). Host y puerto se
+# toman de MONITOR_MY_HOST/PORT en get_connection_mysql_app.
+APP_MY_USER = os.getenv("APP_MY_USER", "app_user")
+APP_MY_PASSWORD = os.getenv("APP_MY_PASSWORD", "app_pass")
+APP_MY_DB = os.getenv("APP_MY_DB", "ql_demo")
 
 QUERIES = [
     "SELECT * FROM ql_ci WHERE id = 7",
@@ -163,21 +178,34 @@ MY_SEED = (
 
 
 def load_mysql(rounds=40):
-    """El rol de monitoreo no tiene CREATE en ql_demo: el DDL lo aplica quien sea
-    dueno (en CI, root via docker exec). Aqui solo se intenta; si falla, se sigue,
-    porque lo que importa es generar trafico para los digests."""
-    engine = get_connection_mysql()
-    with engine.begin() as conn:
-        conn.execute(text("USE ql_demo"))
-        for statement in (MY_DDL, MY_SEED, "ANALYZE TABLE ql_ci"):
-            try:
-                conn.execute(text(statement))
-            except Exception as exc:
-                print(
-                    f"aviso mysql: {statement.split()[0:3]} fallo ({type(exc).__name__}); "
-                    f"se asume que ql_ci ya existe",
-                    file=sys.stderr,
-                )
+    """DDL y trafico con el rol de aplicacion (APP_MY_USER), no con el monitor.
+
+    Espejo de load_postgres: la topologia es 'el rol app genera, el monitor
+    observa'. El trafico del propio monitor alcanzaria para los digests de
+    statements (MySQL filtra por forma de texto), pero active_queries excluye el
+    CURRENT_USER, asi que la carga tiene que venir de otro rol. Si ese rol no
+    conecta se falla duro, con el mismo criterio que load_postgres: prefiere
+    romper aqui que pasar tests en vacio."""
+    engine = get_connection_mysql_app()
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("USE ql_demo"))
+            for statement in (MY_DDL, MY_SEED, "ANALYZE TABLE ql_ci"):
+                try:
+                    conn.execute(text(statement))
+                except Exception as exc:
+                    print(
+                        f"aviso mysql: {statement.split()[0:3]} fallo ({type(exc).__name__}); "
+                        f"se asume que la tabla ya existe",
+                        file=sys.stderr,
+                    )
+    except Exception as exc:
+        raise RuntimeError(
+            f"el rol de aplicacion {APP_MY_USER!r} no pudo conectar para crear "
+            f"ql_ci ({type(exc).__name__}). En CI lo crea el paso 'rol de "
+            f"aplicacion MySQL'. Si la carga cae al rol monitor, active_queries "
+            f"no ve el trafico y el control de captura pasaria en vacio."
+        ) from exc
 
     seen = 0
     warned = False
@@ -200,7 +228,7 @@ def load_mysql(rounds=40):
         time.sleep(0.05)
 
     total = _count(
-        engine,
+        get_connection_mysql(),
         "SELECT count(*) FROM performance_schema.events_statements_summary_by_digest "
         "WHERE DIGEST_TEXT LIKE '%ql_ci%'",
         use="ql_demo",

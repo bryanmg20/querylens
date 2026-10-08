@@ -92,6 +92,9 @@ jobs:
       MONITOR_MY_PORT: "53306"
       MONITOR_MY_USER: querylens_monitor
       MONITOR_MY_PASSWORD: monitor_pass
+      APP_MY_USER: ql_mysql_app
+      APP_MY_PASSWORD: app_pass
+      APP_MY_DB: ql_demo
       DB_HOST: 127.0.0.1
       DB_PORT: "55433"
       QUERYLENS_DB: ql_demo
@@ -213,6 +216,18 @@ jobs:
           GRANT SELECT ON *.* TO 'querylens_monitor'@'%';
           GRANT PROCESS ON *.* TO 'querylens_monitor'@'%';
           GRANT REPLICATION CLIENT ON *.* TO 'querylens_monitor'@'%';
+          FLUSH PRIVILEGES;
+          SQL
+
+      - name: rol de aplicacion MySQL
+        # Espejo del rol ql_app de Postgres: el monitoreo (querylens_monitor)
+        # observa, este rol genera trafico. ACTIVE_QUERIES_QUERY excluye el
+        # CURRENT_USER, asi que sin un rol app el control de active_queries no
+        # tiene nada que ver. CREATE permite que la carga haga su DDL en ql_demo.
+        run: |
+          docker exec -i "${{ job.services.telemetry-mysql.id }}" mysql -uroot -pql_root <<'SQL'
+          CREATE USER IF NOT EXISTS 'ql_mysql_app'@'%' IDENTIFIED BY 'app_pass';
+          GRANT SELECT, CREATE ON `ql_demo`.* TO 'ql_mysql_app'@'%';
           FLUSH PRIVILEGES;
           SQL
 

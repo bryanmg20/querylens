@@ -15,6 +15,7 @@ from sqlalchemy import create_engine, text
 from collectors.postgres.collector import Postgres_Collector
 from config.connections import (
     get_connection_mysql,
+    get_connection_mysql_app,
     get_connection_postgres,
     get_connection_querylens_db,
 )
@@ -44,6 +45,11 @@ def pg():
 @pytest.fixture(scope="module")
 def my():
     return _engine_or_skip(get_connection_mysql)
+
+
+@pytest.fixture(scope="module")
+def my_app():
+    return _engine_or_skip(get_connection_mysql_app)
 
 
 @pytest.fixture(scope="module")
@@ -169,8 +175,8 @@ def test_mysql_statements_expose_query_sample_text(my):
     with my.connect() as conn:
         rows = list(conn.execute(text(STATEMENTS_QUERY)).mappings())
     assert rows, "performance_schema deberia tener digests tras la bateria"
-    assert all(r["query_sample_text"] for r in rows), (
-        "sin QUERY_SAMPLE_TEXT el motor no puede explicar nada"
+    assert all(r["query_sample_text"] not in r for r in rows), (
+        "QUERY_SAMPLE_TEXT es sensible no debe permanecer en la db"
     )
 
 
@@ -237,7 +243,7 @@ def test_mysql_explain_requires_the_use_statement_first(my):
     assert "query_block" in result["EXPLAIN"]
 
 
-def test_mysql_active_queries_capture_other_roles(my):
+def test_mysql_active_queries_capture_other_roles(my, my_app):
     """el filtro de ACTIVE_QUERIES_QUERY excluye al monitor, no a los demas.
 
     Una query de otro rol corriendo tiene que aparecer en active_queries. Este
@@ -245,25 +251,25 @@ def test_mysql_active_queries_capture_other_roles(my):
     SCHEMA_NAME — events_statements_current no tiene esa columna (solo las
     tablas summary); la real es CURRENT_SCHEMA, y con el nombre equivocado
     active_queries quedaba en None siempre.
+
+    El rol app viene de get_connection_mysql_app (APP_MY_*): en el sandbox es
+    app_user@3307 y en CI ql_mysql_app@53306, asi que el test no hardcodea
+    puerto ni credenciales. Si el motor del rol app no existe, se skipea igual
+    que los demas tests de integracion.
     """
     import threading
     import time
-    from sqlalchemy.engine import URL as SA_URL
 
     from collectors.mysql.queries import ACTIVE_QUERIES_QUERY
 
-    app = create_engine(SA_URL.create(
-        drivername="mysql+pymysql",
-        username="app_user",
-        password="app_pass",
-        host="localhost",
-        port=3307,
-        database="ql_demo",
-    ))
+    thread_errors = []
 
     def run_sleep():
-        with app.connect() as conn:
-            conn.execute(text("SELECT SLEEP(6)"))
+        try:
+            with my_app.connect() as conn:
+                conn.execute(text("SELECT SLEEP(6)"))
+        except Exception as exc:
+            thread_errors.append(f"{type(exc).__name__}: {exc}")
 
     holder = threading.Thread(target=run_sleep)
     holder.start()
@@ -273,11 +279,14 @@ def test_mysql_active_queries_capture_other_roles(my):
             rows = list(conn.execute(text(ACTIVE_QUERIES_QUERY)).mappings())
         textos = [r["query_text"] for r in rows]
         assert any(t and "SLEEP(6)" in t for t in textos), (
-            f"la query de app_user no aparece en active_queries: {textos}"
+            f"la query del rol app no aparece en active_queries: {textos}"
         )
     finally:
         holder.join(timeout=15)
-        app.dispose()
+        my_app.dispose()
+    assert not thread_errors, (
+        f"el rol app no pudo emitir su SLEEP: {thread_errors}"
+    )
 
 
 def test_mysql_full_pipeline_produces_a_valid_snapshot(my):
