@@ -10,7 +10,7 @@ class CandidatesStage:
         selectors.select_high_impact_time_statements(stats)
         selectors.select_unstable_statements(stats)
         selectors.select_disk_spill_indicator(stats)
-        selectors.select_candidates_to_explain(stats)
+        selectors.select_candidates_to_explain(stats, self.collector.source_dialect)
         selectors.init_ready_for_explain(stats)
         self.collector.mark_explainable(stats)
         if self.collector.source_dialect == "postgres":

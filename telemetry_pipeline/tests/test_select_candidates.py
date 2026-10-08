@@ -45,9 +45,9 @@ def _run(*statements):
         "select * from t",
         "  SELECT * FROM t  ",
         "WITH x AS (SELECT 1) SELECT * FROM x",
-        "INSERT INTO t VALUES (1)",
-        "UPDATE t SET a = 1",
-        "DELETE FROM t",
+        "/* app=checkout */ SELECT * FROM t",
+        "-- orm\nSELECT * FROM t",
+        "(SELECT a FROM t) UNION (SELECT a FROM u)",
     ],
 )
 def test_explainable_command_is_routed_to_top_impact(query_text):
@@ -65,6 +65,10 @@ def test_explainable_command_is_routed_to_top_impact(query_text):
     [
         "SET x = 1",
         "SHOW TABLES",
+        "INSERT INTO t VALUES (1)",
+        "UPDATE t SET a = 1",
+        "DELETE FROM t",
+        "/* app */ DELETE FROM t",
         "BEGIN",
         "COMMIT",
         "ROLLBACK",
@@ -87,12 +91,12 @@ def test_non_explainable_command_is_routed_away(query_text):
 
 def test_command_match_anchors_at_the_start():
     """La comparacion es de prefijo, no de contenido: un SELECT anidado dentro de
-    un DELETE no convierte al DELETE en explicable ni al revés. El DELETE se
-    explica porque empieza por DELETE, que esta en la lista.
+    un DELETE no convierte al DELETE en explicable. El rol monitor es de solo
+    lectura (SELECT): el EXPLAIN de DML exige privilegio de escritura.
     """
     stats = _run(_statement(1, "DELETE FROM t WHERE a IN (SELECT id FROM u)"))
-    assert len(stats["top_impact_queries"]) == 1
-    assert stats["non_explainable_candidates"] == []
+    assert stats["top_impact_queries"] == []
+    assert len(stats["non_explainable_candidates"]) == 1
 
 
 def test_lowercase_command_does_not_match_when_not_normalized():
@@ -156,7 +160,9 @@ def test_selected_by_has_no_duplicates():
     }
     select_candidates_to_explain(stats)
     candidate = stats["top_impact_queries"][0]
-    assert candidate["selected_by"].count("unstable") == 1
+    # El duplicado de entrada esta en high_impact: es esa razon la que no puede
+    # repetirse.
+    assert candidate["selected_by"] == ["time_high_impact", "unstable"]
 
 
 def test_duplicate_candidates_are_deduplicated():
@@ -249,3 +255,20 @@ def test_candidate_keeps_the_full_statement_payload():
     candidate = stats["top_impact_queries"][0]
     assert candidate["total_time_ms"] == 999.0
     assert candidate["avg_rows_per_call"] == 12.5
+
+
+def test_non_explainable_candidate_is_deduplicated_across_lists():
+    """Un DELETE caro aparece en high_impact y disk_spill a la vez: debe quedar
+    una sola fila en non_explainable_candidates con las dos razones. El dedupe
+    tiene que mirar el bucket destino, no solo el de explicables."""
+    delete = _statement(1, "DELETE FROM t WHERE a < 10")
+    stats = {
+        "statements": [delete],
+        "high_impact_statements": [delete],
+        "unstable_statements": [],
+        "disk_spill_statements": [delete],
+    }
+    select_candidates_to_explain(stats)
+    assert stats["top_impact_queries"] == []
+    assert len(stats["non_explainable_candidates"]) == 1
+    assert stats["non_explainable_candidates"][0]["selected_by"] == ["time_high_impact", "disk_spill"]

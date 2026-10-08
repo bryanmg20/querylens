@@ -26,7 +26,7 @@ _STATEMENTS = [
     },
     {
         "query_id": 222,
-        "query_text": "UPDATE sbtest1 SET k = k + 1 WHERE id = $1",
+        "query_text": "SELECT k FROM sbtest1 WHERE id > $1 ORDER BY k",
         "execution_count": 12,
         "rows_returned": 12,
         "avg_rows_per_call": 1.0,

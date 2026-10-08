@@ -223,8 +223,8 @@ def _mysql_stats(schema_name="ql_demo"):
         "top_impact_queries": [
             {
                 "query_id": 7,
-                "query_text": "INSERT INTO sbtest1 (id, k) VALUES (? , ?)",
-                "query_sample_text": "insert into sbtest1 (id, k) values (5, 'x')",
+                "query_text": "SELECT c FROM sbtest1 WHERE id = ? AND k = ?",
+                "query_sample_text": "select c from sbtest1 where id = 5 and k = 'x'",
                 "ready_for_explain": True,
                 "schema_name": schema_name,
             },
@@ -236,8 +236,8 @@ def test_mysql_uses_sample_text_not_digest():
     conn = _FakeConn(rows=[{"EXPLAIN": '{"query_block": {"select_id": 1}}'}])
     stats = _mysql_stats()
     ExplainStage(_FakeMysqlCollector()).execute(stats, conn)
-    assert "insert into sbtest1 (id, k) values (5, 'x')" in conn.sent[1]
-    assert "VALUES (? , ?)" not in conn.sent[1]
+    assert "select c from sbtest1 where id = 5 and k = 'x'" in conn.sent[1]
+    assert "id = ? AND k = ?" not in conn.sent[1]
 
 
 def test_mysql_uses_schema_before_explain():
@@ -245,7 +245,7 @@ def test_mysql_uses_schema_before_explain():
     stats = _mysql_stats(schema_name="ql_demo")
     ExplainStage(_FakeMysqlCollector()).execute(stats, conn)
     assert conn.sent[0] == "USE ql_demo"
-    assert "EXPLAIN FORMAT=JSON insert into sbtest1" in conn.sent[1]
+    assert "EXPLAIN FORMAT=JSON select c from sbtest1" in conn.sent[1]
     assert stats["canonic_explains"][0]["query_id"] == 7
 
 
@@ -275,7 +275,7 @@ def test_mysql_falls_back_to_database_name_when_no_schema():
     stats["top_impact_queries"][0]["database_name"] = "ventas"
     ExplainStage(_FakeMysqlCollector()).execute(stats, conn)
     assert conn.sent[0] == "USE ventas"
-    assert "EXPLAIN FORMAT=JSON insert into sbtest1" in conn.sent[1]
+    assert "EXPLAIN FORMAT=JSON select c from sbtest1" in conn.sent[1]
 
 
 def test_mysql_canonical_plan_carries_the_real_explain_content():
@@ -654,3 +654,29 @@ def test_is_single_statement_escaped_quotes():
     assert is_single_statement("SELECT 'it''s;ok'") is True
     # Escaped double quotes "" inside string
     assert is_single_statement('SELECT "it""s;ok"') is True
+
+
+# --- Solo lectura: la puerta SELECT/WITH se re-aplica al texto explicado ---
+
+
+def test_mysql_dml_sample_never_reaches_explain():
+    """El selector filtra por query_text (DIGEST_TEXT), pero MySQL explica
+    query_sample_text. Si el sample no es SELECT/WITH no se manda al motor:
+    el rol monitor es de solo lectura (PrimerInforme)."""
+    conn = _FakeConn(rows=[{"EXPLAIN": '{"query_block": {"select_id": 1}}'}])
+    stats = _mysql_stats()
+    stats["top_impact_queries"][0]["query_sample_text"] = "delete from sbtest1 where id = 5"
+    ExplainStage(_FakeMysqlCollector()).execute(stats, conn)
+    assert not any("EXPLAIN" in s for s in conn.sent)
+    assert stats["canonic_explains"] == []
+
+
+def test_mysql_sample_with_leading_comment_is_still_explained():
+    """Un comentario de ORM delante del SELECT no lo vuelve DML."""
+    conn = _FakeConn(rows=[{"EXPLAIN": '{"query_block": {"select_id": 1}}'}])
+    stats = _mysql_stats()
+    stats["top_impact_queries"][0]["query_sample_text"] = (
+        "/* app=checkout */ select c from sbtest1 where id = 5"
+    )
+    ExplainStage(_FakeMysqlCollector()).execute(stats, conn)
+    assert any("EXPLAIN FORMAT=JSON /* app=checkout */ select" in s for s in conn.sent)

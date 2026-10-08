@@ -1,4 +1,9 @@
 from models.stats import Stats
+# Solo lectura: el rol monitor tiene SELECT y nada mas (PrimerInforme, agentless
+# no intrusivo). EXPLAIN de DML, de CTE que escriben o de SELECT con bloqueo
+# exige privilegios de escritura, asi que esos candidatos van a non_explainable.
+# La regla vive en sql_text (la comparte ExplainStage).
+from stages.sql_text import EXPLAINABLE_COMMANDS, is_explainable_command  # noqa: F401
 
 
 def select_high_impact_time_statements(stats: Stats):
@@ -13,7 +18,7 @@ def select_disk_spill_indicator(stats: Stats):
     stats['disk_spill_statements'] = [stmd for stmd in (stats.get('statements') or []) if stmd.get('disk_spill_indicator', 0) > 0]
            
 
-def select_candidates_to_explain(stats: Stats):
+def select_candidates_to_explain(stats: Stats, dialect: str = "postgres"):
     candidates = {}
     skipped_candidates = {}
 
@@ -22,10 +27,6 @@ def select_candidates_to_explain(stats: Stats):
         ("unstable", "unstable_statements"),
         ("disk_spill", "disk_spill_statements"),
     ]
-
-    explainable_commands = (
-        "SELECT", "WITH", "INSERT", "UPDATE", "DELETE"
-    )
 
     for reason, stats_key in statement_groups:
         statements = stats.get(stats_key) or []
@@ -37,11 +38,9 @@ def select_candidates_to_explain(stats: Stats):
             if query_id is None or not query_text:
                 continue
 
-            normalized_query = query_text.strip().upper()
-
             target = candidates
 
-            if not normalized_query.startswith(explainable_commands):
+            if not is_explainable_command(query_text, dialect):
                 target = skipped_candidates
 
             if query_id not in target:
