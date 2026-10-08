@@ -14,6 +14,12 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./querylens_database/init.sql:/docker-entrypoint-initdb.d/init.sql
       - ./querylens_database/registered_databases.sql:/docker-entrypoint-initdb.d/02_registered_databases.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${QUERYLENS_USER} -d ${QUERYLENS_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
     restart: unless-stopped
 
   auth-service:
@@ -37,7 +43,8 @@ services:
     ports:
       - "${AUTH_SERVICE_PORT:-8000}:8000"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
   frontend:
@@ -84,7 +91,8 @@ services:
     volumes:
       - pipeline_logs:/app/logs
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:
