@@ -2,6 +2,15 @@
 
 Pipeline agentless de telemetría: captura métricas de `pg_stat_statements` (Postgres) y `performance_schema` (MySQL), selecciona las queries candidatas a explicar, normaliza planes y queries, y encola un snapshot validado en PGMQ para su consumo.
 
+## Versiones soportadas de las bases monitoreadas
+
+| Motor | Mínimo | Por qué |
+|-------|--------|---------|
+| PostgreSQL | **17** | `STATEMENTS_QUERY` lee `pg_stat_statements.stats_since` (PG 17+). Verificado en PG 16.15: esa sección falla en cada ciclo (`column "stats_since" does not exist`) y el snapshot sale sin `statements`, candidatos ni planes. (`last_idx_scan` es PG 16+ y `EXPLAIN (GENERIC_PLAN)` PG 16+, ambos cubiertos por el mínimo.) |
+| MySQL | **8.0** | `performance_schema.data_locks`/`data_lock_waits` (8.0.1+) y `QUERY_SAMPLE_TEXT` (8.0.3+). MySQL 5.7 y MariaDB no están soportados. |
+
+Decisión (2026-10-08): el foco es PostgreSQL 17+ y MySQL 8; sandbox y CI corren exactamente esas versiones. Un target más viejo no rompe el ciclo (la sección que falla queda en `None` y se loguea como `collect_telemetry` ERROR), pero el snapshot sale degradado.
+
 ## Flujo de extremo a extremo
 
 ```
@@ -47,7 +56,11 @@ run_engine(dialect, connection_factory, db_id)                  main.py
   │     │     select_unstable_statements()          coeff>2 y mean>10ms
   │     │     select_disk_spill_indicator()         disk_spill_indicator > 0
   │     │     select_candidates_to_explain()        dedupe por query_id + selected_by
-  │     │                                           (SQL no explicable va a non_explainable_candidates)
+  │     │                                           solo SELECT/WITH de solo lectura son explicables
+  │     │                                           (rol monitor con SELECT): DML, CTE que escriben
+  │     │                                           y FOR UPDATE/SHARE van a
+  │     │                                           non_explainable_candidates, sin plan
+  │     │                                           (stages/sql_text.py, lectura lexica por dialecto)
   │     │     init_ready_for_explain()               dedupe por query_id +
   │     │                                           ready_for_explain=False (valor inicial;
   │     │                                           no mira active_queries; la decisión
@@ -56,8 +69,9 @@ run_engine(dialect, connection_factory, db_id)                  main.py
   │     │                                           MySQL=True si query_sample_text no está vacío
   │     │
   │     ├─ (3) ExplainStage.execute(stats, conn)             stages/explain.py
-  │     │     solo para candidatos con ready_for_explain
-  │     │     "EXPLAIN (GENERIC_PLAN, FORMAT JSON) <query>"  → Postgres (PG16+, placeholders $1)
+  │     │     solo para candidatos con ready_for_explain y cuyo texto a explicar
+  │     │     (query_text en PG, query_sample_text en MySQL) empieza por SELECT/WITH
+  │     │     "EXPLAIN (GENERIC_PLAN, FORMAT JSON) <query>"  → Postgres (PG17+ por el minimo soportado, placeholders $1)
   │     │     "EXPLAIN FORMAT=JSON <query_sample_text>"     → MySQL (usa valores reales)
   │     │     cada candidato corre en una transacción corta propia:
   │     │     BEGIN → SET LOCAL search_path / USE → EXPLAIN → COMMIT (M-12).
@@ -198,10 +212,10 @@ Los tests de arquitectura son **contratos estructurales**: validan "qué interfa
 - Cada fila de `statements`, `locks` y `active_queries` lleva `database_name` (`str | None`): la recolección es server-wide (pg_stat_statements/pg_locks/pg_stat_activity y digests MySQL leen todo el servidor) y la atribución por fila permite saber de qué base vino cada cosa bajo un mismo `db_id`. Un candidato de Postgres de otra base se explica en una **conexión dedicada a esa base** (una conexión PG no cambia de base con `USE`); en MySQL el `USE {schema|database}` alcanza, y si no hay contexto de schema el candidato se salta (ver `references/004_decisiones_contrato.md`).
 - `ready_for_explain` es la puerta de entrada a `EXPLAIN`. `init_ready_for_explain` solo la inicializa en `False` y deduplica por `query_id`; la decisión real la toma `mark_explainable`, por motor: Postgres marca todo como listo porque `EXPLAIN (GENERIC_PLAN)` resuelve los placeholders `$1` sin conocer los valores; MySQL marca solo lo que tiene `QUERY_SAMPLE_TEXT`, porque su `EXPLAIN` necesita literales reales.
 - Antes (`c730da1`) la explicación exigía que el `query_id` del candidato estuviera en `active_queries`, es decir que la query se estuviera ejecutando en ese instante. Ese cruce ya no aplica desde `93beb5e`: cada motor produce el plan por su vía nativa sin necesitar la query en vivo, así que `init_ready_for_explain` ya no lee `active_queries` (aunque el nombre y la firma los conserven).
-- La asimetría es propia de cada motor, no una inconsistencia: `pg_stat_statements.query` ya viene normalizado con `$1` y `EXPLAIN (GENERIC_PLAN)` (PG16+) lo convierte en plan. `DIGEST_TEXT` de MySQL trae `?`, que no produce plan; `QUERY_SAMPLE_TEXT` trae la consulta con valores reales, que sí lo produce.
+- La asimetría es propia de cada motor, no una inconsistencia: `pg_stat_statements.query` ya viene normalizado con `$1` y `EXPLAIN (GENERIC_PLAN)` lo convierte en plan. `DIGEST_TEXT` de MySQL trae `?`, que no produce plan; `QUERY_SAMPLE_TEXT` trae la consulta con valores reales, que sí lo produce.
 - El ciclo del runner por defecto es de **10 s** (`interval_from_env()`, pensado para pruebas/sandbox). Para producción la cadencia prevista es de **30–60 s** (decisión de deploy, sin tocar código): cada vuelta emite un snapshot por base, así que el intervalo es la palanca directa de volumen de la cola (ver la fila "No guarda estado entre ciclos").
 - La transacción del target se maneja en dos tiempos: el **collect** la cierra con `commit()` al terminar (no retiene snapshot/vacuum de Postgres ni MVCC de MySQL durante el resto del ciclo), y cada **EXPLAIN** corre en su propia **transacción corta** (`BEGIN → SET LOCAL/USE → EXPLAIN → COMMIT`; rollback en fallo; el `USE` de MySQL es estado de sesión y sobrevive al commit). Ver `references/004_decisiones_contrato.md` (M-12).
-- `EXPLAIN (GENERIC_PLAN)` requiere PostgreSQL 16+. En versiones anteriores el `EXPLAIN` falla, la excepción se captura por consulta, se hace `rollback` y el candidato queda fuera de `canonic_explains` sin abortar el ciclo.
+- `EXPLAIN (GENERIC_PLAN)` existe desde PostgreSQL 16, pero el mínimo soportado es **17** (ver "Versiones soportadas"): en PG 16 ya falla antes la sección `statements`. Si un EXPLAIN falla, la excepción se captura por consulta, se hace `rollback` y el candidato queda fuera de `canonic_explains` sin abortar el ciclo.
 - `explain_source` viaja en `canonic_explains` para que el consumidor sepa con qué fidelidad se obtuvo el plan: `"generic"` (Postgres, plan sin valores concretos) o `"sample"` (MySQL, plan de una ejecución real).
 - `QUERY_SAMPLE_TEXT` se trunca a `performance_schema_max_digest_text_length` (1024 por defecto). Una consulta larga queda con SQL inválido: se trata igual que cualquier fallo de `EXPLAIN`, y aparece como no explicable.
 - `query_sample_text` es **flujo interno, no campo del contrato**: MySQL lo produce (`QUERY_SAMPLE_TEXT`, literales reales) y solo lo usan `mark_explainable` y el `EXPLAIN FORMAT=JSON <sample>` en memoria. El payload lo **descarta** (`extra="ignore"`; ver `references/004_decisiones_contrato.md`): la cola no debe conservar texto real de las queries — solo viajan los normalizados (`query_text` de Postgres con `$1`, `DIGEST_TEXT` de MySQL con `?`) y los predicados de plan de MySQL (`canonic_explains[*].predicate`), que `clean_mysql_explain_predicate_dynamic` redacta a `$n` (N-1) porque el plan se arma con la query real. El fix de M-10 que lo declaró en el contrato fue un error y quedó revertido; este requisito es la razón por la que el campo nunca estuvo en el contrato.

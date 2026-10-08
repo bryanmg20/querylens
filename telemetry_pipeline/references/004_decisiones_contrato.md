@@ -6,7 +6,7 @@ Decisiones de diseño del contrato de datos que emite el pipeline, validadas con
 
 - `query_id` identifica el statement dentro de su motor, no una ejecución en curso. Antes (commit `c730da1`) la explicación cruzaba `statements.query_id` contra `active_queries.query_id`, de modo que un candidato solo se explicaba si su query se estaba ejecutando en el momento del snapshot. Ese cruce ya **no aplica**: desde `93beb5e` el plan lo produce el propio motor sin necesitar la query en vivo.
 - Cada motor resuelve el plan por su vía nativa, y el hook `mark_explainable` decide:
-  - Postgres: `EXPLAIN (GENERIC_PLAN)` (PG16+) sobre `pg_stat_statements.query`, que ya viene con placeholders `$1`. Marca **todos** los candidatos como listos.
+  - Postgres: `EXPLAIN (GENERIC_PLAN)` (PG16+; el pipeline exige PG17+, ver `PIPELINE_FLOW.md` → "Versiones soportadas") sobre `pg_stat_statements.query`, que ya viene con placeholders `$1`. Marca **todos** los candidatos como listos.
   - MySQL: `DIGEST_TEXT` trae `?`, que da error de sintaxis en `EXPLAIN`; se usa `QUERY_SAMPLE_TEXT`, que trae literales reales. Marca solo lo que tenga `query_sample_text` no vacío.
 - Verificado en capturas reales (golden): MySQL `{schema}/{digest}` → string (p. ej. `ql_demo/864c221061d4…`, ver sección *alcance por base*); Postgres `queryid` → bigint (p. ej. `-1859038224550094023`). Ambos aparecen en `statements` y en `active_queries` al mismo tiempo, pero esa coincidencia ya no condiciona nada.
 - Modelo: `QueryId = Union[str, int, None]`.
