@@ -1,93 +1,44 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from statistics import median
 
-from models import Hallazgo, Snapshot, StatementHistory, StatementSample
+from models import Hallazgo, Snapshot, StatementHistory
+
+from .statement_history import WINDOW_MIN_CALLS, evaluate_statements
 
 
-DEFAULT_MIN_CALLS = 30  # ejecuciones minimas en un intervalo para que su tiempo medio cuente
-DEFAULT_BASELINE_WINDOW = 10  # cuantos intervalos validos forman la linea base
-DEFAULT_MIN_BASELINE_SAMPLES = 5  # con menos intervalos que esto, no se opina
-DEFAULT_MIN_RATIO = 2.0  # el intervalo actual tiene que ser al menos 2x la mediana
-DEFAULT_MIN_ROBUST_Z = 3.0  # y alejarse al menos 3 "desvios robustos" (MAD) de ella
+# Regla AP-01 del SegundoInforme (Tabla 2): huella con >= 30 ejecuciones en la
+# ventana cuya latencia media es >= 2,0 veces la mediana de las 10 ventanas
+# previas y al menos 1 ms mayor en valor absoluto. La lista de ventanas la
+# arma statement_history.py con el mismo minimo de ejecuciones.
+DEFAULT_MIN_CALLS = WINDOW_MIN_CALLS
+DEFAULT_BASELINE_WINDOW = 10
+DEFAULT_MIN_RATIO = 2.0
+DEFAULT_MIN_ABS_INCREASE_MS = 1.0
 
-# Severidad por tiempo extra consumido en el intervalo (ms), no por el ratio:
-# una query de microsegundos que se hace 4x mas lenta pesa menos que una de
-# 50ms que se duplica con miles de llamadas
+# Severidad por tiempo extra consumido en la ventana (ms), no por el ratio:
+# una query de 2ms que se duplica con 40 llamadas pesa menos que una de 50ms
+# que se duplica con miles. Con ventanas de 60s, 60.000ms extra equivale a un
+# nucleo de CPU ocupado todo el minuto solo por la degradacion.
 _HIGH_EXTRA_MS = 60_000
 _MEDIUM_EXTRA_MS = 5_000
 
-# MySQL arma stats_reset como NOW() - Uptime en segundos enteros, asi que puede
-# moverse 1s entre snapshots sin que haya habido reinicio
-_STATS_RESET_TOLERANCE_SECONDS = 5
+# Limitacion / pendiente: estos cortes, el minimo de 30 ejecuciones y las 10
+# ventanas de linea base asumen snapshots cada 60 s (la ventana del informe).
+# Con otro intervalo cambian de significado: cada 5 min, 60 s de tiempo extra
+# es mas facil de alcanzar (mas hallazgos high), 30 ejecuciones es un umbral 5
+# veces mas bajo y la linea base cubre 50 min en vez de 10. Por hacer: medir la
+# severidad como proporcion del tiempo REAL de la ventana (segundos de base de
+# datos por segundo de ventana, con captured_at de la fila anterior) en vez de
+# ms absolutos; el minimo de ejecuciones y las 10 ventanas son reglas del
+# informe para 60 s y habria que revisarlas con el sandbox si cambia el intervalo.
 
-# Factor que hace al MAD comparable con un desvio estandar si los datos fueran normales
-_MAD_TO_STDDEV = 1.4826
-
-
-def _snapshot_stats_reset(snapshot: Snapshot) -> str | None:
-    if not snapshot.stats_reset_timestamp:
-        return None
-    raw = snapshot.stats_reset_timestamp[0].get("stats_reset")
-    return str(raw) if raw else None
-
-
-def _stats_reset_changed(previous: str | None, current: str | None) -> bool:
-    # Sin dato de algun lado no se puede afirmar un reinicio; el delta negativo
-    # sigue atrapando el caso comun
-    if not previous or not current:
-        return False
-    try:
-        delta = abs((datetime.fromisoformat(current) - datetime.fromisoformat(previous)).total_seconds())
-    except (ValueError, TypeError):
-        return previous != current
-    return delta > _STATS_RESET_TOLERANCE_SECONDS
-
-
-def _aggregate_statements(snapshot: Snapshot) -> dict[str, dict]:
-    # pg_stat_statements separa el mismo queryid por userid/toplevel; el
-    # snapshot descarta userid, asi que puede llegar repetido. Se suman los
-    # contadores para que el delta no dependa de cual fila gano.
-    aggregated: dict[str, dict] = {}
-    for statement in snapshot.statements:
-        if statement.query_id is None:
-            continue
-        if statement.execution_count is None or statement.total_time_ms is None:
-            continue
-        key = str(statement.query_id)
-        entry = aggregated.setdefault(key, {"statement": statement, "calls": 0, "total_ms": 0.0})
-        entry["calls"] += statement.execution_count
-        entry["total_ms"] += statement.total_time_ms
-    return aggregated
-
-
-def compute_statement_samples(
-    snapshot: Snapshot,
-    history: dict[str, StatementHistory],
-) -> list[StatementSample]:
-    # Arma el sample actual de cada query_id con su intervalo contra el sample
-    # anterior. Lo usa el detector y tambien main.py para guardar la serie.
-    stats_reset = _snapshot_stats_reset(snapshot)
-    samples = []
-    for query_id, entry in _aggregate_statements(snapshot).items():
-        sample = StatementSample(
-            query_id=query_id,
-            execution_count=entry["calls"],
-            total_time_ms=entry["total_ms"],
-            stats_reset=stats_reset,
-        )
-
-        previous = history.get(query_id, StatementHistory()).last_sample
-        if previous is not None and not _stats_reset_changed(previous.stats_reset, stats_reset):
-            delta_calls = sample.execution_count - previous.execution_count
-            delta_total_ms = sample.total_time_ms - previous.total_time_ms
-            # delta negativo = los contadores se reiniciaron (pg_stat_statements_reset,
-            # entrada desalojada, etc.): ese intervalo no se puede medir
-            if delta_calls > 0 and delta_total_ms >= 0:
-                sample.interval_calls = delta_calls
-                sample.interval_mean_ms = delta_total_ms / delta_calls
-
-        samples.append(sample)
-    return samples
+# Limitacion conocida: una query que siempre fue erratica (ventanas que saltan
+# entre 1 y 9ms, por ejemplo) puede pasar el ratio y el minimo absoluto sin
+# haberse degradado de verdad, porque la regla no mira cuanto varia la query
+# normalmente. Una mejora posible es exigir ademas un z robusto
+# (valor - mediana) / (1.4826 * MAD) >= 3, que descarta lo que esta dentro de
+# la variacion habitual de esa query. No se usa porque no forma parte de la
+# regla declarada en el informe; si se agrega, hay que declararlo ahi primero.
 
 
 def _severity(extra_ms: float) -> str:
@@ -98,57 +49,47 @@ def _severity(extra_ms: float) -> str:
     return "low"
 
 
-# Detecta queries cuyo tiempo medio del ultimo intervalo se salio de su propia linea base
+# Detecta queries cuyo tiempo medio de la ultima ventana se salio de su propia linea base
 def detect_baseline_degradation(
     snapshot: Snapshot,
     history: dict[str, StatementHistory] | None = None,
+    captured_at: datetime | None = None,
     min_calls: int = DEFAULT_MIN_CALLS,
     baseline_window: int = DEFAULT_BASELINE_WINDOW,
-    min_baseline_samples: int = DEFAULT_MIN_BASELINE_SAMPLES,
     min_ratio: float = DEFAULT_MIN_RATIO,
-    min_robust_z: float = DEFAULT_MIN_ROBUST_Z,
+    min_abs_increase_ms: float = DEFAULT_MIN_ABS_INCREASE_MS,
 ) -> list[Hallazgo]:
     # sin historia (ej. corriendo el engine contra un snapshot suelto) no hay linea base
     if not history:
         return []
-
-    statements_by_id = {
-        query_id: entry["statement"] for query_id, entry in _aggregate_statements(snapshot).items()
-    }
+    captured_at = captured_at or datetime.now(timezone.utc)
 
     findings = []
-    for sample in compute_statement_samples(snapshot, history):
-        # intervalo no medible, o con pocas ejecuciones: una sola corrida atipica no es tendencia
-        if sample.interval_mean_ms is None or (sample.interval_calls or 0) < min_calls:
+    for statement, window, previous, _ in evaluate_statements(snapshot, history, captured_at, min_calls):
+        # ventana no medible o con pocas ejecuciones: una corrida atipica no es tendencia
+        if window is None or window.calls < min_calls or previous is None:
             continue
 
-        baseline_values = history[sample.query_id].recent_interval_means[-baseline_window:]
-        if len(baseline_values) < min_baseline_samples:
+        # la linea base son las ventanas ANTERIORES; exige las 10 completas
+        baseline_values = previous.window_means_ms[-baseline_window:]
+        if len(baseline_values) < baseline_window:
             continue
 
         baseline_median = median(baseline_values)
         if baseline_median <= 0:
             continue
 
-        ratio = sample.interval_mean_ms / baseline_median
-        if ratio < min_ratio:
+        ratio = window.mean_ms / baseline_median
+        increase_ms = window.mean_ms - baseline_median
+        # el minimo absoluto descarta "4x mas lento" que en realidad son microsegundos
+        if ratio < min_ratio or increase_ms < min_abs_increase_ms:
             continue
 
-        # MAD en vez de desvio estandar: un intervalo atipico en la linea base no
-        # la infla. Una query inestable tiene intervalos que saltan (MAD grande,
-        # z bajo) y no se reporta: la degradacion exige que la media se mueva,
-        # no solo la varianza. Funciona igual en ambos motores porque solo usa
-        # total_time y calls (el stddev de MySQL es una aproximacion del collector).
-        mad = median(abs(value - baseline_median) for value in baseline_values)
-        robust_z = (
-            (sample.interval_mean_ms - baseline_median) / (_MAD_TO_STDDEV * mad)
-            if mad > 0 else None  # serie plana: el ratio alcanza para decidir
-        )
-        if robust_z is not None and robust_z < min_robust_z:
-            continue
-
-        extra_ms = sample.interval_calls * (sample.interval_mean_ms - baseline_median)
-        statement = statements_by_id[sample.query_id]
+        extra_ms = window.calls * increase_ms
+        timeline = [
+            {"at": at.isoformat(), "mean_ms": mean_ms}
+            for at, mean_ms in zip(previous.window_ends_at, previous.window_means_ms)
+        ] + [{"at": captured_at.isoformat(), "mean_ms": window.mean_ms}]
 
         findings.append(
             Hallazgo(
@@ -158,21 +99,25 @@ def detect_baseline_degradation(
                     "query_id": statement.query_id,
                     "query_text": statement.query_text,
                     "schema_name": statement.schema_name,
-                    "interval_mean_ms": sample.interval_mean_ms,
-                    "interval_calls": sample.interval_calls,
+                    "window_mean_ms": window.mean_ms,
+                    "window_calls": window.calls,
                     "baseline_median_ms": baseline_median,
-                    "baseline_mad_ms": mad,
-                    "baseline_samples": len(baseline_values),
                     "baseline_series_ms": baseline_values,
                     "ratio": ratio,
-                    "robust_z": robust_z,
+                    "increase_ms": increase_ms,
+                    # tiempo de mas que costo la degradacion en la ventana (define la severidad)
                     "extra_time_ms": extra_ms,
-                    "cumulative_mean_time_ms": statement.mean_time_ms,
+                    # impacto segun el informe: tiempo total de la sentencia en la ventana (para priorizar)
+                    "impact_ms": window.total_ms,
+                    "counters_epoch": statement.counters_epoch,
+                    # ultimas ventanas validas + la actual, para la linea de tiempo de la interfaz
+                    "timeline": timeline,
                 },
                 explicacion=(
-                    f"En el ultimo intervalo esta consulta tardo en promedio {ratio:.1f}x lo que "
-                    "suele tardar (mediana de sus intervalos anteriores), sin haber cambiado su "
-                    "texto. No es un umbral fijo: se compara contra su propio historial."
+                    f"En la ultima ventana esta consulta tardo en promedio {window.mean_ms:.2f} ms, "
+                    f"{ratio:.1f}x lo que suele tardar ({baseline_median:.2f} ms, mediana de sus "
+                    f"{baseline_window} ventanas anteriores), sin haber cambiado su texto. No es un "
+                    "umbral fijo: se compara contra su propio historial."
                 ),
                 recomendacion=(
                     "Revisar que cambio desde que la consulta era rapida: plan de ejecucion "

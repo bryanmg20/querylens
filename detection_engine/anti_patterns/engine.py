@@ -1,5 +1,5 @@
 from collections.abc import Iterable
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from models import Hallazgo, Snapshot, StatementHistory
 
@@ -22,16 +22,20 @@ def detect_all(
     max_selectivity: float = DEFAULT_MAX_SELECTIVITY,
     min_stats_window: timedelta = DEFAULT_MIN_STATS_WINDOW,
     history: dict[str, StatementHistory] | None = None,
+    captured_at: datetime | None = None,
 ) -> list[Hallazgo]:
     # mapea nombre de regla -> funcion detectora, para poder seleccionarla por nombre
     detectors = {
-        "disk_spill": detect_disk_spill,
+        "disk_spill": lambda current_snapshot: detect_disk_spill(current_snapshot, history, captured_at),
         "avoidable_full_scan": lambda current_snapshot: detect_avoidable_full_scans(
             current_snapshot,
             min_live_rows,
             max_selectivity,
         ),
-        "non_sargable_predicate": detect_non_sargable_predicates,
+        "non_sargable_predicate": lambda current_snapshot: detect_non_sargable_predicates(
+            current_snapshot,
+            history,
+        ),
         "unused_index": lambda current_snapshot: detect_unused_indexes(
             current_snapshot,
             min_stats_window,
@@ -39,6 +43,7 @@ def detect_all(
         "baseline_degradation": lambda current_snapshot: detect_baseline_degradation(
             current_snapshot,
             history,
+            captured_at,
         ),
     }
 
@@ -46,11 +51,11 @@ def detect_all(
         return detectors[rule](snapshot)
 
     return [
-        *detect_disk_spill(snapshot),
+        *detect_disk_spill(snapshot, history, captured_at),
         *detect_avoidable_full_scans(snapshot, min_live_rows, max_selectivity),
-        *detect_non_sargable_predicates(snapshot),
+        *detect_non_sargable_predicates(snapshot, history),
         *detect_unused_indexes(snapshot, min_stats_window),
-        *detect_baseline_degradation(snapshot, history),
+        *detect_baseline_degradation(snapshot, history, captured_at),
     ]
 
 

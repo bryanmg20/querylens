@@ -1,9 +1,10 @@
 import re
+from datetime import datetime, timezone
 
 import sqlglot
 from sqlglot import exp
 
-from models import Hallazgo, Snapshot
+from models import Hallazgo, Snapshot, StatementHistory
 from logger import get_logger
 
 from .table_aliases import resolve_table_aliases
@@ -409,11 +410,64 @@ def _detect_predicate_subtypes(
     return found
 
 
-def detect_non_sargable_predicates(snapshot: Snapshot) -> list[Hallazgo]:
+# Misma conversion que statement_history.parse_instant; se duplica a proposito
+# hasta confirmar este detector por separado, como el resto de la logica de ventana.
+def _parse_instant(value) -> datetime | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        parsed = value
+    else:
+        try:
+            parsed = datetime.fromisoformat(str(value))
+        except ValueError:
+            return None
+    return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
+
+
+def _current_calls(snapshot: Snapshot) -> dict[str, tuple[int, str | None]]:
+    # (ejecuciones, counters_epoch) por query, sumando filas repetidas igual que
+    # la fila guardada en statement_samples
+    calls_by_query: dict[str, tuple[int, str | None]] = {}
+    for statement in snapshot.statements:
+        if statement.query_id is None or statement.execution_count is None:
+            continue
+        key = str(statement.query_id)
+        calls, epoch = calls_by_query.get(key, (0, statement.counters_epoch))
+        calls_by_query[key] = (calls + statement.execution_count, epoch)
+    return calls_by_query
+
+
+def _executed_since_previous_snapshot(
+    calls: int,
+    epoch: datetime | None,
+    previous: StatementHistory | None,
+) -> bool:
+    # La query corrio entre el snapshot anterior y este? Sin fila anterior se
+    # responde que si: es la primera vez que se la ve, no una repeticion.
+    if previous is None:
+        return True
+    # contadores reiniciados: todas sus ejecuciones son posteriores al reinicio
+    if epoch is not None and previous.counters_epoch is not None and epoch != previous.counters_epoch:
+        return calls > 0
+    delta_calls = calls - previous.execution_count
+    if delta_calls < 0:
+        # reinicio sin epoch (snapshot viejo): mismo criterio
+        return calls > 0
+    return delta_calls > 0
+
+
+def detect_non_sargable_predicates(
+    snapshot: Snapshot,
+    history: dict[str, StatementHistory] | None = None,
+) -> list[Hallazgo]:
     # Detecta predicados no sargables en top_impact_queries y cruza cada
     # hallazgo contra snapshot.indexes para avisar si ya existe un indice que
     # el predicado esta neutralizando, o si la columna aun no tiene ninguno.
+    # Solo lee `history`: la fila nueva la guarda main.py despues de todos los detectores.
     findings = []
+    history = history or {}
+    calls_by_query = _current_calls(snapshot)
 
     explains_by_query_id = {
         explain.get("query_id"): explain
@@ -462,7 +516,20 @@ def detect_non_sargable_predicates(snapshot: Snapshot) -> list[Hallazgo]:
         explain = explains_by_query_id.get(candidate.query_id)
 
         if explain is None:
-            # sin EXPLAIN: respaldo por texto, solo 2 subtipos
+            # sin EXPLAIN: respaldo por texto, solo 2 subtipos. Solo si la query
+            # corrio desde el snapshot anterior: top_impact_queries ordena por
+            # tiempo ACUMULADO, asi que una query que ya no se ejecuta puede
+            # seguir ahi minutos u horas, y su texto (que no cambia) se volveria
+            # a reportar en cada snapshot. Con plan no hace falta este chequeo:
+            # solo hay EXPLAIN si la query estaba corriendo.
+            query_id = str(candidate.query_id)
+            calls, epoch_raw = calls_by_query.get(
+                query_id, (candidate.execution_count or 0, candidate.counters_epoch)
+            )
+            epoch = _parse_instant(candidate.counters_epoch or epoch_raw)
+            if not _executed_since_previous_snapshot(calls, epoch, history.get(query_id)):
+                continue
+
             tables = sorted(set(resolve_table_aliases(candidate.canonic_query).values()))
             for subtipo, real_table, column_name, fragmento in _detect_structural_issues_in_query(
                 candidate.canonic_query

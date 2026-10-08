@@ -6,11 +6,7 @@ from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from models import Hallazgo, Snapshot
-from anti_patterns.baseline_degradation import (
-    DEFAULT_BASELINE_WINDOW,
-    DEFAULT_MIN_CALLS,
-    compute_statement_samples,
-)
+from anti_patterns.statement_history import STALE_AFTER, next_statement_histories
 from anti_patterns.engine import detect_all
 from querylens_connection import get_connection_querylens_db
 from storage import (
@@ -18,7 +14,7 @@ from storage import (
     ensure_statement_samples_table,
     load_statement_history,
     save_findings,
-    save_statement_samples,
+    save_statement_histories,
 )
 from logger import get_logger
 
@@ -60,13 +56,14 @@ def process_job(engine: Engine, job: dict) -> list[Hallazgo]:
     # estable entre reintentos del mismo job
     captured_at = job.get("enqueued_at") or datetime.now(timezone.utc)
 
-    # la linea base necesita la serie de samples de jobs anteriores
-    history = load_statement_history(
-        engine, snapshot.db_id, captured_at, DEFAULT_BASELINE_WINDOW, DEFAULT_MIN_CALLS,
-    )
+    # la linea base necesita el estado que dejaron los jobs anteriores; la
+    # tabla se indexa por db_id, sin el no hay a que asociar la historia
+    history = load_statement_history(engine, snapshot.db_id) if snapshot.db_id else {}
+    if not snapshot.db_id:
+        logger.warning("  Job %s sin db_id: se omite la linea base (AP-01).", msg_id)
 
     # Corre las reglas y los reporta en logs y stdout
-    findings = detect_all(snapshot, history=history)
+    findings = detect_all(snapshot, history=history, captured_at=captured_at)
 
     logger.info(
         "Job %s recibido | source=%s | enqueued_at=%s",
@@ -109,8 +106,15 @@ def process_job(engine: Engine, job: dict) -> list[Hallazgo]:
     print("----------------------------------\n")
 
     save_findings(engine, snapshot.db_id, findings)
-    # despues de detectar: si se guardaran antes, el snapshot actual entraria en su propia linea base
-    save_statement_samples(engine, snapshot.db_id, captured_at, compute_statement_samples(snapshot, history))
+    # despues de detectar: si se guardara antes, la ventana actual entraria en su propia linea base
+    if snapshot.db_id:
+        save_statement_histories(
+            engine,
+            snapshot.db_id,
+            captured_at,
+            next_statement_histories(snapshot, history, captured_at),
+            stale_before=captured_at - STALE_AFTER,
+        )
 
     return findings
 

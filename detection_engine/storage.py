@@ -5,7 +5,7 @@ from pathlib import Path
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
-from models import Hallazgo, StatementHistory, StatementSample
+from models import Hallazgo, StatementHistory
 from logger import get_logger
 
 logger = get_logger(__name__)
@@ -66,119 +66,98 @@ def ensure_statement_samples_table(engine: Engine) -> None:
         conn.execute(text(ddl))
 
 
-def load_statement_history(
-    engine: Engine,
-    db_id: str | None,
-    captured_at: datetime,
-    baseline_window: int,
-    min_calls: int,
-) -> dict[str, StatementHistory]:
-    # Solo samples anteriores a captured_at: si el job se reintenta despues de
-    # haber guardado sus samples, no se compara contra si mismo.
-    params = {"db_id": db_id, "captured_at": captured_at}
+def load_statement_history(engine: Engine, db_id: str) -> dict[str, StatementHistory]:
+    # Una fila por query: alcanza con traer todas las de esta base
     with engine.begin() as conn:
-        last_rows = conn.execute(
+        rows = conn.execute(
             text(
                 """
-                SELECT DISTINCT ON (query_id)
-                    query_id, execution_count, total_time_ms, stats_reset
+                SELECT query_id, captured_at, counters_epoch, execution_count,
+                       total_time_ms, disk_spill_indicator, window_means_ms, window_ends_at
                 FROM public.statement_samples
-                WHERE db_id IS NOT DISTINCT FROM :db_id
-                  AND captured_at < :captured_at
-                ORDER BY query_id, captured_at DESC, id DESC
+                WHERE db_id = :db_id
                 """
             ),
-            params,
+            {"db_id": db_id},
         ).mappings().all()
 
-        # los intervalos con pocas ejecuciones no entran a la linea base (mismo
-        # criterio min_calls que se exige al intervalo actual)
-        interval_rows = conn.execute(
-            text(
-                """
-                SELECT query_id, interval_mean_ms
-                FROM (
-                    SELECT
-                        query_id, interval_mean_ms, captured_at, id,
-                        ROW_NUMBER() OVER (
-                            PARTITION BY query_id ORDER BY captured_at DESC, id DESC
-                        ) AS rn
-                    FROM public.statement_samples
-                    WHERE db_id IS NOT DISTINCT FROM :db_id
-                      AND captured_at < :captured_at
-                      AND interval_mean_ms IS NOT NULL
-                      AND interval_calls >= :min_calls
-                ) recent
-                WHERE rn <= :baseline_window
-                ORDER BY query_id, captured_at, id
-                """
-            ),
-            {**params, "min_calls": min_calls, "baseline_window": baseline_window},
-        ).mappings().all()
-
-    history: dict[str, StatementHistory] = {}
-    for row in last_rows:
-        history[row["query_id"]] = StatementHistory(
-            last_sample=StatementSample(
-                query_id=row["query_id"],
-                execution_count=row["execution_count"],
-                total_time_ms=row["total_time_ms"],
-                stats_reset=row["stats_reset"],
-            )
+    return {
+        row["query_id"]: StatementHistory(
+            query_id=row["query_id"],
+            captured_at=row["captured_at"],
+            execution_count=row["execution_count"],
+            total_time_ms=row["total_time_ms"],
+            disk_spill_indicator=row["disk_spill_indicator"],
+            counters_epoch=row["counters_epoch"],
+            window_means_ms=list(row["window_means_ms"] or []),
+            window_ends_at=list(row["window_ends_at"] or []),
         )
-    for row in interval_rows:
-        history.setdefault(row["query_id"], StatementHistory()).recent_interval_means.append(
-            row["interval_mean_ms"]
-        )
-    return history
+        for row in rows
+    }
 
 
-def save_statement_samples(
+def save_statement_histories(
     engine: Engine,
-    db_id: str | None,
+    db_id: str,
     captured_at: datetime,
-    samples: list[StatementSample],
+    histories: list[StatementHistory],
+    stale_before: datetime,
 ) -> None:
-    if not samples:
-        return
-
     rows = [
         {
             "db_id": db_id,
-            "query_id": sample.query_id,
-            "captured_at": captured_at,
-            "stats_reset": sample.stats_reset,
-            "execution_count": sample.execution_count,
-            "total_time_ms": sample.total_time_ms,
-            "interval_calls": sample.interval_calls,
-            "interval_mean_ms": sample.interval_mean_ms,
+            "query_id": history.query_id,
+            "captured_at": history.captured_at,
+            "counters_epoch": history.counters_epoch,
+            "execution_count": history.execution_count,
+            "total_time_ms": history.total_time_ms,
+            "disk_spill_indicator": history.disk_spill_indicator,
+            "window_means_ms": history.window_means_ms,
+            "window_ends_at": history.window_ends_at,
         }
-        for sample in samples
+        for history in histories
     ]
 
     with engine.begin() as conn:
-        # un reintento del mismo job reemplaza sus samples en vez de duplicarlos
-        conn.execute(
+        if rows:
+            # el WHERE ignora un reintento de un job que ya se aplico: sin el,
+            # la fila retrocederia a contadores viejos
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO public.statement_samples
+                        (db_id, query_id, captured_at, counters_epoch, execution_count,
+                         total_time_ms, disk_spill_indicator, window_means_ms, window_ends_at)
+                    VALUES
+                        (:db_id, :query_id, :captured_at, :counters_epoch, :execution_count,
+                         :total_time_ms, :disk_spill_indicator, :window_means_ms, :window_ends_at)
+                    ON CONFLICT (db_id, query_id) DO UPDATE SET
+                        captured_at = EXCLUDED.captured_at,
+                        counters_epoch = EXCLUDED.counters_epoch,
+                        execution_count = EXCLUDED.execution_count,
+                        total_time_ms = EXCLUDED.total_time_ms,
+                        disk_spill_indicator = EXCLUDED.disk_spill_indicator,
+                        window_means_ms = EXCLUDED.window_means_ms,
+                        window_ends_at = EXCLUDED.window_ends_at
+                    WHERE public.statement_samples.captured_at < EXCLUDED.captured_at
+                    """
+                ),
+                rows,
+            )
+
+        # queries que no se ejecutan hace mucho (o cuyo query_id cambio, ej. al
+        # recrear la tabla en Postgres): su fila ya no aporta y quedaria huerfana
+        deleted = conn.execute(
             text(
                 """
                 DELETE FROM public.statement_samples
-                WHERE db_id IS NOT DISTINCT FROM :db_id AND captured_at = :captured_at
+                WHERE db_id = :db_id AND captured_at < :stale_before
                 """
             ),
-            {"db_id": db_id, "captured_at": captured_at},
-        )
-        conn.execute(
-            text(
-                """
-                INSERT INTO public.statement_samples
-                    (db_id, query_id, captured_at, stats_reset, execution_count,
-                     total_time_ms, interval_calls, interval_mean_ms)
-                VALUES
-                    (:db_id, :query_id, :captured_at, :stats_reset, :execution_count,
-                     :total_time_ms, :interval_calls, :interval_mean_ms)
-                """
-            ),
-            rows,
-        )
+            {"db_id": db_id, "stale_before": stale_before},
+        ).rowcount
 
-    logger.info("Guardados %d samples en public.statement_samples", len(samples))
+    logger.info(
+        "statement_samples | actualizadas=%d | eliminadas_por_antiguedad=%d | captured_at=%s",
+        len(rows), deleted, captured_at,
+    )

@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Any, Mapping
 
 
@@ -29,6 +30,9 @@ class Statement:
     max_time_ms: float | None = None
     coeff_of_variation: float | None = None
     disk_spill_indicator: int | None = None
+    # desde cuando el motor acumula los contadores de esta query (stats_since
+    # en Postgres, FIRST_SEEN en MySQL); llega como texto, con o sin zona horaria
+    counters_epoch: str | None = None
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> "Statement":
@@ -136,6 +140,8 @@ class CandidateStatement:
     max_time_ms: float | None = None
     coeff_of_variation: float | None = None
     disk_spill_indicator: int | None = None
+    # mismo valor que en su statement: el candidato es una copia de esa fila
+    counters_epoch: str | None = None
     real_query_found: bool | None = None
     selected_by: list[str] = field(default_factory=list)
 
@@ -186,26 +192,22 @@ class Snapshot:
 
 
 @dataclass
-class StatementSample:
-    """Una fila de public.statement_samples: contadores acumulados de un
-    query_id en un snapshot, mas el intervalo contra el sample anterior."""
+class StatementHistory:
+    """Una fila de public.statement_samples: el estado de un query_id que los
+    detectores con ventana (AP-01, AP-07) arrastran de un snapshot al siguiente."""
 
     query_id: str
+    # hora del snapshot que dejo esta fila asi
+    captured_at: datetime
+    # ultimos contadores acumulados, contra los que se resta el proximo snapshot
     execution_count: int
     total_time_ms: float
-    stats_reset: str | None = None
-    interval_calls: int | None = None
-    interval_mean_ms: float | None = None
-
-
-@dataclass
-class StatementHistory:
-    """Lo que la linea base necesita saber del pasado de un query_id."""
-
-    # ultimo sample guardado, contra el que se calcula el delta del snapshot actual
-    last_sample: StatementSample | None = None
-    # tiempos medios de los ultimos intervalos validos, del mas viejo al mas nuevo
-    recent_interval_means: list[float] = field(default_factory=list)
+    # None si la fila es anterior a que se guardara este contador
+    disk_spill_indicator: int | None = None
+    counters_epoch: datetime | None = None
+    # latencia media de las ultimas ventanas validas y su hora, de la mas vieja a la mas nueva
+    window_means_ms: list[float] = field(default_factory=list)
+    window_ends_at: list[datetime] = field(default_factory=list)
 
 
 @dataclass
