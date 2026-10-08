@@ -129,8 +129,8 @@ ACTIVE_QUERIES_QUERY = """
 SELECT
     t.processlist_id                AS process_id,
     s.SQL_TEXT                      AS query_text,
-    CONCAT(s.SCHEMA_NAME, '/', s.DIGEST) AS query_id,
-    s.SCHEMA_NAME                   AS database_name,
+    CONCAT(s.CURRENT_SCHEMA, '/', s.DIGEST) AS query_id,
+    s.CURRENT_SCHEMA                AS database_name,
     trx.trx_started                 AS transaction_start_time,
     (
         SELECT GROUP_CONCAT(t2.processlist_id)

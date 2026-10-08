@@ -101,9 +101,14 @@ def test_mysql_statement_row_carries_database_name():
 
 def test_mysql_active_query_id_is_qualified_by_schema():
     """El query_id de una query activa tiene que ser comparable con el del
-    statement del que proviene: ambos compuestos por el mismo esquema."""
+    statement del que proviene: ambos compuestos por el mismo esquema.
+
+    events_statements_current expone el esquema como CURRENT_SCHEMA (SCHEMA_NAME
+    solo existe en las tablas summary); con el nombre equivocado la query falla
+    con 1054 y active_queries queda en None.
+    """
     assert re.search(
-        r"CONCAT\(s\.SCHEMA_NAME, '/', s\.DIGEST\)\s+AS query_id",
+        r"CONCAT\(s\.CURRENT_SCHEMA, '/', s\.DIGEST\)\s+AS query_id",
         MYSQL_ACTIVE_QUERIES_QUERY,
     )
 
@@ -121,4 +126,6 @@ def test_grid_sections_carry_database_name():
     assert re.search(r"d\.datname\s+AS database_name", PG_LOCKS_QUERY)
     assert re.search(r"datname\s+AS database_name", PG_ACTIVE_QUERIES_QUERY)
     assert re.search(r"l\.object_schema\s+AS database_name", MYSQL_LOCKS_QUERY)
-    assert re.search(r"s\.SCHEMA_NAME\s+AS database_name", MYSQL_ACTIVE_QUERIES_QUERY)
+    # CURRENT_SCHEMA es la columna real de events_statements_current (SCHEMA_NAME
+    # solo existe en las tablas summary; ver test_mysql_active_query_id_...).
+    assert re.search(r"s\.CURRENT_SCHEMA\s+AS database_name", MYSQL_ACTIVE_QUERIES_QUERY)

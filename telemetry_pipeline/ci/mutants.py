@@ -22,6 +22,15 @@ def mut(path, old, new, name):
 
 
 MUTANTS = [
+    # ---- mysql queries: active_queries sobre events_statements_current ----
+    mut("collectors/mysql/queries.py",
+        'CONCAT(s.CURRENT_SCHEMA, \'/\', s.DIGEST) AS query_id,',
+        'CONCAT(s.SCHEMA_NAME, \'/\', s.DIGEST) AS query_id,',
+        "queries/mysql: usar SCHEMA_NAME en active_queries (1054 siempre)"),
+    mut("collectors/mysql/queries.py",
+        's.CURRENT_SCHEMA                AS database_name,',
+        's.SCHEMA_NAME                   AS database_name,',
+        "queries/mysql: database_name de active_queries con SCHEMA_NAME"),
     # ---- explain_normalizer: conteos y materializacion ----
     mut("stages/explain_normalizer.py",
         'if node_type in ("Seq Scan", "Index Scan", "Index Only Scan", "Bitmap Heap Scan", "Bitmap Index Scan"):',

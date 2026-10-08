@@ -10,7 +10,7 @@ y en la raiz del repo.
 import uuid
 
 import pytest
-from sqlalchemy import text
+from sqlalchemy import create_engine, text
 
 from collectors.postgres.collector import Postgres_Collector
 from config.connections import (
@@ -235,6 +235,49 @@ def test_mysql_explain_requires_the_use_statement_first(my):
         ).mappings().first()
     assert result is not None
     assert "query_block" in result["EXPLAIN"]
+
+
+def test_mysql_active_queries_capture_other_roles(my):
+    """el filtro de ACTIVE_QUERIES_QUERY excluye al monitor, no a los demas.
+
+    Una query de otro rol corriendo tiene que aparecer en active_queries. Este
+    test tambien ejerce la query contra el motor real: cazo el 1054 por usar
+    SCHEMA_NAME — events_statements_current no tiene esa columna (solo las
+    tablas summary); la real es CURRENT_SCHEMA, y con el nombre equivocado
+    active_queries quedaba en None siempre.
+    """
+    import threading
+    import time
+    from sqlalchemy.engine import URL as SA_URL
+
+    from collectors.mysql.queries import ACTIVE_QUERIES_QUERY
+
+    app = create_engine(SA_URL.create(
+        drivername="mysql+pymysql",
+        username="app_user",
+        password="app_pass",
+        host="localhost",
+        port=3307,
+        database="ql_demo",
+    ))
+
+    def run_sleep():
+        with app.connect() as conn:
+            conn.execute(text("SELECT SLEEP(6)"))
+
+    holder = threading.Thread(target=run_sleep)
+    holder.start()
+    try:
+        time.sleep(2)
+        with my.connect() as conn:
+            rows = list(conn.execute(text(ACTIVE_QUERIES_QUERY)).mappings())
+        textos = [r["query_text"] for r in rows]
+        assert any(t and "SLEEP(6)" in t for t in textos), (
+            f"la query de app_user no aparece en active_queries: {textos}"
+        )
+    finally:
+        holder.join(timeout=15)
+        app.dispose()
 
 
 def test_mysql_full_pipeline_produces_a_valid_snapshot(my):
