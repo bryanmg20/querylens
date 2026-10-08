@@ -577,7 +577,7 @@
             "access_method": "index_lookup",
             "relation": "a",
             "estimated_rows": 4840,
-            "predicate": "(a.id > 3000)",
+            "predicate": "(a.id > $1)",
             "index_name": "PRIMARY"
           },
           {
@@ -671,7 +671,7 @@
             "access_method": "full_table_scan",
             "relation": "a",
             "estimated_rows": 4840,
-            "predicate": "(a.k > 1000)",
+            "predicate": "(a.k > $1)",
             "index_name": null
           },
           {
@@ -722,7 +722,7 @@
             "access_method": "index_lookup",
             "relation": "a",
             "estimated_rows": 3704,
-            "predicate": "(a.id BETWEEN 2000 AND 4000)",
+            "predicate": "(a.id BETWEEN $1 AND $2)",
             "index_name": "PRIMARY"
           },
           {
@@ -773,7 +773,7 @@
             "access_method": "full_table_scan",
             "relation": "sbtest1",
             "estimated_rows": 1075,
-            "predicate": "(sbtest1.c LIKE '%7%')",
+            "predicate": "(sbtest1.c LIKE $1)",
             "index_name": null
           }
         ],
@@ -824,7 +824,7 @@
             "access_method": "index_lookup",
             "relation": "a",
             "estimated_rows": 3619,
-            "predicate": "(a.k < 5000)",
+            "predicate": "(a.k < $1)",
             "index_name": "k_1"
           },
           {
@@ -918,7 +918,7 @@
             "access_method": "index_lookup",
             "relation": "sbtest1",
             "estimated_rows": 4840,
-            "predicate": "(sbtest1.id BETWEEN 1 AND 8000)",
+            "predicate": "(sbtest1.id BETWEEN $1 AND $2)",
             "index_name": "k_1"
           }
         ],

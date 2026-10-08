@@ -198,6 +198,8 @@ class TestPredicateCanonicalization:
         ][0]
         assert "ql_demo" not in operation["predicate"]
         assert "`" not in operation["predicate"]
+        # N-1: el literal del plan viaja redactado, no como el valor real.
+        assert operation["predicate"] == "sbtest1.k > $1"
 
     def test_cache_marks_are_removed(self):
         """MySQL envuelve constantes en <cache>, que es anotacion interna del
@@ -217,6 +219,9 @@ class TestPredicateCanonicalization:
             "physical_operations"
         ][0]["predicate"]
         assert "<cache>" not in predicate
+        # N-1: la constante que MySQL envuelve en <cache> es un dato real:
+        # al salir de la etapa tiene que quedar placeholder, no 10.
+        assert predicate == "k = $1"
 
     def test_null_predicate_is_left_alone(self):
         """predicate None significa que el plan no trae condicion; llamar a la

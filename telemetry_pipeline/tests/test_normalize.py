@@ -95,19 +95,48 @@ def test_clean_mysql_predicate_removes_cache_but_keeps_table():
     cleaned = clean_mysql_explain_predicate_dynamic("(<cache>(`sbtest1`.`id`)</cache> = 42)")
     assert "cache" not in cleaned
     assert "`" not in cleaned
-    assert cleaned == "((sbtest1.id) = 42)"
+    assert cleaned == "((sbtest1.id) = $1)"
 
 
 def test_clean_mysql_predicate_preserves_cast_function():
     cleaned = clean_mysql_explain_predicate_dynamic("cast(`a`.`k` as signed) = 42")
-    assert cleaned == "CAST(a.k AS BIGINT) = 42"
+    assert cleaned == "CAST(a.k AS BIGINT) = $1"
 
 
 def test_clean_mysql_predicate_removes_backticks():
     cleaned = clean_mysql_explain_predicate_dynamic("`sbtest2`.`id` = 17")
     assert cleaned is not None
     assert "`" not in cleaned
-    assert cleaned == "sbtest2.id = 17"
+    assert cleaned == "sbtest2.id = $1"
+
+
+def test_clean_mysql_predicate_redacts_string_literals():
+    """N-1: el plan se arma con la query real, asi que un LIKE con el valor
+    del cliente viajaba tal cual a la cola. El string se reemplaza entero."""
+    cleaned = clean_mysql_explain_predicate_dynamic("(c LIKE '%7%')")
+    assert cleaned == "(c LIKE $1)"
+
+
+def test_clean_mysql_predicate_redacts_multiple_literals_in_reading_order():
+    cleaned = clean_mysql_explain_predicate_dynamic("(a.id BETWEEN 2000 AND 4000)")
+    assert cleaned == "(a.id BETWEEN $1 AND $2)"
+    cleaned = clean_mysql_explain_predicate_dynamic("(a.id = 1 AND b.c = 'x')")
+    assert cleaned == "(a.id = $1 AND b.c = $2)"
+
+
+def test_clean_mysql_predicate_keeps_null_and_booleans():
+    """NULL/TRUE/FALSE no son datos de cliente: redactarlos solo ensucia el
+    predicado (a.id IS NULL es legible, a.id IS $1 no)."""
+    assert clean_mysql_explain_predicate_dynamic("a.id IS NULL") == "a.id IS NULL"
+    assert clean_mysql_explain_predicate_dynamic("a.flag = TRUE") == "a.flag = TRUE"
+
+
+def test_clean_mysql_predicate_redacts_literals_on_fallback_path():
+    """Si sqlglot no puede parsear, el fallback tampoco puede dejar pasar
+    literales: la rama de error es un canal de fuga tanto como la principal."""
+    cleaned = clean_mysql_explain_predicate_dynamic("id = 42 AND ((")
+    assert cleaned == "id = $1 AND (("
+    assert "42" not in cleaned
 
 
 def test_clean_mysql_predicate_none():
@@ -135,6 +164,6 @@ def test_normalize_predicate_runs_over_plan():
     }
     normalize_predicate(stats)
     ops = stats["canonic_explains"][0]["canonical_plan"]["physical_operations"]
-    assert ops[0]["predicate"] == "(t.id = 5)"
+    assert ops[0]["predicate"] == "(t.id = $1)"
     assert "`" not in ops[0]["predicate"]
     assert ops[1]["predicate"] is None

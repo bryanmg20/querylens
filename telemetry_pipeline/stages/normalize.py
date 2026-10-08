@@ -101,7 +101,24 @@ def clean_mysql_explain_predicate_dynamic(pred_text):
         for table in list(ast.find_all(exp.Table)):
             if table.db:
                 table.set('db', None)
-        return ast.sql(dialect='postgres', identify=False, comments=False).replace('"', '')
+        # N-1: el plan de MySQL se armo con la query real, asi que los
+        # predicados traen literales de datos (numeros, strings). La cola PGMQ
+        # no los puede conservar: se reemplazan por placeholders $n, igual que
+        # canonicalize_query hace con query_text. NULL/TRUE/FALSE no son datos
+        # y dejan el predicado legible, asi que no se tocan.
+        for node in list(ast.find_all(exp.Literal, exp.Parameter)):
+            node.replace(exp.Placeholder())
+        canonic = ast.sql(dialect='postgres', identify=False, comments=False)
+
+        param_index = 1
+
+        def replace_placeholder(match):
+            nonlocal param_index
+            current_param = f"${param_index}"
+            param_index += 1
+            return current_param
+
+        return re.sub(r"%s", replace_placeholder, canonic).replace('"', '')
     except Exception:
         cleaned = re.sub(r'/\*.*?\*/', '', pred_text)
         cleaned = cleaned.replace('`', '')
@@ -109,5 +126,18 @@ def clean_mysql_explain_predicate_dynamic(pred_text):
         if match:
             dynamic_schema = match.group(1)
             cleaned = re.sub(rf'\b{dynamic_schema}\.', '', cleaned)
+        # N-1: si sqlglot no pudo parsear, el fallback igualmente no puede
+        # dejar literales crudos pasar (aqui entra el %7% de un LIKE, por
+        # ejemplo). Un solo pase alternando string/numero, en orden de lectura.
+        counter = {"n": 0}
+
+        def replace_literal(match):
+            counter["n"] += 1
+            return f"${counter['n']}"
+
+        cleaned = _LITERAL_RE.sub(replace_literal, cleaned)
         cleaned = re.sub(r'\s+', ' ', cleaned).strip()
         return cleaned
+
+
+_LITERAL_RE = re.compile(r"'(?:''|[^'])*'|\b\d+(?:\.\d+)?\b")

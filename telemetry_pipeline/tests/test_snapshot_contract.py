@@ -1,5 +1,6 @@
 from collections import Counter
 import json
+import re
 
 import pytest
 
@@ -144,7 +145,14 @@ def test_goldens_have_application_workload(snapshot_fixture, request):
 def test_predicates_are_canonicalized(snapshot_fixture, request):
     """Un predicate canonico no lleva el schema de MySQL ni comillas: es lo que
     permite comparar planes entre motores. Si sobrevive la marca de schema, la
-    limpieza de NormalizeStage no corrio sobre el snapshot."""
+    limpieza de NormalizeStage no corrio sobre el snapshot.
+
+    Ademas (N-1) el golden es la cola PGMQ: no puede contener literales de
+    datos reales. En MySQL se exige que no quede ni un string entrecomillado
+    ni un numero suelto; en Postgres solo el check de strings, porque los
+    predicados de GENERIC_PLAN pueden traer la nomenclatura de planes
+    ("SubPlan 1") que no es un dato y un regex no las distingue.
+    """
     raw = request.getfixturevalue(snapshot_fixture)
     checked = 0
     for explain in raw["canonic_explains"]:
@@ -156,6 +164,13 @@ def test_predicates_are_canonicalized(snapshot_fixture, request):
             assert "`" not in predicate, f"quedan backticks: {predicate}"
             assert "ql_demo." not in predicate, f"queda el schema: {predicate}"
             assert "<cache>" not in predicate, f"queda la marca cache: {predicate}"
+            assert not re.search(r"'[^']*'", predicate), (
+                f"queda un literal string: {predicate}"
+            )
+            if snapshot_fixture == "mysql_snapshot":
+                assert not re.search(r"(?<!\$)\b\d+\b", predicate), (
+                    f"queda un literal numerico: {predicate}"
+                )
     assert checked > 0, "ningun predicate en el golden, no hay nada que verificar"
 
 
