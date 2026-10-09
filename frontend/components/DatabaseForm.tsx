@@ -1,7 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { registerDatabase, testConnection } from "@/lib/api";
+import { saveAccessToken } from "@/lib/session";
 import {
   DEFAULT_FORM_VALUES,
   DEFAULT_PORTS,
@@ -14,6 +16,9 @@ type RegisterFeedback =
   | { type: "idle" }
   | { type: "success"; identifier: string; alreadyRegistered: boolean }
   | { type: "error"; message: string };
+
+// Cuánto se muestra el mensaje de registro exitoso antes de ir a diagnósticos.
+const REDIRECT_DELAY_MS = 1500;
 
 function buildDsnPreview(values: ConnectionFormValues): string {
   const scheme = values.engine === "mysql" ? "mysql" : "postgresql";
@@ -28,6 +33,7 @@ export default function DatabaseForm() {
   const [values, setValues] = useState<ConnectionFormValues>(DEFAULT_FORM_VALUES);
   const [registering, setRegistering] = useState(false);
   const [traceState, setTraceState] = useState<TraceState>({ status: "idle" });
+  const router = useRouter();
   const [registerFeedback, setRegisterFeedback] = useState<RegisterFeedback>({ type: "idle" });
 
   const testing = traceState.status === "testing";
@@ -67,11 +73,15 @@ export default function DatabaseForm() {
     setRegisterFeedback({ type: "idle" });
     try {
       const result = await registerDatabase(values);
+      saveAccessToken(result.data.access_token);
       setRegisterFeedback({
         type: "success",
         identifier: result.data.database_identifier,
         alreadyRegistered: result.alreadyRegistered,
       });
+      // Se deja ver el mensaje de éxito un momento y luego se pasa a la
+      // página de diagnósticos con la sesión iniciada.
+      setTimeout(() => router.push("/diagnostics"), REDIRECT_DELAY_MS);
     } catch (error) {
       setRegisterFeedback({
         type: "error",
@@ -172,10 +182,12 @@ export default function DatabaseForm() {
           <div className="rounded border-l-2 border-signal bg-signal-soft px-3 py-2.5">
             <p className="text-xs text-graphite-600">
               {registerFeedback.alreadyRegistered
-                ? "Esta conexión ya estaba registrada, se actualizó. Identificador:"
-                : "Registrada. Identificador asignado:"}
+                ? "Esta conexión ya estaba registrada y se actualizó. Redirigiendo a diagnósticos…"
+                : "Base de datos registrada con éxito. Redirigiendo a diagnósticos…"}
             </p>
-            <p className="mt-0.5 font-mono text-sm text-ink">{registerFeedback.identifier}</p>
+            <p className="mt-0.5 font-mono text-sm text-ink">
+              Identificador: {registerFeedback.identifier}
+            </p>
           </div>
         )}
         {registerFeedback.type === "error" && (
@@ -195,7 +207,7 @@ export default function DatabaseForm() {
           </button>
           <button
             type="submit"
-            disabled={registering}
+            disabled={registering || registerFeedback.type === "success"}
             className="flex-1 rounded bg-ink px-4 py-2 text-sm text-paper transition hover:bg-graphite-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {registering ? "Registrando…" : "Registrar base de datos"}
