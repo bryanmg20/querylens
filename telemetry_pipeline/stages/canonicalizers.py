@@ -1,3 +1,5 @@
+import re
+
 from sqlglot import exp
 
 from models.stats import Stats
@@ -8,13 +10,26 @@ from models.stats import Stats
 # para canonicalize_query y para los predicados de plan de MySQL.
 DATA_LITERAL_NODES = (exp.Literal, exp.HexString, exp.BitString, exp.ByteString)
 
+# pg_stat_statements respeta el espaciado original: IN (1,2,3) llega como
+# IN ($1,$2,$3). El tokenizer postgres de sqlglot lee `$` como apertura de un
+# dollar-quote y falla con un $N pegado a lo que sigue ($1,$2 / $1+$2), asi que
+# la query quedaba en "Not available". Un tag de dollar-quote no empieza con
+# digito, por lo que $N fuera de un identificador (col$1) siempre es parametro.
+PG_PARAM_GLUED = re.compile(r"(?<![\w$])(\$\d+)(?=[^\s\d])")
+
+
+def separate_pg_params(query_text):
+    return PG_PARAM_GLUED.sub(r"\1 ", query_text)
+
 
 def canonicalize_query(query_text, source_dialect="postgres"):
-    import re
     import sqlglot
 
     if not query_text:
         return None
+
+    if source_dialect == "postgres":
+        query_text = separate_pg_params(query_text)
 
     try:
         ast = sqlglot.parse_one(query_text, read=source_dialect)

@@ -5,6 +5,7 @@ from stages.canonicalizers import (
     clean_mysql_sintax,
     create_canonic_queries,
     normalize_querytext_active,
+    separate_pg_params,
 )
 
 pytestmark = pytest.mark.unit
@@ -94,3 +95,34 @@ def test_canonicalize_query_redacts_hex_and_bit_literals(query_text, dialect, se
     q = canonicalize_query(query_text, dialect)
     assert secret not in q.upper()
     assert "$1" in q
+
+
+@pytest.mark.parametrize(
+    "query_text, expected",
+    [
+        # Texto real de pg_stat_statements para IN (1,2,3) sin espacios.
+        (
+            "SELECT a, pg_sleep($1) FROM probe_in_list WHERE x IN ($2,$3,$4)",
+            "SELECT a, PG_SLEEP($1) FROM probe_in_list WHERE x IN ($2, $3, $4)",
+        ),
+        ("INSERT INTO t VALUES ($1,$2)", "INSERT INTO t VALUES ($1, $2)"),
+        ("SELECT f($1,$2)", "SELECT F($1, $2)"),
+        ("SELECT $1+$2", "SELECT $1 + $2"),
+        ("SELECT $1||$2", "SELECT $1 || $2"),
+        ("SELECT ($1),$2", "SELECT ($1), $2"),
+        ("SELECT $10,$11", "SELECT $1, $2"),
+    ],
+)
+def test_canonicalize_query_pg_params_without_spaces(query_text, expected):
+    assert canonicalize_query(query_text, "postgres") == expected
+
+
+def test_separate_pg_params_keeps_identifiers_with_dollar():
+    assert separate_pg_params("SELECT col$1,$2 FROM t$9") == "SELECT col$1,$2 FROM t$9"
+    assert canonicalize_query("SELECT col$1 FROM t WHERE x = $1", "postgres") == (
+        "SELECT col$1 FROM t WHERE x = $1"
+    )
+
+
+def test_canonicalize_query_mysql_does_not_separate_dollar():
+    assert canonicalize_query("SELECT `col$1x` FROM t", "mysql") == "SELECT col$1x FROM t"
