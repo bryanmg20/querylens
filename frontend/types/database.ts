@@ -43,8 +43,22 @@ export interface DatabaseRegisteredResponse {
   created_at: string;
 }
 
+export interface DatabaseSessionResponse extends DatabaseRegisteredResponse {
+  access_token: string;
+  token_type: string;
+}
+
+export interface DiagnosticsResponse {
+  database_identifier: string;
+  connection_name: string;
+  engine: string;
+  is_active: boolean;
+  diagnostics: Record<string, unknown>[];
+  server_time: string;
+}
+
 export interface RegisterDatabaseResult {
-  data: DatabaseRegisteredResponse;
+  data: DatabaseSessionResponse;
   // true cuando el backend respondió 200 (la conexión ya existía y se
   // actualizó) en vez de 201 (fila nueva).
   alreadyRegistered: boolean;
