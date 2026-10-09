@@ -1,13 +1,17 @@
 import type {
   ApiErrorResponse,
   ConnectionFormValues,
-  DatabaseRegisteredResponse,
+  DatabaseSessionResponse,
+  DiagnosticsResponse,
   RegisterDatabaseResult,
   TestConnectionResponse,
 } from "@/types/database";
 
 const AUTH_SERVICE_URL =
   process.env.NEXT_PUBLIC_AUTH_SERVICE_URL ?? "http://localhost:8000";
+
+const API_REST_URL =
+  process.env.NEXT_PUBLIC_API_REST_URL ?? "http://localhost:8001";
 
 function toApiPayload(values: ConnectionFormValues) {
   return {
@@ -65,6 +69,18 @@ export async function registerDatabase(
 
   // El auth-service responde 200 cuando la conexión ya existía (se
   // actualizó en vez de crear una fila nueva) y 201 cuando es nueva.
-  const data = (await response.json()) as DatabaseRegisteredResponse;
+  const data = (await response.json()) as DatabaseSessionResponse;
   return { data, alreadyRegistered: response.status === 200 };
+}
+
+export async function fetchDiagnostics(accessToken: string): Promise<DiagnosticsResponse> {
+  const response = await fetch(`${API_REST_URL}/diagnostics`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseErrorMessage(response));
+  }
+
+  return response.json();
 }
