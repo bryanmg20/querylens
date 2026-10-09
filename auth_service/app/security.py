@@ -1,7 +1,9 @@
 import hashlib
 import hmac
 import uuid
+from datetime import datetime, timedelta, timezone
 
+import jwt
 from cryptography.fernet import Fernet, InvalidToken
 
 from app.config import settings
@@ -47,3 +49,20 @@ def compute_connection_fingerprint(
     return hmac.new(
         settings.auth_encryption_key.encode(), normalized.encode(), hashlib.sha256
     ).hexdigest()
+
+
+def create_access_token(database_identifier: str) -> str:
+    """Access token (JWT) de la sesión de monitoreo de una base de datos.
+
+    `sub` es el database_identifier; la API REST lo usa para consultar los
+    diagnósticos de esa base de datos. Se firma con JWT_SECRET_KEY, que la API
+    REST debe compartir para poder verificarlo.
+    """
+
+    now = datetime.now(timezone.utc)
+    claims = {
+        "sub": database_identifier,
+        "iat": now,
+        "exp": now + timedelta(minutes=settings.jwt_expire_minutes),
+    }
+    return jwt.encode(claims, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
