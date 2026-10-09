@@ -9,12 +9,26 @@ from .avoidable_full_scan import (
     detect_avoidable_full_scans,
 )
 from .baseline_degradation import detect_baseline_degradation
+from .cardinality_misestimate import detect_cardinality_misestimates
 from .disk_spill import detect_disk_spill
+from .missing_index import detect_missing_indexes
 from .non_sargable_predicate import detect_non_sargable_predicates
 from .unused_index import DEFAULT_MIN_STATS_WINDOW, detect_unused_indexes
 
 
-# Ejecuta un detector puntual por nombre, o todos si no se especifica ninguno
+# Reglas que corren cuando no se pide una puntual. Por ahora solo las que no
+# usan canonic_explains: la forma de los EXPLAIN esta cambiando en el pipeline.
+# Quedan afuera hasta que se estabilice: avoidable_full_scan (AP-02),
+# non_sargable_predicate (AP-03), missing_index (AP-04), unused_index (AP-05,
+# usa el plan como evidencia de uso de un indice) y cardinality_misestimate (AP-08).
+# Se pueden seguir corriendo por nombre con `rule`.
+ACTIVE_RULES = (
+    "disk_spill",  # AP-07
+    "baseline_degradation",  # AP-01
+)
+
+
+# Ejecuta un detector puntual por nombre, o los de ACTIVE_RULES si no se especifica ninguno
 def detect_all(
     snapshot: Snapshot,
     rule: str | None = None,
@@ -32,6 +46,12 @@ def detect_all(
             min_live_rows,
             max_selectivity,
         ),
+        # mismos umbrales que avoidable_full_scan: la base de escaneo completo es identica
+        "missing_index": lambda current_snapshot: detect_missing_indexes(
+            current_snapshot,
+            min_live_rows,
+            max_selectivity,
+        ),
         "non_sargable_predicate": lambda current_snapshot: detect_non_sargable_predicates(
             current_snapshot,
             history,
@@ -39,8 +59,14 @@ def detect_all(
         "unused_index": lambda current_snapshot: detect_unused_indexes(
             current_snapshot,
             min_stats_window,
+            history,
         ),
         "baseline_degradation": lambda current_snapshot: detect_baseline_degradation(
+            current_snapshot,
+            history,
+            captured_at,
+        ),
+        "cardinality_misestimate": lambda current_snapshot: detect_cardinality_misestimates(
             current_snapshot,
             history,
             captured_at,
@@ -50,13 +76,7 @@ def detect_all(
     if rule is not None:
         return detectors[rule](snapshot)
 
-    return [
-        *detect_disk_spill(snapshot, history, captured_at),
-        *detect_avoidable_full_scans(snapshot, min_live_rows, max_selectivity),
-        *detect_non_sargable_predicates(snapshot, history),
-        *detect_unused_indexes(snapshot, min_stats_window),
-        *detect_baseline_degradation(snapshot, history, captured_at),
-    ]
+    return [finding for name in ACTIVE_RULES for finding in detectors[name](snapshot)]
 
 
 # Agrupa una lista de hallazgos en un dict segun su tipo de antipatron
