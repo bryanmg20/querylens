@@ -40,7 +40,7 @@ jobs:
 
     services:
       telemetry-postgres:
-        image: postgres:17
+        image: public.ecr.aws/docker/library/postgres:17
         env:
           POSTGRES_USER: querylens_monitor
           POSTGRES_PASSWORD: monitor_pass
@@ -54,7 +54,7 @@ jobs:
           --health-retries 10
 
       telemetry-mysql:
-        image: mysql:8.0
+        image: public.ecr.aws/docker/library/mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: ql_root
           MYSQL_DATABASE: ql_demo
