@@ -11,6 +11,12 @@ class Settings(BaseSettings):
     querylens_password: str = "ql_pass"
 
     auth_encryption_key: str
+    # Clave compartida con la API REST: el Auth Service firma el access token
+    # (HS256) con ella y la API REST la usa para verificarlo. Debe ser la misma
+    # en ambos servicios.
+    jwt_secret_key: str
+    jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = 480
     cors_origins: str = "http://localhost:3000"
     connection_test_timeout_seconds: int = 5
     # Cada cuántos segundos se revisa si las bases registradas están disponibles.
