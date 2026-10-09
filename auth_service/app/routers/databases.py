@@ -8,11 +8,13 @@ from app.models import RegisteredDatabase
 from app.schemas import (
     DatabaseCreateRequest,
     DatabaseRegisteredResponse,
+    DatabaseSessionResponse,
     TestConnectionRequest,
     TestConnectionResponse,
 )
 from app.security import (
     compute_connection_fingerprint,
+    create_access_token,
     decrypt_secret,
     encrypt_secret,
     generate_database_identifier,
@@ -42,14 +44,17 @@ def _to_response(record: RegisteredDatabase) -> DatabaseRegisteredResponse:
     )
 
 
-def _mark_active(db: Session, record: RegisteredDatabase) -> DatabaseRegisteredResponse:
+def _start_session(db: Session, record: RegisteredDatabase) -> DatabaseSessionResponse:
     # Iniciar sesión marca la base de datos como disponible. Se queda así
     # aunque el usuario cierre la página: el monitoreo continúa.
     if not record.is_active:
         record.is_active = True
         db.commit()
         db.refresh(record)
-    return _to_response(record)
+    return DatabaseSessionResponse(
+        **_to_response(record).model_dump(),
+        access_token=create_access_token(record.database_identifier),
+    )
 
 
 def _find_by_fingerprint(db: Session, fingerprint: str) -> RegisteredDatabase | None:
@@ -62,12 +67,12 @@ def _find_by_fingerprint(db: Session, fingerprint: str) -> RegisteredDatabase | 
 
 @router.post(
     "",
-    response_model=DatabaseRegisteredResponse,
+    response_model=DatabaseSessionResponse,
     status_code=status.HTTP_201_CREATED,
 )
 def register_database(
     payload: DatabaseCreateRequest, response: Response, db: Session = Depends(get_db)
-) -> DatabaseRegisteredResponse:
+) -> DatabaseSessionResponse:
     # engine+host+port+db_user+database_name identifican una conexión real;
     # si ya existe, no creamos otra fila: actualizamos esa misma (por si la
     # contraseña o el nombre cambiaron) y la devolvemos con 200 en vez de 201.
@@ -89,7 +94,7 @@ def register_database(
         db.commit()
         db.refresh(existing)
         response.status_code = status.HTTP_200_OK
-        return _mark_active(db, existing)
+        return _start_session(db, existing)
 
     # database_identifier es aleatorio (8 hex = 32 bits) y puede chocar con uno
     # ya existente; eso no es un error del cliente, asi que reintentamos con un
@@ -118,11 +123,11 @@ def register_database(
             existing = _find_by_fingerprint(db, fingerprint)
             if existing is not None:
                 response.status_code = status.HTTP_200_OK
-                return _mark_active(db, existing)
+                return _start_session(db, existing)
             continue
 
         db.refresh(record)
-        return _mark_active(db, record)
+        return _start_session(db, record)
 
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

@@ -42,3 +42,10 @@ class DatabaseRegisteredResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class DatabaseSessionResponse(DatabaseRegisteredResponse):
+    """Respuesta al iniciar sesión: la base de datos más su access token."""
+
+    access_token: str
+    token_type: str = "bearer"
