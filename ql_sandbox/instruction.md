@@ -74,6 +74,22 @@ docker exec ql_sysbench bash /scripts/battery.sh  # queries variadas (batería)
 Ojo: `battery.sh` **trunca** `pg_stat_statements` y la tabla de digests de MySQL
 al empezar, para que log, stats y batería compartan ventana de medición.
 
+## Claves foráneas (sección `foreign_keys`)
+
+sysbench no define claves foráneas, así que `foreign_keys` llega vacío. Para que
+traiga filas:
+
+```bash
+docker exec ql_sysbench bash /scripts/postgres/create_foreign_keys_postgres.sh
+docker exec ql_sysbench bash /scripts/mysql/create_foreign_keys_mysql.sh
+```
+
+Crean en `ql_demo` (con el usuario de la app) una FK simple
+(`ql_fk_orders.customer_id → ql_fk_customers.id`) y una compuesta
+(`ql_fk_stock(warehouse_region, warehouse_code) → ql_fk_warehouses(region, code)`):
+3 filas por motor en el snapshot. Se pueden volver a ejecutar sin problema; con `drop`
+al final borran las tablas `ql_fk_*`.
+
 ## Ajustar la carga (opcional)
 
 Edita las primeras líneas de `scripts/run.sh`:
