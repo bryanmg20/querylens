@@ -1,6 +1,7 @@
 import pytest
 
 from stages.canonicalizers import (
+    MAX_STATEMENT_CANONIC_CHARS,
     canonicalize_query,
     clean_mysql_sintax,
     create_canonic_queries,
@@ -126,3 +127,75 @@ def test_separate_pg_params_keeps_identifiers_with_dollar():
 
 def test_canonicalize_query_mysql_does_not_separate_dollar():
     assert canonicalize_query("SELECT `col$1x` FROM t", "mysql") == "SELECT col$1x FROM t"
+
+
+def test_create_canonic_queries_covers_statements():
+    stats = {
+        "statements": [
+            {"query_id": 1, "query_text": "SELECT a FROM t WHERE x = $1"},
+            {"query_id": 2, "query_text": "SELECT b FROM u WHERE y IN ($1,$2)"},
+            {"query_id": 3, "query_text": ""},
+        ],
+        "top_impact_queries": [{"query_id": 1, "query_text": "SELECT a FROM t WHERE x = $1"}],
+    }
+    create_canonic_queries(stats)
+    canonic = [s["canonic_query"] for s in stats["statements"]]
+    assert canonic == [
+        "SELECT a FROM t WHERE x = $1",
+        "SELECT b FROM u WHERE y IN ($1, $2)",
+        None,
+    ]
+    assert stats["top_impact_queries"][0]["canonic_query"] == canonic[0]
+
+
+def test_create_canonic_queries_parses_each_text_once(monkeypatch):
+    """Los candidatos son copias de statements y en MySQL el mismo digest se
+    repite entre schemas: cada texto distinto se canonicaliza una sola vez."""
+    import stages.canonicalizers as canonicalizers
+
+    calls = []
+    real = canonicalizers.canonicalize_query
+    monkeypatch.setattr(
+        canonicalizers,
+        "canonicalize_query",
+        lambda text, dialect: calls.append(text) or real(text, dialect),
+    )
+    text = "SELECT DISTINCTROW `k` FROM `t` WHERE `id` = ?"
+    stats = {
+        "statements": [
+            {"query_id": "a/d1", "query_text": text},
+            {"query_id": "b/d1", "query_text": text},
+        ],
+        "top_impact_queries": [{"query_id": "a/d1", "query_text": text}],
+    }
+    canonicalizers.create_canonic_queries(stats, "mysql", clean_mysql=True)
+    assert len(calls) == 1
+    rows = stats["statements"] + stats["top_impact_queries"]
+    assert {r["canonic_query"] for r in rows} == {"SELECT DISTINCT k FROM t WHERE id = $1"}
+
+
+def _long_insert():
+    rows = ", ".join(f"(${i}, ${i + 1})" for i in range(1, 2000, 2))
+    text = f"INSERT INTO t (a, b) VALUES {rows}"
+    assert len(text) > MAX_STATEMENT_CANONIC_CHARS
+    return text
+
+
+def test_create_canonic_queries_skips_long_statements():
+    stats = {"statements": [{"query_id": 1, "query_text": _long_insert()}]}
+    create_canonic_queries(stats)
+    assert stats["statements"][0]["canonic_query"] == "Not available"
+
+
+def test_create_canonic_queries_long_candidate_is_not_capped():
+    """El tope es del volumen de statements, no de los candidatos: un candidato
+    largo se canonicaliza y su statement reutiliza ese resultado."""
+    text = _long_insert()
+    stats = {
+        "statements": [{"query_id": 1, "query_text": text}],
+        "top_impact_queries": [{"query_id": 1, "query_text": text}],
+    }
+    create_canonic_queries(stats)
+    canonic = stats["top_impact_queries"][0]["canonic_query"]
+    assert canonic.startswith("INSERT INTO t (a, b) VALUES ($1, $2), ($3, $4)")
+    assert stats["statements"][0]["canonic_query"] == canonic

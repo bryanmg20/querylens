@@ -84,6 +84,8 @@ run_engine(dialect, connection_factory, db_id)                  main.py
   │     │
   │     ├─ (4) NormalizeStage.execute(stats)                 stages/normalize.py
   │     │     create_canonic_queries()      literal→placeholder via sqlglot (canonic_query)
+  │     │                                   en statements y top_impact_queries;
+  │     │                                   cache por query_text (un parseo por forma)
   │     │     stats = collector.normalize_engine_artifacts(stats)   → hook por motor:
   │     │         MySQL: locks bool, blocking_pids list[int], limpieza de predicados
   │     │         Postgres: timestamps a ISO sin tz

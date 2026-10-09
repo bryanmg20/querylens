@@ -1,3 +1,4 @@
+import logging
 import re
 
 from sqlglot import exp
@@ -54,12 +55,40 @@ def clean_mysql_sintax(query):
     return query.replace("DISTINCTROW", "DISTINCT")
 
 
+# El parseo de sqlglot crece con el largo del texto y pg_stat_statements guarda
+# el texto completo: un INSERT masivo de 58 KB costaba ~600 ms y duplicaba su
+# peso en el payload. Sobre este largo un statement queda en "Not available";
+# los candidatos no tienen tope (son pocos y su canonic_query alimenta el
+# analisis). MySQL no llega: DIGEST_TEXT se corta en max_digest_length (1024).
+MAX_STATEMENT_CANONIC_CHARS = 8192
+
+# sqlglot avisa con WARNING cada sentencia de utilidad que parsea como Command
+# (GRANT, ALTER EXTENSION, SHOW...). Con statements completos son varias por
+# ciclo, sin handler propio caen a stderr y no indican ningun fallo.
+logging.getLogger("sqlglot").setLevel(logging.ERROR)
+
+
 def create_canonic_queries(stats: Stats, source_dialect="postgres", clean_mysql=False):
+    # Los candidatos son copias de statements y en MySQL el mismo DIGEST_TEXT se
+    # repite entre schemas: el cache por texto parsea cada forma una sola vez.
+    # Van primero para que el tope de largo de statements no les aplique.
+    cache = {}
+
+    def canonic(query_text):
+        if query_text not in cache:
+            text = clean_mysql_sintax(query_text) if clean_mysql and query_text else query_text
+            cache[query_text] = canonicalize_query(text, source_dialect)
+        return cache[query_text]
+
     for stmt in stats.get("top_impact_queries") or []:
+        stmt["canonic_query"] = canonic(stmt.get("query_text"))
+
+    for stmt in stats.get("statements") or []:
         query_text = stmt.get("query_text")
-        if clean_mysql:
-            query_text = clean_mysql_sintax(query_text) if query_text else None
-        stmt["canonic_query"] = canonicalize_query(query_text, source_dialect)
+        if query_text not in cache and len(query_text or "") > MAX_STATEMENT_CANONIC_CHARS:
+            stmt["canonic_query"] = "Not available"
+            continue
+        stmt["canonic_query"] = canonic(query_text)
 
 
 def normalize_querytext_active(stats: Stats, source_dialect="postgres"):

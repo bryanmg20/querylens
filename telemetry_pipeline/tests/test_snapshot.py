@@ -112,6 +112,27 @@ class TestListOrNone:
         assert payload.canonic_explains == []
 
 
+class TestStatementCanonicQuery:
+    def test_statement_canonic_query_reaches_payload(self):
+        """canonic_query de statements es parte del contrato: sin el campo en
+        StatementRow, extra='ignore' lo descarta en silencio al validar."""
+        row = {
+            "query_id": 1,
+            "query_text": "SELECT a FROM t WHERE b = $1",
+            "execution_count": 3,
+            "rows_returned": 3,
+            "canonic_query": "SELECT a FROM t WHERE b = $1",
+        }
+        payload = SnapshotPayload.from_snapshot(_base(statements=[row]))
+        assert payload.statements[0].canonic_query == "SELECT a FROM t WHERE b = $1"
+        assert '"canonic_query":"SELECT a FROM t WHERE b = $1"' in payload.to_json()
+
+    def test_statement_without_canonic_query_is_valid(self):
+        """Los goldens previos y el camino degradado no traen el campo."""
+        row = {"query_id": 1, "query_text": "SELECT 1", "execution_count": 1, "rows_returned": 1}
+        payload = SnapshotPayload.from_snapshot(_base(statements=[row]))
+        assert payload.statements[0].canonic_query is None
+
 class TestLockCoercion:
     """_to_bool: InnoDB reporta el estado como texto, el contrato lo quiere bool."""
 

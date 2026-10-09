@@ -74,10 +74,10 @@ class StatementRow(BaseModel):
     coeff_of_variation: float | None = None
     disk_spill_indicator: int | None = None
     counters_epoch: Annotated[str | None, BeforeValidator(_to_iso)] = None
+    canonic_query: str | None = None
 
 
 class StatementCandidate(StatementRow):
-    canonic_query: str | None = None
     selected_by: list[str] = Field(default_factory=list)
     ready_for_explain: bool = False
 

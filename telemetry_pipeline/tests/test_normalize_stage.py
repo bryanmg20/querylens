@@ -95,6 +95,19 @@ class TestCanonicQueryIsBuilt:
         NormalizeStage(Postgres_Collector(engine=None)).execute(stats)
         assert "$1" in stats["top_impact_queries"][0]["canonic_query"]
 
+    @pytest.mark.parametrize(
+        "stats_factory, collector_cls",
+        [(_pg_stats, Postgres_Collector), (_mysql_stats, Mysql_Collector)],
+    )
+    def test_every_statement_gets_canonic_query(self, stats_factory, collector_cls):
+        """canonic_query ya no es exclusivo de los candidatos: cada statement lo
+        lleva, para agrupar por forma de query sin depender del top de impacto."""
+        stats = stats_factory()
+        NormalizeStage(collector_cls(engine=None)).execute(stats)
+        statement = stats["statements"][0]
+        assert statement["canonic_query"] == stats["top_impact_queries"][0]["canonic_query"]
+        assert "$1" in statement["canonic_query"]
+
     def test_active_queries_get_canonic_and_lose_raw_text(self):
         """La query en vivo se reemplaza por su forma canonica: el texto crudo
         puede traer datos de otras sesiones y el snapshot viaja a una cola."""
