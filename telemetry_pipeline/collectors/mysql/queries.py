@@ -179,3 +179,22 @@ SELECT
 FROM information_schema.columns
 WHERE table_schema NOT IN ('mysql', 'performance_schema', 'information_schema', 'sys');
 """
+
+FOREIGN_KEYS_QUERY = """
+-- Una fila por columna de cada FK (las compuestas dan varias, ordenadas por
+-- position). En MySQL schema_name es la base, no un schema dentro de ella.
+-- El texto contiene information_schema, asi que el filtro de STATEMENTS_QUERY
+-- ya la excluye de la autoobservacion.
+SELECT
+    TABLE_SCHEMA            AS schema_name,
+    TABLE_NAME              AS table_name,
+    COLUMN_NAME             AS column_name,
+    REFERENCED_TABLE_SCHEMA AS referenced_schema_name,
+    REFERENCED_TABLE_NAME   AS referenced_table_name,
+    REFERENCED_COLUMN_NAME  AS referenced_column_name,
+    CONSTRAINT_NAME         AS constraint_name,
+    ORDINAL_POSITION        AS position
+FROM information_schema.KEY_COLUMN_USAGE
+WHERE REFERENCED_TABLE_NAME IS NOT NULL
+  AND TABLE_SCHEMA NOT IN ('mysql', 'performance_schema', 'information_schema', 'sys');
+"""

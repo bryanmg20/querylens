@@ -322,3 +322,37 @@ class TestSerialization:
             _base(statements=[], query_explain=[{"plan": "raw"}])
         )
         assert payload.db_id == "querylens-db-01"
+
+
+class TestForeignKeys:
+    def _row(self, **overrides):
+        row = {
+            "schema_name": "public",
+            "table_name": "ql_n1_child",
+            "column_name": "parent_id",
+            "referenced_schema_name": "public",
+            "referenced_table_name": "ql_n1_parent",
+            "referenced_column_name": "id",
+            "constraint_name": "ql_n1_child_parent_id_fkey",
+            "position": 1,
+        }
+        row.update(overrides)
+        return row
+
+    def test_foreign_keys_reach_payload(self):
+        """Sin el campo en el modelo, extra='ignore' descarta la seccion en
+        silencio y el detector de N+1 se queda sin relaciones."""
+        payload = SnapshotPayload.from_snapshot(_base(foreign_keys=[self._row()]))
+        assert payload.foreign_keys[0].referenced_table_name == "ql_n1_parent"
+        assert '"constraint_name":"ql_n1_child_parent_id_fkey"' in payload.to_json()
+
+    def test_missing_section_defaults_to_empty(self):
+        """Los goldens previos no traen foreign_keys y tienen que seguir validando."""
+        assert SnapshotPayload.from_snapshot(_base()).foreign_keys == []
+
+    def test_failed_collect_becomes_empty(self):
+        assert SnapshotPayload.from_snapshot(_base(foreign_keys=None)).foreign_keys == []
+
+    def test_non_numeric_position_is_rejected(self):
+        with pytest.raises(Exception):
+            SnapshotPayload.from_snapshot(_base(foreign_keys=[self._row(position="first")]))

@@ -45,7 +45,7 @@ run_engine(dialect, connection_factory, db_id)                  main.py
   │     │     for key, query in collector.queries:           ejecuta las consultas del motor
   │     │     stats[key] = list[dict] ; falla aislada con rollback {key: None}
   │     │     keys: indexes, tables, statements, locks, active_queries,
-  │     │           server_start_timestamp, columns
+  │     │           server_start_timestamp, columns, foreign_keys
   │     │     conn.commit()  ← M-12: la transacción de lectura se cierra YA. No
   │     │     retener snapshot/vacuum (PG) ni MVCC (MySQL) durante el resto del ciclo.
   │     │

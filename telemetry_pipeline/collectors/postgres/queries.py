@@ -97,6 +97,35 @@ FROM information_schema.columns
 WHERE table_schema NOT IN ('pg_catalog', 'information_schema');
 """
 
+FOREIGN_KEYS_QUERY = """
+-- Una fila por columna de cada FK (las compuestas dan varias, ordenadas por
+-- position). pg_constraint y no information_schema: las vistas de constraints
+-- solo muestran tablas del rol dueno, y querylens_monitor (solo SELECT) recibe
+-- 0 filas. conparentid = 0 deja la FK logica: una FK sobre o hacia una tabla
+-- particionada clona una fila por particion, que duplicaria la relacion.
+-- pg_constraint es por base: solo trae las FK de la base conectada.
+SELECT
+    n.nspname   AS schema_name,
+    c.relname   AS table_name,
+    a.attname   AS column_name,
+    rn.nspname  AS referenced_schema_name,
+    rc.relname  AS referenced_table_name,
+    ra.attname  AS referenced_column_name,
+    con.conname AS constraint_name,
+    k.position  AS position
+FROM pg_constraint con
+JOIN pg_class c ON c.oid = con.conrelid
+JOIN pg_namespace n ON n.oid = c.relnamespace
+JOIN pg_class rc ON rc.oid = con.confrelid
+JOIN pg_namespace rn ON rn.oid = rc.relnamespace
+CROSS JOIN LATERAL unnest(con.conkey, con.confkey) WITH ORDINALITY AS k(attnum, ref_attnum, position)
+JOIN pg_attribute a ON a.attrelid = con.conrelid AND a.attnum = k.attnum
+JOIN pg_attribute ra ON ra.attrelid = con.confrelid AND ra.attnum = k.ref_attnum
+WHERE con.contype = 'f'
+  AND con.conparentid = 0
+  AND n.nspname NOT IN ('pg_catalog', 'information_schema');
+"""
+
 SCHEMA_RESOLVER_QUERY = """
 WITH role_search_paths AS (
     SELECT

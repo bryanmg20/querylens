@@ -99,6 +99,18 @@ _ROWS_BY_SQL = {
             "data_type": "integer",
         }
     ],
+    "FROM pg_constraint": [
+        {
+            "schema_name": "public",
+            "table_name": "orders",
+            "column_name": "customer_id",
+            "referenced_schema_name": "public",
+            "referenced_table_name": "customers",
+            "referenced_column_name": "id",
+            "constraint_name": "orders_customer_id_fkey",
+            "position": 1,
+        }
+    ],
     "resolved_schema": _SCHEMA_RESOLVER,
     "EXPLAIN (GENERIC_PLAN, FORMAT JSON)": [{"QUERY PLAN": _EXPLAIN_PLAN}],
 }
@@ -197,6 +209,7 @@ def test_run_pipeline_populates_every_collected_section():
         "active_queries",
         "server_start_timestamp",
         "columns",
+        "foreign_keys",
     ):
         assert stats[key], f"{key} deberia traer filas del fake"
 

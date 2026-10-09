@@ -8,6 +8,7 @@ from collectors.mysql.queries import (
 from collectors.mysql.queries import (
     LOCKS_QUERY as MYSQL_LOCKS_QUERY,
 )
+from collectors.mysql.queries import FOREIGN_KEYS_QUERY as MYSQL_FOREIGN_KEYS_QUERY
 from collectors.mysql.queries import STATEMENTS_QUERY
 from collectors.postgres.queries import (
     ACTIVE_QUERIES_QUERY as PG_ACTIVE_QUERIES_QUERY,
@@ -15,7 +16,9 @@ from collectors.postgres.queries import (
 from collectors.postgres.queries import (
     LOCKS_QUERY as PG_LOCKS_QUERY,
 )
+from collectors.postgres.queries import FOREIGN_KEYS_QUERY as PG_FOREIGN_KEYS_QUERY
 from collectors.postgres.queries import STATEMENTS_QUERY as PG_STATEMENTS_QUERY
+from models.snapshot import ForeignKeyRow
 
 pytestmark = pytest.mark.contract
 
@@ -203,3 +206,37 @@ def test_mysql_locks_query_never_emits_null_process_id():
     """Los hilos de fondo no tienen processlist_id; sin este filtro su fila
     invalidaria el snapshot entero en vez de omitirse."""
     assert "t.processlist_id IS NOT NULL" in MYSQL_LOCKS_QUERY
+
+
+def _sql_without_comments(query):
+    return re.sub(r"--[^\n]*", "", query)
+
+
+def _select_aliases(query):
+    return set(re.findall(r"\bAS\s+(\w+)\s*,?\s*$", _sql_without_comments(query), re.MULTILINE))
+
+
+def test_foreign_keys_queries_share_the_snapshot_shape():
+    """Los dos motores emiten las mismas columnas y son las de ForeignKeyRow:
+    un alias distinto en un motor llega al modelo como campo faltante."""
+    expected = set(ForeignKeyRow.model_fields)
+    assert _select_aliases(PG_FOREIGN_KEYS_QUERY) == expected
+    assert _select_aliases(MYSQL_FOREIGN_KEYS_QUERY) == expected
+
+
+def test_pg_foreign_keys_query_reads_the_catalog():
+    """information_schema filtra las constraints por rol dueno: con el rol
+    monitor (solo SELECT) devuelve 0 filas. conparentid = 0 evita una fila por
+    particion en FKs sobre o hacia tablas particionadas."""
+    sql = _sql_without_comments(PG_FOREIGN_KEYS_QUERY)
+    assert "FROM pg_constraint" in sql
+    assert "information_schema." not in sql
+    assert re.search(r"con\.contype\s*=\s*'f'", sql)
+    assert re.search(r"con\.conparentid\s*=\s*0", sql)
+
+
+def test_mysql_foreign_keys_query_is_self_filtered():
+    """La autoobservacion de MySQL descarta los digests con information_schema;
+    la query de FKs no necesita entrada propia en el filtro."""
+    assert "information_schema" in MYSQL_FOREIGN_KEYS_QUERY
+    assert "NOT LIKE '%information_schema%'" in STATEMENTS_QUERY

@@ -10,6 +10,7 @@ class Stats(TypedDict, total=False):
     active_queries: list[dict] | None
     server_start_timestamp: list[dict] | None
     columns: list[dict] | None
+    foreign_keys: list[dict] | None
     schema_resolver: list[dict] | None
     high_impact_statements: list[dict]
     unstable_statements: list[dict]

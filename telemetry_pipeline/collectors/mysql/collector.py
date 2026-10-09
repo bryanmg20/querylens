@@ -6,7 +6,8 @@ from .queries import (
     LOCKS_QUERY,
     ACTIVE_QUERIES_QUERY,
 SERVER_START_QUERY,
-    COLUMNS_QUERY
+    COLUMNS_QUERY,
+    FOREIGN_KEYS_QUERY
 )
 import stages.normalize as normalize
 from models.stats import Stats
@@ -24,7 +25,8 @@ class Mysql_Collector(DB_Engine_Collector):
                         "locks": LOCKS_QUERY,
                         "active_queries": ACTIVE_QUERIES_QUERY,
                         "server_start_timestamp": SERVER_START_QUERY,
-                        "columns": COLUMNS_QUERY
+                        "columns": COLUMNS_QUERY,
+                        "foreign_keys": FOREIGN_KEYS_QUERY
                         }
 
     def preprocess_statements(self, stats: Stats) -> Stats:

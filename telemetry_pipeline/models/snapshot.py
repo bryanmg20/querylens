@@ -127,6 +127,20 @@ class ColumnRow(BaseModel):
     data_type: str
 
 
+class ForeignKeyRow(BaseModel):
+    """Una columna de una FK: las compuestas llegan como varias filas con el
+    mismo constraint_name, ordenadas por position. En MySQL schema_name es la
+    base; en Postgres, el schema dentro de la base conectada."""
+    schema_name: str
+    table_name: str
+    column_name: str
+    referenced_schema_name: str
+    referenced_table_name: str
+    referenced_column_name: str
+    constraint_name: str
+    position: int
+
+
 class ServerStartRow(BaseModel):
     server_start_time: Annotated[str | None, BeforeValidator(_to_iso)] = None
 
@@ -183,6 +197,10 @@ class SnapshotPayload(BaseModel):
     tables: ListOrNone[TableRow]
     columns: ListOrNone[ColumnRow]
     server_start_timestamp: ListOrNone[ServerStartRow]
+    # Seccion del collect, pero con default: los goldens previos no la traen y
+    # sin el default dejarian de validar. Sin el campo en el modelo,
+    # extra='ignore' descartaria la clave en silencio.
+    foreign_keys: ListOrNone[ForeignKeyRow] = []
     canonic_explains: ListOrNone[CanonicExplain] = []
 
     @classmethod

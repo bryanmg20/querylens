@@ -109,6 +109,13 @@ Pendiente de decisión: en MySQL los `filesort` a disco no tienen indicador suma
 - Renombrado desde `stats_reset_timestamp`/`stats_reset` (ver CODE_REVIEW.md, hallazgo N-2): el valor NO es un reset de contadores. Postgres entrega `pg_postmaster_start_time()` y MySQL `now() - Uptime` — el instante en que arrancó el servidor de base de datos.
 - Sigue siendo `str | None` normalizado a ISO/UTC sin offset por `_to_iso`. Se conserva el shape de lista (una fila con un campo) para no tocar el contrato encolado más allá del nombre.
 
+## foreign_keys: relaciones para AP-06 (N+1)
+
+- Una fila por **columna** de cada FK: `schema_name`, `table_name`, `column_name`, `referenced_schema_name`, `referenced_table_name`, `referenced_column_name`, `constraint_name`, `position`. Una FK compuesta llega como varias filas con el mismo `constraint_name`, ordenadas por `position`. El detector de N+1 solo compara pares de queries cuyas tablas están unidas por una FK.
+- Postgres lee `pg_constraint`, no `information_schema`: las vistas de constraints solo muestran tablas cuyo dueño es el rol actual, y `querylens_monitor` (solo SELECT) recibe 0 filas. `con.conparentid = 0` deja solo la FK lógica: una FK sobre o hacia una tabla particionada clona una fila por partición en `pg_constraint`.
+- **Alcance:** en Postgres `pg_constraint` es por base, así que solo llegan las FK de la base conectada (misma limitación que `indexes`, `tables` y `columns`), aunque `statements` sea server-wide. En MySQL `KEY_COLUMN_USAGE` cubre todos los schemas y `schema_name` es la **base** (p. ej. `ql_demo`), no `public`.
+- `foreign_keys` tiene default `[]` en `SnapshotPayload` para que los goldens previos sigan validando. Como en el resto de las secciones, una recolección fallida (`None`) también llega como `[]`: el consumidor no distingue "sin FK" de "no se pudo leer".
+
 ## Validación antes de encolar
 
 - El contrato se valida en la **frontera de emisión**, no al consumir: `SnapshotPayload.from_snapshot(payload)` y solo si pasa va `to_json()` → `pgmq.send`. Un payload inválido se traduce en `return None` + `logger.error(... snapshot_validation ...)` y **no llega a la cola** (no se encola basura para que la arregle otro).
