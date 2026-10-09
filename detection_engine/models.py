@@ -194,7 +194,7 @@ class Snapshot:
 @dataclass
 class StatementHistory:
     """Una fila de public.statement_samples: el estado de un query_id que los
-    detectores con ventana (AP-01, AP-07) arrastran de un snapshot al siguiente."""
+    detectores con ventana (AP-01, AP-07, AP-08) arrastran de un snapshot al siguiente."""
 
     query_id: str
     # hora del snapshot que dejo esta fila asi
@@ -204,6 +204,7 @@ class StatementHistory:
     total_time_ms: float
     # None si la fila es anterior a que se guardara este contador
     disk_spill_indicator: int | None = None
+    rows_returned: int | None = None
     counters_epoch: datetime | None = None
     # latencia media de las ultimas ventanas validas y su hora, de la mas vieja a la mas nueva
     window_means_ms: list[float] = field(default_factory=list)

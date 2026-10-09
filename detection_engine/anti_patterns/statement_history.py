@@ -36,6 +36,7 @@ class _Aggregated:
     calls: int
     total_ms: float
     disk_spill: int | None
+    rows: int | None
 
 
 def parse_instant(value) -> datetime | None:
@@ -66,11 +67,13 @@ def _aggregate_statements(snapshot: Snapshot) -> dict[str, _Aggregated]:
         if statement.execution_count is None or statement.total_time_ms is None:
             continue
         key = str(statement.query_id)
-        entry = aggregated.setdefault(key, _Aggregated(statement, 0, 0.0, None))
+        entry = aggregated.setdefault(key, _Aggregated(statement, 0, 0.0, None, None))
         entry.calls += statement.execution_count
         entry.total_ms += statement.total_time_ms
         if statement.disk_spill_indicator is not None:
             entry.disk_spill = (entry.disk_spill or 0) + statement.disk_spill_indicator
+        if statement.rows_returned is not None:
+            entry.rows = (entry.rows or 0) + statement.rows_returned
     return aggregated
 
 
@@ -135,6 +138,7 @@ def evaluate_statements(
             execution_count=entry.calls,
             total_time_ms=entry.total_ms,
             disk_spill_indicator=entry.disk_spill,
+            rows_returned=entry.rows,
             counters_epoch=epoch,
             window_means_ms=window_means,
             window_ends_at=window_ends,

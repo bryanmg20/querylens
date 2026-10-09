@@ -73,7 +73,8 @@ def load_statement_history(engine: Engine, db_id: str) -> dict[str, StatementHis
             text(
                 """
                 SELECT query_id, captured_at, counters_epoch, execution_count,
-                       total_time_ms, disk_spill_indicator, window_means_ms, window_ends_at
+                       total_time_ms, disk_spill_indicator, rows_returned,
+                       window_means_ms, window_ends_at
                 FROM public.statement_samples
                 WHERE db_id = :db_id
                 """
@@ -88,6 +89,7 @@ def load_statement_history(engine: Engine, db_id: str) -> dict[str, StatementHis
             execution_count=row["execution_count"],
             total_time_ms=row["total_time_ms"],
             disk_spill_indicator=row["disk_spill_indicator"],
+            rows_returned=row["rows_returned"],
             counters_epoch=row["counters_epoch"],
             window_means_ms=list(row["window_means_ms"] or []),
             window_ends_at=list(row["window_ends_at"] or []),
@@ -112,6 +114,7 @@ def save_statement_histories(
             "execution_count": history.execution_count,
             "total_time_ms": history.total_time_ms,
             "disk_spill_indicator": history.disk_spill_indicator,
+            "rows_returned": history.rows_returned,
             "window_means_ms": history.window_means_ms,
             "window_ends_at": history.window_ends_at,
         }
@@ -127,16 +130,17 @@ def save_statement_histories(
                     """
                     INSERT INTO public.statement_samples
                         (db_id, query_id, captured_at, counters_epoch, execution_count,
-                         total_time_ms, disk_spill_indicator, window_means_ms, window_ends_at)
+                         total_time_ms, disk_spill_indicator, rows_returned, window_means_ms, window_ends_at)
                     VALUES
                         (:db_id, :query_id, :captured_at, :counters_epoch, :execution_count,
-                         :total_time_ms, :disk_spill_indicator, :window_means_ms, :window_ends_at)
+                         :total_time_ms, :disk_spill_indicator, :rows_returned, :window_means_ms, :window_ends_at)
                     ON CONFLICT (db_id, query_id) DO UPDATE SET
                         captured_at = EXCLUDED.captured_at,
                         counters_epoch = EXCLUDED.counters_epoch,
                         execution_count = EXCLUDED.execution_count,
                         total_time_ms = EXCLUDED.total_time_ms,
                         disk_spill_indicator = EXCLUDED.disk_spill_indicator,
+                        rows_returned = EXCLUDED.rows_returned,
                         window_means_ms = EXCLUDED.window_means_ms,
                         window_ends_at = EXCLUDED.window_ends_at
                     WHERE public.statement_samples.captured_at < EXCLUDED.captured_at
