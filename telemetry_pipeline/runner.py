@@ -14,7 +14,9 @@ Comportamiento del ciclo:
   * si el ciclo lanza, espera el backoff (intervalo doblando, tope 60 s) y
     sigue; al volver a terminar bien vuelve al intervalo normal;
   * el log por ciclo es DEBUG y el de "sin bases" solo se emite en cambios de
-    estado, para no llenar el archivo con 8 640 avisos al dia.
+    estado, para no llenar el archivo con 8 640 avisos al dia;
+  * cada HEALTH_PURGE_INTERVAL_S (1 h por defecto) purga pipeline_health:
+    issues resueltos y last_run de mas de HEALTH_RETENTION_DAYS (15) dias.
 """
 import logging
 import math
@@ -23,7 +25,8 @@ import signal
 import threading
 import time
 
-from config.registered import load_registered_targets
+from config.registered import _get_queue_engine, load_registered_targets
+from health import writer as health_writer
 from logger import get_logger
 from main import run_targets
 
@@ -35,6 +38,7 @@ logger.setLevel(logging.DEBUG)
 
 DEFAULT_INTERVAL_S = 10.0
 MAX_BACKOFF_S = 60.0
+DEFAULT_PURGE_INTERVAL_S = 3600.0
 
 
 def interval_from_env() -> float:
@@ -57,14 +61,46 @@ def interval_from_env() -> float:
     return value
 
 
+def purge_interval_from_env() -> float:
+    """HEALTH_PURGE_INTERVAL_S en segundos; cualquier valor no usable cae a 1 h."""
+    raw = os.getenv("HEALTH_PURGE_INTERVAL_S", "")
+    try:
+        value = float(raw)
+    except ValueError:
+        return DEFAULT_PURGE_INTERVAL_S
+    if not math.isfinite(value) or value <= 0:
+        return DEFAULT_PURGE_INTERVAL_S
+    return value
+
+
+def _purge_health() -> None:
+    health_writer.purge(_get_queue_engine())
+
+
 class Runner:
     """Un ciclo por intervalo, sin solapes ni ticks atrasados."""
 
-    def __init__(self, interval=None, load=None, run=None, clock=time.monotonic):
+    def __init__(
+        self,
+        interval=None,
+        load=None,
+        run=None,
+        clock=time.monotonic,
+        purge=None,
+        purge_interval=None,
+    ):
         self.interval = interval if interval is not None else interval_from_env()
         self.load = load if load is not None else load_registered_targets
         self.run = run if run is not None else run_targets
         self.clock = clock
+        # None = sin purga (tests, usos embebidos); la entrada del daemon pasa
+        # _purge_health.
+        self.purge = purge
+        self.purge_interval = (
+            purge_interval if purge_interval is not None else purge_interval_from_env()
+        )
+        # None = todavia no purgo: la primera purga corre en el primer ciclo.
+        self._last_purge = None
         self.stop = threading.Event()
         self.backoff = self.interval
         # Objetivo activo del ciclo anterior; None = todavia no corrio ninguno.
@@ -72,6 +108,7 @@ class Runner:
 
     def cycle(self) -> int | None:
         """SELECT de las filas activas + extraccion. Devuelve los targets o None."""
+        self._maybe_purge()
         targets = self.load()
         self._report_state(targets)
         if not targets:
@@ -83,6 +120,19 @@ class Runner:
             f"runner | ciclo ok | {len(targets)} target(s) | {self.clock() - started:.2f}s"
         )
         return len(targets)
+
+    def _maybe_purge(self) -> None:
+        """Purga de pipeline_health a su propio ritmo; si falla, el ciclo sigue."""
+        if self.purge is None:
+            return
+        now = self.clock()
+        if self._last_purge is not None and now - self._last_purge < self.purge_interval:
+            return
+        self._last_purge = now
+        try:
+            self.purge()
+        except Exception as e:
+            logger.error(f"runner | purge fallo ({type(e).__name__}: {e})")
 
     def _report_state(self, targets) -> None:
         active = len(targets) if targets else 0
@@ -138,6 +188,6 @@ def _install_signal_handlers(runner: Runner) -> None:
 
 
 if __name__ == "__main__":
-    runner = Runner()
+    runner = Runner(purge=_purge_health)
     _install_signal_handlers(runner)
     runner.run_forever()

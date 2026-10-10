@@ -28,6 +28,7 @@ from config.connections import (
     mysql_connect_args,
     postgres_connect_args,
 )
+from health import writer as health_writer
 from logger import get_logger
 
 logger = get_logger(__name__)
@@ -82,6 +83,13 @@ def _decipher(fernet: Fernet, token: str) -> str:
     return fernet.decrypt((token or "").encode()).decode()
 
 
+def _record(identifier: str, code: str, **params) -> None:
+    """La fila no llega a correr: el cliente igual tiene que ver por que.
+    Sin database_identifier no hay a quien atribuirlo."""
+    if identifier != "?":
+        health_writer.record_target_issue(_get_queue_engine(), identifier, code, **params)
+
+
 def _build_target(row: dict, fernet: Fernet) -> Target | None:
     identifier = row.get("database_identifier") or "?"
 
@@ -90,6 +98,7 @@ def _build_target(row: dict, fernet: Fernet) -> Target | None:
         logger.error(
             f"registered_targets | {identifier} | engine no soportado: {row.get('engine')!r}"
         )
+        _record(identifier, "TARGET_CONFIG_INVALID", field="engine")
         return None
 
     try:
@@ -99,12 +108,14 @@ def _build_target(row: dict, fernet: Fernet) -> Target | None:
         password = _decipher(fernet, row.get("encrypted_password"))
     except (InvalidToken, TypeError, ValueError) as exc:
         logger.error(f"registered_targets | {identifier} | credencial indecifrable: {exc}")
+        _record(identifier, "CREDENTIALS_UNREADABLE", exc_type=type(exc).__name__)
         return None
 
     try:
         port = int(port_raw) if port_raw else None
     except ValueError:
         logger.error(f"registered_targets | {identifier} | puerto invalido: {port_raw!r}")
+        _record(identifier, "TARGET_CONFIG_INVALID", field="port")
         return None
 
     url = _target_url(dialect, user, password, host, port, row.get("database_name"))

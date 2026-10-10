@@ -2,6 +2,8 @@ import json
 
 from sqlalchemy import text
 
+from health.classify import classify
+from health.report import HealthReport
 from logger import get_logger
 from models.stats import Stats
 from stages import explain_normalizer as en
@@ -14,8 +16,9 @@ EXPLAIN_NORMALIZERS = en.EXPLAIN_NORMALIZERS
 
 
 class ExplainStage:
-    def __init__(self, collector):
+    def __init__(self, collector, report: HealthReport | None = None):
         self.collector = collector
+        self.report = report if report is not None else HealthReport()
         self._foreign_engines = {}
         # Seam para tests: inyecta un builder de "engine" (url -> engine) para
         # probar el ruteo sin abrir conexiones reales contra otra base.
@@ -94,6 +97,7 @@ class ExplainStage:
 
     def execute(self, stats: Stats, conn):
         stats["query_explain"] = []
+        failures = 0
 
         try:
             for query in stats.get("top_impact_queries", []):
@@ -130,7 +134,16 @@ class ExplainStage:
                     dialect,
                     self.collector.engine,
                 )
-                active = self._connection_for(query, conn)
+                try:
+                    active = self._connection_for(query, conn)
+                except Exception as e:
+                    # Base ajena sin CONNECT (u otra falla al abrirla): se
+                    # pierde este candidato, no el resto del ciclo.
+                    failures += 1
+                    logger.error(f"{dialect} | EXPLAIN | query_id={query_id} | connect | {e}")
+                    code, params = classify(e, dialect=dialect, scope="explain", phase="connect")
+                    self.report.add(code, **params)
+                    continue
                 try:
                     # Transaccion corta por candidato (M-12): el collect ya hizo
                     # COMMIT sobre esta conexion; el BEGIN...COMMIT aísla el
@@ -155,6 +168,8 @@ class ExplainStage:
                             plan_row = next(result.mappings(), None)
                             if plan_row is None:
                                 logger.error(f"mysql | EXPLAIN | query_id={query_id} | returned no plan row")
+                                failures += 1
+                                self.report.add("EXPLAIN_FAILED")
                                 continue
                             stats["query_explain"].append({
                                 "query_id": query_id,
@@ -163,6 +178,10 @@ class ExplainStage:
                             })
                 except Exception as e:
                     logger.error(f"{dialect} | EXPLAIN | query_id={query_id} | {e}")
+                    failures += 1
+                    # Agrupado por code (params.count): nunca query_id ni texto.
+                    code, params = classify(e, dialect=dialect, scope="explain")
+                    self.report.add(code, **params)
                 finally:
                     # N-2: la conexion extranjera (abierta con engine.connect()
                     # en _foreign_connection) no la cierra ningun `with`: el
@@ -174,6 +193,13 @@ class ExplainStage:
                         active.close()
         finally:
             self._dispose_foreign_engines()
+
+        # Hubo candidatos y ninguno dio plan sin que nada fallara: todos se
+        # filtraron (DML, multi-statement). Es informativo, no un error.
+        had_candidates = stats.get("top_impact_queries") or stats.get("non_explainable_candidates")
+        if had_candidates and not stats["query_explain"] and not failures:
+            self.report.add("NO_EXPLAINABLE_CANDIDATES")
+        self.report.checked("explain")
 
         normalizer = EXPLAIN_NORMALIZERS[self.collector.source_dialect]()
         normalizer.normalize(stats)

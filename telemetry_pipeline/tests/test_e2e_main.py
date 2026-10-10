@@ -29,6 +29,22 @@ from models.snapshot import SnapshotPayload
 pytestmark = pytest.mark.integration
 
 
+@pytest.fixture(autouse=True)
+def health_flushes(monkeypatch):
+    """run_engine vuelca la salud de cada corrida a pipeline_health de la base
+    real. Varios tests rompen un motor a proposito (motor caido, snapshot
+    invalido) o registran una fila temporal: sin esto dejarian un last_run
+    'failed' falso para querylens-db-01:postgres y filas huerfanas de db_<hex>
+    que la API le mostraria al cliente. Se capturan en memoria; el writer real
+    contra Postgres lo cubre test_health_integration.py."""
+    flushed = []
+    monkeypatch.setattr(
+        main.health_writer, "flush",
+        lambda engine, db_id, report, started_at: flushed.append((db_id, report)),
+    )
+    return flushed
+
+
 @pytest.fixture(scope="module")
 def ql():
     try:
@@ -183,7 +199,7 @@ def test_messages_are_readable_exactly_once(monkeypatch, ql, scratch_queue):
 
 
 def test_a_dead_engine_is_skipped_and_the_rest_still_enqueue(
-    monkeypatch, ql, scratch_queue, caplog
+    monkeypatch, ql, scratch_queue, caplog, health_flushes
 ):
     """main_sandbox() aísla por target: un motor que no abre (host caido, rol
     rotado) se loguea como engine_failed y el siguiente sigue hasta encolar.
@@ -211,6 +227,9 @@ def test_a_dead_engine_is_skipped_and_the_rest_still_enqueue(
     assert any("engine_failed" in r.getMessage() for r in caplog.records), (
         "el fallo del motor debe quedar registrado"
     )
+    reports = dict(health_flushes)
+    assert reports["querylens-db-01:postgres"].status() == "failed"
+    assert reports["querylens-db-01:mysql"].msg_id is not None
 
 
 def test_mysql_still_enqueues_when_postgres_is_skipped(monkeypatch, ql, scratch_queue):
@@ -231,7 +250,9 @@ def test_mysql_still_enqueues_when_postgres_is_skipped(monkeypatch, ql, scratch_
     assert SnapshotPayload.model_validate(payload).statements is not None
 
 
-def test_invalid_snapshot_is_skipped_and_logged(monkeypatch, ql, scratch_queue, caplog):
+def test_invalid_snapshot_is_skipped_and_logged(
+    monkeypatch, ql, scratch_queue, caplog, health_flushes
+):
     """Un snapshot que no valida se omite con continue y queda en el log; el otro
     motor sigue y la cola no recibe basura."""
     calls = {"n": 0}
@@ -256,6 +277,8 @@ def test_invalid_snapshot_is_skipped_and_logged(monkeypatch, ql, scratch_queue, 
     records = [r for r in caplog.records if "snapshot_validation" in r.getMessage()]
     assert records, "el rechazo debe quedar registrado"
     assert records[0].levelno >= logging.ERROR
+    reports = dict(health_flushes)
+    assert ("SNAPSHOT_VALIDATION_FAILED", "") in reports["querylens-db-01:postgres"].issues
 
 
 # ---------- entrada de integracion: bases registradas ----------
