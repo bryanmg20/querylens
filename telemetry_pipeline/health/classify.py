@@ -14,7 +14,7 @@ _PG_CONNECT_STATES = {
     "53300": "TOO_MANY_CONNECTIONS",
 }
 _MY_CONNECT_ERRNOS = {
-    1044: "AUTH_FAILED",
+    1044: "CONNECT_PERMISSION_DENIED",   # Access denied for user to database
     1045: "AUTH_FAILED",
     2003: "HOST_UNREACHABLE",
     2005: "HOST_UNREACHABLE",
@@ -25,6 +25,9 @@ _MY_CONNECT_ERRNOS = {
 # libpq/psycopg2 sin pgcode: el orden importa ("timeout expired" antes que
 # cualquier frase generica).
 _CONNECT_PHRASES = (
+    # Sin CONNECT sobre la base: libpq lo trae como FATAL sin pgcode
+    # (verificado: 'FATAL:  permission denied for database "x"', pgcode=None).
+    ("permission denied for database", "CONNECT_PERMISSION_DENIED"),
     ("password authentication failed", "AUTH_FAILED"),
     ("no pg_hba.conf entry", "AUTH_FAILED"),
     ("timeout expired", "CONNECT_TIMEOUT"),
@@ -107,10 +110,13 @@ def _collect_code(exc, dialect, section, sqlstate, errno) -> str:
     return "SECTION_FAILED"
 
 
-def _explain_code(phase, sqlstate, errno) -> str:
-    denied = sqlstate in _PG_PERMISSION or errno in _MY_PERMISSION
+def _explain_code(exc, phase, sqlstate, errno) -> str:
     if phase == "connect":
+        # Abrir la base ajena falla en la fase de conexion: mismo diagnostico
+        # que el target (frases de libpq), no el SQLSTATE de una sentencia.
+        denied = _connect_code(exc, sqlstate, errno) == "CONNECT_PERMISSION_DENIED"
         return "EXPLAIN_FOREIGN_DB_CONNECT_DENIED" if denied else "EXPLAIN_FAILED"
+    denied = sqlstate in _PG_PERMISSION or errno in _MY_PERMISSION
     return "EXPLAIN_PERMISSION_DENIED" if denied else "EXPLAIN_FAILED"
 
 
@@ -122,7 +128,7 @@ def classify(exc, *, dialect: str, scope: str, section: str = "", phase: str = "
     elif scope == "collect":
         code = _collect_code(exc, dialect, section, sqlstate, errno)
     elif scope == "explain":
-        code = _explain_code(phase, sqlstate, errno)
+        code = _explain_code(exc, phase, sqlstate, errno)
     else:
         raise ValueError(f"scope sin clasificacion: {scope!r}")
     return code, _params(exc, sqlstate, errno)

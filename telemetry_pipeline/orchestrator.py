@@ -1,7 +1,7 @@
 from health.checks import post_collect
 from health.classify import classify
 from health.preflight import PreflightStage
-from health.report import HealthReport
+from health.report import HealthReport, mark_recorded
 from logger import get_logger
 from models.stats import Stats
 from stages.canonicalizers import redact_active_queries
@@ -34,6 +34,7 @@ class Orchestrator:
         except Exception as e:
             code, params = classify(e, dialect=self.collector.source_dialect, scope="connection")
             self.report.add(code, **params)
+            mark_recorded(e)
             raise
 
     def run_pipeline(self) -> Stats:

@@ -255,10 +255,11 @@ def test_runner_without_purge_never_touches_the_clock_for_it():
 
 def test_run_engine_flushes_when_target_factory_raises(monkeypatch):
     """El factory del target lanza antes de crear el engine de QueryLens: el
-    report igual se vuelca con un engine propio, que despues se dispone."""
+    report igual se vuelca, con el engine singleton de la cola (no se crea ni
+    se dispone un pool solo para escribir)."""
     flushed = []
     queue_engine = mock.MagicMock()
-    monkeypatch.setattr(main, "get_connection_querylens_db", lambda: queue_engine)
+    monkeypatch.setattr(main, "_get_queue_engine", lambda: queue_engine)
     monkeypatch.setattr(
         main.health_writer, "flush",
         lambda engine, db_id, report, started_at: flushed.append((engine, db_id, report)),
@@ -273,7 +274,7 @@ def test_run_engine_flushes_when_target_factory_raises(monkeypatch):
     [(engine, db_id, report)] = flushed
     assert engine is queue_engine and db_id == "db_1"
     assert ("PIPELINE_FAILED", "") in report.issues
-    queue_engine.dispose.assert_called_once()
+    queue_engine.dispose.assert_not_called()
 
 
 def test_crash_after_another_blocking_issue_is_still_recorded(monkeypatch):

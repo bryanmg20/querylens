@@ -17,6 +17,11 @@ def _count(rows, predicate) -> int:
 
 def post_collect(stats: Stats, report: HealthReport, dialect: str) -> None:
     if dialect == "postgres":
+        # En PG < 17 statements falla por la columna stats_since (42703) y el
+        # collect lo lee como extension desactualizada; la causa real es la
+        # version, que el preflight ya reporto con su propia remediacion.
+        if report.has("PG_VERSION_UNSUPPORTED"):
+            report.discard("PG_STATEMENTS_OUTDATED", "statements")
         hidden = _count(stats.get("statements"), lambda r: r.get("query_text") == PG_HIDDEN_TEXT)
         hidden += _count(stats.get("active_queries"), lambda r: r.get("query_text") == PG_HIDDEN_TEXT)
         if hidden:

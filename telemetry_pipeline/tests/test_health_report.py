@@ -67,6 +67,15 @@ def test_status_follows_worst_severity(codes, status):
     assert report.status() == status
 
 
+def test_recorded_mark_travels_with_the_exception():
+    from health.report import is_recorded, mark_recorded
+
+    exc = RuntimeError("x")
+    assert not is_recorded(exc)
+    mark_recorded(exc)
+    assert is_recorded(exc)
+
+
 # ---------- post_collect ----------
 
 
@@ -78,6 +87,23 @@ def test_pg_hidden_text_in_statements_and_activity_is_counted():
     }
     post_collect(stats, report, "postgres")
     assert report.issues == {("MISSING_PG_READ_ALL_STATS", ""): {"rows": 2, "count": 1}}
+
+
+def test_pg_old_version_hides_the_misleading_outdated_extension():
+    # PG 16: statements falla con 42703 (stats_since) y el collect dice
+    # "extension desactualizada"; la causa es la version y solo esa se muestra.
+    report = HealthReport()
+    report.add("PG_VERSION_UNSUPPORTED", server_version_num=160004)
+    report.add("PG_STATEMENTS_OUTDATED", section="statements", sqlstate="42703")
+    post_collect({"statements": None}, report, "postgres")
+    assert set(report.issues) == {("PG_VERSION_UNSUPPORTED", "")}
+
+
+def test_pg17_outdated_extension_is_kept():
+    report = HealthReport()
+    report.add("PG_STATEMENTS_OUTDATED", section="statements", sqlstate="42703")
+    post_collect({"statements": None}, report, "postgres")
+    assert ("PG_STATEMENTS_OUTDATED", "statements") in report.issues
 
 
 def test_pg_visible_text_reports_nothing():

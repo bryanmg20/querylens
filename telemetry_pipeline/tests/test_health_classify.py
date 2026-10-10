@@ -56,6 +56,7 @@ def test_postgres_connection_codes(message, pgcode, code):
     "errno, code",
     [
         (1045, "AUTH_FAILED"),
+        (1044, "CONNECT_PERMISSION_DENIED"),
         (2003, "HOST_UNREACHABLE"),
         (1049, "DATABASE_NOT_FOUND"),
         (1040, "TOO_MANY_CONNECTIONS"),
@@ -129,10 +130,27 @@ def test_explain_permission_denied():
     assert classify(_pg(pgcode="42501"), dialect="postgres", scope="explain")[0] == "EXPLAIN_PERMISSION_DENIED"
 
 
+# Mensaje y pgcode tal como los da psycopg2 contra PG 17 cuando el rol no tiene
+# CONNECT (verificado en vivo): la fase de conexion no trae SQLSTATE.
+_NO_CONNECT = ('connection to server at "127.0.0.1", port 5432 failed: '
+               'FATAL:  permission denied for database "otra"')
+
+
 def test_explain_foreign_connect_denied():
-    exc = _pg(pgcode="42501", cls=OperationalError)
+    exc = _pg(_NO_CONNECT, pgcode=None, cls=OperationalError)
     code, _ = classify(exc, dialect="postgres", scope="explain", phase="connect")
     assert code == "EXPLAIN_FOREIGN_DB_CONNECT_DENIED"
+
+
+def test_explain_foreign_connect_other_failure_is_generic():
+    exc = _pg("connection refused", pgcode=None, cls=OperationalError)
+    code, _ = classify(exc, dialect="postgres", scope="explain", phase="connect")
+    assert code == "EXPLAIN_FAILED"
+
+
+def test_target_without_connect_privilege():
+    exc = _pg(_NO_CONNECT, pgcode=None, cls=OperationalError)
+    assert classify(exc, dialect="postgres", scope="connection")[0] == "CONNECT_PERMISSION_DENIED"
 
 
 def test_explain_other_failure():

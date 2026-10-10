@@ -2,7 +2,7 @@
 
 Un error del collect ya se clasifica en CollectStage; aqui se mira lo que
 falla en silencio (track_counts apagado, consumers de performance_schema
-desactivados, version sin GENERIC_PLAN...). Corre como mucho una vez cada
+desactivados, version por debajo del minimo soportado...). Corre como mucho una vez cada
 HEALTH_PREFLIGHT_TTL_S por base: entre medio se reinyecta el resultado
 cacheado SIN marcar el scope 'preflight', asi que nada se da por resuelto sin
 volver a evaluarlo.
@@ -49,7 +49,9 @@ WHERE NAME IN ('global_instrumentation', 'thread_instrumentation',
 # llegan por un ROLE): sin PROCESS la seccion active_queries falla con errno
 # 1227 al leer innodb_trx, y classify lo reporta desde el resultado real.
 
-PG_GENERIC_PLAN_MIN = 160000
+# Minimo soportado (PIPELINE_FLOW, "Versiones soportadas"): STATEMENTS_QUERY
+# lee pg_stat_statements.stats_since, que existe desde PG 17.
+PG_MIN_VERSION_NUM = 170000
 
 
 @dataclass
@@ -100,15 +102,17 @@ def _rows(conn, sql):
         return []
 
 
-def check_postgres(conn) -> PreflightResult:
+def check_postgres(conn, previous: dict | None = None) -> PreflightResult:
+    """previous = facts del preflight anterior de esta base (para deltas)."""
+    previous = previous or {}
     result = PreflightResult()
     settings = _first_row(conn, PG_SETTINGS)
     if settings is not None:
         result.engine_version = settings.get("version")
         version_num = settings.get("version_num")
-        if version_num is not None and int(version_num) < PG_GENERIC_PLAN_MIN:
+        if version_num is not None and int(version_num) < PG_MIN_VERSION_NUM:
             result.issues.append(
-                ("GENERIC_PLAN_UNSUPPORTED", {"server_version_num": int(version_num)})
+                ("PG_VERSION_UNSUPPORTED", {"server_version_num": int(version_num)})
             )
         if settings.get("track_counts") == "off":
             result.issues.append(("TRACK_COUNTS_OFF", {}))
@@ -116,15 +120,20 @@ def check_postgres(conn) -> PreflightResult:
     # Sin la extension esto falla: lo reporta el collect con el SQLSTATE exacto.
     info = _first_row(conn, PG_STATEMENTS_INFO)
     if info is not None:
+        # dealloc es acumulado desde el ultimo pg_stat_statements_reset(): un
+        # valor > 0 solo dice que alguna vez se descarto algo. Lo que importa es
+        # si sigue creciendo entre dos preflights; el primero solo fija la base.
         dealloc = int(info.get("dealloc") or 0)
-        if dealloc > 0:
-            result.issues.append(("STATEMENTS_EVICTING", {"dealloc": dealloc}))
+        result.facts["pg_dealloc"] = dealloc
+        before = previous.get("pg_dealloc")
+        if before is not None and dealloc > before:
+            result.issues.append(("STATEMENTS_EVICTING", {"evicted": dealloc - before}))
         if info.get("recently_reset"):
             result.issues.append(("STATS_RECENTLY_RESET", {}))
     return result
 
 
-def check_mysql(conn) -> PreflightResult:
+def check_mysql(conn, previous: dict | None = None) -> PreflightResult:
     result = PreflightResult()
     settings = _first_row(conn, MY_SETTINGS)
     if settings is not None:
@@ -175,7 +184,7 @@ class PreflightStage:
         if cached is not None and now - cached[0] < ttl:
             result = cached[1]
         else:
-            result = check(conn)
+            result = check(conn, cached[1].facts if cached is not None else None)
             _CACHE[key] = (now, result)
             self.report.checked("preflight")
 

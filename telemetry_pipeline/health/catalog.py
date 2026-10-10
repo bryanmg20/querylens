@@ -41,6 +41,11 @@ CATALOG: dict[str, IssueDef] = {
         "La conexion a la base supero el tiempo de espera.",
         "Revisa la conectividad de red entre QueryLens y la base, y la carga del servidor.",
     ),
+    "CONNECT_PERMISSION_DENIED": IssueDef(
+        "connection", "permission", BLOCKING,
+        "El usuario de monitoreo no tiene permiso para conectarse a la base registrada.",
+        "Ejecuta GRANT CONNECT ON DATABASE <base> TO <usuario_de_monitoreo>;",
+    ),
     "DATABASE_NOT_FOUND": IssueDef(
         "connection", "connection", BLOCKING,
         "La base de datos registrada no existe en el servidor.",
@@ -81,8 +86,7 @@ CATALOG: dict[str, IssueDef] = {
     "PG_STATEMENTS_OUTDATED": IssueDef(
         "collect", "version", BLOCKING,
         "La version de pg_stat_statements no expone las columnas que QueryLens necesita.",
-        "QueryLens requiere PostgreSQL 17 o superior (pg_stat_statements 1.11); "
-        "luego ejecuta ALTER EXTENSION pg_stat_statements UPDATE;",
+        "Ejecuta ALTER EXTENSION pg_stat_statements UPDATE; (QueryLens necesita la 1.11 o superior).",
     ),
     "MISSING_PG_READ_ALL_STATS": IssueDef(
         "collect", "permission", DEGRADED,
@@ -94,10 +98,10 @@ CATALOG: dict[str, IssueDef] = {
         "track_counts esta desactivado: no hay estadisticas de uso de tablas e indices.",
         "Activa track_counts = on en postgresql.conf y recarga la configuracion.",
     ),
-    "GENERIC_PLAN_UNSUPPORTED": IssueDef(
-        "preflight", "version", DEGRADED,
-        "La version del servidor no soporta EXPLAIN (GENERIC_PLAN): no se analizan planes.",
-        "Actualiza a PostgreSQL 16 o superior.",
+    "PG_VERSION_UNSUPPORTED": IssueDef(
+        "preflight", "version", BLOCKING,
+        "La version de PostgreSQL es anterior a la minima soportada por QueryLens (17).",
+        "Actualiza el servidor a PostgreSQL 17 o superior.",
     ),
     "STATEMENTS_EVICTING": IssueDef(
         "preflight", "config", INFO,

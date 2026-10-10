@@ -90,14 +90,44 @@ def test_healthy_postgres_reports_nothing_and_marks_scope():
 
 
 def test_postgres_thresholds():
-    report = _run(_pg_conn(version_num=150004, track_counts="off", dealloc=12, recently_reset=True))
-    assert _codes(report) == {
-        "GENERIC_PLAN_UNSUPPORTED",
-        "TRACK_COUNTS_OFF",
-        "STATEMENTS_EVICTING",
-        "STATS_RECENTLY_RESET",
-    }
-    assert report.issues[("STATEMENTS_EVICTING", "")]["dealloc"] == 12
+    report = _run(_pg_conn(version_num=160004, track_counts="off", recently_reset=True))
+    assert _codes(report) == {"PG_VERSION_UNSUPPORTED", "TRACK_COUNTS_OFF", "STATS_RECENTLY_RESET"}
+    assert report.issues[("PG_VERSION_UNSUPPORTED", "")]["server_version_num"] == 160004
+
+
+# ---------- STATEMENTS_EVICTING: delta de dealloc entre preflights ----------
+
+
+def test_first_preflight_only_records_dealloc_baseline():
+    # dealloc es acumulado: 12 puede ser un descarte viejo ya corregido.
+    report = _run(_pg_conn(dealloc=12))
+    assert "STATEMENTS_EVICTING" not in _codes(report)
+    assert report.facts["pg_dealloc"] == 12
+
+
+def test_growing_dealloc_reports_eviction_with_delta():
+    clock = _Clock(0, 301)
+    _run(_pg_conn(dealloc=12), clock=clock)
+    report = _run(_pg_conn(dealloc=20), clock=clock)
+    assert report.issues[("STATEMENTS_EVICTING", "")]["evicted"] == 8
+
+
+def test_stable_dealloc_resolves_eviction():
+    # El cliente subio pg_stat_statements.max: dealloc deja de crecer y el
+    # siguiente preflight (que si marca el scope) ya no lo reporta.
+    clock = _Clock(0, 301, 602)
+    _run(_pg_conn(dealloc=12), clock=clock)
+    _run(_pg_conn(dealloc=20), clock=clock)
+    report = _run(_pg_conn(dealloc=20), clock=clock)
+    assert "STATEMENTS_EVICTING" not in _codes(report)
+    assert "preflight" in report.scopes
+
+
+def test_dealloc_reset_is_a_new_baseline():
+    clock = _Clock(0, 301)
+    _run(_pg_conn(dealloc=500), clock=clock)
+    report = _run(_pg_conn(dealloc=3), clock=clock)  # pg_stat_statements_reset()
+    assert "STATEMENTS_EVICTING" not in _codes(report)
 
 
 def test_missing_extension_is_left_to_collect():

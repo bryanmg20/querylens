@@ -36,6 +36,10 @@ def test_payload_warns_only_once_per_db_id(caplog):
     assert "db_id=db-otra" in warnings[1].getMessage()
 
 
+def test_payload_size_is_returned_in_utf8_bytes():
+    assert main._log_payload_size("postgres", "db-a", "ñ" * 10) == 20
+
+
 def test_below_threshold_never_warns(caplog):
     with caplog.at_level("WARNING", logger="main"):
         main._log_payload_size("postgres", "db-small", "x" * (main.PAYLOAD_WARN_BYTES - 1))

@@ -35,3 +35,4 @@ def _unit_tests_never_reach_querylens_db(request, monkeypatch):
     import main
 
     monkeypatch.setattr(main, "get_connection_querylens_db", mock.MagicMock())
+    monkeypatch.setattr(main, "_get_queue_engine", mock.MagicMock())
