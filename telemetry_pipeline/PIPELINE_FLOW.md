@@ -125,7 +125,7 @@ Las credenciales no están más atadas a dos pares de variables de entorno. El f
 | URL | `sqlalchemy.engine.URL.create(...)` (la password viene de Fernet y puede traer `@`, `:`) |
 | Postgres | URL **con** `database_name` |
 | MySQL | URL **sin** base (el `USE` lo emite `ExplainStage`), `pool_size=1, max_overflow=10, pool_pre_ping=True` |
-| Fila indecifrable / puerto malo / engine desconocido | log + se omite esa fila, las demás siguen |
+| Fila indecifrable / puerto malo / engine desconocido | log + se omite esa fila, las demás siguen; queda `CREDENTIALS_UNREADABLE` / `TARGET_CONFIG_INVALID` en `pipeline_health` |
 | Fila que no conecta (host caído, rol rotado) | `run_targets()` lo atrapa por target: `logger.error(... engine_failed ...)` y sigue con el resto |
 | Sin tabla, 0 filas activas, sin clave o clave ilegible | `load_registered_targets()` devuelve `None` y `main()` no extrae nada (`logger.warning`) |
 
@@ -171,6 +171,46 @@ Y explícitamente **no**:
 | No persigue EXPLAIN fallidos (decisión 2026-10-08) | Cada ciclo **reintenta** los candidatos cuya explicación falló (el `ExplainStage` se recrea por ciclo; no hay contador ni backoff a nivel proceso). El fallo queda como `ERROR` de `stages.explain` en el log y ese candidato no obtiene plan en ese ciclo; se vuelve a probar en el siguiente. Quedó así por decisión del usuario, por el momento. **Causa típica conocida:** refs sin calificar que el rol resuelve por un schema que no es el primero con tablas (`SET LOCAL search_path` lo recorta; limitación conocida y aceptada, ver `references/004` → "EXPLAIN y search_path") |
 | No corre en paralelo | Un hilo, una vuelta a la vez; el aislamiento por target (dentro de `run_targets()`) es lo que evita que una base caída tape a las demás |
 | No decide nada del front/auth | Quién registra y activa filas es el auth service; el runner solo las lee. Si se agrega una fila mientras corre, la ve en el próximo ciclo |
+
+## Salud del pipeline (pipeline_health)
+
+Lo que antes solo quedaba en el log (extensión faltante, permisos, conexión caída) ahora también se escribe en el schema `pipeline_health` de la base de QueryLens. La API REST lo lee por `db_id`; el pipeline es el único que escribe. DDL en `querylens_database/pipeline_health.sql`, montado por `docker-compose.yml` como `03_pipeline_health.sql`. **En un volumen ya inicializado el initdb no vuelve a correr**: aplicarlo a mano con `psql -U $QUERYLENS_USER -d $QUERYLENS_DB -f querylens_database/pipeline_health.sql`. Sin el schema, el pipeline sigue igual y avisa una sola vez por proceso.
+
+| Tabla | Contenido |
+|-------|-----------|
+| `last_run` | Una fila por `db_id`, pisada en cada ciclo: `status` (`ok`/`degraded`/`failed`), `sections_ok`/`sections_failed`, `msg_id` encolado, `engine_version` |
+| `issues` | Un problema abierto por `(db_id, code, section)` con `severity` (`blocking`/`degraded`/`info`), `message` y `remediation` ya redactados (`health/catalog.py`), `params` (solo SQLSTATE/errno, contadores y settings: **nunca** texto de queries ni el mensaje crudo del driver), `first_seen`/`last_seen`/`occurrences`/`resolved_at` |
+
+Consulta típica de la API: `SELECT * FROM pipeline_health.last_run WHERE db_id = $1` y `SELECT * FROM pipeline_health.issues WHERE db_id = $1 AND (resolved_at IS NULL OR resolved_at > $2)`.
+
+```
+run_engine(dialect, factory, db_id)                     main.py
+  report = HealthReport()                               health/report.py
+  Orchestrator(collector, report)
+    connect            falla → classify(scope=connection) → AUTH_FAILED, HOST_UNREACHABLE, ...
+    PreflightStage     health/preflight.py; cada HEALTH_PREFLIGHT_TTL_S (300 s) por base:
+                       version/track_counts/pg_stat_statements_info (PG),
+                       @@performance_schema/setup_consumers (MySQL)
+    CollectStage       error por sección → classify(scope=collect): PG_STATEMENTS_NOT_INSTALLED (42P01),
+                       _NOT_PRELOADED (55000), _OUTDATED (42703), PS_SELECT_DENIED (1142), ...
+    post_collect       health/checks.py, antes de normalize/redact:
+                       '<insufficient privilege>' → MISSING_PG_READ_ALL_STATS; muestra MySQL truncada
+                       (sin PROCESS, active_queries de MySQL falla con 1227 → MISSING_PROCESS_PRIVILEGE)
+    ExplainStage       errores agrupados por code con count (sin query_id) + NO_EXPLAINABLE_CANDIDATES
+  validación / encolado → SNAPSHOT_VALIDATION_FAILED, ENQUEUE_FAILED, PAYLOAD_TOO_LARGE
+  finally: health_writer.flush(...)   una transacción: last_run + upsert issues + resolve
+```
+
+| Decisión | Implementación |
+|----------|----------------|
+| Dedupe | Upsert sobre el índice único parcial `(db_id, code, section) WHERE resolved_at IS NULL`: a 10 s por ciclo, un problema persistente es **una** fila con `occurrences`, no 8 640 por día |
+| Resolución | Un issue abierto se marca `resolved_at` solo en un ciclo que **volvió a evaluar su scope** y ya no lo vio. Si la conexión cae, los issues de collect/explain no se dan por arreglados; si el preflight está en caché, sus issues se reinyectan sin marcar el scope |
+| Reaparición | Un problema resuelto que vuelve es una fila nueva; la resuelta queda como historia hasta la purga |
+| Sin fila registrada (`main_sandbox.py`) | `db_id` = `querylens-db-01:<dialecto>`, para que los dos motores no compartan `last_run` |
+| Purga | `runner.py` llama `health_writer.purge()` en el primer ciclo y luego cada `HEALTH_PURGE_INTERVAL_S` (1 h): borra issues resueltos hace más de `HEALTH_RETENTION_DAYS` (15) días, abiertos sin `last_seen` en ese plazo (base desactivada o borrada) y `last_run` igual de viejos. `main.py` (una sola vuelta) no purga |
+| Fallas del writer | Nunca relanza: perder un registro de salud no impide entregar el snapshot |
+
+Para verlo en el sandbox: `ql_sandbox/scripts/postgres/simulate_health_postgres.sh {drop-extension|revoke-stats|restore}` y `ql_sandbox/scripts/mysql/simulate_health_mysql.sh {disable-consumers|revoke-process|restore}`.
 
 ## Patrones de diseño
 

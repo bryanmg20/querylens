@@ -344,6 +344,9 @@ Defense-in-depth que añadiría: aplicar el mismo filtro de prefijo **al texto q
 | **I-11** | Índice duplicado en `registered_databases` | `querylens_database/registered_databases.sql:6,28` | Eliminar `CREATE INDEX idx_registered_databases_identifier` (ya existe por `UNIQUE`). |
 | **I-12** | DDL solo en primer arranque, sin migraciones | `docker-compose.yml:15-16` | Documentar que cambios de DDL requieren migración manual; evaluar herramienta (alembic, golang-migrate, SQL puro versionado). |
 | **I-13** | Defensa EXPLAIN: sin filtro sobre `query_sample_text` (MySQL) | `stages/explain.py:97-101` | Aplicar filtro de prefijo (`SELECT/WITH/INSERT/UPDATE/DELETE`) también a `query_sample_text` antes de EXPLAIN. |
+| **I-14** | `pipeline_health`: `PAYLOAD_TOO_LARGE` oscila alrededor del umbral. Visto en el sandbox (2026-10-10): el snapshot de Postgres pesa ~1,1 MB, a caballo de `PAYLOAD_WARN_BYTES` (1 MB); cada cruce resuelve el issue y el siguiente abre **una fila nueva**, ensuciando el historial que ve el cliente | `main.py:152`, `health/writer.py:56` | Histéresis: abrir por encima de 1 MB y resolver solo por debajo de ~0,9 MB (p. ej. no marcar `checked("pipeline")` para ese code entre ambos umbrales), o subir el umbral. |
+| **I-15** | `pipeline_health`: `ENQUEUE_FAILED` se resuelve sin re-intentar el encolado. Si un ciclo falla al encolar y el siguiente falla en la validación del snapshot (no llega a encolar), el scope `pipeline` cuenta como evaluado y el issue queda con `resolved_at` | `main.py:134,156`, `health/writer.py:56` | Marcar el scope de encolado por separado (p. ej. `checked("enqueue")` solo tras intentar `send_to_queue`) y mover `ENQUEUE_FAILED` a ese scope en `health/catalog.py`. Raro e impreciso, no grave. |
+| **I-16** | `pipeline_health`: latencia de los issues del preflight. `PS_CONSUMER_DISABLED` (y los demás de scope `preflight`: `TRACK_COUNTS_OFF`, `STATEMENTS_EVICTING`...) tardan hasta `HEALTH_PREFLIGHT_TTL_S` (300 s) en aparecer o resolverse; los demás issues lo hacen al ciclo siguiente | `health/preflight.py:25,144` | Aceptable por diseño (el preflight se cachea para no sumar overhead cada 10 s). Si molesta: TTL menor, o detectar `PS_CONSUMER_DISABLED` por resultado (p. ej. `query_sample_text` vacío en todas las filas) como se hizo con PROCESS. |
 
 ---
 
@@ -376,4 +379,5 @@ Defense-in-depth que añadiría: aplicar el mismo filtro de prefijo **al texto q
 1. ~~**C-1 a C-7** (funcionalidad/seguridad crítica — 1-2 días)~~ ✅ **COMPLETADO**
 2. **I-1, I-2, I-3, I-4, I-6** (robustez core — 1 día)
 3. **I-5, I-7, I-8, I-9, I-10, I-11, I-12, I-13** (despliegue/calidad — según sprint)
+3b. **I-14, I-15, I-16** (`pipeline_health`, menores — pendientes de la revisión del 2026-10-10)
 4. **CAJA 3 y 4** — no requieren acción (documentadas / falsas)
