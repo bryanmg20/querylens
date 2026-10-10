@@ -1,9 +1,16 @@
 # Revisión de código — `telemetry_pipeline` y `querylens_database`
 
-**Fecha:** 2026-10-07
+**Fecha:** 2026-10-07 · **Última actualización:** 2026-10-10 (rama `feature/pipeline-health`)
 **Alcance:** `telemetry_pipeline/**` (código, tests, docs, Dockerfile/CI), `querylens_database/*.sql` y su integración en `docker-compose.yml`. Fuera de alcance: `auth_service/`, `frontend/`, `ql_sandbox/`.
 **Método:** lectura completa de los módulos del pipeline, verificación de afirmaciones de los docs, revisión de la DDL, ejecución de la suite (`466 passed, 21 deselected` — las de integración requieren contenedores) y reproducción de los hallazgos sospechosos con scripts mínimos.
 **Contexto:** proyecto en desarrollo. Las severidades son relativas a ese estado: "Alta" = pierde datos o puede parar el daemon en producción.
+
+> **Estado actual (2026-10-10) — leer esto primero.** Los bloques "Actualizado" de abajo son historia por ronda; el estado vigente de cada pendiente está en el **Plan de acción consolidado** (columna *Estado*).
+> - **Suite:** **773 passed** unit/contract (`pytest -m "not integration"`); integración verde contra el stack (e2e + `test_health_integration.py`).
+> - **Funcionalidad nueva desde la última revisión:** sección `foreign_keys` en ambos motores (para AP-06), `canonic_query` en `statements`, y **salud del pipeline** (`pipeline_health`: paquete `telemetry_pipeline/health/`, tablas `last_run`/`issues`, purga en `runner.py`; ver `PIPELINE_FLOW.md` → "Salud del pipeline").
+> - **Cambia la lectura de M-5 / D-4:** un error de recolección sigue llegando al snapshot como sección vacía (contrato sin cambios), pero **ya no es invisible**: queda en `pipeline_health.last_run.sections_failed` y como issue con su causa (permiso, extensión, timeout...) que la API puede mostrarle al cliente.
+> - **Revisión de `pipeline_health` (2026-10-10):** 10 hallazgos; 7 resueltos (R-1 a R-7, abajo) y 6 pendientes menores (I-14 a I-19).
+> - **Abiertos verificados hoy en el código:** I-1, I-2 (parcial), I-3, I-4, I-5, I-6, I-7, I-8, I-9, I-10, I-11, I-12, I-14 a I-19, M-11 (diferida), M-7 (parcial). **Cerrados:** C-1 a C-7, I-13, B-4 (=C-4), B-5 (=C-5), B-12 (=C-7), N-6 (=C-6), N-7 (=C-1), N-8 (=C-2).
 
 > **Actualizado (misma rama, ronda M-6 a M-12):** M-6 resuelto (los textos del fallback ya no engañan, y la implementación real queda anotada como pendiente); **M-7 parcial** (`_base_operation` único y `anonimize_query_text` eliminada; quedan las duplicaciones de normalización y del engine); M-8 resuelto (helper `URL.create` único + test de password round-trip); M-9 resuelto como documentación; M-12 resuelto (commit tras collect + transacción corta por EXPLAIN); M-5 y A-3 quedan con **notas sin cambio de contrato**; M-11 diferida. Mutation de los módulos tocados: 0 sobrevivientes. Suite **520 passed**. Detalles por hallazgo abajo.
 
@@ -253,15 +260,15 @@ Postgres emite `SET LOCAL search_path TO DEFAULT` cuando no hay schema; MySQL de
 | B-1 | `querylens_database/init.sql:2` | `CREATE ROLE postgres WITH SUPERUSER LOGIN` crea un superusuario extra sin password; el comentario habla de `pg_partman`, que no se usa en el repo. Si `POSTGRES_USER=postgres`, la sentencia falla y depende de que `psql` continúe tras el error. |
 | B-2 | `querylens_database/registered_databases.sql:28` | `database_identifier VARCHAR(32) UNIQUE` (corrección al informe previo: es `VARCHAR(32)`, no `VARCHAR(23)`) ya crea un índice y además se crea `idx_registered_databases_identifier`: índice duplicado (escritura/almacenamiento gratis cada INSERT/UPDATE). |
 | B-3 | `querylens_database/*` + `docker-compose.yml:15-16` | Los DDL van en `docker-entrypoint-initdb.d`, solo corren en el **primer** arranque del volumen: cualquier cambio posterior requiere migración manual (hoy no hay tooling). Orden accidental: `02_registered_databases.sql` se ejecuta antes que `init.sql` (`'0' < 'i'`); funciona porque la tabla no depende de pgmq. |
-| B-4 | `config/registered.py:138` | `with get_connection_querylens_db().connect()` crea un **engine nuevo por ciclo (cada 10 s)** y nunca lo dispone. SQLAlchemy lo cierra por GC, pero es inconsistente con el `dispose()` cuidadoso de `run_engine` y genera churn de conexiones a la cola. |
-| B-5 | `main.py:36-37` | `target_engine` se crea **antes** del `try`: si `get_connection_querylens_db()` lanzara, ese engine no se dispone (hoy `create_engine` casi no lanza, pero es la misma estructura que A-8). |
+| B-4 ✅ (=C-4) | `config/registered.py:138` | `with get_connection_querylens_db().connect()` crea un **engine nuevo por ciclo (cada 10 s)** y nunca lo dispone. SQLAlchemy lo cierra por GC, pero es inconsistente con el `dispose()` cuidadoso de `run_engine` y genera churn de conexiones a la cola. |
+| B-5 ✅ (=C-5) | `main.py:36-37` | `target_engine` se crea **antes** del `try`: si `get_connection_querylens_db()` lanzara, ese engine no se dispone (hoy `create_engine` casi no lanza, pero es la misma estructura que A-8). |
 | B-6 | `config/registered.py:157` + `logger.py:57` | **Resuelto-implícito (Q1, `b890bdf`):** con `QL_LOG_LEVEL=DEBUG` el `logger.debug("N base(s) activa(s)")` sí se emite (`_level_from_env` fija el nivel por proceso); con el default INFO no aparece, que era la intención del comentario. Matiz abierto: `runner.py:34` sigue fijando DEBUG a su propio logger sin consultar el env (N-3 de la ronda 2). |
 | B-7 | `main.py:63` | `print(...)` en el camino caliente en vez del logger (los docs lo enuncian como diseño, pero en contenedor ensucia stdout y no tiene timestamp/nivel). |
 | B-8 | `requirements.txt` | 7 dependencias **sin versión fijada** (`sqlalchemy`, `pydantic`, `cryptography`...): builds no reproducibles; un release mayor de pydantic/sqlalchemy puede romper la validación en producción sin tocar código. |
 | B-9 | `docker-compose.yml:11,38` | Puertos publicados en todas las interfaces (`0.0.0.0`): Postgres (5432) y auth (8000). Para despliegue, bindear a `127.0.0.1:puerto`. |
 | B-10 | `docker-compose.yml:26-29,69-72` | `auth-service` y `pipeline` comparten el mismo rol (`QUERYLENS_USER`) y la misma clave: ese rol es a la vez dueño de la cola **y** lector de `encrypted_password`. Menor privilegio: rol separado para el pipeline con `SELECT` solo sobre `registered_databases` + `pgmq.send`. |
 | B-11 | `stages/normalize.py:83` | `explain.get("canonical_plan", []).get(...)` — si faltara la clave, `.get` se llamaría sobre una `list` (hoy inalcanzable: el normalizador siempre la escribe; usar `{}` o `.get(..., {})` como default). |
-| B-12 | `stages/explain.py:53` | `is_single_statement` descarta cualquier query con `;` dentro de un literal o comentario (falso "multi-statement"): se pierden EXPLAINs válidos de forma silenciosa (solo warning). |
+| B-12 ✅ (=C-7) | `stages/explain.py:53` | `is_single_statement` descarta cualquier query con `;` dentro de un literal o comentario (falso "multi-statement"): se pierden EXPLAINs válidos de forma silenciosa (solo warning). |
 
 ---
 
@@ -275,11 +282,13 @@ Postgres emite `SET LOCAL search_path TO DEFAULT` cuando no hay schema; MySQL de
 
 Defense-in-depth que añadiría: aplicar el mismo filtro de prefijo **al texto que realmente se explica** (hoy el filtro corre sobre `query_text`/DIGEST_TEXT, pero MySQL explica `query_sample_text`, que no se valida más allá de `;`), y `SET statement_timeout` antes de los EXPLAIN.
 
+> **Estado 2026-10-10:** ambas defensas están aplicadas. Solo `SELECT`/`WITH` son explicables (`stages/sql_text.py` `EXPLAINABLE_COMMANDS`; DML, CTE que escriben y `FOR UPDATE`/`SHARE` van a `non_explainable_candidates`), la puerta se re-aplica en `ExplainStage` sobre el texto explicado (I-13), y `statement_timeout` / `max_execution_time` van al abrir la sesión (A-2). El rol monitor es solo `SELECT`.
+
 ---
 
 ## Lo que está bien (verificado, sin hallazgos)
 
-- **Suite:** 466 tests unit/contract pasan en ~2,4 s; hay mutation testing (`ci/mutants.py`), golden masters por motor y tests de arquitectura que bloquean regresiones de patrón. La CI (`.github/workflows/pipeline.yml`) replica fielmente lo que `TESTING.md` documenta.
+- **Suite:** 466 tests unit/contract pasan en ~2,4 s (hoy 773); hay mutation testing (`ci/mutants.py`), golden masters por motor y tests de arquitectura que bloquean regresiones de patrón. La CI (`.github/workflows/pipeline.yml`) replica fielmente lo que `TESTING.md` documenta.
 - **Ciclo de vida:** `dispose()` en `finally` de los dos engines, backoff con anclaje al inicio del ciclo, señales (incluida `SIGBREAK` para Windows), rotación de logs con degradación a stderr si el directorio no es escribible — todo testeado.
 - **Seguridad básica:** `.env` y `venv/` ignorados y **sin historia de secretos en git** (133 archivos trackeados, ninguno con `.env`); contraseñas de targets cifradas con Fernet y manejadas con `URL.create` (probado con passwords que contienen `@` y `:`); `SELECT` de la cola parametrizado (`enqueue.py`); `sqlalchemy.text()` en todas las queries dinámicas.
 - **Autoobservación:** Postgres excluye el rol monitor por `userid`; MySQL filtra su propia huella (`PIPELINE_FINGERPRINT`) con test de contrato — sin esto el pipeline se explicaría a sí mismo.
@@ -329,24 +338,40 @@ Defense-in-depth que añadiría: aplicar el mismo filtro de prefijo **al texto q
 
 ### CAJA 2 — IMPORTANTES: Robustez, observabilidad, deuda técnica
 
-| # | Hallazgo | Archivo:línea | Acción |
-|---|----------|---------------|--------|
-| **I-1** | Normalización duplicada: etapa vs validadores pydantic | `stages/normalize.py:59-82` vs `models/snapshot.py:25-46` | Unificar: que etapa use validadores pydantic (o viceversa). Una sola fuente de verdad. |
-| **I-2** | Engine MySQL construido 2 veces; PG diverge en `pool_pre_ping` | `config/connections.py:115-122` vs `config/registered.py:113-122` | Unificar builders: una sola factory por motor, reutilizada por `connections.py` y `registered.py`. |
-| **I-3** | `runner.py:34` fija `DEBUG` hardcodeado, ignora `QL_LOG_LEVEL` | `runner.py:34` | Leer `QL_LOG_LEVEL` via `logger._level_from_env()` en lugar de `logging.DEBUG` hardcodeado. |
-| **I-4** | `load_dotenv(override=True)` en import de módulo | `config/connections.py:128` | Quitar `override=True`; cargar `.env` solo en entrypoints (`main.py`, `runner.py`, `main_sandbox.py`). |
-| **I-5** | `.get` inseguro en `normalize_predicate` | `stages/normalize.py:85` | Cambiar `explain.get("canonical_plan", [])` por `explain.get("canonical_plan", {})`. |
-| **I-6** | Deps sin pin en `requirements.txt` (7 deps) | `telemetry_pipeline/requirements.txt:1-7` | Pinnear versiones mínimas compatibles (ej. `sqlalchemy>=2.0,<3.0`, `pydantic>=2.0,<3.0`, etc.). |
-| **I-7** | Puertos publicados en `0.0.0.0` | `docker-compose.yml:12,44` | Cambiar a `127.0.0.1:5432` y `127.0.0.1:8000` (o `${DB_HOST:-127.0.0.1}`). |
-| **I-8** | Rol compartido auth-service/pipeline | `docker-compose.yml:26-29,69-72` | Crear rol `querylens_pipeline` con `SELECT` en `registered_databases` + `pgmq.send`; separar credenciales. |
-| **I-9** | `print()` en camino caliente | `main.py:86` | Cambiar a `logger.info(f"Diccionario encolado con ID: {msg_id}")`. |
-| **I-10** | Superusuario `postgres` innecesario en `init.sql` | `querylens_database/init.sql:2` | Eliminar `CREATE ROLE postgres WITH SUPERUSER LOGIN`; `pg_partman` no se usa. |
-| **I-11** | Índice duplicado en `registered_databases` | `querylens_database/registered_databases.sql:6,28` | Eliminar `CREATE INDEX idx_registered_databases_identifier` (ya existe por `UNIQUE`). |
-| **I-12** | DDL solo en primer arranque, sin migraciones | `docker-compose.yml:15-16` | Documentar que cambios de DDL requieren migración manual; evaluar herramienta (alembic, golang-migrate, SQL puro versionado). |
-| **I-13** | Defensa EXPLAIN: sin filtro sobre `query_sample_text` (MySQL) | `stages/explain.py:97-101` | Aplicar filtro de prefijo (`SELECT/WITH/INSERT/UPDATE/DELETE`) también a `query_sample_text` antes de EXPLAIN. |
-| **I-14** | `pipeline_health`: `PAYLOAD_TOO_LARGE` oscila alrededor del umbral. Visto en el sandbox (2026-10-10): el snapshot de Postgres pesa ~1,1 MB, a caballo de `PAYLOAD_WARN_BYTES` (1 MB); cada cruce resuelve el issue y el siguiente abre **una fila nueva**, ensuciando el historial que ve el cliente | `main.py:152`, `health/writer.py:56` | Histéresis: abrir por encima de 1 MB y resolver solo por debajo de ~0,9 MB (p. ej. no marcar `checked("pipeline")` para ese code entre ambos umbrales), o subir el umbral. |
-| **I-15** | `pipeline_health`: `ENQUEUE_FAILED` se resuelve sin re-intentar el encolado. Si un ciclo falla al encolar y el siguiente falla en la validación del snapshot (no llega a encolar), el scope `pipeline` cuenta como evaluado y el issue queda con `resolved_at` | `main.py:134,156`, `health/writer.py:56` | Marcar el scope de encolado por separado (p. ej. `checked("enqueue")` solo tras intentar `send_to_queue`) y mover `ENQUEUE_FAILED` a ese scope en `health/catalog.py`. Raro e impreciso, no grave. |
-| **I-16** | `pipeline_health`: latencia de los issues del preflight. `PS_CONSUMER_DISABLED` (y los demás de scope `preflight`: `TRACK_COUNTS_OFF`, `STATEMENTS_EVICTING`...) tardan hasta `HEALTH_PREFLIGHT_TTL_S` (300 s) en aparecer o resolverse; los demás issues lo hacen al ciclo siguiente | `health/preflight.py:25,144` | Aceptable por diseño (el preflight se cachea para no sumar overhead cada 10 s). Si molesta: TTL menor, o detectar `PS_CONSUMER_DISABLED` por resultado (p. ej. `query_sample_text` vacío en todas las filas) como se hizo con PROCESS. |
+| # | Hallazgo | Archivo:línea | Acción | Estado (2026-10-10) |
+|---|----------|---------------|--------|--------|
+| **I-1** | Normalización duplicada: etapa vs validadores pydantic | `stages/normalize.py:39-82` vs `models/snapshot.py:25-46` | Unificar: que etapa use validadores pydantic (o viceversa). Una sola fuente de verdad. | Abierto |
+| **I-2** | Engine MySQL construido 2 veces | `config/connections.py:92` vs `config/registered.py:144` | Unificar builders: una sola factory por motor, reutilizada por `connections.py` y `registered.py`. | Parcial: `connect_args` ya es único y Postgres ya no diverge en `pre_ping`; los parámetros de pool de MySQL siguen repetidos |
+| **I-3** | `runner.py` fija `DEBUG` hardcodeado, ignora `QL_LOG_LEVEL` | `runner.py:37` | Leer `QL_LOG_LEVEL` via `logger._level_from_env()` en lugar de `logging.DEBUG` hardcodeado. | Abierto |
+| **I-4** | `load_dotenv(override=True)` en import de módulo | `config/connections.py:128` | Quitar `override=True`; cargar `.env` solo en entrypoints (`main.py`, `runner.py`, `main_sandbox.py`). Efecto visto: un `DB_PORT` exportado en la shell no gana sobre el `.env`. | Abierto |
+| **I-5** | `.get` inseguro en `normalize_predicate` | `stages/normalize.py:85` | Cambiar `explain.get("canonical_plan", [])` por `explain.get("canonical_plan", {})`. | Abierto |
+| **I-6** | Deps sin pin en `requirements.txt` (7 deps) | `telemetry_pipeline/requirements.txt` | Pinnear versiones mínimas compatibles (ej. `sqlalchemy>=2.0,<3.0`, `pydantic>=2.0,<3.0`, etc.). | Abierto |
+| **I-7** | Puertos publicados en `0.0.0.0` | `docker-compose.yml:10,46,65,81` | Cambiar a `127.0.0.1:puerto` para despliegue. | Abierto (de despliegue) |
+| **I-8** | Rol compartido auth-service/pipeline/API | `docker-compose.yml` | Crear rol `querylens_pipeline` con `SELECT` en `registered_databases` + `pgmq.send` + escritura en `pipeline_health`; la API solo `SELECT` en `pipeline_health`. | Abierto (de despliegue) |
+| **I-9** | `print()` en camino caliente | `main.py:150` | Cambiar a `logger.info(f"Diccionario encolado con ID: {msg_id}")`. | Abierto |
+| **I-10** | Superusuario `postgres` innecesario en `init.sql` | `querylens_database/init.sql:2` | Eliminar `CREATE ROLE postgres WITH SUPERUSER LOGIN`; `pg_partman` no se usa. | Abierto |
+| **I-11** | Índice duplicado en `registered_databases` | `querylens_database/registered_databases.sql:6,28` | Eliminar `CREATE INDEX idx_registered_databases_identifier` (ya existe por `UNIQUE`). | Abierto |
+| **I-12** | DDL solo en primer arranque, sin migraciones | `docker-compose.yml:12-15` | Evaluar herramienta (alembic, golang-migrate, SQL puro versionado). | Abierto; ahora son 3 DDL (`init`, `registered_databases`, `pipeline_health`). La aplicación manual de `pipeline_health.sql` está documentada en `PIPELINE_FLOW.md` |
+| **I-13** | Defensa EXPLAIN: sin filtro sobre `query_sample_text` (MySQL) | `stages/explain.py:117` | Re-aplicar la puerta de solo lectura al texto que realmente se explica. | **Resuelto** (2026-10-08): `is_explainable_command` corre sobre el texto explicado; solo `SELECT`/`WITH` |
+| **I-14** | `pipeline_health`: `PAYLOAD_TOO_LARGE` oscila alrededor del umbral. Visto en el sandbox: el snapshot de Postgres pesa ~1,1 MB, a caballo de `PAYLOAD_WARN_BYTES` (1 MB); cada cruce resuelve el issue y el siguiente abre **una fila nueva** | `main.py:142`, `health/writer.py:56` | Histéresis: abrir por encima de 1 MB y resolver solo por debajo de ~0,9 MB, o subir el umbral. | Abierto |
+| **I-15** | `pipeline_health`: `ENQUEUE_FAILED` se resuelve sin re-intentar el encolado. Si un ciclo falla al encolar y el siguiente falla en la validación (no llega a encolar), el scope `pipeline` cuenta como evaluado | `main.py:125,146`, `health/writer.py:56` | Scope propio para el encolado (`checked("enqueue")` solo tras intentar `send_to_queue`) y mover `ENQUEUE_FAILED` a ese scope. | Abierto (raro, no grave) |
+| **I-16** | `pipeline_health`: latencia de los issues del preflight (`PS_CONSUMER_DISABLED`, `TRACK_COUNTS_OFF`, `STATEMENTS_EVICTING`, `PG_VERSION_UNSUPPORTED`...): hasta `HEALTH_PREFLIGHT_TTL_S` (300 s) en aparecer o resolverse | `health/preflight.py:25,153` | Aceptable por diseño (el preflight se cachea para no sumar overhead cada 10 s). Si molesta: TTL menor, o detectar `PS_CONSUMER_DISABLED` por resultado como se hizo con PROCESS. | Abierto (by design) |
+| **I-17** | `pipeline_health`: la detección de texto truncado en MySQL compara bytes `>= performance_schema_max_sql_text_length`. Un corte en frontera de carácter multibyte (UTF-8) queda por debajo del límite y no se detecta; un texto sin cortar de exactamente el límite cuenta como truncado | `health/checks.py:39` | Comparar con un margen (p. ej. `>= limit - 3`) o detectar el corte por la forma del texto (SQL sin cerrar, ya lo marca `mask_sql`). Afecta solo un aviso `info`. | Abierto |
+| **I-18** | `pipeline_health`: `registered._record` hace un flush completo (upsert + resolve) por cada fila inválida en **cada** `load_registered_targets`, es decir cada 10 s | `config/registered.py:86` | Aceptable: es la misma cadencia que una base sana. Si molesta: escribir solo en transición (patrón `_report_state`). Nota: deja efectos de escritura en el camino de lectura de targets. | Abierto (aceptado) |
+| **I-19** | `pipeline_health`: la caché del preflight (`_CACHE`, clave = URL sin password) nunca expulsa entradas de bases que se desregistraron o cambiaron de host/usuario | `health/preflight.py:66` | Despreciable (una entrada por URL). Si crece: expulsar entradas más viejas que el TTL al insertar. | Abierto (despreciable) |
+---
+
+### Revisión de `pipeline_health` (2026-10-10) — resueltos
+
+| # | Hallazgo | Arreglo | Verificación |
+|---|----------|---------|--------------|
+| **R-1** | `EXPLAIN_FOREIGN_DB_CONNECT_DENIED` nunca se emitía: la falta de `CONNECT` sobre otra base llega de libpq como `FATAL:  permission denied for database "x"` **sin pgcode**, y `classify` solo miraba SQLSTATE 42501. El test pasaba porque inventaba `pgcode='42501'` | `health/classify.py`: frase `permission denied for database` en la fase de conexión, compartida por target y EXPLAIN | Reproducido en PG 17 real (`pgcode: None`); test con el mensaje real |
+| **R-2** | La misma falta de `CONNECT` en el **target** salía como `CONNECTION_FAILED` ("contacta a soporte") | Code nuevo `CONNECT_PERMISSION_DENIED` (blocking) con remediación `GRANT CONNECT ON DATABASE`; MySQL errno 1044 también va ahí | Orchestrator real contra PG 17: `CONNECT_PERMISSION_DENIED`, status `failed` |
+| **R-3** | `STATEMENTS_EVICTING` no se resolvía nunca: `pg_stat_statements_info.dealloc` es acumulado desde el último reset, así que un descarte viejo lo dejaba abierto aunque el cliente subiera `.max` | `health/preflight.py`: se compara `dealloc` contra el del preflight anterior (delta); el primero fija la base y un reset es una base nueva | Tests de baseline, crecimiento, estabilidad (resuelve) y reset |
+| **R-4** | Remediaciones contradictorias en PG < 17: "actualiza a 16" (`GENERIC_PLAN_UNSUPPORTED`) y "requiere 17" (`PG_STATEMENTS_OUTDATED`) | `GENERIC_PLAN_UNSUPPORTED` reemplazado por `PG_VERSION_UNSUPPORTED` (blocking, mínimo 17). Si está presente, `post_collect` descarta el `PG_STATEMENTS_OUTDATED` que provoca la misma versión; `OUTDATED` queda para PG 17 con extensión vieja (`ALTER EXTENSION ... UPDATE`) | Tests |
+| **R-5** | `_raise_already_recorded` adivinaba si una excepción ya tenía code mirando scopes del catálogo | `health.report.mark_recorded/is_recorded`: el punto que registra y relanza (conexión, encolado) marca la excepción | Tests |
+| **R-6** | El payload se codificaba en UTF-8 dos veces por ciclo | `main._log_payload_size` devuelve el tamaño | Test |
+| **R-7** | `_flush_health` creaba y disponía un engine propio cuando el target fallaba antes de crear el de la cola | Usa el singleton `config.registered._get_queue_engine()`, como `_record` y la purga | Test (sin `dispose`) |
 
 ---
 
@@ -357,7 +382,7 @@ Defense-in-depth que añadiría: aplicar el mismo filtro de prefijo **al texto q
 | **D-1** | Cola sin consumidor → crece sin límite | `PIPELINE_FLOW.md:153`, `references/004_decisiones_contrato.md:100` | Retención = consumidor. `_log_payload_size` avisa a 1MB. |
 | **D-2** | Intervalo 10s default (pruebas) | `PIPELINE_FLOW.md:202`, `runner.py:36` | Prod = 30-60s via `EXTRACT_INTERVAL_S` env. |
 | **D-3** | Sin `LIMIT` en queries de recolección | `PIPELINE_FLOW.md:153` | Truncar rompería validación consumidor. |
-| **D-4** | Sin `captured_at`/`source_dialect`/`collect_errors` | `references/004_decisiones_contrato.md` | Decisión usuario: "snapshot vacío no sirve"; log distingue fallo vs vacío. |
+| **D-4** | Sin `captured_at`/`source_dialect`/`collect_errors` en el snapshot | `references/004_decisiones_contrato.md` | Decisión usuario: "snapshot vacío no sirve". El fallo vs vacío ya no queda solo en el log: lo registra `pipeline_health` (`sections_failed` + issue con causa) fuera del contrato del snapshot. |
 | **D-5** | EXPLAIN con `search_path` reducido | `references/004_decisiones_contrato.md:46-54` | Limitación conocida: refs no calificadas pueden fallar. Reintenta cada ciclo. |
 | **D-6** | `db_id` hardcodeado en sandbox | `stages/enrich.py:3`, `main_sandbox.py:22` | **A propósito**: sandbox usa constante; prod la pisa con `database_identifier` real. |
 
@@ -377,7 +402,7 @@ Defense-in-depth que añadiría: aplicar el mismo filtro de prefijo **al texto q
 ### Orden de ejecución sugerido
 
 1. ~~**C-1 a C-7** (funcionalidad/seguridad crítica — 1-2 días)~~ ✅ **COMPLETADO**
-2. **I-1, I-2, I-3, I-4, I-6** (robustez core — 1 día)
-3. **I-5, I-7, I-8, I-9, I-10, I-11, I-12, I-13** (despliegue/calidad — según sprint)
-3b. **I-14, I-15, I-16** (`pipeline_health`, menores — pendientes de la revisión del 2026-10-10)
-4. **CAJA 3 y 4** — no requieren acción (documentadas / falsas)
+2. **I-1, I-2 (resto), I-3, I-4, I-6** (robustez core — 1 día)
+3. **I-5, I-9, I-10, I-11** (calidad, cambios de una línea) y **I-7, I-8, I-12** (despliegue — según sprint). ~~I-13~~ ✅
+4. **I-14 a I-19** (`pipeline_health`, menores; I-16, I-18 e I-19 aceptados salvo que molesten). ~~R-1 a R-7~~ ✅
+5. **CAJA 3 y 4** — no requieren acción (documentadas / falsas)
