@@ -82,6 +82,31 @@ WHERE usesysid != (SELECT oid FROM pg_roles WHERE rolname = session_user);
 """
 
 
+# Lo lee activity/sampler.py cada segundo, no el collect del ciclo. Una sesion
+# idle sigue mostrando la ultima query que corrio con su query_id (verificado en
+# PG17): con un pool, cada conexion ociosa es un sample de una ejecucion real.
+# duration_ms: idle -> lo que tardo esa query; active -> lo que lleva corriendo.
+# track_activity_query_size se lee de pg_settings: current_setting() lo devuelve
+# con unidad ('4kB') y no castea a int. Un texto que llega al tope esta cortado.
+ACTIVITY_SAMPLES_QUERY = """
+SELECT
+    a.datname AS database_name,
+    a.query_id AS query_id,
+    a.query AS query_text,
+    EXTRACT(EPOCH FROM (
+        CASE WHEN a.state = 'active' THEN clock_timestamp() ELSE a.state_change END
+    ) - a.query_start) * 1000 AS duration_ms,
+    octet_length(a.query) >= (
+        SELECT setting::int FROM pg_settings WHERE name = 'track_activity_query_size'
+    ) - 1 AS truncated
+FROM pg_stat_activity a
+WHERE a.backend_type = 'client backend'
+  AND a.query_id IS NOT NULL
+  AND a.state IN ('active', 'idle', 'idle in transaction')
+  AND a.usesysid IS DISTINCT FROM (SELECT oid FROM pg_roles WHERE rolname = session_user);
+"""
+
+
 SERVER_START_QUERY = """
 SELECT
     pg_postmaster_start_time()                         AS server_start_time
