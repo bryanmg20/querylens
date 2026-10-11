@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 PIPELINE = Path(__file__).resolve().parent.parent
-PY = str(PIPELINE / "venv" / "Scripts" / "python.exe")
+PY = sys.executable
 
 
 def mut(path, old, new, name):
