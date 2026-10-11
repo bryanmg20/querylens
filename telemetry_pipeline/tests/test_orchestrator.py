@@ -243,6 +243,7 @@ def test_run_pipeline_drops_every_transient_key():
         "unstable_statements",
         "disk_spill_statements",
         "query_explain",
+        "auto_explain_plans",
         "schema_resolver",
     ):
         assert transient not in stats

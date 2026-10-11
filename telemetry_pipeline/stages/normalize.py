@@ -140,6 +140,40 @@ def clean_mysql_explain_predicate_dynamic(pred_text):
         return cleaned
 
 
+def redact_postgres_plan_predicate(pred_text):
+    """Literales de un predicado de plan de Postgres a $n.
+
+    El plan de auto_explain sale de una ejecucion real: Filter / Index Cond
+    traen los valores ((c <> 'abc'::bpchar), (id < 2000)), igual que los
+    predicados de MySQL (N-1). Se reemplazan sobre el texto que deparsea
+    Postgres, sin pasar por sqlglot, para que el predicado quede con la misma
+    forma que el del plan generico ($1::bpchar). Los identificadores entre
+    comillas, los $n que ya estaban y las referencias SubPlan/InitPlan N no
+    son datos y se dejan. La numeracion sigue al $n mas alto del texto."""
+    if not pred_text:
+        return pred_text
+    existing = [int(n) for n in re.findall(r"\$(\d+)", pred_text)]
+    counter = {"n": max(existing, default=0)}
+
+    def replace(match):
+        if match.group("keep"):
+            return match.group(0)
+        counter["n"] += 1
+        return f"${counter['n']}"
+
+    return _PG_PLAN_TOKEN_RE.sub(replace, pred_text)
+
+
+# Un solo pase en orden de lectura: lo que se conserva va primero en la
+# alternancia para que un numero dentro de "col 1" o de SubPlan 1 no se tome
+# como literal. E'..', B'..' y X'..' caen enteros en un solo $n.
+_PG_PLAN_TOKEN_RE = re.compile(
+    r'(?P<keep>"(?:""|[^"])*"|\b(?:Sub|Init)Plan \d+|\$\d+)'
+    r"|(?:\b[eEbBxX])?'(?:''|[^'])*'"
+    r"|(?<![\w$])\d+(?:\.\d+)?(?:[eE][+-]?\d+)?"
+)
+
+
 # Hex/bit primero: 0xDEAD o X'0A' deben caer enteros en un solo $n, no dejar el
 # prefijo (X$1) ni partirse en digitos sueltos.
 _LITERAL_RE = re.compile(

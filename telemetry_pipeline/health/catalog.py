@@ -179,6 +179,11 @@ CATALOG: dict[str, IssueDef] = {
         "En este ciclo ninguna query candidata se pudo analizar (solo se analizan SELECT/WITH).",
         "No requiere accion.",
     ),
+    "AUTO_EXPLAIN_LOG_UNAVAILABLE": IssueDef(
+        "explain", "config", INFO,
+        "No se pudo leer el log de auto_explain: los planes son genericos, sin los valores reales de cada ejecucion.",
+        "Opcional: sigue la guia de instalacion de auto_explain (funciones querylens.log_files y querylens.read_log).",
+    ),
     # ---------- pipeline interno ----------
     "SNAPSHOT_VALIDATION_FAILED": IssueDef(
         "pipeline", "internal", BLOCKING,

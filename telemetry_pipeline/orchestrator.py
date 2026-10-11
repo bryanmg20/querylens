@@ -4,6 +4,7 @@ from health.preflight import PreflightStage
 from health.report import HealthReport, mark_recorded
 from logger import get_logger
 from models.stats import Stats
+from stages.auto_explain import AutoExplainStage
 from stages.canonicalizers import redact_active_queries
 from stages.candidates import CandidatesStage
 from stages.collect import CollectStage
@@ -22,6 +23,7 @@ class Orchestrator:
         self.preflight = PreflightStage(collector, self.report)
         self.collect = CollectStage(collector, self.report)
         self.candidates = CandidatesStage(collector)
+        self.auto_explain = AutoExplainStage(collector, self.report)
         self.explain = ExplainStage(collector, self.report)
         self.normalize = NormalizeStage(collector)
         self.enrich = EnrichStage(collector)
@@ -52,6 +54,7 @@ class Orchestrator:
             conn.commit()
             if stats.get("statements") is not None:
                 self.candidates.execute(stats)
+                self.auto_explain.execute(stats, conn)
                 self.explain.execute(stats, conn)
                 self.normalize.execute(stats)
             else:

@@ -97,6 +97,9 @@ class ExplainStage:
 
     def execute(self, stats: Stats, conn):
         stats["query_explain"] = []
+        # Planes reales del log de auto_explain (AutoExplainStage). Traen los
+        # literales de la ejecucion: se sacan de stats ya, no viajan.
+        logged_plans = stats.pop("auto_explain_plans", None) or {}
         failures = 0
 
         try:
@@ -126,6 +129,16 @@ class ExplainStage:
                         f"{dialect} | EXPLAIN | query_id={query_id} "
                         "| skipped multi-statement query"
                     )
+                    continue
+
+                # Primero el plan que auto_explain registro de una ejecucion
+                # real; sin el, el EXPLAIN de siempre.
+                if query_id in logged_plans:
+                    stats["query_explain"].append({
+                        "query_id": query_id,
+                        "explain_source": "auto_explain",
+                        "plan": logged_plans[query_id],
+                    })
                     continue
 
                 context_sql = self._schema_context_sql(

@@ -7,6 +7,7 @@ from collectors.mysql.collector import Mysql_Collector
 from collectors.postgres.collector import Postgres_Collector
 from models.snapshot import SnapshotPayload
 from orchestrator import Orchestrator
+from stages.auto_explain import AutoExplainStage
 from stages.candidates import CandidatesStage
 from stages.collect import CollectStage
 from stages.enrich import EnrichStage
@@ -83,7 +84,7 @@ class TestExplainNormalizerRegistry:
 class TestPipelineStages:
     @pytest.mark.parametrize(
         "stage_cls",
-        [CollectStage, CandidatesStage, ExplainStage, NormalizeStage, EnrichStage],
+        [CollectStage, CandidatesStage, AutoExplainStage, ExplainStage, NormalizeStage, EnrichStage],
     )
     def test_every_stage_exposes_execute(self, stage_cls):
         collector = DB_Engine_Collector()
@@ -93,6 +94,7 @@ class TestPipelineStages:
         orchestrator = Orchestrator(DB_Engine_Collector())
         assert isinstance(orchestrator.collect, CollectStage)
         assert isinstance(orchestrator.candidates, CandidatesStage)
+        assert isinstance(orchestrator.auto_explain, AutoExplainStage)
         assert isinstance(orchestrator.explain, ExplainStage)
         assert isinstance(orchestrator.normalize, NormalizeStage)
         assert isinstance(orchestrator.enrich, EnrichStage)

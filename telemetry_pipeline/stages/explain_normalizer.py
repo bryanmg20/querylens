@@ -2,6 +2,7 @@ import json
 
 from models.stats import Stats
 from stages.normalize import _to_number as to_number
+from stages.normalize import redact_postgres_plan_predicate
 def _flag(node, key):
     """MySQL reporta Estas caracteristicas como bool en el plan; el snapshot solo
     tiene `predicate: str | None`, asi que el nombre de la flag viaja ahi."""
@@ -39,6 +40,14 @@ class PostgresExplainNormalizer:
             if root_plan:
                 canonical_plan["estimates"] = self._plan_estimates(root_plan)
                 self._walk_plan(root_plan, canonical_plan)
+
+            # El plan generico ya trae $n; el de auto_explain trae los valores
+            # de la ejecucion y la cola no los puede conservar.
+            if explain.get("explain_source") == "auto_explain":
+                for operation in canonical_plan["physical_operations"]:
+                    operation["predicate"] = redact_postgres_plan_predicate(
+                        operation["predicate"]
+                    )
 
             canonic_explains.append({
                 "query_id": explain.get("query_id"),
