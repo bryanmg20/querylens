@@ -146,10 +146,13 @@ def redact_postgres_plan_predicate(pred_text):
     El plan de auto_explain sale de una ejecucion real: Filter / Index Cond
     traen los valores ((c <> 'abc'::bpchar), (id < 2000)), igual que los
     predicados de MySQL (N-1). Se reemplazan sobre el texto que deparsea
-    Postgres, sin pasar por sqlglot, para que el predicado quede con la misma
-    forma que el del plan generico ($1::bpchar). Los identificadores entre
-    comillas, los $n que ya estaban y las referencias SubPlan/InitPlan N no
-    son datos y se dejan. La numeracion sigue al $n mas alto del texto."""
+    Postgres, sin pasar por sqlglot. El cast que Postgres pega al literal
+    ('abc'::bpchar) se va con el: el plan generico muestra el parametro solo
+    ((c ~~ $1)) y los dos formatos tienen que coincidir. Los casts sobre
+    columnas ((c)::text) salen igual en ambos planes y se dejan. Los
+    identificadores entre comillas, los $n que ya estaban y las referencias
+    SubPlan/InitPlan N no son datos y se dejan. La numeracion sigue al $n mas
+    alto del texto."""
     if not pred_text:
         return pred_text
     existing = [int(n) for n in re.findall(r"\$(\d+)", pred_text)]
@@ -164,13 +167,26 @@ def redact_postgres_plan_predicate(pred_text):
     return _PG_PLAN_TOKEN_RE.sub(replace, pred_text)
 
 
+# Nombre de tipo como lo escribe format_type: con schema y comillas
+# opcionales, multi-palabra (character varying, double precision,
+# timestamp(3) with time zone), con typmod y como array.
+_PG_IDENT = r'(?:"(?:""|[^"])*"|[A-Za-z_]\w*)'
+_PG_CAST = (
+    rf"(?:::{_PG_IDENT}(?:\.{_PG_IDENT})?"
+    r"(?:\s+(?:varying|precision))?"
+    r"(?:\(\d+(?:,\s*\d+)?\))?"
+    r"(?:\s+with(?:out)?\s+time\s+zone)?"
+    r"(?:\[\])*)*"
+)
+
 # Un solo pase en orden de lectura: lo que se conserva va primero en la
 # alternancia para que un numero dentro de "col 1" o de SubPlan 1 no se tome
-# como literal. E'..', B'..' y X'..' caen enteros en un solo $n.
+# como literal. E'..', B'..' y X'..' caen enteros en un solo $n, junto con
+# los casts que los siguen.
 _PG_PLAN_TOKEN_RE = re.compile(
     r'(?P<keep>"(?:""|[^"])*"|\b(?:Sub|Init)Plan \d+|\$\d+)'
-    r"|(?:\b[eEbBxX])?'(?:''|[^'])*'"
-    r"|(?<![\w$])\d+(?:\.\d+)?(?:[eE][+-]?\d+)?"
+    rf"|(?:\b[eEbBxX])?'(?:''|[^'])*'{_PG_CAST}"
+    rf"|(?<![\w$])\d+(?:\.\d+)?(?:[eE][+-]?\d+)?{_PG_CAST}"
 )
 
 

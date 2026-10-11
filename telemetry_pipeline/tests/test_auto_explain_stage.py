@@ -392,7 +392,7 @@ def _normalize(source, filter_text):
 
 
 def test_auto_explain_predicates_are_redacted():
-    assert _normalize("auto_explain", "(c <> 'secret-literal'::bpchar)") == "(c <> $1::bpchar)"
+    assert _normalize("auto_explain", "(c <> 'secret-literal'::bpchar)") == "(c <> $1)"
 
 
 def test_generic_predicates_are_untouched():
@@ -415,13 +415,22 @@ def test_auto_explain_join_predicates_are_redacted():
     "raw, redacted",
     [
         ("(id < 2000)", "(id < $1)"),
-        ("((c)::text ~~ '%abc%'::text)", "((c)::text ~~ $1::text)"),
-        ("(name = 'O''Brien'::text)", "(name = $1::text)"),
-        ("(k = ANY ('{1,2,3}'::integer[]))", "(k = ANY ($1::integer[]))"),
+        ("((c)::text ~~ '%abc%'::text)", "((c)::text ~~ $1)"),
+        ("(name = 'O''Brien'::text)", "(name = $1)"),
+        ("(k = ANY ('{1,2,3}'::integer[]))", "(k = ANY ($1))"),
         ("((id > 10) AND (price < 1.5))", "((id > $1) AND (price < $2))"),
         ("(x > 1.5e3)", "(x > $1)"),
-        ("(s = E'a\\\\b'::text)", "(s = $1::text)"),
-        ("(b = B'101'::bit(3))", "(b = $1::bit($2))"),
+        ("(s = E'a\\\\b'::text)", "(s = $1)"),
+        ("(b = B'101'::bit(3))", "(b = $1)"),
+        ("((v)::text = 'x'::character varying(20))", "((v)::text = $1)"),
+        ("(ts > '2024-01-01 00:00:00'::timestamp without time zone)", "(ts > $1)"),
+        ("(ts > '2024-01-01'::timestamp(3) with time zone)", "(ts > $1)"),
+        ("(p > '1.5'::double precision)", "(p > $1)"),
+        ("(n = '7'::numeric(10,2))", "(n = $1)"),
+        ("(id = '5'::public.\"My Type\")", "(id = $1)"),
+        ("(id = '5'::text::integer)", "(id = $1)"),
+        ("(id = '2000'::bigint)", "(id = $1)"),
+        ("((a = ($1)::text) AND (b = 5))", "((a = ($1)::text) AND (b = $2))"),
         ("(\"col 1\" = 7)", "(\"col 1\" = $1)"),
         ("(t.col2 = 3)", "(t.col2 = $1)"),
         ("(NOT (hashed SubPlan 1))", "(NOT (hashed SubPlan 1))"),
