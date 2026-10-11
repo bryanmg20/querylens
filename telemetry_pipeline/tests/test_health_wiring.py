@@ -312,6 +312,7 @@ def test_sampler_error_is_reported_in_the_run(monkeypatch):
     )
     sampler = mock.MagicMock()
     sampler.status.return_value = "OperationalError"
+    sampler.drain_counts.return_value = {"usable": 0, "parameterized": 0}
 
     with pytest.raises(OperationalError):
         main.run_engine("postgres", _BrokenEngine, db_id="db_1", sampler=sampler)
@@ -325,9 +326,36 @@ def test_healthy_sampler_adds_nothing():
     report = HealthReport()
     sampler = mock.MagicMock()
     sampler.status.return_value = None
+    sampler.drain_counts.return_value = {"usable": 5, "parameterized": 5}
 
     main._report_sampler(sampler, "db_1", report)
     main._report_sampler(None, "db_1", report)
     main._report_sampler(sampler, None, report)
+
+    assert not report.issues
+
+
+def test_mostly_parameterized_traffic_is_reported():
+    """La app manda $n (prepared statements): sin samples, planes generic."""
+    report = HealthReport()
+    sampler = mock.MagicMock()
+    sampler.status.return_value = None
+    sampler.drain_counts.return_value = {"usable": 2, "parameterized": 30}
+
+    main._report_sampler(sampler, "db_1", report)
+
+    sampler.drain_counts.assert_called_once_with("db_1")
+    assert report.issues[("ACTIVITY_SAMPLES_PARAMETERIZED", "")] == {
+        "parameterized_rows": 30, "usable_rows": 2, "count": 1,
+    }
+
+
+def test_parameterized_tie_is_not_reported():
+    report = HealthReport()
+    sampler = mock.MagicMock()
+    sampler.status.return_value = None
+    sampler.drain_counts.return_value = {"usable": 4, "parameterized": 4}
+
+    main._report_sampler(sampler, "db_1", report)
 
     assert not report.issues

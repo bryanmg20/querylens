@@ -6,7 +6,14 @@ que cada prueba arma.
 import pytest
 
 from activity.buffer import ActivitySampleBuffer
-from activity.sampler import ActivitySampler, usable_sample_text
+from activity.sampler import (
+    DISCARDED,
+    PARAMETERIZED,
+    USABLE,
+    ActivitySampler,
+    sample_text_status,
+    usable_sample_text,
+)
 from config.registered import Target
 
 pytestmark = pytest.mark.unit
@@ -280,3 +287,56 @@ def test_interval_from_env(monkeypatch, raw, expected):
     from activity.sampler import interval_from_env
     monkeypatch.setenv("ACTIVITY_SAMPLE_INTERVAL_S", raw)
     assert interval_from_env() == expected
+
+
+# ---------- conteo de textos con $n (ACTIVITY_SAMPLES_PARAMETERIZED) ----------
+
+@pytest.mark.parametrize("text, truncated, expected", [
+    ("SELECT c FROM t WHERE id = 7", False, USABLE),
+    ("SELECT c FROM t WHERE id = $1", False, PARAMETERIZED),
+    # Lo no explicable no cuenta como $n: no se habria usado de todos modos.
+    ("UPDATE t SET a = $1 WHERE id = $2", False, DISCARDED),
+    ("SELECT 1; SELECT $1", False, DISCARDED),
+    ("SELECT c FROM t WHERE id = $1", True, DISCARDED),
+    ("<insufficient privilege>", False, DISCARDED),
+    (None, False, DISCARDED),
+])
+def test_sample_text_status(text, truncated, expected):
+    assert sample_text_status(text, truncated) == expected
+
+
+def test_drain_counts_returns_the_window_and_resets():
+    engine = _Engine([
+        _row("SELECT 1 FROM t WHERE id = 1", query_id=1),
+        _row("SELECT 1 FROM t WHERE id = $1", query_id=2),
+        _row("SELECT 1 FROM t WHERE k = $1", query_id=3),
+        _row("UPDATE t SET k = $1", query_id=4),
+    ])
+    sampler, _ = _sampler()
+    sampler.update_targets([_target("db", engine)])
+
+    sampler.tick()
+    sampler.tick()
+
+    assert sampler.drain_counts("db") == {USABLE: 2, PARAMETERIZED: 4}
+    assert sampler.drain_counts("db") == {USABLE: 0, PARAMETERIZED: 0}
+
+
+def test_failed_tick_does_not_count():
+    sampler, _ = _sampler()
+    sampler.update_targets([_target("db", _Engine(error=RuntimeError("x")))])
+
+    sampler.tick()
+
+    assert sampler.drain_counts("db") == {USABLE: 0, PARAMETERIZED: 0}
+
+
+def test_removed_target_counts_are_cleared():
+    engine = _Engine([_row("SELECT 1 FROM t WHERE id = $1")])
+    sampler, _ = _sampler()
+    sampler.update_targets([_target("db", engine)])
+    sampler.tick()
+
+    sampler.update_targets([])
+
+    assert sampler.drain_counts("db") == {USABLE: 0, PARAMETERIZED: 0}

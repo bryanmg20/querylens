@@ -45,14 +45,33 @@ def interval_from_env() -> float:
     return _positive_from_env("ACTIVITY_SAMPLE_INTERVAL_S", DEFAULT_INTERVAL_S)
 
 
+USABLE = "usable"
+PARAMETERIZED = "parameterized"
+DISCARDED = "discarded"
+
+
+def sample_text_status(query_text: str | None, truncated: bool = False) -> str:
+    """USABLE: sirve para EXPLAIN tal como esta. PARAMETERIZED: seria
+    explicable, pero trae $n (protocolo extendido / prepared statements: el
+    cliente manda los valores aparte y pg_stat_activity no los muestra).
+    DISCARDED: cualquier otro motivo (vacio, truncado, sin privilegio, DML,
+    varias sentencias). Lo explicable se mira antes que los $n: un UPDATE con
+    $1 no se habria usado de todos modos y no cuenta como PARAMETERIZED."""
+    if not query_text or truncated or query_text == INSUFFICIENT_PRIVILEGE:
+        return DISCARDED
+    code = mask_sql(query_text)
+    if code is None:
+        return DISCARDED
+    if not (is_explainable_command(query_text) and is_single_statement(query_text)):
+        return DISCARDED
+    if _PARAM.search(code):
+        return PARAMETERIZED
+    return USABLE
+
+
 def usable_sample_text(query_text: str | None, truncated: bool = False) -> bool:
     """True si el texto sirve para EXPLAIN tal como esta."""
-    if not query_text or truncated or query_text == INSUFFICIENT_PRIVILEGE:
-        return False
-    code = mask_sql(query_text)
-    if code is None or _PARAM.search(code):
-        return False
-    return is_explainable_command(query_text) and is_single_statement(query_text)
+    return sample_text_status(query_text, truncated) == USABLE
 
 
 class ActivitySampler:
@@ -65,6 +84,10 @@ class ActivitySampler:
         self._targets = {}   # db_id -> Target
         self._engines = {}   # db_id -> Engine
         self._errors = {}    # db_id -> exc_type del ultimo tick fallido
+        # db_id -> {USABLE: n, PARAMETERIZED: n} desde la ultima lectura del
+        # ciclo (drain_counts). Cuenta filas por tick: una conexion idle suma
+        # una vez por segundo, asi que es una proporcion, no un numero de queries.
+        self._counts = {}
         self._thread = None
 
     # ---------- interfaz con el runner (hilo principal) ----------
@@ -76,9 +99,17 @@ class ActivitySampler:
             self._targets = postgres
             for db_id in [d for d in self._errors if d not in postgres]:
                 del self._errors[db_id]
+            for db_id in [d for d in self._counts if d not in postgres]:
+                del self._counts[db_id]
         # Los engines de los targets que salieron los suelta el hilo del
         # sampler en su proximo tick: solo ese hilo toca _engines.
         self.buffer.retain_targets(postgres)
+
+    def drain_counts(self, db_id) -> dict:
+        """Filas usables y con $n vistas desde la lectura anterior; reinicia."""
+        with self._lock:
+            counts = self._counts.pop(db_id, None) or {}
+        return {USABLE: counts.get(USABLE, 0), PARAMETERIZED: counts.get(PARAMETERIZED, 0)}
 
     def status(self, db_id) -> str | None:
         """exc_type del ultimo tick fallido de ese target, o None si va bien."""
@@ -135,8 +166,12 @@ class ActivitySampler:
             conn.execute(text(f"SET LOCAL statement_timeout = '{TICK_STATEMENT_TIMEOUT}'"))
             rows = conn.execute(text(ACTIVITY_SAMPLES_QUERY)).mappings().all()
         offered = 0
+        parameterized = 0
         for row in rows:
-            if not usable_sample_text(row["query_text"], row["truncated"]):
+            status = sample_text_status(row["query_text"], row["truncated"])
+            if status == PARAMETERIZED:
+                parameterized += 1
+            if status != USABLE:
                 continue
             self.buffer.offer(
                 target.db_id,
@@ -146,6 +181,10 @@ class ActivitySampler:
                 row["duration_ms"],
             )
             offered += 1
+        with self._lock:
+            counts = self._counts.setdefault(target.db_id, {USABLE: 0, PARAMETERIZED: 0})
+            counts[USABLE] += offered
+            counts[PARAMETERIZED] += parameterized
         return offered
 
     def _record_error(self, db_id, error: Exception) -> None:

@@ -186,6 +186,14 @@ CATALOG: dict[str, IssueDef] = {
         "Revisa la conectividad con la base y su carga: el muestreo corre cada "
         "segundo con un limite de 2 s por lectura. Si persiste, contacta a soporte.",
     ),
+    "ACTIVITY_SAMPLES_PARAMETERIZED": IssueDef(
+        "explain", "config", INFO,
+        "La aplicacion envia sus queries con parametros aparte ($1, $2: prepared "
+        "statements o protocolo extendido): Postgres no muestra los valores y los "
+        "planes usan la version generica, sin valores reales.",
+        "No requiere accion: para consultas parametrizadas los planes muestran la "
+        "version generica, que suele ser la que Postgres ejecuta.",
+    ),
     # ---------- pipeline interno ----------
     "SNAPSHOT_VALIDATION_FAILED": IssueDef(
         "pipeline", "internal", BLOCKING,

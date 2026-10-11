@@ -4,6 +4,7 @@ from pydantic import ValidationError
 
 from config.connections import get_connection_querylens_db
 from config.registered import Target, _get_queue_engine, load_registered_targets
+from activity.sampler import PARAMETERIZED, USABLE
 from collectors.factory import Engine_Factory
 from enqueue import send_to_queue
 from health import writer as health_writer
@@ -118,12 +119,25 @@ def run_engine(dialect: str, connection_factory, db_id: str | None = None, sampl
 
 def _report_sampler(sampler, db_id: str | None, report: HealthReport) -> None:
     """El hilo del sampler no escribe en pipeline_health: su ultimo error por
-    target se vuelca en el report de la corrida (scope explain)."""
+    target y lo que vio desde el ciclo anterior se vuelcan en el report de la
+    corrida (scope explain).
+
+    ACTIVITY_SAMPLES_PARAMETERIZED: la mayoria de lo explicable llego con $n
+    (protocolo extendido / prepared statements), asi que los planes de esa base
+    quedan en generic. Se compara contra lo usable de la misma ventana para no
+    avisar a una app que mezcla ambos y si produce samples."""
     if sampler is None or db_id is None:
         return
     exc_type = sampler.status(db_id)
     if exc_type is not None:
         report.add("ACTIVITY_SAMPLER_FAILED", exc_type=exc_type)
+    counts = sampler.drain_counts(db_id)
+    parameterized = counts.get(PARAMETERIZED, 0)
+    usable = counts.get(USABLE, 0)
+    if parameterized > usable:
+        report.add(
+            "ACTIVITY_SAMPLES_PARAMETERIZED", parameterized_rows=parameterized, usable_rows=usable
+        )
 
 
 def _cycle(
