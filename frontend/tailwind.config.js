@@ -20,6 +20,10 @@ module.exports = {
           DEFAULT: "#B23B3B",
           soft: "#F7E9E7",
         },
+        warn: {
+          DEFAULT: "#8A5A00",
+          soft: "#FAF0D9",
+        },
       },
       fontFamily: {
         sans: ["var(--font-plex-sans)", "system-ui", "sans-serif"],

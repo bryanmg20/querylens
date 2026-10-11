@@ -48,12 +48,56 @@ export interface DatabaseSessionResponse extends DatabaseRegisteredResponse {
   token_type: string;
 }
 
+export interface Finding {
+  id: number;
+  antipatron: string;
+  severidad: string;
+  query_id: string | null;
+  table_name: string | null;
+  evidencia: Record<string, unknown>;
+  explicacion: string;
+  recomendacion: string;
+  detectado_en: string;
+}
+
+export interface LastRun {
+  status: "ok" | "degraded" | "failed";
+  started_at: string;
+  finished_at: string;
+  sections_ok: string[];
+  sections_failed: string[];
+  msg_id: number | null;
+  engine_version: string | null;
+}
+
+export interface HealthIssue {
+  id: number;
+  code: string;
+  category: string;
+  severity: "blocking" | "degraded" | "info";
+  section: string;
+  message: string;
+  remediation: string;
+  params: Record<string, unknown>;
+  first_seen: string;
+  last_seen: string;
+  occurrences: number;
+  resolved_at: string | null;
+}
+
+export interface Health {
+  // null cuando el pipeline todavía no corrió contra esta base.
+  last_run: LastRun | null;
+  issues: HealthIssue[];
+}
+
 export interface DiagnosticsResponse {
   database_identifier: string;
   connection_name: string;
   engine: string;
   is_active: boolean;
-  diagnostics: Record<string, unknown>[];
+  diagnostics: Finding[];
+  health: Health;
   server_time: string;
 }
 
