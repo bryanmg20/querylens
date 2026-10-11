@@ -1,0 +1,597 @@
+{
+    "db_id": "querylens-db-01",
+    "locks": [],
+    "tables": [
+        {
+            "idx_scans": 0,
+            "live_rows": 9936,
+            "seq_scans": null,
+            "table_name": "sbtest1",
+            "schema_name": "ql_demo"
+        },
+        {
+            "idx_scans": 0,
+            "live_rows": 9936,
+            "seq_scans": null,
+            "table_name": "sbtest10",
+            "schema_name": "ql_demo"
+        },
+        {
+            "idx_scans": 0,
+            "live_rows": 9680,
+            "seq_scans": null,
+            "table_name": "sbtest2",
+            "schema_name": "ql_demo"
+        },
+        {
+            "idx_scans": 0,
+            "live_rows": 9936,
+            "seq_scans": null,
+            "table_name": "sbtest3",
+            "schema_name": "ql_demo"
+        },
+        {
+            "idx_scans": 0,
+            "live_rows": 9936,
+            "seq_scans": null,
+            "table_name": "sbtest4",
+            "schema_name": "ql_demo"
+        },
+        {
+            "idx_scans": 0,
+            "live_rows": 9680,
+            "seq_scans": null,
+            "table_name": "sbtest5",
+            "schema_name": "ql_demo"
+        },
+        {
+            "idx_scans": 0,
+            "live_rows": 9937,
+            "seq_scans": null,
+            "table_name": "sbtest6",
+            "schema_name": "ql_demo"
+        },
+        {
+            "idx_scans": 0,
+            "live_rows": 9936,
+            "seq_scans": null,
+            "table_name": "sbtest7",
+            "schema_name": "ql_demo"
+        },
+        {
+            "idx_scans": 0,
+            "live_rows": 9930,
+            "seq_scans": null,
+            "table_name": "sbtest8",
+            "schema_name": "ql_demo"
+        },
+        {
+            "idx_scans": 0,
+            "live_rows": 9936,
+            "seq_scans": null,
+            "table_name": "sbtest9",
+            "schema_name": "ql_demo"
+        }
+    ],
+    "columns": [
+        {
+            "data_type": "char",
+            "table_name": "sbtest1",
+            "column_name": "c",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest1",
+            "column_name": "id",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest1",
+            "column_name": "k",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest1",
+            "column_name": "pad",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest10",
+            "column_name": "c",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest10",
+            "column_name": "id",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest10",
+            "column_name": "k",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest10",
+            "column_name": "pad",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest2",
+            "column_name": "c",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest2",
+            "column_name": "id",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest2",
+            "column_name": "k",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest2",
+            "column_name": "pad",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest3",
+            "column_name": "c",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest3",
+            "column_name": "id",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest3",
+            "column_name": "k",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest3",
+            "column_name": "pad",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest4",
+            "column_name": "c",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest4",
+            "column_name": "id",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest4",
+            "column_name": "k",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest4",
+            "column_name": "pad",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest5",
+            "column_name": "c",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest5",
+            "column_name": "id",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest5",
+            "column_name": "k",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest5",
+            "column_name": "pad",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest6",
+            "column_name": "c",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest6",
+            "column_name": "id",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest6",
+            "column_name": "k",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest6",
+            "column_name": "pad",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest7",
+            "column_name": "c",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest7",
+            "column_name": "id",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest7",
+            "column_name": "k",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest7",
+            "column_name": "pad",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest8",
+            "column_name": "c",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest8",
+            "column_name": "id",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest8",
+            "column_name": "k",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest8",
+            "column_name": "pad",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest9",
+            "column_name": "c",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest9",
+            "column_name": "id",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "int",
+            "table_name": "sbtest9",
+            "column_name": "k",
+            "schema_name": "ql_demo"
+        },
+        {
+            "data_type": "char",
+            "table_name": "sbtest9",
+            "column_name": "pad",
+            "schema_name": "ql_demo"
+        }
+    ],
+    "indexes": [
+        {
+            "index_ref": "CREATE INDEX k_1 ON ql_demo.sbtest1 USING btree (k)",
+            "index_name": "k_1",
+            "table_name": "sbtest1",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 212992
+        },
+        {
+            "index_ref": "CREATE UNIQUE INDEX PRIMARY ON ql_demo.sbtest1 USING btree (id)",
+            "index_name": "PRIMARY",
+            "table_name": "sbtest1",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 212992
+        },
+        {
+            "index_ref": "CREATE INDEX k_10 ON ql_demo.sbtest10 USING btree (k)",
+            "index_name": "k_10",
+            "table_name": "sbtest10",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 212992
+        },
+        {
+            "index_ref": "CREATE UNIQUE INDEX PRIMARY ON ql_demo.sbtest10 USING btree (id)",
+            "index_name": "PRIMARY",
+            "table_name": "sbtest10",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 212992
+        },
+        {
+            "index_ref": "CREATE INDEX k_2 ON ql_demo.sbtest2 USING btree (k)",
+            "index_name": "k_2",
+            "table_name": "sbtest2",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 196608
+        },
+        {
+            "index_ref": "CREATE UNIQUE INDEX PRIMARY ON ql_demo.sbtest2 USING btree (id)",
+            "index_name": "PRIMARY",
+            "table_name": "sbtest2",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 196608
+        },
+        {
+            "index_ref": "CREATE INDEX k_3 ON ql_demo.sbtest3 USING btree (k)",
+            "index_name": "k_3",
+            "table_name": "sbtest3",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 212992
+        },
+        {
+            "index_ref": "CREATE UNIQUE INDEX PRIMARY ON ql_demo.sbtest3 USING btree (id)",
+            "index_name": "PRIMARY",
+            "table_name": "sbtest3",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 212992
+        },
+        {
+            "index_ref": "CREATE INDEX k_4 ON ql_demo.sbtest4 USING btree (k)",
+            "index_name": "k_4",
+            "table_name": "sbtest4",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 196608
+        },
+        {
+            "index_ref": "CREATE UNIQUE INDEX PRIMARY ON ql_demo.sbtest4 USING btree (id)",
+            "index_name": "PRIMARY",
+            "table_name": "sbtest4",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 196608
+        },
+        {
+            "index_ref": "CREATE INDEX k_5 ON ql_demo.sbtest5 USING btree (k)",
+            "index_name": "k_5",
+            "table_name": "sbtest5",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 229376
+        },
+        {
+            "index_ref": "CREATE UNIQUE INDEX PRIMARY ON ql_demo.sbtest5 USING btree (id)",
+            "index_name": "PRIMARY",
+            "table_name": "sbtest5",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 229376
+        },
+        {
+            "index_ref": "CREATE INDEX k_6 ON ql_demo.sbtest6 USING btree (k)",
+            "index_name": "k_6",
+            "table_name": "sbtest6",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 196608
+        },
+        {
+            "index_ref": "CREATE UNIQUE INDEX PRIMARY ON ql_demo.sbtest6 USING btree (id)",
+            "index_name": "PRIMARY",
+            "table_name": "sbtest6",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 196608
+        },
+        {
+            "index_ref": "CREATE INDEX k_7 ON ql_demo.sbtest7 USING btree (k)",
+            "index_name": "k_7",
+            "table_name": "sbtest7",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 196608
+        },
+        {
+            "index_ref": "CREATE UNIQUE INDEX PRIMARY ON ql_demo.sbtest7 USING btree (id)",
+            "index_name": "PRIMARY",
+            "table_name": "sbtest7",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 196608
+        },
+        {
+            "index_ref": "CREATE INDEX k_8 ON ql_demo.sbtest8 USING btree (k)",
+            "index_name": "k_8",
+            "table_name": "sbtest8",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 245760
+        },
+        {
+            "index_ref": "CREATE UNIQUE INDEX PRIMARY ON ql_demo.sbtest8 USING btree (id)",
+            "index_name": "PRIMARY",
+            "table_name": "sbtest8",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 245760
+        },
+        {
+            "index_ref": "CREATE INDEX k_9 ON ql_demo.sbtest9 USING btree (k)",
+            "index_name": "k_9",
+            "table_name": "sbtest9",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 212992
+        },
+        {
+            "index_ref": "CREATE UNIQUE INDEX PRIMARY ON ql_demo.sbtest9 USING btree (id)",
+            "index_name": "PRIMARY",
+            "table_name": "sbtest9",
+            "index_scans": null,
+            "schema_name": "ql_demo",
+            "last_index_scan": null,
+            "index_size_bytes": 212992
+        }
+    ],
+    "statements": [
+        {
+            "query_id": "b715edd335c8ab2a3c43087e726bbc978f59bc64c69c2ff9f0f7f1ef75c8d651",
+            "query_text": "SELECT `VERSION` ( )",
+            "max_time_ms": 1.2974,
+            "min_time_ms": 1.2974,
+            "schema_name": null,
+            "mean_time_ms": 1.2974,
+            "rows_returned": 1,
+            "total_time_ms": 1.2974,
+            "counters_epoch": "2026-10-07 00:03:41.937198",
+            "stddev_time_ms": null,
+            "execution_count": 1,
+            "avg_rows_per_call": 1.0,
+            "query_sample_text": "SELECT VERSION()",
+            "coeff_of_variation": null,
+            "disk_spill_indicator": 0
+        },
+        {
+            "query_id": "41eb3b98a0a8ca5242efb496b77bb03b31d873053653fed8bd7543d714afec7c",
+            "query_text": "SET `AUTOCOMMIT` = ?",
+            "max_time_ms": 0.2712,
+            "min_time_ms": 0.2712,
+            "schema_name": null,
+            "mean_time_ms": 0.2712,
+            "rows_returned": 0,
+            "total_time_ms": 0.2712,
+            "counters_epoch": "2026-10-07 00:03:41.933472",
+            "stddev_time_ms": null,
+            "execution_count": 1,
+            "avg_rows_per_call": 0.0,
+            "query_sample_text": "SET AUTOCOMMIT = 0",
+            "coeff_of_variation": null,
+            "disk_spill_indicator": 0
+        }
+    ],
+    "active_queries": [
+        {
+            "query_id": null,
+            "process_id": 5,
+            "blocking_pids": [],
+            "canonic_query": "Not available",
+            "transaction_start_time": null
+        }
+    ],
+    "canonic_explains": [],
+    "top_impact_queries": [
+        {
+            "query_id": "b715edd335c8ab2a3c43087e726bbc978f59bc64c69c2ff9f0f7f1ef75c8d651",
+            "query_text": "SELECT `VERSION` ( )",
+            "max_time_ms": 1.2974,
+            "min_time_ms": 1.2974,
+            "schema_name": null,
+            "selected_by": [
+                "time_high_impact"
+            ],
+            "mean_time_ms": 1.2974,
+            "canonic_query": "SELECT VERSION()",
+            "rows_returned": 1,
+            "total_time_ms": 1.2974,
+            "counters_epoch": "2026-10-07 00:03:41.937198",
+            "stddev_time_ms": null,
+            "execution_count": 1,
+            "real_query_found": false,
+            "avg_rows_per_call": 1.0,
+            "query_sample_text": "SELECT VERSION()",
+            "coeff_of_variation": null,
+            "disk_spill_indicator": 0
+        }
+    ],
+    "stats_reset_timestamp": [
+        {
+            "stats_reset": "2026-10-07 00:02:26"
+        }
+    ],
+    "non_explainable_candidates": [
+        {
+            "query_id": "41eb3b98a0a8ca5242efb496b77bb03b31d873053653fed8bd7543d714afec7c",
+            "query_text": "SET `AUTOCOMMIT` = ?",
+            "max_time_ms": 0.2712,
+            "min_time_ms": 0.2712,
+            "schema_name": null,
+            "selected_by": [
+                "time_high_impact"
+            ],
+            "mean_time_ms": 0.2712,
+            "rows_returned": 0,
+            "total_time_ms": 0.2712,
+            "counters_epoch": "2026-10-07 00:03:41.933472",
+            "stddev_time_ms": null,
+            "execution_count": 1,
+            "avg_rows_per_call": 0.0,
+            "query_sample_text": "SET AUTOCOMMIT = 0",
+            "coeff_of_variation": null,
+            "disk_spill_indicator": 0
+        }
+    ]
+}
