@@ -114,3 +114,18 @@ Para repetir:
 venv\Scripts\python.exe compare_real_query_mechanics.py [MUESTRAS] [REPS] [RUIDO]
 venv\Scripts\python.exe ablate_recovery_window.py [MUESTRAS] [REPS]
 ```
+
+## Actualización 2026-10-11 — Opción A con muestreo continuo (Postgres)
+
+La Opción B se retiró después (`93beb5e`): cada motor pasó a su vía nativa (`GENERIC_PLAN` en Postgres, `QUERY_SAMPLE_TEXT` en MySQL). En Postgres el plan genérico no reproduce ejecuciones reales, así que se volvió a medir la Opción A con dos cambios:
+
+- **Se mira cada segundo**, en un hilo aparte, en vez de una vez por análisis, y lo visto se guarda en memoria hasta el siguiente análisis.
+- **Se aceptan las conexiones en espera (`idle`)**, que en PostgreSQL 17 siguen mostrando la última consulta que terminaron. Con un pool de conexiones, cada conexión ociosa es una muestra de una ejecución real.
+
+| Escenario (PG17, sandbox) | Resultado |
+|---|---|
+| 8 conexiones persistentes, 60 s, 7 consultas distintas (ms a decenas de ms) | 7/7 consultas con muestra válida; 457 de 473 filas vistas estaban `idle` |
+| Una conexión nueva por consulta (como `battery.sh`), consulta de ~10 s | capturada en estado `active` en todas las lecturas |
+| Costo de cada lectura de `pg_stat_activity` | p50 2,3 ms, máximo 18,7 ms |
+
+La prueba anterior que dio 0 % usaba una conexión nueva por consulta y una sola lectura: al cerrarse la conexión, la consulta desaparece de la actividad. Con conexiones persistentes (el caso normal de una aplicación) la consulta queda visible mientras la conexión espera. El diseño y sus límites están en `004_decisiones_contrato.md` ("Samples de Postgres desde pg_stat_activity") y en `PIPELINE_FLOW.md` ("Samples de actividad").

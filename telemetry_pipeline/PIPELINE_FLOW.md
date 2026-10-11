@@ -71,7 +71,11 @@ run_engine(dialect, connection_factory, db_id)                  main.py
   │     ├─ (3) ExplainStage.execute(stats, conn)             stages/explain.py
   │     │     solo para candidatos con ready_for_explain y cuyo texto a explicar
   │     │     (query_text en PG, query_sample_text en MySQL) empieza por SELECT/WITH
-  │     │     "EXPLAIN (GENERIC_PLAN, FORMAT JSON) <query>"  → Postgres (PG17+ por el minimo soportado, placeholders $1)
+  │     │     Postgres: si el ActivitySampleBuffer (runner) tiene una query real
+  │     │       para (db_id, database_name, query_id):
+  │     │       "EXPLAIN (FORMAT JSON) <sample>"            → explain_source="sample"
+  │     │       si no hay sample, o su EXPLAIN falla (rollback y nueva transaccion):
+  │     │       "EXPLAIN (GENERIC_PLAN, FORMAT JSON) <query>" → "generic" (PG17+, placeholders $1)
   │     │     "EXPLAIN FORMAT=JSON <query_sample_text>"     → MySQL (usa valores reales)
   │     │     cada candidato corre en una transacción corta propia:
   │     │     BEGIN → SET LOCAL search_path / USE → EXPLAIN → COMMIT (M-12).
@@ -88,7 +92,8 @@ run_engine(dialect, connection_factory, db_id)                  main.py
   │     │                                   cache por query_text (un parseo por forma)
   │     │     stats = collector.normalize_engine_artifacts(stats)   → hook por motor:
   │     │         MySQL: locks bool, blocking_pids list[int], limpieza de predicados
-  │     │         Postgres: timestamps a ISO sin tz
+  │     │         Postgres: timestamps a ISO sin tz; predicados de planes "sample"
+  │     │                   con literales -> $n (redact_pg_sample_predicates)
   │     │     normalize_querytext_active()  active_queries pierde query_text,
   │     │                                   conserva canonic_query ("Not available" si vacío)
   │     │
@@ -167,10 +172,38 @@ Y explícitamente **no**:
 |---------|---------|
 | No lee `MONITOR_PG_*` / `MONITOR_MY_*` | El host, puerto, usuario y password de cada target salen de la fila (Fernet con `AUTH_ENCRYPTION_KEY`). Esas variables solo las consume `main_sandbox.py`; están en el servicio `pipeline` únicamente por si alguien corre esa entrada dentro del contenedor |
 | No consume `analyze_job` | Solo produce. **Sin consumidor la cola crece**; el tamaño por snapshot **no está acotado** (va el payload completo: statements + candidatos + planes + columnas/índices/tablas). Medido (2026-10-08, `ci/regenerate_goldens.py` imprime el payload validado): **PG ~32 KB con 11 statements; MySQL ~22 KB con 10 statements** (~2–3 KB por statement adicional) → una base con cientos/miles de statements genera snapshots de cientos de KB a varios MB. Crecimiento ≈ `bytes_promedio × 8 640/día × nº de bases`. Verificar con `SELECT count(*), pg_size_pretty(avg(pg_column_size(message))::bigint) FROM pgmq.q_analyze_job` |
-| No guarda estado entre ciclos | Sin dedupe ni gate por `counters_epoch`: cada vuelta emite un snapshot por base aunque nada haya cambiado. La retención de mensajes ya leídos es del consumidor |
+| No guarda estado del snapshot entre ciclos | Sin dedupe ni gate por `counters_epoch`: cada vuelta emite un snapshot por base aunque nada haya cambiado. La retención de mensajes ya leídos es del consumidor. **Única excepción:** el buffer de samples de `pg_stat_activity` (ver "Samples de actividad"), que solo decide qué texto se explica en Postgres, vive en memoria y es descartable |
 | No persigue EXPLAIN fallidos (decisión 2026-10-08) | Cada ciclo **reintenta** los candidatos cuya explicación falló (el `ExplainStage` se recrea por ciclo; no hay contador ni backoff a nivel proceso). El fallo queda como `ERROR` de `stages.explain` en el log y ese candidato no obtiene plan en ese ciclo; se vuelve a probar en el siguiente. Quedó así por decisión del usuario, por el momento. **Causa típica conocida:** refs sin calificar que el rol resuelve por un schema que no es el primero con tablas (`SET LOCAL search_path` lo recorta; limitación conocida y aceptada, ver `references/004` → "EXPLAIN y search_path") |
-| No corre en paralelo | Un hilo, una vuelta a la vez; el aislamiento por target (dentro de `run_targets()`) es lo que evita que una base caída tape a las demás |
+| No corre ciclos en paralelo | Un hilo de extracción, una vuelta a la vez; el aislamiento por target (dentro de `run_targets()`) es lo que evita que una base caída tape a las demás. El único hilo adicional es el sampler de `pg_stat_activity`, que no extrae ni encola |
 | No decide nada del front/auth | Quién registra y activa filas es el auth service; el runner solo las lee. Si se agrega una fila mientras corre, la ve en el próximo ciclo |
+
+## Samples de actividad (pg_stat_activity, solo Postgres)
+
+`pg_stat_statements` guarda la query normalizada (`$1`), así que el EXPLAIN de Postgres solo podía pedir el plan genérico. MySQL tiene `QUERY_SAMPLE_TEXT`, una ejecución real con literales. El runner da a Postgres el equivalente con dos piezas en `activity/`:
+
+```
+runner (hilo principal, cada EXTRACT_INTERVAL_S)     sampler (hilo daemon, cada ACTIVITY_SAMPLE_INTERVAL_S)
+  load_registered_targets()                           por target Postgres (engine persistente):
+  sampler.update_targets(targets) ──────────────▶       BEGIN; SET LOCAL statement_timeout = '2s'
+  run_targets(targets, sampler)                          ACTIVITY_SAMPLES_QUERY
+    ExplainStage: buffer.lookup(db_id, base, qid) ◀──    filtra y buffer.offer(...)
+                       ActivitySampleBuffer (memoria, Lock)
+```
+
+| Aspecto | Comportamiento |
+|---------|----------------|
+| Qué se muestrea | Sesiones `client backend` en `active`, `idle` o `idle in transaction`, sin las del rol monitor. Una sesión `idle` conserva la última query y su `query_id` (verificado en PG17): con un pool, cada conexión ociosa es un sample de una ejecución real |
+| Qué se descarta | Texto con `$n` (protocolo extendido / prepared statements), truncado por `track_activity_query_size`, `<insufficient privilege>`, y lo que no pase `is_explainable_command` / `is_single_statement` |
+| Clave | `(db_id, database_name, query_id)`: `query_id` colisiona entre bases del mismo servidor |
+| Reemplazo | Regla de `QUERY_SAMPLE_TEXT`: el sample nuevo pisa al guardado si tardó más (`duration_ms`: idle = lo que tardó, active = lo que lleva) o si el guardado tiene más de `ACTIVITY_SAMPLE_MAX_AGE_S` (60 s) |
+| Vida | Leer no borra. Una entrada caduca a los `ACTIVITY_SAMPLE_TTL_S` (300 s) sin volver a verse su `query_id`; tope de `ACTIVITY_SAMPLE_MAX_ENTRIES` (1000) por target, sale la vista hace más tiempo. Un target desactivado se olvida en el ciclo siguiente |
+| Persistencia | **Ninguna.** Los literales solo viven en RAM: no se escriben en disco, cola ni logs. Al reiniciar el runner el buffer arranca vacío (cold start) y los planes son `generic` hasta que se llena |
+| Fallback | Sin sample, o si su EXPLAIN falla (la tabla cambió), se usa el genérico en una transacción nueva; solo cuenta como `EXPLAIN_FAILED` si también falla el genérico. El log del fallo del sample lleva solo el tipo de excepción (el mensaje de Postgres puede citar literales) |
+| Privacidad del plan | Un plan `sample` trae literales en `Filter` / `Index Cond`: `redact_pg_sample_predicates` (hook de `Postgres_Collector`) los pasa a `$n`, igual que N-1 en MySQL |
+| Salud | Un target que falla no frena a los demás; el error se loguea por transición y el ciclo lo reporta como `ACTIVITY_SAMPLER_FAILED` (info, scope `explain`) |
+| Alcance | Solo `runner.py`. `main.py` (una vuelta) y el sandbox sin `db_id` usan el genérico, como antes |
+
+Cobertura medida (2026-10-11, sandbox PG17, 60 s, 8 conexiones persistentes con think time, polling de 1 s): 7/7 queries del workload con sample válido, 457 de 473 filas observadas en `idle`; costo de cada poll p50 2,3 ms. Ver `references/005_evaluacion_alternativas_query_real.md`.
 
 ## Salud del pipeline (pipeline_health)
 
@@ -252,13 +285,13 @@ Los tests de arquitectura son **contratos estructurales**: validan "qué interfa
 - `query_id` es `Union[str, int, None]`: MySQL lo emite como `{schema}/{digest}` (string — el digest hex solo hubiera perdido una de cada par de filas con el mismo digest en dos schemas, que es la PK real de `events_statements_summary_by_digest`), Postgres como `queryid` bigint.
 - El `queryid` de Postgres es un hash a nivel instancia y **no incluye la base**: si dos bases del mismo servidor ejecutan la misma query, comparten `query_id`, y el dedupe por `query_id` de `select_candidates_to_explain` las colapsaría en un candidato. Aceptado como limitación (una base por target hace el caso improbable); el EXPLAIN de un candidato sin colisión que vive en otra base ya corre en una conexión dedicada a esa base. Ver `references/004_decisiones_contrato.md` (query_id).
 - Cada fila de `statements`, `locks` y `active_queries` lleva `database_name` (`str | None`): la recolección es server-wide (pg_stat_statements/pg_locks/pg_stat_activity y digests MySQL leen todo el servidor) y la atribución por fila permite saber de qué base vino cada cosa bajo un mismo `db_id`. Un candidato de Postgres de otra base se explica en una **conexión dedicada a esa base** (una conexión PG no cambia de base con `USE`); en MySQL el `USE {schema|database}` alcanza, y si no hay contexto de schema el candidato se salta (ver `references/004_decisiones_contrato.md`).
-- `ready_for_explain` es la puerta de entrada a `EXPLAIN`. `init_ready_for_explain` solo la inicializa en `False` y deduplica por `query_id`; la decisión real la toma `mark_explainable`, por motor: Postgres marca todo como listo porque `EXPLAIN (GENERIC_PLAN)` resuelve los placeholders `$1` sin conocer los valores; MySQL marca solo lo que tiene `QUERY_SAMPLE_TEXT`, porque su `EXPLAIN` necesita literales reales.
-- Antes (`c730da1`) la explicación exigía que el `query_id` del candidato estuviera en `active_queries`, es decir que la query se estuviera ejecutando en ese instante. Ese cruce ya no aplica desde `93beb5e`: cada motor produce el plan por su vía nativa sin necesitar la query en vivo, así que `init_ready_for_explain` ya no lee `active_queries` (aunque el nombre y la firma los conserven).
+- `ready_for_explain` es la puerta de entrada a `EXPLAIN`. `init_ready_for_explain` solo la inicializa en `False` y deduplica por `query_id`; la decisión real la toma `mark_explainable`, por motor: Postgres marca todo como listo porque `EXPLAIN (GENERIC_PLAN)` resuelve los placeholders `$1` sin conocer los valores (y si el buffer de actividad tiene una query real, se explica esa); MySQL marca solo lo que tiene `QUERY_SAMPLE_TEXT`, porque su `EXPLAIN` necesita literales reales.
+- Antes (`c730da1`) la explicación exigía que el `query_id` del candidato estuviera en `active_queries`, es decir que la query se estuviera ejecutando en ese instante. Ese cruce ya no aplica desde `93beb5e`: cada motor produce el plan por su vía nativa sin necesitar la query en vivo, así que `init_ready_for_explain` ya no lee `active_queries` (aunque el nombre y la firma los conserven). El sampler de actividad no reintroduce esa dependencia: un sample mejora el plan de Postgres, pero sin él el candidato se explica igual con el genérico.
 - La asimetría es propia de cada motor, no una inconsistencia: `pg_stat_statements.query` ya viene normalizado con `$1` y `EXPLAIN (GENERIC_PLAN)` lo convierte en plan. `DIGEST_TEXT` de MySQL trae `?`, que no produce plan; `QUERY_SAMPLE_TEXT` trae la consulta con valores reales, que sí lo produce.
-- El ciclo del runner por defecto es de **10 s** (`interval_from_env()`, pensado para pruebas/sandbox). Para producción la cadencia prevista es de **30–60 s** (decisión de deploy, sin tocar código): cada vuelta emite un snapshot por base, así que el intervalo es la palanca directa de volumen de la cola (ver la fila "No guarda estado entre ciclos").
+- El ciclo del runner por defecto es de **10 s** (`interval_from_env()`, pensado para pruebas/sandbox). Para producción la cadencia prevista es de **30–60 s** (decisión de deploy, sin tocar código): cada vuelta emite un snapshot por base, así que el intervalo es la palanca directa de volumen de la cola (ver la fila "No guarda estado del snapshot entre ciclos").
 - La transacción del target se maneja en dos tiempos: el **collect** la cierra con `commit()` al terminar (no retiene snapshot/vacuum de Postgres ni MVCC de MySQL durante el resto del ciclo), y cada **EXPLAIN** corre en su propia **transacción corta** (`BEGIN → SET LOCAL/USE → EXPLAIN → COMMIT`; rollback en fallo; el `USE` de MySQL es estado de sesión y sobrevive al commit). Ver `references/004_decisiones_contrato.md` (M-12).
 - `EXPLAIN (GENERIC_PLAN)` existe desde PostgreSQL 16, pero el mínimo soportado es **17** (ver "Versiones soportadas"): en PG 16 ya falla antes la sección `statements`. Si un EXPLAIN falla, la excepción se captura por consulta, se hace `rollback` y el candidato queda fuera de `canonic_explains` sin abortar el ciclo.
-- `explain_source` viaja en `canonic_explains` para que el consumidor sepa con qué fidelidad se obtuvo el plan: `"generic"` (Postgres, plan sin valores concretos) o `"sample"` (MySQL, plan de una ejecución real).
+- `explain_source` viaja en `canonic_explains` para que el consumidor sepa con qué fidelidad se obtuvo el plan: `"generic"` (Postgres sin sample, plan sin valores concretos) o `"sample"` (plan de una ejecución real: `QUERY_SAMPLE_TEXT` en MySQL, buffer de `pg_stat_activity` en Postgres).
 - `QUERY_SAMPLE_TEXT` se trunca a `performance_schema_max_digest_text_length` (1024 por defecto). Una consulta larga queda con SQL inválido: se trata igual que cualquier fallo de `EXPLAIN`, y aparece como no explicable.
 - `query_sample_text` es **flujo interno, no campo del contrato**: MySQL lo produce (`QUERY_SAMPLE_TEXT`, literales reales) y solo lo usan `mark_explainable` y el `EXPLAIN FORMAT=JSON <sample>` en memoria. El payload lo **descarta** (`extra="ignore"`; ver `references/004_decisiones_contrato.md`): la cola no debe conservar texto real de las queries — solo viajan los normalizados (`query_text` de Postgres con `$1`, `DIGEST_TEXT` de MySQL con `?`) y los predicados de plan de MySQL (`canonic_explains[*].predicate`), que `clean_mysql_explain_predicate_dynamic` redacta a `$n` (N-1) porque el plan se arma con la query real. El fix de M-10 que lo declaró en el contrato fue un error y quedó revertido; este requisito es la razón por la que el campo nunca estuvo en el contrato.
 - Los scripts que medían la mecánica basada en logs se descartaron; la justificación vive en `references/005_evaluacion_alternativas_query_real.md` (cobertura incompleta del slow log, permisos de FS, config del servidor, texto logueado ≠ texto planificado). La carpeta `research/` se eliminó del repo.
