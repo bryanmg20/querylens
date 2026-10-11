@@ -88,6 +88,47 @@ def normalize_predicate(stats: Stats):
                 cleaned_predicate = clean_mysql_explain_predicate_dynamic(predicate)
                 operation["predicate"] = cleaned_predicate
 
+# Literal tal como Postgres lo escribe en un plan: string con '' como escape o
+# numero, con cast opcional ('85%'::text, 500, '{1,2}'::integer[],
+# '2024-01-01 00:00:00'::timestamp without time zone). El cast solo toma
+# palabras en minuscula: AND/OR del plan van en mayuscula. El numero no puede
+# ser parte de un identificador (sbtest1), de un $n ni de "SubPlan 1".
+_PG_PLAN_LITERAL = re.compile(
+    r"(?:'(?:[^']|'')*'"
+    r"|(?<![\w$.'])(?<!Plan )-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?(?![\w.]))"
+    r"(?:::[a-z_]\w*(?: [a-z_]\w*)*(?:\[\])?)?"
+)
+
+
+def anonymize_pg_predicate(predicate):
+    """Predicado de un plan de Postgres sin literales: cada uno pasa a $1, $2,
+    ... en orden de lectura, numerado por predicado (misma regla que
+    clean_mysql_explain_predicate_dynamic aplica a MySQL, N-1). El resto del
+    texto queda como lo escribio Postgres."""
+    if not predicate:
+        return predicate
+    counter = {"n": 0}
+
+    def replace(_match):
+        counter["n"] += 1
+        return f"${counter['n']}"
+
+    return _PG_PLAN_LITERAL.sub(replace, predicate)
+
+
+def redact_pg_sample_predicates(stats: Stats):
+    """Un plan con explain_source="sample" salio de una query real (buffer de
+    pg_stat_activity): sus Filter / Index Cond traen los valores de la app. La
+    cola no los puede llevar. Los planes genericos ya vienen con $n."""
+    for explain in stats.get("canonic_explains") or []:
+        if explain.get("explain_source") != "sample":
+            continue
+        canonical_plan = explain.get("canonical_plan") or {}
+        for operation in canonical_plan.get("physical_operations") or []:
+            if operation.get("predicate"):
+                operation["predicate"] = anonymize_pg_predicate(operation["predicate"])
+
+
 def clean_mysql_explain_predicate_dynamic(pred_text):
     if not pred_text:
         return None

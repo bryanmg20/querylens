@@ -14,7 +14,7 @@ import pytest
 
 from collectors.mysql.collector import Mysql_Collector
 from collectors.postgres.collector import Postgres_Collector
-from stages.normalize import NormalizeStage
+from stages.normalize import NormalizeStage, anonymize_pg_predicate, redact_pg_sample_predicates
 
 pytestmark = pytest.mark.unit
 
@@ -250,3 +250,71 @@ class TestPredicateCanonicalization:
             "physical_operations"
         ][0]
         assert operation["predicate"] is None
+
+
+# ---------- planes de sample de Postgres (buffer de pg_stat_activity) ----------
+
+
+@pytest.mark.parametrize("predicate, expected", [
+    ("((c)::text ~~ '85%'::text)", "((c)::text ~~ $1)"),
+    ("(id = 797)", "(id = $1)"),
+    ("((id >= 2868) AND (id <= 2968))", "((id >= $1) AND (id <= $2))"),
+    ("(k = ANY ('{1,2,3}'::integer[]))", "(k = ANY ($1))"),
+    ("(created_at > '2024-01-01 00:00:00'::timestamp without time zone)", "(created_at > $1)"),
+    ("((c)::text = 'it''s'::text)", "((c)::text = $1)"),
+    ("(k > -5)", "(k > $1)"),
+    ("(x = 1.5e3)", "(x = $1)"),
+    ("(sbtest1.id < 389)", "(sbtest1.id < $1)"),
+    ("((k % 34) = 0)", "((k % $1) = $2)"),
+    # Lo que no es dato queda intacto.
+    ("(id = $1)", "(id = $1)"),
+    ("(a.k = (SubPlan 1))", "(a.k = (SubPlan 1))"),
+    ("(k = (InitPlan 1).col1)", "(k = (InitPlan 1).col1)"),
+    ("(b.k = a.k)", "(b.k = a.k)"),
+    (None, None),
+])
+def test_anonymize_pg_predicate(predicate, expected):
+    assert anonymize_pg_predicate(predicate) == expected
+
+
+def _explain(source, predicate):
+    return {
+        "query_id": 1,
+        "explain_source": source,
+        "canonical_plan": {"physical_operations": [
+            {"type": "scan", "predicate": predicate},
+            {"type": "sort", "predicate": None},
+        ]},
+    }
+
+
+def test_redact_touches_only_sample_plans():
+    stats = {"canonic_explains": [
+        _explain("sample", "(id = 797)"),
+        # Constante del esquema (vista, CHECK), no dato de la app: el texto
+        # de pg_stat_statements ya llego normalizado.
+        _explain("generic", "((status)::text = 'active'::text)"),
+    ]}
+
+    redact_pg_sample_predicates(stats)
+
+    sample, generic = stats["canonic_explains"]
+    assert sample["canonical_plan"]["physical_operations"][0]["predicate"] == "(id = $1)"
+    assert sample["canonical_plan"]["physical_operations"][1]["predicate"] is None
+    assert generic["canonical_plan"]["physical_operations"][0]["predicate"] == (
+        "((status)::text = 'active'::text)"
+    )
+
+
+def test_redact_tolerates_missing_sections():
+    redact_pg_sample_predicates({})
+    redact_pg_sample_predicates({"canonic_explains": [{"explain_source": "sample"}]})
+
+
+def test_postgres_collector_redacts_sample_plans():
+    stats = {"canonic_explains": [_explain("sample", "((c)::text = 'secreto'::text)")]}
+
+    Postgres_Collector(None).normalize_engine_artifacts(stats)
+
+    predicate = stats["canonic_explains"][0]["canonical_plan"]["physical_operations"][0]["predicate"]
+    assert "secreto" not in predicate

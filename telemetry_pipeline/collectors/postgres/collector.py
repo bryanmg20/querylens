@@ -33,6 +33,7 @@ class Postgres_Collector(DB_Engine_Collector):
 
     def normalize_engine_artifacts(self, stats: Stats) -> Stats:
         normalize.normalize_active_query_timestamps(stats)
+        normalize.redact_pg_sample_predicates(stats)
         return stats
 
     def mark_explainable(self, stats: Stats) -> Stats:
