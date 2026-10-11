@@ -349,8 +349,8 @@ MUTANTS = [
     # leidas, asi que el orden no cambia ningun resultado). En su lugar se fija
     # el aislamiento: una seccion fallida no puede cortar las siguientes.
     mut("stages/collect.py",
-        '| query={key} | {e}")\n        return stats',
-        '| query={key} | {e}")\n                break\n        return stats',
+        'self.report.section_failed(key)\n        self.report.checked("collect")',
+        'self.report.section_failed(key)\n                break\n        self.report.checked("collect")',
         "collect: una seccion fallida corta las siguientes"),
 
     # ---- orchestrator.py ----
@@ -489,8 +489,8 @@ MUTANTS = [
 
     # ---- main.py ----
     mut("main.py",
-        '        logger.error(f"{dialect} | snapshot_validation | {e}")\n        return None',
-        '        logger.error(f"{dialect} | snapshot_validation | {e}")',
+        '        report.add("SNAPSHOT_VALIDATION_FAILED")\n        return None',
+        '        report.add("SNAPSHOT_VALIDATION_FAILED")',
         "main: romper ante un snapshot invalido (sin return None)"),
     mut("main.py",
         'payload_json = snapshot.to_json()',
@@ -505,8 +505,8 @@ MUTANTS = [
         '        run_engine(target.dialect, target.factory, target.db_id)',
         "main: no aislar un target que revienta"),
     mut("main.py",
-        '    finally:\n        if target_engine is not None:\n            _dispose(target_engine)\n        if querylens_engine is not None:\n            _dispose(querylens_engine)',
-        '    finally:\n        pass',
+        'report, started_at)\n        if target_engine is not None:\n            _dispose(target_engine)\n        if querylens_engine is not None:\n            _dispose(querylens_engine)',
+        'report, started_at)',
         "main: no hacer dispose de los engines"),
 
     # ---- runner.py ----
