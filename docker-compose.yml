@@ -126,6 +126,29 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  detection-engine:
+    # Consumidor de la cola analyze_job (detection_engine/main.py): lee los
+    # snapshots que encola el pipeline, detecta antipatrones y guarda los
+    # hallazgos en la tabla hallazgos. Contexto = raiz del repo porque necesita
+    # querylens_database/ (DDL de hallazgos y statement_samples).
+    build:
+      context: .
+      dockerfile: detection_engine/Dockerfile
+    container_name: querylens_detection_engine
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      QUERYLENS_DB: ${QUERYLENS_DB}
+      QUERYLENS_USER: ${QUERYLENS_USER}
+      QUERYLENS_PASSWORD: ${QUERYLENS_PASSWORD}
+    volumes:
+      - detection_engine_logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   pgdata:
   pipeline_logs:
+  detection_engine_logs:
