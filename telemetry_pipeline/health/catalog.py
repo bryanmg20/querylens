@@ -174,6 +174,13 @@ CATALOG: dict[str, IssueDef] = {
         "No se pudo generar el plan de algunas queries.",
         "Si persiste, contacta a soporte.",
     ),
+    "PG_STATS_MISSING": IssueDef(
+        "explain", "config", INFO,
+        "Algunas tablas consultadas no tienen estadisticas; el plan de esas "
+        "queries se estima sin valores reales.",
+        "Ejecuta ANALYZE sobre las tablas de las queries afectadas o revisa que "
+        "autovacuum este activo.",
+    ),
     "NO_EXPLAINABLE_CANDIDATES": IssueDef(
         "explain", "config", INFO,
         "En este ciclo ninguna query candidata se pudo analizar (solo se analizan SELECT/WITH).",

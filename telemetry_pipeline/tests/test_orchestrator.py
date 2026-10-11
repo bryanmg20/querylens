@@ -348,7 +348,9 @@ def test_reuses_one_connection_for_every_stage():
     explain_calls = [s for s in conn.sent if s.startswith("EXPLAIN")]
     set_calls = [s for s in conn.sent if s.startswith("SET LOCAL search_path")]
     assert len(explain_calls) == 2
-    assert len(set_calls) == 2
+    # Por candidato, dos transacciones cortas sobre la misma conexion: la del
+    # plan generico y la de sus variantes con pg_stats ((id = $1) es mapeable).
+    assert len(set_calls) == 4
 
 
 def test_collect_commits_the_read_transaction_before_explain():

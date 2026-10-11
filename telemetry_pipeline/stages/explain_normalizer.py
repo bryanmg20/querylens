@@ -1,6 +1,7 @@
 import json
 
 from models.stats import Stats
+from stages import plan_variants as pv
 from stages.normalize import _to_number as to_number
 def _flag(node, key):
     """MySQL reporta Estas caracteristicas como bool en el plan; el snapshot solo
@@ -20,34 +21,75 @@ class PostgresExplainNormalizer:
         canonic_explains = []
 
         for explain in stats.get("query_explain") or []:
-            canonical_plan = {
-                "logical_shape": {
-                    "scans": 0,
-                    "joins": 0,
-                    "aggregates": 0,
-                    "sorts": 0,
-                    "subqueries": 0,
-                    "distinct": 0,
-                },
-                "physical_operations": [],
-                "estimates": {
-                    "total_cost": None,
-                },
-            }
-
-            root_plan = self._root_plan(explain.get("plan"))
-            if root_plan:
-                canonical_plan["estimates"] = self._plan_estimates(root_plan)
-                self._walk_plan(root_plan, canonical_plan)
-
-            canonic_explains.append({
+            canonical_plan = self._canonical_plan(explain.get("plan"))
+            canonic_explain = {
                 "query_id": explain.get("query_id"),
                 "explain_source": explain.get("explain_source"),
                 "canonical_plan": canonical_plan,
-            })
+            }
+
+            variants = [
+                variant for variant in map(self._variant, explain.get("variants") or [])
+                if variant is not None
+            ]
+            if variants:
+                canonic_explain["plan_variants"] = variants
+                canonic_explain["plan_stability"] = self._stability(canonical_plan, variants)
+            elif explain.get("plan_stability"):
+                canonic_explain["plan_stability"] = explain["plan_stability"]
+
+            canonic_explains.append(canonic_explain)
 
         stats["canonic_explains"] = canonic_explains
         return stats
+
+    def _canonical_plan(self, plan):
+        canonical_plan = {
+            "logical_shape": {
+                "scans": 0,
+                "joins": 0,
+                "aggregates": 0,
+                "sorts": 0,
+                "subqueries": 0,
+                "distinct": 0,
+            },
+            "physical_operations": [],
+            "estimates": {
+                "total_cost": None,
+            },
+        }
+
+        root_plan = self._root_plan(plan)
+        if root_plan:
+            canonical_plan["estimates"] = self._plan_estimates(root_plan)
+            self._walk_plan(root_plan, canonical_plan)
+        return canonical_plan
+
+    def _variant(self, variant):
+        """Plan custom armado con valores reales de pg_stats: los predicados
+        (Filter, Index Cond) traen esos valores. Viajan anonimizados, con los
+        literales numerados $1, $2, ... como en MySQL."""
+        if self._root_plan(variant.get("plan")) is None:
+            return None
+        canonical_plan = self._canonical_plan(variant.get("plan"))
+        for operation in canonical_plan["physical_operations"]:
+            operation["predicate"] = pv.anonymize_predicate(operation.get("predicate"))
+        return {"label": variant.get("label"), "canonical_plan": canonical_plan}
+
+    @staticmethod
+    def _stability(canonical_plan, variants):
+        """sensitive si alguna variante cambia el tipo de operacion o el metodo
+        de acceso de alguna tabla respecto del plan generico."""
+        def shape(plan):
+            return [
+                (op["type"], op.get("access_method"), op.get("relation"))
+                for op in plan["physical_operations"]
+            ]
+
+        generic = shape(canonical_plan)
+        if all(shape(v["canonical_plan"]) == generic for v in variants):
+            return "stable"
+        return "sensitive"
 
     def _root_plan(self, plan):
         value = plan

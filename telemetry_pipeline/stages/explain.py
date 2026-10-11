@@ -7,6 +7,7 @@ from health.report import HealthReport
 from logger import get_logger
 from models.stats import Stats
 from stages import explain_normalizer as en
+from stages import plan_variants as pv
 # is_single_statement se re-exporta: tests y mutantes lo importan desde aqui.
 from stages.sql_text import is_explainable_command, is_single_statement  # noqa: F401
 
@@ -95,6 +96,33 @@ class ExplainStage:
             engine.dispose()
         self._foreign_engines.clear()
 
+    def _add_plan_variants(self, explain_entry, query_text, context_sql, conn, query_id):
+        """Planes custom con valores de pg_stats (stages/plan_variants.py), en
+        su propia transaccion corta: si fallan, el plan generico ya guardado no
+        se toca y el candidato no cuenta como fallido."""
+        root = en.PostgresExplainNormalizer()._root_plan(explain_entry["plan"])
+        targets = pv.param_targets(query_text, root) if root is not None else None
+        if targets is None:
+            return
+        try:
+            with conn.begin():
+                if context_sql:
+                    conn.execute(text(context_sql))
+                outcome = pv.explain_variants(conn, query_text, targets)
+        except Exception as e:
+            # Solo la clase: el mensaje del driver puede traer el valor de
+            # pg_stats con el que se armo el EXECUTE.
+            logger.warning(
+                f"postgres | EXPLAIN variants | query_id={query_id} | {type(e).__name__}"
+            )
+            return
+        if outcome.stats_missing:
+            self.report.add("PG_STATS_MISSING")
+        if outcome.stability:
+            explain_entry["plan_stability"] = outcome.stability
+        if outcome.variants:
+            explain_entry["variants"] = outcome.variants
+
     def execute(self, stats: Stats, conn):
         stats["query_explain"] = []
         failures = 0
@@ -158,11 +186,12 @@ class ExplainStage:
                             result = active.execute(
                                 text(f"EXPLAIN (GENERIC_PLAN, FORMAT JSON) {query_text}")
                             )
-                            stats["query_explain"].append({
+                            explain_entry = {
                                 "query_id": query_id,
                                 "explain_source": "generic",
                                 "plan": [dict(row) for row in result.mappings()],
-                            })
+                            }
+                            stats["query_explain"].append(explain_entry)
                         else:
                             result = active.execute(text(f"EXPLAIN FORMAT=JSON {query_text}"))
                             plan_row = next(result.mappings(), None)
@@ -176,6 +205,10 @@ class ExplainStage:
                                 "explain_source": "sample",
                                 "plan": json.loads(plan_row["EXPLAIN"]),
                             })
+                    if dialect == "postgres":
+                        self._add_plan_variants(
+                            explain_entry, query_text, context_sql, active, query_id
+                        )
                 except Exception as e:
                     logger.error(f"{dialect} | EXPLAIN | query_id={query_id} | {e}")
                     failures += 1

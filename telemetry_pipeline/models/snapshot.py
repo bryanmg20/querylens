@@ -174,10 +174,23 @@ class CanonicalPlan(BaseModel):
     estimates: Estimates = Field(default_factory=Estimates)
 
 
+class PlanVariant(BaseModel):
+    # Plan custom de Postgres con un valor de pg_stats: many_rows usa el valor
+    # que trae mas filas, few_rows el que trae menos. Sus predicados viajan
+    # anonimizados: literales numerados $1, $2, ... por predicado, como MySQL.
+    label: Literal["many_rows", "few_rows"]
+    canonical_plan: CanonicalPlan
+
+
 class CanonicExplain(BaseModel):
     query_id: QueryId
     explain_source: str | None = None
     canonical_plan: CanonicalPlan
+    # Solo Postgres. stable: el plan no cambia con el valor de los $n;
+    # sensitive: alguna variante cambia operacion o metodo de acceso; None: no
+    # se evaluo (sin $n mapeables, sin pg_stats, MySQL) y vale solo el generico.
+    plan_stability: Literal["stable", "sensitive"] | None = None
+    plan_variants: list[PlanVariant] = Field(default_factory=list)
 
 
 class SnapshotPayload(BaseModel):

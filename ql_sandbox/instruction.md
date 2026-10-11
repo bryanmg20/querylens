@@ -90,6 +90,27 @@ Crean en `ql_demo` (con el usuario de la app) una FK simple
 3 filas por motor en el snapshot. Se pueden volver a ejecutar sin problema; con `drop`
 al final borran las tablas `ql_fk_*`.
 
+## Variantes de plan con `pg_stats` (solo PostgreSQL)
+
+Las queries de `battery.sh` no generan `plan_variants`: todas tienen algún `$n`
+que no corresponde a una columna (`LIMIT $n`, `$n` en el SELECT, `LIKE`). Para
+ver variantes:
+
+```bash
+docker exec ql_sysbench bash /scripts/postgres/simulate_plan_variants_postgres.sh [REPS]
+```
+
+El script crea `ql_pedidos` (200k filas; `estado`: 95 % `entregado`, 4 %
+`pendiente`, 1 % `fallido`) y `ql_pedidos_sin_stats` (sin `ANALYZE`), resetea
+`pg_stat_statements` y corre queries con `=`, `>` y `>=`. En el siguiente ciclo
+del pipeline:
+
+- las queries sobre `estado` y `monto` salen con `plan_stability = "sensitive"` y dos variantes (`many_rows` con Seq Scan, `few_rows` con Index Scan);
+- `cliente_id = $1` sale `stable`, porque la columna no tiene valores frecuentes;
+- la query sobre `ql_pedidos_sin_stats` queda solo con el plan genérico y abre `PG_STATS_MISSING` en `pipeline_health`.
+
+Para borrar las tablas: `... simulate_plan_variants_postgres.sh cleanup`.
+
 ## Ajustar la carga (opcional)
 
 Edita las primeras líneas de `scripts/run.sh`:
