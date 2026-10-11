@@ -2,6 +2,7 @@ import json
 
 from sqlalchemy import text
 
+from activity.sampler import usable_sample_text
 from health.classify import classify
 from health.report import HealthReport
 from logger import get_logger
@@ -16,9 +17,19 @@ EXPLAIN_NORMALIZERS = en.EXPLAIN_NORMALIZERS
 
 
 class ExplainStage:
-    def __init__(self, collector, report: HealthReport | None = None):
+    def __init__(
+        self,
+        collector,
+        report: HealthReport | None = None,
+        samples=None,
+        db_id: str | None = None,
+    ):
         self.collector = collector
         self.report = report if report is not None else HealthReport()
+        # ActivitySampleBuffer del runner (solo Postgres). None (main.py, tests,
+        # sandbox sin db_id): todo candidato usa el plan generico, como antes.
+        self.samples = samples
+        self.db_id = db_id
         self._foreign_engines = {}
         # Seam para tests: inyecta un builder de "engine" (url -> engine) para
         # probar el ruteo sin abrir conexiones reales contra otra base.
@@ -95,6 +106,50 @@ class ExplainStage:
             engine.dispose()
         self._foreign_engines.clear()
 
+    def _sample_text(self, query):
+        """Texto real del buffer para este candidato, o None.
+
+        La puerta de solo-lectura se re-aplica aqui aunque el sampler ya la
+        paso: este es el texto que de verdad llega al EXPLAIN."""
+        if self.samples is None or self.db_id is None:
+            return None
+        sample = self.samples.lookup(self.db_id, query.get("database_name"), query.get("query_id"))
+        if sample is None or not usable_sample_text(sample.query_text):
+            return None
+        return sample.query_text
+
+    @staticmethod
+    def _run_plan(conn, context_sql, explain_sql):
+        """Transaccion corta (M-12): SET LOCAL + EXPLAIN y se cierra."""
+        with conn.begin():
+            if context_sql:
+                conn.execute(text(context_sql))
+            result = conn.execute(text(explain_sql))
+            return [dict(row) for row in result.mappings()]
+
+    def _explain_postgres(self, conn, query, context_sql):
+        """(plan, explain_source). Con sample del buffer, el plan de esa
+        ejecucion real; si no hay o su EXPLAIN falla (la tabla cambio desde que
+        se vio), el generico de pg_stat_statements."""
+        query_id = query.get("query_id")
+        sample_text = self._sample_text(query)
+        if sample_text is not None:
+            try:
+                # text() lee ":nombre" como bind param; en un literal del sample
+                # ('10:30') tiene que llegar tal cual. "\:" lo escapa.
+                escaped = sample_text.replace(":", "\\:")
+                return self._run_plan(conn, context_sql, f"EXPLAIN (FORMAT JSON) {escaped}"), "sample"
+            except Exception as e:
+                # Solo el tipo: el mensaje de Postgres puede citar literales del sample.
+                logger.debug(
+                    f"postgres | EXPLAIN sample | query_id={query_id} "
+                    f"| {type(e).__name__} | uso el plan generico"
+                )
+        plan = self._run_plan(
+            conn, context_sql, f"EXPLAIN (GENERIC_PLAN, FORMAT JSON) {query.get('query_text')}"
+        )
+        return plan, "generic"
+
     def execute(self, stats: Stats, conn):
         stats["query_explain"] = []
         failures = 0
@@ -150,32 +205,29 @@ class ExplainStage:
                     # contexto (SET LOCAL / USE) + EXPLAIN. En Postgres SET LOCAL
                     # es transaccional y se deshace al cerrar; en MySQL el USE es
                     # estado de sesion y sobrevive al COMMIT.
+                    if dialect == "postgres":
+                        plan, source = self._explain_postgres(active, query, context_sql)
+                        stats["query_explain"].append({
+                            "query_id": query_id,
+                            "explain_source": source,
+                            "plan": plan,
+                        })
+                        continue
                     with active.begin():
                         if context_sql:
                             active.execute(text(context_sql))
-
-                        if dialect == "postgres":
-                            result = active.execute(
-                                text(f"EXPLAIN (GENERIC_PLAN, FORMAT JSON) {query_text}")
-                            )
-                            stats["query_explain"].append({
-                                "query_id": query_id,
-                                "explain_source": "generic",
-                                "plan": [dict(row) for row in result.mappings()],
-                            })
-                        else:
-                            result = active.execute(text(f"EXPLAIN FORMAT=JSON {query_text}"))
-                            plan_row = next(result.mappings(), None)
-                            if plan_row is None:
-                                logger.error(f"mysql | EXPLAIN | query_id={query_id} | returned no plan row")
-                                failures += 1
-                                self.report.add("EXPLAIN_FAILED")
-                                continue
-                            stats["query_explain"].append({
-                                "query_id": query_id,
-                                "explain_source": "sample",
-                                "plan": json.loads(plan_row["EXPLAIN"]),
-                            })
+                        result = active.execute(text(f"EXPLAIN FORMAT=JSON {query_text}"))
+                        plan_row = next(result.mappings(), None)
+                        if plan_row is None:
+                            logger.error(f"mysql | EXPLAIN | query_id={query_id} | returned no plan row")
+                            failures += 1
+                            self.report.add("EXPLAIN_FAILED")
+                            continue
+                        stats["query_explain"].append({
+                            "query_id": query_id,
+                            "explain_source": "sample",
+                            "plan": json.loads(plan_row["EXPLAIN"]),
+                        })
                 except Exception as e:
                     logger.error(f"{dialect} | EXPLAIN | query_id={query_id} | {e}")
                     failures += 1

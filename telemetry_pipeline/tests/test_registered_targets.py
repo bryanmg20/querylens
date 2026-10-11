@@ -180,7 +180,7 @@ def test_main_ejecuta_solo_los_registrados(monkeypatch):
     monkeypatch.setattr(
         main,
         "run_engine",
-        lambda dialect, factory, db_id=None: called.append((dialect, db_id)),
+        lambda dialect, factory, db_id=None, sampler=None: called.append((dialect, db_id)),
     )
 
     main.main()
@@ -198,7 +198,7 @@ def test_main_aisla_un_target_que_revienta(monkeypatch, caplog):
     monkeypatch.setattr(main, "load_registered_targets", lambda: registrados)
     ok = []
 
-    def run_engine(dialect, factory, db_id=None):
+    def run_engine(dialect, factory, db_id=None, sampler=None):
         if db_id == "db_malo0000":
             raise RuntimeError("motor caido a proposito")
         ok.append(db_id)

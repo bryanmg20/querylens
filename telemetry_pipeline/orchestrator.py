@@ -15,14 +15,15 @@ logger = get_logger(__name__)
 
 
 class Orchestrator:
-    def __init__(self, collector, report: HealthReport | None = None):
+    def __init__(self, collector, report: HealthReport | None = None, samples=None, db_id=None):
         self.collector = collector
         # Quien llama (main.run_engine) lo vuelca a pipeline_health al terminar.
         self.report = report if report is not None else HealthReport()
         self.preflight = PreflightStage(collector, self.report)
         self.collect = CollectStage(collector, self.report)
         self.candidates = CandidatesStage(collector)
-        self.explain = ExplainStage(collector, self.report)
+        # samples: ActivitySampleBuffer del runner (Postgres); None = plan generico.
+        self.explain = ExplainStage(collector, self.report, samples=samples, db_id=db_id)
         self.normalize = NormalizeStage(collector)
         self.enrich = EnrichStage(collector)
 

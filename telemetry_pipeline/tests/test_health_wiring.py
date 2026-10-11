@@ -298,3 +298,36 @@ def test_crash_after_another_blocking_issue_is_still_recorded(monkeypatch):
     [report] = flushed
     assert ("PG_STATEMENTS_NOT_INSTALLED", "statements") in report.issues
     assert ("PIPELINE_FAILED", "") in report.issues
+
+
+# ---------- sampler de pg_stat_activity ----------
+
+
+def test_sampler_error_is_reported_in_the_run(monkeypatch):
+    flushed = []
+    monkeypatch.setattr(main, "get_connection_querylens_db", mock.MagicMock)
+    monkeypatch.setattr(
+        main.health_writer, "flush",
+        lambda engine, db_id, report, started_at: flushed.append(report),
+    )
+    sampler = mock.MagicMock()
+    sampler.status.return_value = "OperationalError"
+
+    with pytest.raises(OperationalError):
+        main.run_engine("postgres", _BrokenEngine, db_id="db_1", sampler=sampler)
+
+    [report] = flushed
+    sampler.status.assert_called_once_with("db_1")
+    assert report.issues[("ACTIVITY_SAMPLER_FAILED", "")]["exc_type"] == "OperationalError"
+
+
+def test_healthy_sampler_adds_nothing():
+    report = HealthReport()
+    sampler = mock.MagicMock()
+    sampler.status.return_value = None
+
+    main._report_sampler(sampler, "db_1", report)
+    main._report_sampler(None, "db_1", report)
+    main._report_sampler(sampler, None, report)
+
+    assert not report.issues

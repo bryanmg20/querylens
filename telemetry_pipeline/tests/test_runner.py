@@ -194,3 +194,61 @@ def test_backoff_dobra_hasta_el_tope(caplog):
     assert len(llamadas) == 4
     runner.backoff = min(runner.backoff * 2, runner_mod.MAX_BACKOFF_S)
     assert runner.backoff == 60, "el tope evita esperas larguisimas tras un corte largo"
+
+
+# ---------- sampler de pg_stat_activity ----------
+
+
+def test_ciclo_pasa_los_targets_al_sampler():
+    sampler = mock.MagicMock()
+    targets = [mock.sentinel.uno]
+    ciclo = runner_mod.Runner(interval=10, load=lambda: targets, run=mock.MagicMock(), sampler=sampler)
+
+    ciclo.cycle()
+
+    sampler.update_targets.assert_called_once_with(targets)
+
+
+def test_ciclo_sin_targets_vacia_el_sampler():
+    """Una base desactivada deja de muestrearse aunque no quede ninguna."""
+    sampler = mock.MagicMock()
+    ciclo = runner_mod.Runner(interval=10, load=lambda: None, run=mock.MagicMock(), sampler=sampler)
+
+    ciclo.cycle()
+
+    sampler.update_targets.assert_called_once_with([])
+
+
+def test_run_por_defecto_lleva_el_sampler_a_run_targets(monkeypatch):
+    calls = []
+    monkeypatch.setattr(runner_mod, "run_targets", lambda targets, sampler=None: calls.append(sampler))
+    sampler = mock.MagicMock()
+    ciclo = runner_mod.Runner(interval=10, load=lambda: [1], sampler=sampler)
+
+    ciclo.cycle()
+
+    assert calls == [sampler]
+
+
+def test_run_forever_arranca_y_detiene_el_sampler():
+    sampler = mock.MagicMock()
+    ciclo = runner_mod.Runner(
+        interval=10, load=lambda: None, run=mock.MagicMock(), clock=_Clock(0), sampler=sampler
+    )
+    ciclo.stop = _FakeStop(stop_after=1)
+
+    ciclo.run_forever()
+
+    sampler.start.assert_called_once_with()
+    sampler.stop.assert_called_once_with()
+
+
+def test_run_forever_detiene_el_sampler_aunque_el_loop_lance():
+    sampler = mock.MagicMock()
+    ciclo = runner_mod.Runner(interval=10, load=lambda: None, run=mock.MagicMock(), sampler=sampler)
+    ciclo._loop = mock.Mock(side_effect=KeyboardInterrupt)
+
+    with pytest.raises(KeyboardInterrupt):
+        ciclo.run_forever()
+
+    sampler.stop.assert_called_once_with()

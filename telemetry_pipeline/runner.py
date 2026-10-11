@@ -16,7 +16,11 @@ Comportamiento del ciclo:
   * el log por ciclo es DEBUG y el de "sin bases" solo se emite en cambios de
     estado, para no llenar el archivo con 8 640 avisos al dia;
   * cada HEALTH_PURGE_INTERVAL_S (1 h por defecto) purga pipeline_health:
-    issues resueltos y last_run de mas de HEALTH_RETENTION_DAYS (15) dias.
+    issues resueltos y last_run de mas de HEALTH_RETENTION_DAYS (15) dias;
+  * en paralelo, un hilo (activity/sampler.py) muestrea pg_stat_activity cada
+    ACTIVITY_SAMPLE_INTERVAL_S (1 s) y guarda queries reales de Postgres en
+    memoria; el EXPLAIN del ciclo las usa en vez del plan generico. Es el unico
+    estado entre ciclos y se pierde al reiniciar (el EXPLAIN vuelve al generico).
 """
 import logging
 import math
@@ -24,7 +28,10 @@ import os
 import signal
 import threading
 import time
+from functools import partial
 
+from activity.buffer import ActivitySampleBuffer
+from activity.sampler import ActivitySampler
 from config.registered import _get_queue_engine, load_registered_targets
 from health import writer as health_writer
 from logger import get_logger
@@ -88,10 +95,16 @@ class Runner:
         clock=time.monotonic,
         purge=None,
         purge_interval=None,
+        sampler=None,
     ):
         self.interval = interval if interval is not None else interval_from_env()
         self.load = load if load is not None else load_registered_targets
-        self.run = run if run is not None else run_targets
+        # None = sin muestreo de actividad (tests, usos embebidos): el EXPLAIN
+        # de Postgres usa el plan generico. La entrada del daemon lo pasa.
+        self.sampler = sampler
+        if run is None:
+            run = partial(run_targets, sampler=sampler) if sampler is not None else run_targets
+        self.run = run
         self.clock = clock
         # None = sin purga (tests, usos embebidos); la entrada del daemon pasa
         # _purge_health.
@@ -110,6 +123,10 @@ class Runner:
         """SELECT de las filas activas + extraccion. Devuelve los targets o None."""
         self._maybe_purge()
         targets = self.load()
+        if self.sampler is not None:
+            # Antes del return de "sin targets": una base desactivada deja de
+            # muestrearse y sus samples se borran.
+            self.sampler.update_targets(targets or [])
         self._report_state(targets)
         if not targets:
             return None
@@ -148,6 +165,16 @@ class Runner:
 
     def run_forever(self) -> None:
         logger.info(f"runner | arrancado | intervalo {self.interval:g}s")
+        if self.sampler is not None:
+            self.sampler.start()
+        try:
+            self._loop()
+        finally:
+            if self.sampler is not None:
+                self.sampler.stop()
+        logger.info("runner | detenido")
+
+    def _loop(self) -> None:
         while not self.stop.is_set():
             started = self.clock()
             try:
@@ -166,7 +193,6 @@ class Runner:
             # Se ancla al inicio del ciclo: si duro menos que el intervalo se
             # espera lo que falte, si duro mas no se acumulan ticks atrasados.
             self.stop.wait(max(0.0, started + self.interval - self.clock()))
-        logger.info("runner | detenido")
 
     def request_stop(self, *_args) -> None:
         self.stop.set()
@@ -188,6 +214,6 @@ def _install_signal_handlers(runner: Runner) -> None:
 
 
 if __name__ == "__main__":
-    runner = Runner(purge=_purge_health)
+    runner = Runner(purge=_purge_health, sampler=ActivitySampler(ActivitySampleBuffer()))
     _install_signal_handlers(runner)
     runner.run_forever()

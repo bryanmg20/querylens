@@ -712,3 +712,156 @@ def test_mysql_sample_with_leading_comment_is_still_explained():
     )
     ExplainStage(_FakeMysqlCollector()).execute(stats, conn)
     assert any("EXPLAIN FORMAT=JSON /* app=checkout */ select" in s for s in conn.sent)
+
+
+# ---------- samples reales de pg_stat_activity (activity/buffer.py) ----------
+
+
+class _Buffer:
+    """lookup del ActivitySampleBuffer con samples fijos por clave."""
+
+    def __init__(self, samples=None):
+        self.samples = samples or {}
+        self.lookups = []
+
+    def lookup(self, db_id, database_name, query_id):
+        self.lookups.append((db_id, database_name, query_id))
+        text_ = self.samples.get((db_id, database_name, query_id))
+        if text_ is None:
+            return None
+        from activity.buffer import Sample
+        return Sample(text_, 1.0, 0.0)
+
+
+class _FailFirstExplainConn(_FakeConn):
+    """El primer EXPLAIN lanza (la tabla del sample cambio); el resto responde."""
+
+    def __init__(self):
+        super().__init__()
+        self.failed = False
+
+    def execute(self, stmt):
+        sql = str(stmt)
+        if sql.startswith("EXPLAIN") and not self.failed:
+            self.sent.append(sql)
+            self.failed = True
+            raise RuntimeError("relation does not exist")
+        return super().execute(stmt)
+
+
+def _sample_stats():
+    stats = _stats()
+    stats["top_impact_queries"][0]["database_name"] = "ql_demo"
+    return stats
+
+
+def test_postgres_explains_the_sample_when_the_buffer_has_one():
+    conn = _FakeConn()
+    stats = _sample_stats()
+    buffer = _Buffer({("db_1", "ql_demo", 1): "SELECT * FROM sbtest1 WHERE id = 797"})
+
+    ExplainStage(_FakeCollector(), samples=buffer, db_id="db_1").execute(stats, conn)
+
+    assert buffer.lookups == [("db_1", "ql_demo", 1)]
+    assert conn.sent[0] == "SET LOCAL search_path TO public"
+    assert conn.sent[1] == "EXPLAIN (FORMAT JSON) SELECT * FROM sbtest1 WHERE id = 797"
+    assert stats["canonic_explains"][0]["explain_source"] == "sample"
+
+
+def test_postgres_falls_back_to_generic_without_sample():
+    conn = _FakeConn()
+    stats = _sample_stats()
+
+    ExplainStage(_FakeCollector(), samples=_Buffer(), db_id="db_1").execute(stats, conn)
+
+    assert "GENERIC_PLAN" in conn.sent[1]
+    assert stats["canonic_explains"][0]["explain_source"] == "generic"
+
+
+def test_postgres_without_db_id_does_not_look_up_samples():
+    """Sandbox / main.py sin fila registrada: el sampler no tiene esa identidad."""
+    buffer = _Buffer({(None, "ql_demo", 1): "SELECT 1 FROM sbtest1 WHERE id = 1"})
+    stats = _sample_stats()
+
+    ExplainStage(_FakeCollector(), samples=buffer, db_id=None).execute(stats, _FakeConn())
+
+    assert buffer.lookups == []
+    assert stats["canonic_explains"][0]["explain_source"] == "generic"
+
+
+def test_postgres_sample_failure_retries_generic_in_a_new_transaction(caplog):
+    conn = _FailFirstExplainConn()
+    stats = _sample_stats()
+    buffer = _Buffer({("db_1", "ql_demo", 1): "SELECT * FROM sbtest1 WHERE id = 797"})
+    stage = ExplainStage(_FakeCollector(), samples=buffer, db_id="db_1")
+
+    with caplog.at_level(logging.DEBUG):
+        stage.execute(stats, conn)
+
+    explains = [s for s in conn.sent if s.startswith("EXPLAIN")]
+    assert explains[0].startswith("EXPLAIN (FORMAT JSON)")
+    assert explains[1].startswith("EXPLAIN (GENERIC_PLAN, FORMAT JSON)")
+    assert conn.rollback_calls == 1, "la transaccion del sample se deshace"
+    assert conn.sent.count("SET LOCAL search_path TO public") == 2
+    assert stats["canonic_explains"][0]["explain_source"] == "generic"
+    assert not stage.report.issues, "un sample fallido no es EXPLAIN_FAILED"
+    # El log no cita el texto del sample (trae literales reales).
+    assert not any("797" in r.getMessage() for r in caplog.records)
+
+
+def test_postgres_regates_the_sample_text_before_explain():
+    """Defensa en profundidad: un texto que no es de solo lectura no se explica
+    aunque llegue al buffer."""
+    conn = _FakeConn()
+    stats = _sample_stats()
+    buffer = _Buffer({("db_1", "ql_demo", 1): "SELECT * FROM sbtest1 FOR UPDATE"})
+
+    ExplainStage(_FakeCollector(), samples=buffer, db_id="db_1").execute(stats, conn)
+
+    assert "GENERIC_PLAN" in conn.sent[1]
+    assert stats["canonic_explains"][0]["explain_source"] == "generic"
+
+
+class _CompilingConn(_FakeConn):
+    """Compila cada statement como lo haria psycopg2: un ':nombre' sin escapar
+    se convierte en bind param y el literal llega roto al servidor."""
+
+    def execute(self, stmt):
+        from sqlalchemy.dialects import postgresql
+        self.compiled = getattr(self, "compiled", [])
+        self.compiled.append(str(stmt.compile(dialect=postgresql.dialect())))
+        return super().execute(stmt)
+
+
+def test_postgres_sample_colons_reach_the_server_verbatim():
+    """text() leeria ':b' como bind param; el sample se escapa."""
+    conn = _CompilingConn()
+    stats = _sample_stats()
+    sample = "SELECT * FROM sbtest1 WHERE c = 'a :b' AND k = 5::int AND d = '10:30'"
+    buffer = _Buffer({("db_1", "ql_demo", 1): sample})
+
+    ExplainStage(_FakeCollector(), samples=buffer, db_id="db_1").execute(stats, conn)
+
+    assert conn.compiled[1] == f"EXPLAIN (FORMAT JSON) {sample}"
+
+
+def test_mysql_ignores_the_activity_buffer():
+    class _MyCollector:
+        source_dialect = "mysql"
+        engine = MY_ENGINE
+
+    buffer = _Buffer()
+    stats = {
+        "top_impact_queries": [{
+            "query_id": "d",
+            "query_text": "SELECT * FROM t WHERE id = ?",
+            "query_sample_text": "SELECT * FROM t WHERE id = 1",
+            "ready_for_explain": True,
+            "schema_name": "ql_demo",
+        }],
+    }
+    conn = _FakeConn(rows=[{"EXPLAIN": json.dumps({"query_block": {"select_id": 1}})}])
+
+    ExplainStage(_MyCollector(), samples=buffer, db_id="db_1").execute(stats, conn)
+
+    assert buffer.lookups == []

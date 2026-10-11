@@ -77,7 +77,7 @@ def _flush_health(querylens_engine, health_db_id: str, report: HealthReport, sta
     health_writer.flush(engine, health_db_id, report, started_at)
 
 
-def run_engine(dialect: str, connection_factory, db_id: str | None = None):
+def run_engine(dialect: str, connection_factory, db_id: str | None = None, sampler=None):
     """Collect -> validate -> enqueue para UN solo motor. Devuelve msg_id o None.
 
     Quien llama decide la credencial (el factory) y la identidad (db_id): este
@@ -85,6 +85,9 @@ def run_engine(dialect: str, connection_factory, db_id: str | None = None):
     de enrich. Este wrapper es el que cuida el ciclo de vida: crea los dos
     engines y los dispone al terminar, exitoso o no. Tambien vuelca la salud
     de la corrida a pipeline_health, incluso cuando la corrida lanza.
+
+    sampler: ActivitySampler del runner. Su buffer da al EXPLAIN de Postgres
+    queries reales; None (main.py, sandbox) deja el plan generico.
     """
     target_engine = None
     querylens_engine = None
@@ -93,9 +96,11 @@ def run_engine(dialect: str, connection_factory, db_id: str | None = None):
     # Si se llego aqui, la fila registrada se descifro bien.
     report.checked("credentials")
     try:
+        _report_sampler(sampler, db_id, report)
         target_engine = connection_factory()
         querylens_engine = get_connection_querylens_db()
-        return _cycle(dialect, target_engine, querylens_engine, db_id, report)
+        samples = sampler.buffer if sampler is not None else None
+        return _cycle(dialect, target_engine, querylens_engine, db_id, report, samples)
     except Exception as e:
         # Conexion y encolado marcan la excepcion al registrar su code; cualquier
         # otra es una falla interna, aunque la corrida ya tuviera otro issue
@@ -111,17 +116,28 @@ def run_engine(dialect: str, connection_factory, db_id: str | None = None):
             _dispose(querylens_engine)
 
 
+def _report_sampler(sampler, db_id: str | None, report: HealthReport) -> None:
+    """El hilo del sampler no escribe en pipeline_health: su ultimo error por
+    target se vuelca en el report de la corrida (scope explain)."""
+    if sampler is None or db_id is None:
+        return
+    exc_type = sampler.status(db_id)
+    if exc_type is not None:
+        report.add("ACTIVITY_SAMPLER_FAILED", exc_type=exc_type)
+
+
 def _cycle(
     dialect: str,
     target_engine,
     querylens_engine,
     db_id: str | None = None,
     report: HealthReport | None = None,
+    samples=None,
 ):
     report = report if report is not None else HealthReport()
     creator = Engine_Factory()
     collector = creator.create_collector(dialect, target_engine)
-    payload = Orchestrator(collector, report).run_pipeline()
+    payload = Orchestrator(collector, report, samples=samples, db_id=db_id).run_pipeline()
     report.checked("pipeline")
 
     # El database_identifier de la fila registrada manda sobre la constante de
@@ -151,11 +167,11 @@ def _cycle(
     return msg_id
 
 
-def run_targets(targets) -> None:
+def run_targets(targets, sampler=None) -> None:
     """Corre cada target aislando fallos: una base que no conecta no tumbar el resto."""
     for target in targets:
         try:
-            run_engine(target.dialect, target.factory, target.db_id)
+            run_engine(target.dialect, target.factory, target.db_id, sampler=sampler)
         except Exception as e:
             label = target.db_id or target.dialect
             logger.error(f"{label} | engine_failed | {e}")

@@ -179,6 +179,13 @@ CATALOG: dict[str, IssueDef] = {
         "En este ciclo ninguna query candidata se pudo analizar (solo se analizan SELECT/WITH).",
         "No requiere accion.",
     ),
+    "ACTIVITY_SAMPLER_FAILED": IssueDef(
+        "explain", "internal", INFO,
+        "No se pudieron tomar muestras de las queries en ejecucion: los planes usan "
+        "la version generica, sin valores reales.",
+        "Revisa la conectividad con la base y su carga: el muestreo corre cada "
+        "segundo con un limite de 2 s por lectura. Si persiste, contacta a soporte.",
+    ),
     # ---------- pipeline interno ----------
     "SNAPSHOT_VALIDATION_FAILED": IssueDef(
         "pipeline", "internal", BLOCKING,
