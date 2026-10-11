@@ -6,6 +6,7 @@ from enqueue import send_to_queue
 from logger import get_logger
 from models.snapshot import SnapshotPayload
 from orchestrator import Orchestrator
+import json
 
 logger = get_logger(__name__)
 
@@ -23,13 +24,7 @@ def main():
         collector = creator.create_collector(dialect, engine_factory())
         payload = Orchestrator(collector).run_pipeline()
 
-        try:
-            snapshot = SnapshotPayload.from_snapshot(payload)
-        except ValidationError as e:
-            logger.error(f"{dialect} | snapshot_validation | {e}")
-            continue
-
-        payload_json = snapshot.to_json()
+        payload_json = json.dumps(payload, default=str)
         msg_id = send_to_queue(payload_json, querylens_engine)
         print(f"Diccionario encolado con ID: {msg_id}")
 
