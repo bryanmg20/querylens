@@ -17,3 +17,11 @@ export function getAccessToken(): string | null {
     return null;
   }
 }
+
+export function clearAccessToken(): void {
+  try {
+    sessionStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // nada que limpiar si sessionStorage no está disponible
+  }
+}

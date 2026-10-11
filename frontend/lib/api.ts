@@ -73,13 +73,23 @@ export async function registerDatabase(
   return { data, alreadyRegistered: response.status === 200 };
 }
 
+// Error de la API con su código HTTP, para distinguir un 401 (sesión vencida).
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public status: number
+  ) {
+    super(message);
+  }
+}
+
 export async function fetchDiagnostics(accessToken: string): Promise<DiagnosticsResponse> {
   const response = await fetch(`${API_REST_URL}/diagnostics`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
   if (!response.ok) {
-    throw new Error(await parseErrorMessage(response));
+    throw new ApiError(await parseErrorMessage(response), response.status);
   }
 
   return response.json();
