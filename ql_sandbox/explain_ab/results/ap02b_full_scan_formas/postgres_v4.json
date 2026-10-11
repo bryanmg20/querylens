@@ -1,0 +1,688 @@
+{
+  "pattern": "ap02b_full_scan_formas",
+  "rule": "avoidable_full_scan",
+  "engine": "postgres",
+  "version": "v4",
+  "started_at": "2026-10-11T17:41:48",
+  "pipeline_dir": "C:\\Users\\HP\\Documents\\GitHub\\querylens-v4\\telemetry_pipeline",
+  "pipeline_git": {
+    "branch": "HEAD",
+    "commit": "a65f8e3",
+    "dirty": false
+  },
+  "params": {
+    "workers": 6,
+    "warmup": 15,
+    "attempts": 6,
+    "extra": []
+  },
+  "cases": [
+    {
+      "id": "agg_count_raro",
+      "expected": true,
+      "nota": "0,1 % sin indice. Raiz = 1 fila en generico y variantes: empate, queda el generico (~33 %).",
+      "attempts": 1,
+      "started_at": "2026-10-11T22:41:55+00:00",
+      "ended_at": "2026-10-11T22:42:13+00:00",
+      "query_id": "-160130936959837284",
+      "snapshot": "results\\ap02b_full_scan_formas\\snapshots\\v4\\postgres_agg_count_raro.json",
+      "otras_consultas": [],
+      "avg_rows_per_call": 1.0,
+      "findings": [
+        {
+          "antipatron": "avoidable_full_scan",
+          "query_id": -160130936959837284,
+          "table_name": "ql_ab_orders",
+          "evidencia": {
+            "query_id": -160130936959837284,
+            "query_text": "SELECT count(*) FROM ql_ab_orders WHERE status = $1",
+            "canonic_query": "SELECT COUNT(*) FROM ql_ab_orders WHERE status = $1",
+            "schema_name": "public",
+            "tables": [
+              "ql_ab_orders"
+            ],
+            "relation": "ql_ab_orders",
+            "predicate": "((status)::text = $1::text)",
+            "estimated_rows": 933,
+            "live_rows": 1000000,
+            "selectivity": 0.000933,
+            "mean_time_ms": 193.19734489494948,
+            "total_time_ms": 95632.685723,
+            "execution_count": 495
+          }
+        }
+      ],
+      "plan_scans": [
+        {
+          "relation": "ql_ab_orders",
+          "access_method": "full_table_scan",
+          "index_name": null,
+          "estimated_rows": 933,
+          "predicate": "((status)::text = $1::text)"
+        }
+      ],
+      "plan_output_rows": 1.0,
+      "explain_source": "auto_explain",
+      "outcome": "VP"
+    },
+    {
+      "id": "agg_sum_reciente",
+      "expected": true,
+      "nota": "~0,5 % sin indice, rango. Raiz = 1 fila: empate, queda el generico.",
+      "attempts": 1,
+      "started_at": "2026-10-11T22:42:14+00:00",
+      "ended_at": "2026-10-11T22:42:32+00:00",
+      "query_id": "-7482102621853615136",
+      "snapshot": "results\\ap02b_full_scan_formas\\snapshots\\v4\\postgres_agg_sum_reciente.json",
+      "otras_consultas": [],
+      "avg_rows_per_call": 1.0,
+      "findings": [
+        {
+          "antipatron": "avoidable_full_scan",
+          "query_id": -7482102621853615136,
+          "table_name": "ql_ab_orders",
+          "evidencia": {
+            "query_id": -7482102621853615136,
+            "query_text": "SELECT sum(amount) FROM ql_ab_orders WHERE created_at >= $1",
+            "canonic_query": "SELECT SUM(amount) FROM ql_ab_orders WHERE created_at >= $1",
+            "schema_name": "public",
+            "tables": [
+              "ql_ab_orders"
+            ],
+            "relation": "ql_ab_orders",
+            "predicate": "(created_at >= $1::timestamp without time zone)",
+            "estimated_rows": 4756,
+            "live_rows": 1000000,
+            "selectivity": 0.004756,
+            "mean_time_ms": 196.0616626742738,
+            "total_time_ms": 94501.72140899987,
+            "execution_count": 482
+          }
+        }
+      ],
+      "plan_scans": [
+        {
+          "relation": "ql_ab_orders",
+          "access_method": "full_table_scan",
+          "index_name": null,
+          "estimated_rows": 4756,
+          "predicate": "(created_at >= $1::timestamp without time zone)"
+        }
+      ],
+      "plan_output_rows": 1.0,
+      "explain_source": "auto_explain",
+      "outcome": "VP"
+    },
+    {
+      "id": "limit_raro",
+      "expected": true,
+      "nota": "0,1 % sin indice; el escaneo lee ~10.000 filas hasta juntar 10. Raiz = 10 filas: empate. Consulta corta: a la version 1 le puede costar verla activa.",
+      "attempts": 1,
+      "started_at": "2026-10-11T22:42:32+00:00",
+      "ended_at": "2026-10-11T22:42:50+00:00",
+      "query_id": "9027859571705944623",
+      "snapshot": "results\\ap02b_full_scan_formas\\snapshots\\v4\\postgres_limit_raro.json",
+      "otras_consultas": [],
+      "avg_rows_per_call": 10.0,
+      "findings": [],
+      "plan_scans": [
+        {
+          "relation": "ql_ab_orders",
+          "access_method": "full_table_scan",
+          "index_name": null,
+          "estimated_rows": 333333,
+          "predicate": "((status)::text = $1)"
+        }
+      ],
+      "plan_output_rows": 33333.0,
+      "explain_source": "generic",
+      "outcome": "FN"
+    },
+    {
+      "id": "limit_comun",
+      "expected": false,
+      "nota": "~97 % de la tabla: el escaneo completo es lo correcto.",
+      "attempts": 1,
+      "started_at": "2026-10-11T22:42:50+00:00",
+      "ended_at": "2026-10-11T22:43:09+00:00",
+      "query_id": "9027859571705944623",
+      "snapshot": "results\\ap02b_full_scan_formas\\snapshots\\v4\\postgres_limit_comun.json",
+      "otras_consultas": [],
+      "avg_rows_per_call": 10.0,
+      "findings": [],
+      "plan_scans": [
+        {
+          "relation": "ql_ab_orders",
+          "access_method": "full_table_scan",
+          "index_name": null,
+          "estimated_rows": 333333,
+          "predicate": "((status)::text = $1)"
+        }
+      ],
+      "plan_output_rows": 33333.0,
+      "explain_source": "generic",
+      "outcome": "VN"
+    },
+    {
+      "id": "group_by_raro",
+      "expected": true,
+      "nota": "0,1 % sin indice. Raiz = 5 grupos en todos los planes: empate, queda el generico.",
+      "attempts": 1,
+      "started_at": "2026-10-11T22:43:09+00:00",
+      "ended_at": "2026-10-11T22:43:28+00:00",
+      "query_id": "7546651578594178303",
+      "snapshot": "results\\ap02b_full_scan_formas\\snapshots\\v4\\postgres_group_by_raro.json",
+      "otras_consultas": [],
+      "avg_rows_per_call": 1.0,
+      "findings": [
+        {
+          "antipatron": "avoidable_full_scan",
+          "query_id": 7546651578594178303,
+          "table_name": "ql_ab_orders",
+          "evidencia": {
+            "query_id": 7546651578594178303,
+            "query_text": "SELECT region, count(*) FROM ql_ab_orders WHERE status = $1 GROUP BY region",
+            "canonic_query": "SELECT region, COUNT(*) FROM ql_ab_orders WHERE status = $1 GROUP BY region",
+            "schema_name": "public",
+            "tables": [
+              "ql_ab_orders"
+            ],
+            "relation": "ql_ab_orders",
+            "predicate": "((status)::text = $1::text)",
+            "estimated_rows": 933,
+            "live_rows": 1000000,
+            "selectivity": 0.000933,
+            "mean_time_ms": 193.20771816532258,
+            "total_time_ms": 95831.02821000003,
+            "execution_count": 496
+          }
+        }
+      ],
+      "plan_scans": [
+        {
+          "relation": "ql_ab_orders",
+          "access_method": "full_table_scan",
+          "index_name": null,
+          "estimated_rows": 933,
+          "predicate": "((status)::text = $1::text)"
+        }
+      ],
+      "plan_output_rows": 5.0,
+      "explain_source": "auto_explain",
+      "outcome": "VP"
+    },
+    {
+      "id": "join_raro",
+      "expected": true,
+      "nota": "Filtro selectivo en ql_ab_orders (0,1 %); la raiz devuelve ~1.000 filas, igual que el escaneo.",
+      "attempts": 1,
+      "started_at": "2026-10-11T22:43:28+00:00",
+      "ended_at": "2026-10-11T22:43:46+00:00",
+      "query_id": "4187899237394772947",
+      "snapshot": "results\\ap02b_full_scan_formas\\snapshots\\v4\\postgres_join_raro.json",
+      "otras_consultas": [],
+      "avg_rows_per_call": 1000.0,
+      "findings": [
+        {
+          "antipatron": "avoidable_full_scan",
+          "query_id": 4187899237394772947,
+          "table_name": "ql_ab_orders",
+          "evidencia": {
+            "query_id": 4187899237394772947,
+            "query_text": "SELECT o.id, c.name FROM ql_ab_orders o JOIN ql_ab_customers c ON c.id = o.customer_id WHERE o.status = $1",
+            "canonic_query": "SELECT o.id, c.name FROM ql_ab_orders AS o JOIN ql_ab_customers AS c ON c.id = o.customer_id WHERE o.status = $1",
+            "schema_name": "public",
+            "tables": [
+              "ql_ab_customers",
+              "ql_ab_orders"
+            ],
+            "relation": "o",
+            "predicate": "((status)::text = $1::text)",
+            "estimated_rows": 933,
+            "live_rows": 1000000,
+            "selectivity": 0.000933,
+            "mean_time_ms": 217.72530651157393,
+            "total_time_ms": 94057.33241300005,
+            "execution_count": 432
+          }
+        }
+      ],
+      "plan_scans": [
+        {
+          "relation": "o",
+          "access_method": "full_table_scan",
+          "index_name": null,
+          "estimated_rows": 933,
+          "predicate": "((status)::text = $1::text)"
+        },
+        {
+          "relation": "c",
+          "access_method": "full_table_scan",
+          "index_name": null,
+          "estimated_rows": 100000,
+          "predicate": null
+        }
+      ],
+      "plan_output_rows": 933.0,
+      "explain_source": "auto_explain",
+      "outcome": "VP"
+    },
+    {
+      "id": "join_comun",
+      "expected": false,
+      "nota": "~97 % de ql_ab_orders y ql_ab_customers entera: ningun escaneo es evitable.",
+      "attempts": 1,
+      "started_at": "2026-10-11T22:43:47+00:00",
+      "ended_at": "2026-10-11T22:44:04+00:00",
+      "query_id": "-2763672357463458191",
+      "snapshot": "results\\ap02b_full_scan_formas\\snapshots\\v4\\postgres_join_comun.json",
+      "otras_consultas": [],
+      "avg_rows_per_call": 1.0,
+      "findings": [],
+      "plan_scans": [
+        {
+          "relation": "o",
+          "access_method": "full_table_scan",
+          "index_name": null,
+          "estimated_rows": 968900,
+          "predicate": "((status)::text = $1::text)"
+        },
+        {
+          "relation": "c",
+          "access_method": "full_table_scan",
+          "index_name": null,
+          "estimated_rows": 100000,
+          "predicate": null
+        }
+      ],
+      "plan_output_rows": 1.0,
+      "explain_source": "auto_explain",
+      "outcome": "VN"
+    },
+    {
+      "id": "join_filtro_dim",
+      "expected": true,
+      "nota": "Filtro selectivo en ql_ab_customers (0,1 %, 100 filas) sin indice; la raiz devuelve ~1.000 ordenes, no las 100 filas del escaneo de clientes.",
+      "attempts": 1,
+      "started_at": "2026-10-11T22:44:05+00:00",
+      "ended_at": "2026-10-11T22:44:23+00:00",
+      "query_id": "-6126153478486800358",
+      "snapshot": "results\\ap02b_full_scan_formas\\snapshots\\v4\\postgres_join_filtro_dim.json",
+      "otras_consultas": [],
+      "avg_rows_per_call": 984.0,
+      "findings": [
+        {
+          "antipatron": "avoidable_full_scan",
+          "query_id": -6126153478486800358,
+          "table_name": "ql_ab_customers",
+          "evidencia": {
+            "query_id": -6126153478486800358,
+            "query_text": "SELECT o.id, o.amount FROM ql_ab_orders o JOIN ql_ab_customers c ON c.id = o.customer_id WHERE c.segment = $1",
+            "canonic_query": "SELECT o.id, o.amount FROM ql_ab_orders AS o JOIN ql_ab_customers AS c ON c.id = o.customer_id WHERE c.segment = $1",
+            "schema_name": "public",
+            "tables": [
+              "ql_ab_customers",
+              "ql_ab_orders"
+            ],
+            "relation": "c",
+            "predicate": "((segment)::text = $1::text)",
+            "estimated_rows": 117,
+            "live_rows": 100000,
+            "selectivity": 0.00117,
+            "mean_time_ms": 16.04121797127837,
+            "total_time_ms": 85451.5681329998,
+            "execution_count": 5327
+          }
+        }
+      ],
+      "plan_scans": [
+        {
+          "relation": "c",
+          "access_method": "full_table_scan",
+          "index_name": null,
+          "estimated_rows": 117,
+          "predicate": "((segment)::text = $1::text)"
+        },
+        {
+          "relation": "o",
+          "access_method": "index_lookup",
+          "index_name": "ql_ab_orders_customer",
+          "estimated_rows": 11,
+          "predicate": "(customer_id = c.id)"
+        }
+      ],
+      "plan_output_rows": 1170.0,
+      "explain_source": "auto_explain",
+      "outcome": "VP"
+    },
+    {
+      "id": "join_dos_filtros",
+      "expected": true,
+      "nota": "Dos parametros en dos tablas, ambos 0,1 % sin indice. La raiz devuelve ~1 fila.",
+      "attempts": 1,
+      "started_at": "2026-10-11T22:44:23+00:00",
+      "ended_at": "2026-10-11T22:44:41+00:00",
+      "query_id": "-6225582111836823979",
+      "snapshot": "results\\ap02b_full_scan_formas\\snapshots\\v4\\postgres_join_dos_filtros.json",
+      "otras_consultas": [],
+      "avg_rows_per_call": 1.0,
+      "findings": [
+        {
+          "antipatron": "avoidable_full_scan",
+          "query_id": -6225582111836823979,
+          "table_name": "ql_ab_customers",
+          "evidencia": {
+            "query_id": -6225582111836823979,
+            "query_text": "SELECT o.id, c.name FROM ql_ab_orders o JOIN ql_ab_customers c ON c.id = o.customer_id WHERE o.status = $1 AND c.segment = $2",
+            "canonic_query": "SELECT o.id, c.name FROM ql_ab_orders AS o JOIN ql_ab_customers AS c ON c.id = o.customer_id WHERE o.status = $1 AND c.segment = $2",
+            "schema_name": "public",
+            "tables": [
+              "ql_ab_customers",
+              "ql_ab_orders"
+            ],
+            "relation": "c",
+            "predicate": "((segment)::text = $1::text)",
+            "estimated_rows": 117,
+            "live_rows": 100000,
+            "selectivity": 0.00117,
+            "mean_time_ms": 15.059000346147394,
+            "total_time_ms": 90097.99907099981,
+            "execution_count": 5983
+          }
+        }
+      ],
+      "plan_scans": [
+        {
+          "relation": "c",
+          "access_method": "full_table_scan",
+          "index_name": null,
+          "estimated_rows": 117,
+          "predicate": "((segment)::text = $1::text)"
+        },
+        {
+          "relation": "o",
+          "access_method": "index_lookup",
+          "index_name": "ql_ab_orders_customer",
+          "estimated_rows": 1,
+          "predicate": "(customer_id = c.id)"
+        }
+      ],
+      "plan_output_rows": 1.0,
+      "explain_source": "auto_explain",
+      "outcome": "VP"
+    },
+    {
+      "id": "join_group_by_raro",
+      "expected": true,
+      "nota": "0,1 % en ql_ab_orders; la raiz estima 3 grupos en todos los planes: empate.",
+      "attempts": 1,
+      "started_at": "2026-10-11T22:44:41+00:00",
+      "ended_at": "2026-10-11T22:44:59+00:00",
+      "query_id": "806232467405581694",
+      "snapshot": "results\\ap02b_full_scan_formas\\snapshots\\v4\\postgres_join_group_by_raro.json",
+      "otras_consultas": [],
+      "avg_rows_per_call": 3.0,
+      "findings": [
+        {
+          "antipatron": "avoidable_full_scan",
+          "query_id": 806232467405581694,
+          "table_name": "ql_ab_orders",
+          "evidencia": {
+            "query_id": 806232467405581694,
+            "query_text": "SELECT c.segment, count(*) FROM ql_ab_orders o JOIN ql_ab_customers c ON c.id = o.customer_id WHERE o.status = $1 GROUP BY c.segment",
+            "canonic_query": "SELECT c.segment, COUNT(*) FROM ql_ab_orders AS o JOIN ql_ab_customers AS c ON c.id = o.customer_id WHERE o.status = $1 GROUP BY c.segment",
+            "schema_name": "public",
+            "tables": [
+              "ql_ab_customers",
+              "ql_ab_orders"
+            ],
+            "relation": "o",
+            "predicate": "((status)::text = $1::text)",
+            "estimated_rows": 933,
+            "live_rows": 1000000,
+            "selectivity": 0.000933,
+            "mean_time_ms": 213.9696116666667,
+            "total_time_ms": 95002.50757999999,
+            "execution_count": 444
+          }
+        }
+      ],
+      "plan_scans": [
+        {
+          "relation": "o",
+          "access_method": "full_table_scan",
+          "index_name": null,
+          "estimated_rows": 933,
+          "predicate": "((status)::text = $1::text)"
+        },
+        {
+          "relation": "c",
+          "access_method": "full_table_scan",
+          "index_name": null,
+          "estimated_rows": 100000,
+          "predicate": null
+        }
+      ],
+      "plan_output_rows": 3.0,
+      "explain_source": "auto_explain",
+      "outcome": "VP"
+    },
+    {
+      "id": "mezcla_error_done_99_1",
+      "expected": null,
+      "nota": "99 % 'error' (0,1 %) / 1 % 'done' (97 %). Promedio ~1,1 % de la tabla.",
+      "attempts": 1,
+      "started_at": "2026-10-11T22:45:00+00:00",
+      "ended_at": "2026-10-11T22:45:18+00:00",
+      "query_id": "-4896212711435953982",
+      "snapshot": "results\\ap02b_full_scan_formas\\snapshots\\v4\\postgres_mezcla_error_done_99_1.json",
+      "otras_consultas": [],
+      "avg_rows_per_call": 15756.345178,
+      "findings": [
+        {
+          "antipatron": "avoidable_full_scan",
+          "query_id": -4896212711435953982,
+          "table_name": "ql_ab_orders",
+          "evidencia": {
+            "query_id": -4896212711435953982,
+            "query_text": "SELECT id, amount FROM ql_ab_orders WHERE status = $1",
+            "canonic_query": "SELECT id, amount FROM ql_ab_orders WHERE status = $1",
+            "schema_name": "public",
+            "tables": [
+              "ql_ab_orders"
+            ],
+            "relation": "ql_ab_orders",
+            "predicate": "((status)::text = $1::text)",
+            "estimated_rows": 933,
+            "live_rows": 1000000,
+            "selectivity": 0.000933,
+            "mean_time_ms": 224.48946695177668,
+            "total_time_ms": 88448.84997899999,
+            "execution_count": 394
+          }
+        }
+      ],
+      "plan_scans": [
+        {
+          "relation": "ql_ab_orders",
+          "access_method": "full_table_scan",
+          "index_name": null,
+          "estimated_rows": 933,
+          "predicate": "((status)::text = $1::text)"
+        }
+      ],
+      "plan_output_rows": 933.0,
+      "explain_source": "auto_explain",
+      "outcome": "detecta"
+    },
+    {
+      "id": "mezcla_error_done_90_10",
+      "expected": null,
+      "nota": "90 % 'error' / 10 % 'done'. Promedio ~9,8 % de la tabla, justo debajo del umbral.",
+      "attempts": 1,
+      "started_at": "2026-10-11T22:45:18+00:00",
+      "ended_at": "2026-10-11T22:45:37+00:00",
+      "query_id": "-4896212711435953982",
+      "snapshot": "results\\ap02b_full_scan_formas\\snapshots\\v4\\postgres_mezcla_error_done_90_10.json",
+      "otras_consultas": [],
+      "avg_rows_per_call": 86860.759494,
+      "findings": [
+        {
+          "antipatron": "avoidable_full_scan",
+          "query_id": -4896212711435953982,
+          "table_name": "ql_ab_orders",
+          "evidencia": {
+            "query_id": -4896212711435953982,
+            "query_text": "SELECT id, amount FROM ql_ab_orders WHERE status = $1",
+            "canonic_query": "SELECT id, amount FROM ql_ab_orders WHERE status = $1",
+            "schema_name": "public",
+            "tables": [
+              "ql_ab_orders"
+            ],
+            "relation": "ql_ab_orders",
+            "predicate": "((status)::text = $1::text)",
+            "estimated_rows": 933,
+            "live_rows": 1000000,
+            "selectivity": 0.000933,
+            "mean_time_ms": 291.53031914345996,
+            "total_time_ms": 69092.68563700002,
+            "execution_count": 237
+          }
+        }
+      ],
+      "plan_scans": [
+        {
+          "relation": "ql_ab_orders",
+          "access_method": "full_table_scan",
+          "index_name": null,
+          "estimated_rows": 933,
+          "predicate": "((status)::text = $1::text)"
+        }
+      ],
+      "plan_output_rows": 933.0,
+      "explain_source": "auto_explain",
+      "outcome": "detecta"
+    },
+    {
+      "id": "mezcla_error_done_50_50",
+      "expected": null,
+      "nota": "50 % 'error' / 50 % 'done'. Promedio ~49 % de la tabla.",
+      "attempts": 1,
+      "started_at": "2026-10-11T22:45:38+00:00",
+      "ended_at": "2026-10-11T22:45:56+00:00",
+      "query_id": "-4896212711435953982",
+      "snapshot": "results\\ap02b_full_scan_formas\\snapshots\\v4\\postgres_mezcla_error_done_50_50.json",
+      "otras_consultas": [],
+      "avg_rows_per_call": 433957.446809,
+      "findings": [
+        {
+          "antipatron": "avoidable_full_scan",
+          "query_id": -4896212711435953982,
+          "table_name": "ql_ab_orders",
+          "evidencia": {
+            "query_id": -4896212711435953982,
+            "query_text": "SELECT id, amount FROM ql_ab_orders WHERE status = $1",
+            "canonic_query": "SELECT id, amount FROM ql_ab_orders WHERE status = $1",
+            "schema_name": "public",
+            "tables": [
+              "ql_ab_orders"
+            ],
+            "relation": "ql_ab_orders",
+            "predicate": "((status)::text = $1::text)",
+            "estimated_rows": 933,
+            "live_rows": 1000000,
+            "selectivity": 0.000933,
+            "mean_time_ms": 495.8879239574466,
+            "total_time_ms": 46613.464852,
+            "execution_count": 94
+          }
+        }
+      ],
+      "plan_scans": [
+        {
+          "relation": "ql_ab_orders",
+          "access_method": "full_table_scan",
+          "index_name": null,
+          "estimated_rows": 933,
+          "predicate": "((status)::text = $1::text)"
+        }
+      ],
+      "plan_output_rows": 933.0,
+      "explain_source": "auto_explain",
+      "outcome": "detecta"
+    },
+    {
+      "id": "mezcla_error_done_10_90",
+      "expected": null,
+      "nota": "10 % 'error' / 90 % 'done'. Promedio ~87 % de la tabla.",
+      "attempts": 1,
+      "started_at": "2026-10-11T22:45:56+00:00",
+      "ended_at": "2026-10-11T22:46:15+00:00",
+      "query_id": "-4896212711435953982",
+      "snapshot": "results\\ap02b_full_scan_formas\\snapshots\\v4\\postgres_mezcla_error_done_10_90.json",
+      "otras_consultas": [],
+      "avg_rows_per_call": 878584.90566,
+      "findings": [],
+      "plan_scans": [
+        {
+          "relation": "ql_ab_orders",
+          "access_method": "full_table_scan",
+          "index_name": null,
+          "estimated_rows": 968900,
+          "predicate": "((status)::text = $1::text)"
+        }
+      ],
+      "plan_output_rows": 968900.0,
+      "explain_source": "auto_explain",
+      "outcome": "no_detecta"
+    },
+    {
+      "id": "mezcla_error_pending_50_50",
+      "expected": true,
+      "nota": "Los dos valores son selectivos (0,1 % y ~2,9 %): es antipatron con cualquier definicion de mezcla. Promedio ~1,5 %.",
+      "attempts": 1,
+      "started_at": "2026-10-11T22:46:15+00:00",
+      "ended_at": "2026-10-11T22:46:33+00:00",
+      "query_id": "-4896212711435953982",
+      "snapshot": "results\\ap02b_full_scan_formas\\snapshots\\v4\\postgres_mezcla_error_pending_50_50.json",
+      "otras_consultas": [],
+      "avg_rows_per_call": 14510.48951,
+      "findings": [
+        {
+          "antipatron": "avoidable_full_scan",
+          "query_id": -4896212711435953982,
+          "table_name": "ql_ab_orders",
+          "evidencia": {
+            "query_id": -4896212711435953982,
+            "query_text": "SELECT id, amount FROM ql_ab_orders WHERE status = $1",
+            "canonic_query": "SELECT id, amount FROM ql_ab_orders WHERE status = $1",
+            "schema_name": "public",
+            "tables": [
+              "ql_ab_orders"
+            ],
+            "relation": "ql_ab_orders",
+            "predicate": "((status)::text = $1::text)",
+            "estimated_rows": 30167,
+            "live_rows": 1000000,
+            "selectivity": 0.030167,
+            "mean_time_ms": 205.2404767272727,
+            "total_time_ms": 88048.16451599992,
+            "execution_count": 429
+          }
+        }
+      ],
+      "plan_scans": [
+        {
+          "relation": "ql_ab_orders",
+          "access_method": "full_table_scan",
+          "index_name": null,
+          "estimated_rows": 30167,
+          "predicate": "((status)::text = $1::text)"
+        }
+      ],
+      "plan_output_rows": 30167.0,
+      "explain_source": "auto_explain",
+      "outcome": "VP"
+    }
+  ]
+}

@@ -1,0 +1,293 @@
+{
+  "pattern": "ap02_avoidable_full_scan",
+  "rule": "avoidable_full_scan",
+  "engine": "mysql",
+  "version": "v3",
+  "started_at": "2026-10-11T00:38:10",
+  "pipeline_dir": "C:\\Users\\HP\\Documents\\GitHub\\querylens-v3\\telemetry_pipeline",
+  "pipeline_git": {
+    "branch": "HEAD",
+    "commit": "c86237c",
+    "dirty": false
+  },
+  "params": {
+    "workers": 6,
+    "warmup": 15,
+    "attempts": 6,
+    "extra": []
+  },
+  "cases": [
+    {
+      "id": "status_raro",
+      "expected": true,
+      "nota": "0,1 % de la tabla sin indice. Con el literal real el plan estima ~1.000 filas; el plan generico de PG estima 1/n_distinct (~33 %) y podria no superar el umbral.",
+      "attempts": 1,
+      "query_id": "ql_demo/760819dedecd6aa13f2922882aae5816576fdc82ff76a5ac61b7d4709cf56b36",
+      "snapshot": "results\\ap02_avoidable_full_scan\\snapshots\\v3\\mysql_status_raro.json",
+      "otras_consultas": [],
+      "findings": [
+        {
+          "antipatron": "avoidable_full_scan",
+          "query_id": "ql_demo/760819dedecd6aa13f2922882aae5816576fdc82ff76a5ac61b7d4709cf56b36",
+          "table_name": "ql_ab_orders",
+          "evidencia": {
+            "query_id": "ql_demo/760819dedecd6aa13f2922882aae5816576fdc82ff76a5ac61b7d4709cf56b36",
+            "query_text": "SELECT `id` , `amount` FROM `ql_ab_orders` WHERE STATUS = ?",
+            "canonic_query": "SELECT id, amount FROM ql_ab_orders WHERE STATUS = $1",
+            "schema_name": "ql_demo",
+            "tables": [
+              "ql_ab_orders"
+            ],
+            "relation": "ql_ab_orders",
+            "predicate": "(ql_ab_orders.status = $1)",
+            "estimated_rows": 99280,
+            "live_rows": 992800,
+            "selectivity": 0.1,
+            "mean_time_ms": 550.7808,
+            "total_time_ms": 95835.8555,
+            "execution_count": 174
+          }
+        }
+      ],
+      "plan_scans": [
+        {
+          "relation": "ql_ab_orders",
+          "access_method": "full_table_scan",
+          "index_name": null,
+          "estimated_rows": 99280,
+          "predicate": "(ql_ab_orders.status = $1)"
+        }
+      ],
+      "outcome": "VP"
+    },
+    {
+      "id": "status_comun",
+      "expected": false,
+      "nota": "~97 % de la tabla: el escaneo completo es lo correcto.",
+      "attempts": 1,
+      "query_id": "ql_demo/1bd6ea20d32b7b522023b72868dcfdb0d52c4daf0f481c87b9c1a0e01d213882",
+      "snapshot": "results\\ap02_avoidable_full_scan\\snapshots\\v3\\mysql_status_comun.json",
+      "otras_consultas": [],
+      "findings": [
+        {
+          "antipatron": "avoidable_full_scan",
+          "query_id": "ql_demo/1bd6ea20d32b7b522023b72868dcfdb0d52c4daf0f481c87b9c1a0e01d213882",
+          "table_name": "ql_ab_orders",
+          "evidencia": {
+            "query_id": "ql_demo/1bd6ea20d32b7b522023b72868dcfdb0d52c4daf0f481c87b9c1a0e01d213882",
+            "query_text": "SELECT COUNT ( * ) , MAX ( `amount` ) FROM `ql_ab_orders` WHERE STATUS = ?",
+            "canonic_query": "SELECT COUNT(*), MAX(amount) FROM ql_ab_orders WHERE STATUS = $1",
+            "schema_name": "ql_demo",
+            "tables": [
+              "ql_ab_orders"
+            ],
+            "relation": "ql_ab_orders",
+            "predicate": "(ql_ab_orders.status = $1)",
+            "estimated_rows": 99280,
+            "live_rows": 992800,
+            "selectivity": 0.1,
+            "mean_time_ms": 705.6481,
+            "total_time_ms": 93851.2012,
+            "execution_count": 133
+          }
+        }
+      ],
+      "plan_scans": [
+        {
+          "relation": "ql_ab_orders",
+          "access_method": "full_table_scan",
+          "index_name": null,
+          "estimated_rows": 99280,
+          "predicate": "(ql_ab_orders.status = $1)"
+        }
+      ],
+      "outcome": "FP"
+    },
+    {
+      "id": "rango_reciente",
+      "expected": true,
+      "nota": "~0,5 % de la tabla sin indice. El plan generico de PG estima un rango con $1 en 1/3; MySQL sin indice ni histograma usa filtered constante (33 %) con cualquier literal.",
+      "attempts": 1,
+      "query_id": "ql_demo/824479b5172b541626f577c67da83a03f285e947975ae2fbd891fc8e9edcb465",
+      "snapshot": "results\\ap02_avoidable_full_scan\\snapshots\\v3\\mysql_rango_reciente.json",
+      "otras_consultas": [],
+      "findings": [],
+      "plan_scans": [
+        {
+          "relation": "ql_ab_orders",
+          "access_method": "full_table_scan",
+          "index_name": null,
+          "estimated_rows": 330900,
+          "predicate": "(ql_ab_orders.created_at >= CAST($1 AS TIMESTAMPTZ))"
+        }
+      ],
+      "outcome": "FN"
+    },
+    {
+      "id": "rango_amplio",
+      "expected": false,
+      "nota": "~80 % de la tabla: el escaneo completo es lo correcto.",
+      "attempts": 1,
+      "query_id": "ql_demo/2a4e42317951553f8d5707c5da8e4583d7c93f2049bafb9b74f41114e5bcae48",
+      "snapshot": "results\\ap02_avoidable_full_scan\\snapshots\\v3\\mysql_rango_amplio.json",
+      "otras_consultas": [],
+      "findings": [],
+      "plan_scans": [
+        {
+          "relation": "ql_ab_orders",
+          "access_method": "full_table_scan",
+          "index_name": null,
+          "estimated_rows": 330900,
+          "predicate": "(ql_ab_orders.created_at >= CAST($1 AS TIMESTAMPTZ))"
+        }
+      ],
+      "outcome": "VN"
+    },
+    {
+      "id": "valor_casi_unico",
+      "expected": true,
+      "nota": "~1 fila por valor, sin indice: ambas versiones deberian estimar pocas filas.",
+      "attempts": 1,
+      "query_id": "ql_demo/c423d006410259694cb8e437e00bf82fdee64f4719bb13e1015195591de93bff",
+      "snapshot": "results\\ap02_avoidable_full_scan\\snapshots\\v3\\mysql_valor_casi_unico.json",
+      "otras_consultas": [],
+      "findings": [
+        {
+          "antipatron": "avoidable_full_scan",
+          "query_id": "ql_demo/c423d006410259694cb8e437e00bf82fdee64f4719bb13e1015195591de93bff",
+          "table_name": "ql_ab_orders",
+          "evidencia": {
+            "query_id": "ql_demo/c423d006410259694cb8e437e00bf82fdee64f4719bb13e1015195591de93bff",
+            "query_text": "SELECT `id` , STATUS FROM `ql_ab_orders` WHERE `amount` = ?",
+            "canonic_query": "SELECT id, STATUS FROM ql_ab_orders WHERE amount = $1",
+            "schema_name": "ql_demo",
+            "tables": [
+              "ql_ab_orders"
+            ],
+            "relation": "ql_ab_orders",
+            "predicate": "(ql_ab_orders.amount = $1)",
+            "estimated_rows": 99280,
+            "live_rows": 992800,
+            "selectivity": 0.1,
+            "mean_time_ms": 528.44,
+            "total_time_ms": 95119.2076,
+            "execution_count": 180
+          }
+        }
+      ],
+      "plan_scans": [
+        {
+          "relation": "ql_ab_orders",
+          "access_method": "full_table_scan",
+          "index_name": null,
+          "estimated_rows": 99280,
+          "predicate": "(ql_ab_orders.amount = $1)"
+        }
+      ],
+      "outcome": "VP"
+    },
+    {
+      "id": "region_20pct",
+      "expected": false,
+      "nota": "20 % de la tabla: no es evitable. En MySQL sin indice ni histograma filtered es 10 % constante, asi que podria salir falso positivo en ambas versiones.",
+      "attempts": 1,
+      "query_id": "ql_demo/0660153c5a45a32d10efb6fd8aeb2c3b3c4e61d59a6b7b2b7917ab3b190e9fab",
+      "snapshot": "results\\ap02_avoidable_full_scan\\snapshots\\v3\\mysql_region_20pct.json",
+      "otras_consultas": [],
+      "findings": [
+        {
+          "antipatron": "avoidable_full_scan",
+          "query_id": "ql_demo/0660153c5a45a32d10efb6fd8aeb2c3b3c4e61d59a6b7b2b7917ab3b190e9fab",
+          "table_name": "ql_ab_orders",
+          "evidencia": {
+            "query_id": "ql_demo/0660153c5a45a32d10efb6fd8aeb2c3b3c4e61d59a6b7b2b7917ab3b190e9fab",
+            "query_text": "SELECT COUNT ( * ) , MAX ( `amount` ) FROM `ql_ab_orders` WHERE `region` = ?",
+            "canonic_query": "SELECT COUNT(*), MAX(amount) FROM ql_ab_orders WHERE region = $1",
+            "schema_name": "ql_demo",
+            "tables": [
+              "ql_ab_orders"
+            ],
+            "relation": "ql_ab_orders",
+            "predicate": "(ql_ab_orders.region = $1)",
+            "estimated_rows": 99280,
+            "live_rows": 992800,
+            "selectivity": 0.1,
+            "mean_time_ms": 498.9388,
+            "total_time_ms": 94299.4362,
+            "execution_count": 189
+          }
+        }
+      ],
+      "plan_scans": [
+        {
+          "relation": "ql_ab_orders",
+          "access_method": "full_table_scan",
+          "index_name": null,
+          "estimated_rows": 99280,
+          "predicate": "(ql_ab_orders.region = $1)"
+        }
+      ],
+      "outcome": "FP"
+    },
+    {
+      "id": "indexado",
+      "expected": false,
+      "nota": "Usa el indice de customer_id: no hay escaneo completo. Consulta rapida, a la version 1 le puede costar verla activa.",
+      "attempts": 1,
+      "query_id": "ql_demo/edf6358eea8c52c5590bc9167e44251818c026a8bfc51a8eb345ff289ea3ed12",
+      "snapshot": "results\\ap02_avoidable_full_scan\\snapshots\\v3\\mysql_indexado.json",
+      "otras_consultas": [],
+      "findings": [],
+      "plan_scans": [
+        {
+          "relation": "ql_ab_orders",
+          "access_method": "index_lookup",
+          "index_name": "ql_ab_orders_customer",
+          "estimated_rows": 10,
+          "predicate": null
+        }
+      ],
+      "outcome": "VN"
+    },
+    {
+      "id": "indexado_sesgado",
+      "expected": false,
+      "nota": "Con el literal real usa el indice de kind. El plan generico de PG estima ~33 % y podria elegir escaneo completo, pero esa selectividad no supera el umbral: no deberia dar hallazgo.",
+      "attempts": 1,
+      "query_id": "ql_demo/a8e2daaece4fd55b79edeeab4518cb7cf69f958cfdd58c522e64defb32ec6662",
+      "snapshot": "results\\ap02_avoidable_full_scan\\snapshots\\v3\\mysql_indexado_sesgado.json",
+      "otras_consultas": [],
+      "findings": [],
+      "plan_scans": [
+        {
+          "relation": "ql_ab_orders",
+          "access_method": "index_lookup",
+          "index_name": "ql_ab_orders_kind",
+          "estimated_rows": 1000,
+          "predicate": null
+        }
+      ],
+      "outcome": "VN"
+    },
+    {
+      "id": "tabla_chica",
+      "expected": false,
+      "nota": "1.000 filas, por debajo de DEFAULT_MIN_LIVE_ROWS: no aplica.",
+      "attempts": 1,
+      "query_id": "ql_demo/02ef6c8fde79b2c4066344a26c23f08a09f8f4627f044f4e81aa24150504eaeb",
+      "snapshot": "results\\ap02_avoidable_full_scan\\snapshots\\v3\\mysql_tabla_chica.json",
+      "otras_consultas": [],
+      "findings": [],
+      "plan_scans": [
+        {
+          "relation": "ql_ab_small",
+          "access_method": "full_table_scan",
+          "index_name": null,
+          "estimated_rows": 100,
+          "predicate": "(ql_ab_small.code = $1)"
+        }
+      ],
+      "outcome": "VN"
+    }
+  ]
+}
