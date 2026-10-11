@@ -33,8 +33,17 @@ class PostgresExplainNormalizer:
                 if variant is not None
             ]
             if variants:
-                canonic_explain["plan_variants"] = variants
                 canonic_explain["plan_stability"] = self._stability(canonical_plan, variants)
+                # Un solo plan al snapshot: el que estima las filas mas cerca
+                # de las reales por ejecucion (plan_variants.select_plan).
+                chosen = pv.select_plan(
+                    canonical_plan["estimates"].get("output_rows"),
+                    [v["canonical_plan"]["estimates"].get("output_rows") for v in variants],
+                    explain.get("avg_rows_per_call"),
+                )
+                if chosen is not None:
+                    canonic_explain["explain_source"] = "custom"
+                    canonic_explain["canonical_plan"] = variants[chosen]["canonical_plan"]
             elif explain.get("plan_stability"):
                 canonic_explain["plan_stability"] = explain["plan_stability"]
 
@@ -67,8 +76,9 @@ class PostgresExplainNormalizer:
 
     def _variant(self, variant):
         """Plan custom armado con valores reales de pg_stats: los predicados
-        (Filter, Index Cond) traen esos valores. Viajan anonimizados, con los
-        literales numerados $1, $2, ... como en MySQL."""
+        (Filter, Index Cond) traen esos valores. Se anonimizan aqui, antes de
+        elegir: si la variante gana, viaja con los literales numerados $1,
+        $2, ... como en MySQL."""
         if self._root_plan(variant.get("plan")) is None:
             return None
         canonical_plan = self._canonical_plan(variant.get("plan"))

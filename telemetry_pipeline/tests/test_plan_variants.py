@@ -241,51 +241,61 @@ class _Collector:
     engine = PG_ENGINE
 
 
-def _stats():
+def _stats(avg_rows_per_call=None):
     return {"top_impact_queries": [{
         "query_id": 1,
         "query_text": "SELECT * FROM pedidos WHERE estado = $1",
         "schema_name": "public",
         "ready_for_explain": True,
+        "avg_rows_per_call": avg_rows_per_call,
     }]}
 
 
-def _run(conn, report=None):
+def _run(conn, report=None, avg_rows_per_call=None):
     report = report if report is not None else HealthReport()
-    stats = ExplainStage(_Collector(), report).execute(_stats(), conn)
+    stats = ExplainStage(_Collector(), report).execute(_stats(avg_rows_per_call), conn)
     return stats["canonic_explains"][0], report
 
 
-def test_sensitive_column_gets_two_variants_and_sensitive_stability():
-    conn = _Conn()
-    explain, _ = _run(conn)
+def _summary(explain):
+    operation = explain["canonical_plan"]["physical_operations"][0]
+    return (
+        explain["explain_source"],
+        explain["canonical_plan"]["estimates"]["output_rows"],
+        operation["access_method"],
+    )
 
-    assert explain["explain_source"] == "generic"
-    assert explain["canonical_plan"]["estimates"]["output_rows"] == 333333
+
+@pytest.mark.parametrize("avg_rows_per_call, expected", [
+    # La app casi siempre pide el valor frecuente: el plan es el Seq Scan.
+    (900000, ("custom", 950000, "full_table_scan")),
+    # Casi siempre un valor raro: el plan es el Index Scan.
+    (50, ("custom", 10000, "index_lookup")),
+    # Las filas reales coinciden con el promedio del generico.
+    (333333, ("generic", 333333, "full_table_scan")),
+    # Sin filas reales no hay con que elegir: queda el generico.
+    (None, ("generic", 333333, "full_table_scan")),
+])
+def test_sensitive_column_sends_the_plan_closest_to_real_rows(avg_rows_per_call, expected):
+    explain, _ = _run(_Conn(), avg_rows_per_call=avg_rows_per_call)
+
+    assert _summary(explain) == expected
     assert explain["plan_stability"] == "sensitive"
-    assert [v["label"] for v in explain["plan_variants"]] == ["many_rows", "few_rows"]
-    rows = [v["canonical_plan"]["estimates"]["output_rows"] for v in explain["plan_variants"]]
-    assert rows == [950000, 10000]
-    methods = [
-        v["canonical_plan"]["physical_operations"][0]["access_method"]
-        for v in explain["plan_variants"]
-    ]
-    assert methods == ["full_table_scan", "index_lookup"]
+    assert "plan_variants" not in explain
     CanonicExplain.model_validate(explain)
 
 
 def test_variant_values_never_reach_the_snapshot_or_the_sql_text():
-    conn = _Conn()
-    explain, _ = _run(conn)
+    for avg_rows_per_call in (900000, 50):
+        conn = _Conn()
+        explain, _ = _run(conn, avg_rows_per_call=avg_rows_per_call)
 
-    payload = json.dumps(explain)
-    assert FREQUENT not in payload and RARE not in payload
-    # Cada nodo conserva su condicion, con el valor devuelto a su $n.
-    predicates = [
-        variant["canonical_plan"]["physical_operations"][0]["predicate"]
-        for variant in explain["plan_variants"]
-    ]
-    assert predicates == ["((estado)::text = $1)", "((estado)::text = $1)"]
+        assert explain["explain_source"] == "custom"
+        payload = json.dumps(explain)
+        assert FREQUENT not in payload and RARE not in payload
+        # El nodo conserva su condicion, con el valor devuelto a su $n.
+        operation = explain["canonical_plan"]["physical_operations"][0]
+        assert operation["predicate"] == "((estado)::text = $1)"
     # Los valores viajan como bind params, no pegados en el SQL.
     assert not any(FREQUENT in sql or RARE in sql for sql in conn.sent)
     assert {"p1": FREQUENT} in conn.bound and {"p1": RARE} in conn.bound
@@ -307,10 +317,10 @@ def test_variant_failure_keeps_the_generic_plan_and_logs_no_value(caplog):
     report = HealthReport()
 
     with caplog.at_level(logging.WARNING):
-        explain, report = _run(conn, report)
+        explain, report = _run(conn, report, avg_rows_per_call=900000)
 
-    assert explain["canonical_plan"]["estimates"]["output_rows"] == 333333
-    assert "plan_variants" not in explain and "plan_stability" not in explain
+    assert _summary(explain) == ("generic", 333333, "full_table_scan")
+    assert "plan_stability" not in explain
     assert not report.issues
     assert "DEALLOCATE ql_plan_variant" in conn.sent
     assert "rollback_to_savepoint" in conn.events
@@ -323,7 +333,7 @@ def test_column_without_frequent_values_is_stable_without_variants():
     explain, _ = _run(conn)
 
     assert explain["plan_stability"] == "stable"
-    assert "plan_variants" not in explain
+    assert explain["explain_source"] == "generic"
     assert not any("PREPARE" in sql for sql in conn.sent)
 
 
@@ -359,4 +369,34 @@ def test_snapshot_defaults_when_no_variants():
         "query_id": 1, "explain_source": "sample", "canonical_plan": {},
     })
     assert explain.plan_stability is None
-    assert explain.plan_variants == []
+
+
+# ---------- select_plan ----------
+
+@pytest.mark.parametrize("estimated, actual, expected", [
+    (100, 10, 10.0),
+    (10, 100, 10.0),
+    # Piso 1: una query que no devuelve filas no da error infinito.
+    (1, 0, 1.0),
+    (50, 0, 50.0),
+    (None, 10, None),
+    (10, None, None),
+])
+def test_q_error(estimated, actual, expected):
+    assert pv.q_error(estimated, actual) == expected
+
+
+@pytest.mark.parametrize("generic, variants, actual, expected", [
+    (333333, [950000, 10000], 900000, 0),
+    (333333, [950000, 10000], 50, 1),
+    # Empate con el generico: gana el generico.
+    (100, [100, 100], 100, None),
+    (1, [1, 1], 1, None),
+    # Sin filas reales o sin estimacion del generico: generico.
+    (333333, [950000, 10000], None, None),
+    (None, [950000, 10000], 900000, None),
+    # Una variante sin estimacion no compite.
+    (333333, [None, 10000], 50, 1),
+])
+def test_select_plan(generic, variants, actual, expected):
+    assert pv.select_plan(generic, variants, actual) == expected

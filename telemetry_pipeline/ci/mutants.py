@@ -352,6 +352,14 @@ MUTANTS = [
         'self.report.add("PG_STATS_MISSING")',
         'pass',
         "variants: tabla sin estadisticas no se reporta"),
+    mut("stages/plan_variants.py",
+        'if error is not None and error < best_error:',
+        'if error is not None and error <= best_error:',
+        "variants: en empate una variante reemplaza al generico"),
+    mut("stages/explain_normalizer.py",
+        'canonic_explain["canonical_plan"] = variants[chosen]["canonical_plan"]',
+        'pass',
+        "variants: se marca custom pero viaja el plan generico"),
 
     # ---- collect.py ----
     mut("stages/collect.py",

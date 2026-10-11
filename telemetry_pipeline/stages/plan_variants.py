@@ -7,6 +7,11 @@ piden ademas dos planes custom con valores reales de las estadisticas de la
 columna: uno con el valor que trae muchas filas y otro con el que trae pocas.
 Asi se sabe si el plan cambia con el valor y en que rango se mueven las filas.
 
+Al snapshot viaja un solo plan: select_plan elige, entre el generico y las
+variantes, el que estima un numero de filas mas cercano a avg_rows_per_call
+de pg_stat_statements (filas reales por ejecucion). Ese es el plan que mejor
+explica lo que la base ejecuta de verdad.
+
 Todo se calcula en el ciclo actual, sin estado entre snapshots. Si algo no se
 puede resolver (un `$n` que no se mapea a una columna, una tabla sin
 estadisticas, un error), no hay variantes y el snapshot queda con el plan
@@ -285,3 +290,33 @@ def explain_variants(conn, query_text: str, targets: list[ParamRef]) -> Variants
         if prepared:
             conn.execute(text(f"DEALLOCATE {PREPARED_NAME}"))
     return VariantsOutcome(variants=variants)
+
+
+def q_error(estimated, actual) -> float | None:
+    """max(est/real, real/est), la misma metrica de AP-08. Ambos valores con
+    piso 1: Postgres nunca estima menos de 1 fila y una query que no devuelve
+    nada no tiene un error infinito. None si falta alguno de los dos."""
+    if estimated is None or actual is None:
+        return None
+    try:
+        estimated = max(float(estimated), 1.0)
+        actual = max(float(actual), 1.0)
+    except (TypeError, ValueError):
+        return None
+    return max(estimated / actual, actual / estimated)
+
+
+def select_plan(generic_rows, variant_rows: list, actual_rows) -> int | None:
+    """Posicion de la variante a enviar, o None para el generico. Gana el menor
+    q-error contra las filas reales por ejecucion. En empate, o sin filas
+    reales con que comparar, queda el generico: una variante solo lo reemplaza
+    si estima estrictamente mejor."""
+    best_error = q_error(generic_rows, actual_rows)
+    if best_error is None:
+        return None
+    best = None
+    for index, rows in enumerate(variant_rows):
+        error = q_error(rows, actual_rows)
+        if error is not None and error < best_error:
+            best, best_error = index, error
+    return best

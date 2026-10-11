@@ -190,6 +190,9 @@ class ExplainStage:
                                 "query_id": query_id,
                                 "explain_source": "generic",
                                 "plan": [dict(row) for row in result.mappings()],
+                                # Interno: el normalizer elige con esto entre
+                                # el generico y las variantes.
+                                "avg_rows_per_call": query.get("avg_rows_per_call"),
                             }
                             stats["query_explain"].append(explain_entry)
                         else:
