@@ -63,6 +63,7 @@ STATEMENTS_QUERY = """
 SELECT
     s.DIGEST                                                        AS query_id,
     s.DIGEST_TEXT                                                   AS query_text,
+    s.QUERY_SAMPLE_TEXT                                             AS query_sample_text,
     s.schema_name                                                     AS schema_name,
     CAST(s.COUNT_STAR AS SIGNED)                                    AS execution_count,
     CAST(s.SUM_ROWS_SENT AS SIGNED)                                 AS rows_returned,
@@ -73,12 +74,34 @@ SELECT
     CAST(ROUND(s.MIN_TIMER_WAIT / 1000000000.0, 6) AS DOUBLE)                  AS min_time_ms,
     CAST(ROUND(s.MAX_TIMER_WAIT / 1000000000.0, 6) AS DOUBLE)                  AS max_time_ms,
     NULL                                                                        AS coeff_of_variation,
-    CAST(s.SUM_CREATED_TMP_DISK_TABLES AS SIGNED)                               AS disk_spill_indicator
+    CAST(s.SUM_CREATED_TMP_DISK_TABLES AS SIGNED)                               AS disk_spill_indicator,
+    FIRST_SEEN AS counters_epoch
 FROM performance_schema.events_statements_summary_by_digest s
 WHERE s.DIGEST_TEXT IS NOT NULL
   AND s.DIGEST_TEXT NOT LIKE '%performance_schema%'
   AND s.DIGEST_TEXT NOT LIKE '%information_schema%'
   AND s.DIGEST_TEXT NOT LIKE '%events_statements_summary%'
+  AND s.DIGEST_TEXT NOT LIKE 'SELECT @@%'
+  AND s.DIGEST_TEXT NOT LIKE 'SELECT VERSION%'
+  AND s.DIGEST_TEXT NOT LIKE 'SET @@%'
+  AND s.DIGEST_TEXT NOT LIKE 'SHOW %'
+  -- Autobservacion: events_statements_summary_by_digest agrupa por digest y
+  -- no expone usuario, asi que no hay filtro por rol como el de Postgres. La
+  -- unica defensa es reconocer la forma de lo que emite el propio pipeline.
+  -- Sin esto, el EXPLAIN del ExplainStage se acumula entre corridas y termina
+  -- contaminando high_impact_statements con planes del pipeline.
+  AND s.DIGEST_TEXT NOT LIKE 'SET NAMES%'
+  AND s.DIGEST_TEXT NOT LIKE 'SET AUTOCOMMIT%'
+  AND s.DIGEST_TEXT NOT LIKE 'USE %'
+  AND s.DIGEST_TEXT NOT LIKE 'ROLLBACK%'
+  AND s.DIGEST_TEXT NOT LIKE 'SELECT SCHEMA%'
+  AND s.DIGEST_TEXT NOT LIKE 'SELECT ?%'
+  AND s.DIGEST_TEXT NOT LIKE 'EXPLAIN FORMAT = JSON%'
+  -- BEGIN/COMMIT son sentencias de control, no telemetria: nunca llegan a ser
+  -- candidatos a explicar, asi que excluirlas no_costa un candidato. Se
+  -- excluyen para que el filtro y PIPELINE_FINGERPRINT digan lo mismo.
+  AND s.DIGEST_TEXT NOT LIKE 'BEGIN%'
+  AND s.DIGEST_TEXT NOT LIKE 'COMMIT%'
 ORDER BY s.SUM_TIMER_WAIT DESC;
 """
 

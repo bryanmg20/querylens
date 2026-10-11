@@ -77,6 +77,18 @@ def test_pg_total_cost():
     assert stats["canonic_explains"][0]["canonical_plan"]["estimates"]["total_cost"] == 25.5
 
 
+def test_pg_output_rows_from_root():
+    # las filas del nodo raiz (el join), no las de cada scan
+    stats = {"query_explain": [{"query_id": 1, "plan": [{"Plan": {
+        "Node Type": "Hash Join", "Plan Rows": 5000, "Total Cost": 1.0, "Plans": [
+            {"Node Type": "Seq Scan", "Alias": "p", "Plan Rows": 100000, "Total Cost": 1.0, "Plans": []},
+            {"Node Type": "Seq Scan", "Alias": "c", "Plan Rows": 50, "Total Cost": 1.0, "Plans": []},
+        ],
+    }}]}]}
+    EXPLAIN_NORMALIZERS["postgres"]().normalize(stats)
+    assert stats["canonic_explains"][0]["canonical_plan"]["estimates"]["output_rows"] == 5000
+
+
 def test_pg_empty_plan():
     stats = {"query_explain": [{"query_id": 1, "plan": []}]}
     EXPLAIN_NORMALIZERS["postgres"]().normalize(stats)
@@ -127,3 +139,36 @@ def test_mysql_sort():
     }}]}
     EXPLAIN_NORMALIZERS["mysql"]().normalize(stats)
     assert stats["canonic_explains"][0]["canonical_plan"]["logical_shape"]["sorts"] == 1
+
+def test_mysql_output_rows_single_table():
+    stats = {"query_explain": [{"query_id": 7, "plan": _mysql_table(
+        _mysql_table_node("t", rows_produced_per_join=100)
+    )}]}
+    EXPLAIN_NORMALIZERS["mysql"]().normalize(stats)
+    assert stats["canonic_explains"][0]["canonical_plan"]["estimates"]["output_rows"] == 100
+
+
+def test_mysql_output_rows_last_access_of_join():
+    # forma real de MySQL 8.0: nested_loop dentro de ordering_operation
+    stats = {"query_explain": [{"query_id": 8, "plan": {
+        "query_block": {
+            "cost_info": {"query_cost": "1"},
+            "ordering_operation": {
+                "using_filesort": True,
+                "nested_loop": [
+                    {"table": _mysql_table_node("c", rows_produced_per_join=50)},
+                    {"table": _mysql_table_node("p", access_type="ref", rows_produced_per_join=5000)},
+                ],
+            },
+        }
+    }}]}
+    EXPLAIN_NORMALIZERS["mysql"]().normalize(stats)
+    assert stats["canonic_explains"][0]["canonical_plan"]["estimates"]["output_rows"] == 5000
+
+
+def test_mysql_output_rows_union_is_none():
+    stats = {"query_explain": [{"query_id": 9, "plan": {
+        "query_block": {"union_result": {"query_specifications": []}}
+    }}]}
+    EXPLAIN_NORMALIZERS["mysql"]().normalize(stats)
+    assert stats["canonic_explains"][0]["canonical_plan"]["estimates"]["output_rows"] is None

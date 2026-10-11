@@ -118,6 +118,9 @@ class LogicalShape(BaseModel):
 
 class Estimates(BaseModel):
     total_cost: float | None = None
+    # filas estimadas que devuelve la consulta: Plan Rows del nodo raiz en
+    # Postgres, rows_produced_per_join del ultimo acceso en MySQL
+    output_rows: float | None = None
 
 
 class PhysicalOperation(BaseModel):

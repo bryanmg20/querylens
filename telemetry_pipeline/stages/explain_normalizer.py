@@ -20,6 +20,7 @@ class PostgresExplainNormalizer:
                 "physical_operations": [],
                 "estimates": {
                     "total_cost": None,
+                    "output_rows": None,
                 },
             }
 
@@ -111,9 +112,13 @@ class PostgresExplainNormalizer:
     def _plan_estimates(self, node):
         estimates = {
             "total_cost": None,
+            "output_rows": None,
         }
         if "Total Cost" in node:
             estimates["total_cost"] = to_number(node["Total Cost"])
+        # filas que el optimizador estima que devuelve la consulta: las del nodo raiz
+        if "Plan Rows" in node:
+            estimates["output_rows"] = to_number(node["Plan Rows"])
         return estimates
 
     def _scan_operation(self, node):
@@ -186,11 +191,13 @@ class MysqlExplainNormalizer:
                 "physical_operations": [],
                 "estimates": {
                     "total_cost": None,
+                    "output_rows": None,
                 },
             }
 
             plan = explain.get("plan") or {}
             self._set_root_cost(plan, canonical_plan)
+            self._set_output_rows(plan, canonical_plan)
             self._walk_plan(plan, canonical_plan)
 
             canonic_explains.append({
@@ -207,6 +214,29 @@ class MysqlExplainNormalizer:
         query_cost = cost_info.get("query_cost") if isinstance(cost_info, dict) else None
         if query_cost is not None:
             canonical_plan["estimates"]["total_cost"] = to_number(query_cost)
+
+    def _set_output_rows(self, plan, canonical_plan):
+        # MySQL no tiene nodo raiz con filas: se usa rows_produced_per_join del
+        # ultimo acceso del query_block, que en un join ya es el acumulado de la
+        # union. Con GROUP BY o DISTINCT son las filas ANTES de agrupar.
+        # UNION (union_result) o consultas sin tablas quedan en None.
+        node = plan.get("query_block") if isinstance(plan, dict) else None
+        while isinstance(node, dict):
+            table = node.get("table")
+            if isinstance(table, dict):
+                canonical_plan["estimates"]["output_rows"] = to_number(table.get("rows_produced_per_join"))
+                return
+            nested_loop = node.get("nested_loop")
+            if isinstance(nested_loop, list) and nested_loop:
+                node = nested_loop[-1]
+                continue
+            # operaciones que envuelven el acceso (ordenar, agrupar, quitar duplicados)
+            for wrapper in ("ordering_operation", "grouping_operation", "duplicates_removal", "windowing", "buffer_result"):
+                if isinstance(node.get(wrapper), dict):
+                    node = node[wrapper]
+                    break
+            else:
+                return
 
     def _walk_plan(self, value, canonical_plan):
         if isinstance(value, list):
