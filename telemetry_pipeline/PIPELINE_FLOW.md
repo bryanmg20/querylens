@@ -68,17 +68,32 @@ run_engine(dialect, connection_factory, db_id)                  main.py
   │     │     collector.mark_explainable(stats)     → hook por motor: Postgres=True siempre,
   │     │                                           MySQL=True si query_sample_text no está vacío
   │     │
+  │     ├─ AutoExplainStage.execute(stats, conn)             stages/auto_explain.py
+  │     │     solo Postgres y solo si hay candidatos con ready_for_explain.
+  │     │     en una transacción corta: querylens.log_files() → querylens.read_log()
+  │     │     sobre los últimos LOG_WINDOW_BYTES (2 MB) del log JSON, del archivo más
+  │     │     nuevo al más viejo (guía references/006). Sin estado entre ciclos.
+  │     │     cruza cada línea jsonlog por query_id (+ dbname) con los candidatos;
+  │     │     gana el plan más reciente. Solo guarda "Plan" (nunca "Query Text").
+  │     │     stats["auto_explain_plans"] = {query_id: {"Plan": ...}}  (interno)
+  │     │     sin funciones / sin permiso → rollback, AUTO_EXPLAIN_LOG_UNAVAILABLE
+  │     │     (info) y todos los candidatos siguen por el plan genérico.
+  │     │
   │     ├─ (3) ExplainStage.execute(stats, conn)             stages/explain.py
   │     │     solo para candidatos con ready_for_explain y cuyo texto a explicar
   │     │     (query_text en PG, query_sample_text en MySQL) empieza por SELECT/WITH
-  │     │     "EXPLAIN (GENERIC_PLAN, FORMAT JSON) <query>"  → Postgres (PG17+ por el minimo soportado, placeholders $1)
+  │     │     plan de auto_explain del candidato si existe   → Postgres, sin EXPLAIN
+  │     │                                           (explain_source "auto_explain")
+  │     │     "EXPLAIN (GENERIC_PLAN, FORMAT JSON) <query>"  → Postgres sin plan en el log (PG17+ por el minimo soportado, placeholders $1)
   │     │     "EXPLAIN FORMAT=JSON <query_sample_text>"     → MySQL (usa valores reales)
   │     │     cada candidato corre en una transacción corta propia:
   │     │     BEGIN → SET LOCAL search_path / USE → EXPLAIN → COMMIT (M-12).
   │     │     rollback si falla; el USE de MySQL es estado de sesión y sobrevive.
   │     │     stats["query_explain"] = [{query_id, explain_source, plan}]
   │     │     EXPLAIN_NORMALIZERS[dialect]().normalize(stats)
-  │     │       Postgres: _walk_plan sobre arbol JSON → logical_shape + physical_operations
+  │     │       Postgres: _walk_plan sobre arbol JSON → logical_shape + physical_operations;
+  │     │                 con explain_source "auto_explain" los predicados pasan por
+  │     │                 redact_postgres_plan_predicate (literales → $n)
   │     │       MySQL:    _walk_plan sobre query_block → idem
   │     │     stats["canonic_explains"] = [{query_id, explain_source, canonical_plan}]
   │     │
@@ -258,7 +273,9 @@ Los tests de arquitectura son **contratos estructurales**: validan "qué interfa
 - El ciclo del runner por defecto es de **10 s** (`interval_from_env()`, pensado para pruebas/sandbox). Para producción la cadencia prevista es de **30–60 s** (decisión de deploy, sin tocar código): cada vuelta emite un snapshot por base, así que el intervalo es la palanca directa de volumen de la cola (ver la fila "No guarda estado entre ciclos").
 - La transacción del target se maneja en dos tiempos: el **collect** la cierra con `commit()` al terminar (no retiene snapshot/vacuum de Postgres ni MVCC de MySQL durante el resto del ciclo), y cada **EXPLAIN** corre en su propia **transacción corta** (`BEGIN → SET LOCAL/USE → EXPLAIN → COMMIT`; rollback en fallo; el `USE` de MySQL es estado de sesión y sobrevive al commit). Ver `references/004_decisiones_contrato.md` (M-12).
 - `EXPLAIN (GENERIC_PLAN)` existe desde PostgreSQL 16, pero el mínimo soportado es **17** (ver "Versiones soportadas"): en PG 16 ya falla antes la sección `statements`. Si un EXPLAIN falla, la excepción se captura por consulta, se hace `rollback` y el candidato queda fuera de `canonic_explains` sin abortar el ciclo.
-- `explain_source` viaja en `canonic_explains` para que el consumidor sepa con qué fidelidad se obtuvo el plan: `"generic"` (Postgres, plan sin valores concretos) o `"sample"` (MySQL, plan de una ejecución real).
+- `explain_source` viaja en `canonic_explains` para que el consumidor sepa con qué fidelidad se obtuvo el plan: `"auto_explain"` (Postgres, plan que `auto_explain` registró de una ejecución real), `"generic"` (Postgres, plan sin valores concretos) o `"sample"` (MySQL, plan de una ejecución real).
+- En Postgres el plan de `auto_explain` tiene prioridad sobre `GENERIC_PLAN`. Solo se encuentra si la query pasó de `auto_explain.log_min_duration` (50 ms en la guía 006) dentro de la ventana leída: cada ciclo relee los últimos 2 MB del log, sin guardar offsets entre ciclos. Una query rápida, o lenta pero fuera de esa ventana, sigue con el plan genérico. El cruce por `query_id` no se mezcla con las queries del propio monitor: los candidatos ya las excluyen en `STATEMENTS_QUERY`.
+- El plan de `auto_explain` trae los literales de la ejecución en `Filter`/`Index Cond`/`Join Filter`/`Hash Cond`/`Merge Cond`. `redact_postgres_plan_predicate` los reemplaza por `$n` sobre el texto de Postgres (no por sqlglot), para que el predicado conserve la forma del plan genérico (`$1::bpchar`). Redacta de más a propósito: un número de un modificador de tipo (`bit(3)`) también pasa a `$n`.
 - `QUERY_SAMPLE_TEXT` se trunca a `performance_schema_max_digest_text_length` (1024 por defecto). Una consulta larga queda con SQL inválido: se trata igual que cualquier fallo de `EXPLAIN`, y aparece como no explicable.
 - `query_sample_text` es **flujo interno, no campo del contrato**: MySQL lo produce (`QUERY_SAMPLE_TEXT`, literales reales) y solo lo usan `mark_explainable` y el `EXPLAIN FORMAT=JSON <sample>` en memoria. El payload lo **descarta** (`extra="ignore"`; ver `references/004_decisiones_contrato.md`): la cola no debe conservar texto real de las queries — solo viajan los normalizados (`query_text` de Postgres con `$1`, `DIGEST_TEXT` de MySQL con `?`) y los predicados de plan de MySQL (`canonic_explains[*].predicate`), que `clean_mysql_explain_predicate_dynamic` redacta a `$n` (N-1) porque el plan se arma con la query real. El fix de M-10 que lo declaró en el contrato fue un error y quedó revertido; este requisito es la razón por la que el campo nunca estuvo en el contrato.
 - Los scripts que medían la mecánica basada en logs se descartaron; la justificación vive en `references/005_evaluacion_alternativas_query_real.md` (cobertura incompleta del slow log, permisos de FS, config del servidor, texto logueado ≠ texto planificado). La carpeta `research/` se eliminó del repo.
