@@ -8,14 +8,25 @@ services:
       POSTGRES_DB: ql_demo
     ports:
       - "5432:5432"
+    # auto_explain + log JSON con rotacion semanal: lo que pide
+    # telemetry_pipeline/references/006_instalacion_auto_explain.md (Pasos 2-3).
+    # Las funciones de lectura del log las crea el servicio postgres_setup.
     command: >
       postgres
-        -c shared_preload_libraries=pg_stat_statements
+        -c shared_preload_libraries=pg_stat_statements,auto_explain
         -c pg_stat_statements.track=all
         -c pg_stat_statements.max=10000
         -c track_activity_query_size=4096
         -c deadlock_timeout=1s
         -c shared_buffers=16MB
+        -c auto_explain.log_min_duration=50ms
+        -c auto_explain.log_analyze=off
+        -c auto_explain.log_format=json
+        -c logging_collector=on
+        -c log_destination=stderr,jsonlog
+        -c log_filename=postgresql-%a.log
+        -c log_truncate_on_rotation=on
+        -c log_rotation_age=1d
     volumes:
       - ./init/init_postgres.sql:/docker-entrypoint-initdb.d/init_postgres.sql
       - postgres_data:/var/lib/postgresql/data
@@ -24,6 +35,32 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    networks:
+      - ql_network
+
+  # Crea las funciones querylens.log_files() / querylens.read_log() (Paso 4 de
+  # la guia 006) en cada `up`, tambien con un volumen que ya existia: los
+  # scripts de docker-entrypoint-initdb.d solo corren con el volumen vacio.
+  # Espera a que exista querylens_monitor por TCP: en el primer arranque el
+  # healthcheck puede pasar mientras init_postgres.sql todavia corre.
+  postgres_setup:
+    image: postgres:17
+    container_name: ql_postgres_setup
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ql_pass
+    volumes:
+      - ./init/auto_explain_postgres.sql:/setup/auto_explain_postgres.sql:ro
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        until psql -h postgres -U ql_user -d ql_demo -tAc "SELECT 1 FROM pg_roles WHERE rolname = 'querylens_monitor'" 2>/dev/null | grep -q 1; do
+          sleep 1
+        done
+        psql -h postgres -U ql_user -d ql_demo -v ON_ERROR_STOP=1 -q -f /setup/auto_explain_postgres.sql
+    restart: "no"
     networks:
       - ql_network
 
