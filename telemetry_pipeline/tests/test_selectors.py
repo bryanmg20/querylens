@@ -51,6 +51,21 @@ def test_disk_spill_signal():
     assert [s["query_id"] for s in stats["disk_spill_statements"]] == [2]
 
 
+def test_disk_spill_signal_includes_sorts_that_went_to_disk():
+    """MySQL: un ORDER BY que va a disco deja merge passes y 0 tablas
+    temporales en disco; sin esta senal nunca era candidato. Postgres manda
+    sort_merge_passes en None."""
+    stats = {
+        "statements": [
+            {**_statement(1, spill=0), "sort_merge_passes": 118},
+            {**_statement(2, spill=0), "sort_merge_passes": 0},
+            {**_statement(3, spill=None), "sort_merge_passes": None},
+        ]
+    }
+    select_disk_spill_indicator(stats)
+    assert [s["query_id"] for s in stats["disk_spill_statements"]] == [1]
+
+
 def test_candidates_dedupe_and_collect_reasons():
     stats = {
         "high_impact_statements": [_statement(1), _statement(2)],

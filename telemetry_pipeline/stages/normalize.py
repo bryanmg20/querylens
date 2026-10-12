@@ -101,13 +101,27 @@ def clean_mysql_explain_predicate_dynamic(pred_text):
         for table in list(ast.find_all(exp.Table)):
             if table.db:
                 table.set('db', None)
+        # MySQL copia la subconsulta entera dentro del predicado de la tabla de
+        # afuera: sus columnas y funciones parecian de esa tabla. Va la misma
+        # etiqueta que pone Postgres, (SubPlan N); la subconsulta tiene su
+        # propio scan en el plan. Antes que los literales, para que los de
+        # adentro no consuman numeros de $n.
+        subplans = _replace_subqueries(ast)
         # N-1: el plan de MySQL se armo con la query real, asi que los
         # predicados traen literales de datos (numeros, strings). La cola PGMQ
         # no los puede conservar: se reemplazan por placeholders $n, igual que
         # canonicalize_query hace con query_text. NULL/TRUE/FALSE no son datos
-        # y dejan el predicado legible, asi que no se tocan.
+        # y dejan el predicado legible, asi que no se tocan. El texto (string,
+        # hex, bit) sale como '$n' y el numero como $n: solo viaja el tipo, que
+        # el consumidor necesita para ver la conversion implicita de MySQL
+        # (`telefono = 5551234`), que el plan no muestra.
         for node in list(ast.find_all(*canonicalizers.DATA_LITERAL_NODES, exp.Parameter)):
-            node.replace(exp.Placeholder())
+            if isinstance(node, exp.Literal) and node.is_string or isinstance(
+                node, (exp.HexString, exp.BitString, exp.ByteString)
+            ):
+                node.replace(exp.Literal.string("%s"))
+            else:
+                node.replace(exp.Placeholder())
         canonic = ast.sql(dialect='postgres', identify=False, comments=False)
 
         param_index = 1
@@ -118,7 +132,10 @@ def clean_mysql_explain_predicate_dynamic(pred_text):
             param_index += 1
             return current_param
 
-        return re.sub(r"%s", replace_placeholder, canonic).replace('"', '')
+        canonic = re.sub(r"%s", replace_placeholder, canonic).replace('"', '')
+        for number, marker in enumerate(subplans, start=1):
+            canonic = canonic.replace(marker, f"(SubPlan {number})")
+        return canonic
     except Exception:
         cleaned = re.sub(r'/\*.*?\*/', '', pred_text)
         cleaned = cleaned.replace('`', '')
@@ -133,11 +150,37 @@ def clean_mysql_explain_predicate_dynamic(pred_text):
 
         def replace_literal(match):
             counter["n"] += 1
-            return f"${counter['n']}"
+            # Mismo criterio que el camino sqlglot: texto/hex/bit como '$n'.
+            literal = match.group(0)
+            if literal[0].isdigit() and literal[:2].lower() not in ("0x", "0b"):
+                return f"${counter['n']}"
+            return f"'${counter['n']}'"
 
         cleaned = _LITERAL_RE.sub(replace_literal, cleaned)
         cleaned = re.sub(r'\s+', ' ', cleaned).strip()
         return cleaned
+
+
+def _replace_subqueries(ast):
+    """Reemplaza cada subconsulta (la de afuera de cada anidamiento) por un
+    marcador y devuelve los marcadores en orden de lectura. `= (SELECT ..)` y
+    `IN (SELECT ..)` pierden el Subquery; EXISTS (SELECT ..) entero."""
+    markers = []
+    while True:
+        nested = next(
+            (select for select in ast.find_all(exp.Select) if select is not ast),
+            None,
+        )
+        if nested is None:
+            return markers
+        target = nested
+        if isinstance(target.parent, exp.Subquery):
+            target = target.parent
+        if isinstance(target.parent, exp.Exists):
+            target = target.parent
+        marker = f"__ql_subplan_{len(markers) + 1}__"
+        markers.append(marker)
+        target.replace(exp.column(marker))
 
 
 def redact_postgres_plan_predicate(pred_text):

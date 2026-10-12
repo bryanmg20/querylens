@@ -53,6 +53,14 @@ _MY_PERMISSION = {1142, 1143, 1227}
 # ER_SPECIFIC_ACCESS_DENIED_ERROR: "you need (at least one of) the X privilege(s)".
 _MY_SPECIFIC_PRIVILEGE = 1227
 _PG_TIMEOUT = {"57014"}
+# EXPLAIN (GENERIC_PLAN) sobre un texto normalizado ($1, $2) que solo pasa
+# parametros a una funcion u operador con varias versiones: Postgres no puede
+# elegir sin los tipos (generate_series($1, $2), $1 + $2). Es un limite del
+# plan generico, no una falla: el plan llega por auto_explain si se registra.
+_PG_GENERIC_PLAN_AMBIGUOUS = {
+    "42725",   # ambiguous_function: "function ... is not unique" / "operator is not unique"
+    "42P18",   # indeterminate_datatype: "could not determine data type of parameter $1"
+}
 _MY_TIMEOUT = {3024, 2013}
 
 
@@ -116,8 +124,11 @@ def _explain_code(exc, phase, sqlstate, errno) -> str:
         # que el target (frases de libpq), no el SQLSTATE de una sentencia.
         denied = _connect_code(exc, sqlstate, errno) == "CONNECT_PERMISSION_DENIED"
         return "EXPLAIN_FOREIGN_DB_CONNECT_DENIED" if denied else "EXPLAIN_FAILED"
-    denied = sqlstate in _PG_PERMISSION or errno in _MY_PERMISSION
-    return "EXPLAIN_PERMISSION_DENIED" if denied else "EXPLAIN_FAILED"
+    if sqlstate in _PG_PERMISSION or errno in _MY_PERMISSION:
+        return "EXPLAIN_PERMISSION_DENIED"
+    if sqlstate in _PG_GENERIC_PLAN_AMBIGUOUS:
+        return "EXPLAIN_PARAM_TYPES_AMBIGUOUS"
+    return "EXPLAIN_FAILED"
 
 
 def classify(exc, *, dialect: str, scope: str, section: str = "", phase: str = "") -> tuple[str, dict]:

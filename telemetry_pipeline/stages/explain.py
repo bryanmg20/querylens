@@ -190,11 +190,14 @@ class ExplainStage:
                                 "plan": json.loads(plan_row["EXPLAIN"]),
                             })
                 except Exception as e:
-                    logger.error(f"{dialect} | EXPLAIN | query_id={query_id} | {e}")
                     failures += 1
                     # Agrupado por code (params.count): nunca query_id ni texto.
                     code, params = classify(e, dialect=dialect, scope="explain")
                     self.report.add(code, **params)
+                    # Un limite conocido del plan generico se repite en cada
+                    # ciclo: en ERROR serian ~8 640 lineas al dia por query.
+                    log = logger.info if code == "EXPLAIN_PARAM_TYPES_AMBIGUOUS" else logger.error
+                    log(f"{dialect} | EXPLAIN | query_id={query_id} | {e}")
                 finally:
                     # N-2: la conexion extranjera (abierta con engine.connect()
                     # en _foreign_connection) no la cierra ningun `with`: el

@@ -82,7 +82,10 @@ class PostgresExplainNormalizer:
             return value
         return None
 
-    def _walk_plan(self, node, canonical_plan):
+    def _walk_plan(self, node, canonical_plan, bitmap_heap=None):
+        """`bitmap_heap` es la operacion del Bitmap Heap Scan de arriba mientras
+        se recorren sus Bitmap Index Scan (directos o bajo BitmapAnd/BitmapOr):
+        esos nodos nombran el indice pero no la tabla."""
         node_type = node.get("Node Type")
         operation = None
         operations = []
@@ -93,7 +96,7 @@ class PostgresExplainNormalizer:
 
         if node_type in ("Seq Scan", "Index Scan", "Index Only Scan", "Bitmap Heap Scan", "Bitmap Index Scan"):
             canonical_plan["logical_shape"]["scans"] += 1
-            operation = self._scan_operation(node)
+            operation = self._scan_operation(node, bitmap_heap)
         elif node_type in ("Nested Loop", "Hash Join", "Merge Join"):
             canonical_plan["logical_shape"]["joins"] += 1
             operation = self._join_operation(node)
@@ -129,9 +132,34 @@ class PostgresExplainNormalizer:
 
         canonical_plan["physical_operations"].extend(operations)
 
+        if node_type == "Bitmap Heap Scan":
+            child_heap = operation if operation["type"] == "scan" else operations[0]
+            self._set_bitmap_index_name(node, child_heap)
+        elif node_type in ("BitmapAnd", "BitmapOr"):
+            child_heap = bitmap_heap
+        else:
+            child_heap = None
+
         for child in node.get("Plans", []):
             if isinstance(child, dict):
-                self._walk_plan(child, canonical_plan)
+                self._walk_plan(child, canonical_plan, child_heap)
+
+    @staticmethod
+    def _set_bitmap_index_name(node, heap_operation):
+        """Con un solo Bitmap Index Scan el heap lleva su indice. Con BitmapAnd/
+        BitmapOr son varios y index_name es uno solo: cada indice queda en su
+        Bitmap Index Scan, que ya lo trae."""
+        names = []
+        pending = [child for child in node.get("Plans", []) if isinstance(child, dict)]
+        while pending:
+            child = pending.pop()
+            if child.get("Node Type") == "Bitmap Index Scan":
+                if child.get("Index Name"):
+                    names.append(child["Index Name"])
+            elif child.get("Node Type") in ("BitmapAnd", "BitmapOr"):
+                pending.extend(c for c in child.get("Plans", []) if isinstance(c, dict))
+        if len(names) == 1:
+            heap_operation["index_name"] = names[0]
 
     def _plan_estimates(self, node):
         estimates = {
@@ -144,7 +172,7 @@ class PostgresExplainNormalizer:
             estimates["output_rows"] = to_number(node["Plan Rows"])
         return estimates
 
-    def _scan_operation(self, node):
+    def _scan_operation(self, node, bitmap_heap=None):
         access_methods = {
             "Seq Scan": "full_table_scan",
             "Index Scan": "index_lookup",
@@ -152,16 +180,35 @@ class PostgresExplainNormalizer:
             "Bitmap Heap Scan": "index_lookup",
             "Bitmap Index Scan": "index_lookup",
         }
+        node_type = node["Node Type"]
         operation = _base_operation("scan")
-        operation["access_method"] = access_methods[node["Node Type"]]
+        operation["access_method"] = access_methods[node_type]
+        # Index Scan sin Index Cond no busca: recorre el indice entero (para dar
+        # el orden de un ORDER BY, por ejemplo), igual que `index` en MySQL.
+        if node_type in ("Index Scan", "Index Only Scan") and not node.get("Index Cond"):
+            operation["access_method"] = "full_index_scan"
+        # relation es el alias, con el que el predicado califica las columnas;
+        # table_name es la tabla real (Postgres renombra a tabla_1 la segunda
+        # lectura sin alias de una misma tabla).
         operation["relation"] = node.get("Alias") or node.get("Relation Name")
-        field_mapping = {
+        operation["table_name"] = node.get("Relation Name")
+        if node_type == "Bitmap Index Scan":
+            # El nodo nombra el indice, no la tabla, y su Index Cond es la
+            # misma condicion que el Recheck Cond del heap, que la lleva.
+            if bitmap_heap is not None:
+                operation["relation"] = bitmap_heap["relation"]
+                operation["table_name"] = bitmap_heap["table_name"]
+        else:
+            # Index Cond (o Recheck Cond) y Filter juntos: con uno solo se
+            # perdia la parte que se revisa fila por fila.
+            operation["predicate"] = _and_conditions(
+                node.get("Index Cond") or node.get("Recheck Cond"),
+                node.get("Filter"),
+            )
+        self._copy_fields(operation, node, {
             "Plan Rows": "estimated_rows",
-            "Filter": "predicate",
-            "Index Cond": "predicate",
             "Index Name": "index_name",
-        }
-        self._copy_fields(operation, node, field_mapping)
+        })
         return operation
 
     def _join_operation(self, node):
@@ -209,10 +256,44 @@ def _base_operation(operation_type):
         "type": operation_type,
         "access_method": None,
         "relation": None,
+        "table_name": None,
         "estimated_rows": None,
         "predicate": None,
         "index_name": None,
     }
+
+
+def _enclosed(condition):
+    """True si el primer parentesis cierra al final: `(a) OR (b)` no lo esta."""
+    if not (condition.startswith("(") and condition.endswith(")")):
+        return False
+    depth = 0
+    quoted = False
+    for position, char in enumerate(condition):
+        # Un literal de auto_explain (todavia sin redactar) puede traer
+        # parentesis: dentro de comillas no cuentan.
+        if char == "'":
+            quoted = not quoted
+        elif quoted:
+            continue
+        elif char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+            if depth == 0:
+                return position == len(condition) - 1
+    return False
+
+
+def _and_conditions(*conditions):
+    """Une con AND las condiciones presentes de un scan (la del indice primero).
+    Cada parte va entre parentesis para que un OR no cambie de alcance."""
+    parts = [condition.strip() for condition in conditions if condition and condition.strip()]
+    if not parts:
+        return None
+    if len(parts) == 1:
+        return parts[0]
+    return " AND ".join(part if _enclosed(part) else f"({part})" for part in parts)
 
 class MysqlExplainNormalizer:
 
@@ -334,13 +415,21 @@ class MysqlExplainNormalizer:
 
     def _scan_operation(self, node):
         access_type = node.get("access_type")
+        # `index` no busca con el indice: lo recorre entero (para cubrir
+        # columnas o dar el orden), igual que un Index Scan sin Index Cond.
         access_methods = {
             "ALL": "full_table_scan",
-            "index": "index_lookup",
+            "index": "full_index_scan",
             "range": "index_lookup",
             "const": "index_lookup",
+            "system": "index_lookup",
             "eq_ref": "index_lookup",
             "ref": "index_lookup",
+            "ref_or_null": "index_lookup",
+            "index_merge": "index_lookup",
+            "fulltext": "index_lookup",
+            "unique_subquery": "index_lookup",
+            "index_subquery": "index_lookup",
         }
 
         operation = _base_operation("scan")
@@ -348,10 +437,11 @@ class MysqlExplainNormalizer:
         if "access_type" in node:
             operation["access_method"] = access_methods.get(access_type)
 
+        # table_name del JSON de MySQL es el alias; la tabla real la resuelve
+        # el consumidor con los alias de la query, asi que table_name canonico
+        # queda en None.
         field_mapping = {
             "table_name": "relation",
-            "rows_produced_per_join": "estimated_rows",
-            "attached_condition": "predicate",
             "key": "index_name",
         }
 
@@ -359,7 +449,27 @@ class MysqlExplainNormalizer:
             if source_field in node:
                 operation[canonical_field] = node[source_field]
 
+        # index_condition es la parte que aplica el index condition pushdown;
+        # attached_condition, la que se revisa fila por fila.
+        operation["predicate"] = _and_conditions(
+            node.get("index_condition"),
+            node.get("attached_condition"),
+        )
+        operation["estimated_rows"] = self._rows_per_scan(node)
+
         return operation
+
+    @staticmethod
+    def _rows_per_scan(node):
+        """Filas que devuelve cada lectura de la tabla, como el Plan Rows de
+        Postgres. rows_produced_per_join es el acumulado de todas las vueltas
+        del join (5 000 000 sobre una tabla de 5 000 filas): solo coincide para
+        la primera tabla."""
+        examined = to_number(node.get("rows_examined_per_scan"))
+        filtered = to_number(node.get("filtered"))
+        if isinstance(examined, float) and isinstance(filtered, float):
+            return round(examined * filtered / 100, 2)
+        return node.get("rows_produced_per_join")
 
     def _join_operation(self, node):
         operation = _base_operation("join")

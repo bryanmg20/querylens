@@ -3,6 +3,7 @@ import re
 
 from sqlglot import exp
 
+from models.snapshot import MAX_STATEMENT_TEXT_CHARS
 from models.stats import Stats
 
 # Nodos de sqlglot que cargan un dato real de la query. HexString/BitString/
@@ -51,7 +52,17 @@ def canonicalize_query(query_text, source_dialect="postgres"):
         return "Not available"
 
 
+# DIGEST_TEXT resume las listas: `IN (...)` y `VALUES (...) /* , ... */`.
+# sqlglot no lee `(...)` y la query quedaba en "Not available", sin canonic_query
+# ni alias para el consumidor. Se reemplazan por un solo `?`, el placeholder que
+# el digest ya usa para el resto de los valores.
+_DIGEST_VALUES_LIST = re.compile(r"\bVALUES\s*\(\s*\.\.\.\s*\)(?:\s*/\*\s*,\s*\.\.\.\s*\*/)?", re.IGNORECASE)
+_DIGEST_IN_LIST = re.compile(r"\bIN\s*\(\s*\.\.\.\s*\)", re.IGNORECASE)
+
+
 def clean_mysql_sintax(query):
+    query = _DIGEST_VALUES_LIST.sub("VALUES (?)", query)
+    query = _DIGEST_IN_LIST.sub("IN (?)", query)
     return query.replace("DISTINCTROW", "DISTINCT")
 
 
@@ -60,7 +71,8 @@ def clean_mysql_sintax(query):
 # peso en el payload. Sobre este largo un statement queda en "Not available";
 # los candidatos no tienen tope (son pocos y su canonic_query alimenta el
 # analisis). MySQL no llega: DIGEST_TEXT se corta en max_digest_length (1024).
-MAX_STATEMENT_CANONIC_CHARS = 8192
+# Es el mismo tope con el que SnapshotPayload recorta query_text de statements.
+MAX_STATEMENT_CANONIC_CHARS = MAX_STATEMENT_TEXT_CHARS
 
 # sqlglot avisa con WARNING cada sentencia de utilidad que parsea como Command
 # (GRANT, ALTER EXTENSION, SHOW...). Con statements completos son varias por

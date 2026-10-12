@@ -16,6 +16,7 @@ from datetime import datetime, timedelta, timezone
 from models.snapshot import (
     ActiveQueryRow,
     LockRow,
+    MAX_STATEMENT_TEXT_CHARS,
     SnapshotPayload,
     StatementCandidate,
 )
@@ -356,3 +357,49 @@ class TestForeignKeys:
     def test_non_numeric_position_is_rejected(self):
         with pytest.raises(Exception):
             SnapshotPayload.from_snapshot(_base(foreign_keys=[self._row(position="first")]))
+
+
+# ---------- tope de query_text en statements (I-14) ----------
+
+
+def _statement(query_text, query_id=1):
+    return {"query_id": query_id, "query_text": query_text, "execution_count": 3,
+            "rows_returned": 3, "canonic_query": "Not available"}
+
+
+def _payload(statements, candidates=()):
+    return {"db_id": "db", "statements": statements, "top_impact_queries": list(candidates),
+            "locks": [], "active_queries": [], "indexes": [], "tables": [], "columns": [],
+            "server_start_timestamp": []}
+
+
+def test_statement_text_over_the_cap_is_truncated_and_flagged():
+    long_text = "INSERT INTO t(a) VALUES " + ",".join(f"(${i})" for i in range(1, 5000))
+    short_text = "SELECT 1"
+    snap = SnapshotPayload.from_snapshot(_payload([_statement(long_text), _statement(short_text, 2)]))
+    long_row, short_row = snap.statements
+    assert len(long_row.query_text) == MAX_STATEMENT_TEXT_CHARS
+    assert long_text.startswith(long_row.query_text)
+    assert long_row.query_text_truncated is True
+    assert short_row.query_text == short_text
+    assert short_row.query_text_truncated is False
+
+
+def test_statement_text_exactly_at_the_cap_is_kept():
+    text = "x" * MAX_STATEMENT_TEXT_CHARS
+    row = SnapshotPayload.from_snapshot(_payload([_statement(text)])).statements[0]
+    assert row.query_text == text and row.query_text_truncated is False
+
+
+def test_candidates_keep_the_full_text():
+    long_text = "SELECT " + ", ".join(f"${i}" for i in range(1, 5000))
+    candidate = {**_statement(long_text), "selected_by": ["time_high_impact"], "ready_for_explain": True}
+    snap = SnapshotPayload.from_snapshot(_payload([_statement(long_text)], [candidate]))
+    assert snap.top_impact_queries[0].query_text == long_text
+    assert snap.top_impact_queries[0].query_text_truncated is False
+    assert snap.statements[0].query_text_truncated is True
+
+
+def test_canonic_cap_matches_the_payload_cap():
+    from stages.canonicalizers import MAX_STATEMENT_CANONIC_CHARS
+    assert MAX_STATEMENT_CANONIC_CHARS == MAX_STATEMENT_TEXT_CHARS

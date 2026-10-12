@@ -130,6 +130,20 @@ def test_explain_permission_denied():
     assert classify(_pg(pgcode="42501"), dialect="postgres", scope="explain")[0] == "EXPLAIN_PERMISSION_DENIED"
 
 
+@pytest.mark.parametrize("pgcode", ["42725", "42P18"])
+def test_explain_generic_plan_ambiguous_types_is_not_a_failure(pgcode):
+    # generate_series($1, $2): "function generate_series(unknown, unknown) is not unique"
+    code, params = classify(_pg(pgcode=pgcode), dialect="postgres", scope="explain")
+    assert code == "EXPLAIN_PARAM_TYPES_AMBIGUOUS"
+    assert params["sqlstate"] == pgcode
+    assert CATALOG[code].severity == "info"
+    assert CATALOG[code].scope == "explain"
+
+
+def test_explain_other_sqlstate_is_still_a_failure():
+    assert classify(_pg(pgcode="42601"), dialect="postgres", scope="explain")[0] == "EXPLAIN_FAILED"
+
+
 # Mensaje y pgcode tal como los da psycopg2 contra PG 17 cuando el rol no tiene
 # CONNECT (verificado en vivo): la fase de conexion no trae SQLSTATE.
 _NO_CONNECT = ('connection to server at "127.0.0.1", port 5432 failed: '

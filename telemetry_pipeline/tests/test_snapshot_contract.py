@@ -164,11 +164,15 @@ def test_predicates_are_canonicalized(snapshot_fixture, request):
             assert "`" not in predicate, f"quedan backticks: {predicate}"
             assert "ql_demo." not in predicate, f"queda el schema: {predicate}"
             assert "<cache>" not in predicate, f"queda la marca cache: {predicate}"
-            assert not re.search(r"'[^']*'", predicate), (
+            # '$n' es el placeholder de un texto redactado (solo dice que era
+            # texto, no el valor); cualquier otro string entrecomillado es dato.
+            assert not re.search(r"'[^']*'", re.sub(r"'\$\d+'", "", predicate)), (
                 f"queda un literal string: {predicate}"
             )
             if snapshot_fixture == "mysql_snapshot":
-                assert not re.search(r"(?<!\$)\b\d+\b", predicate), (
+                # (SubPlan N) es la etiqueta de subconsulta, no un dato.
+                without_labels = re.sub(r"\(SubPlan \d+\)", "", predicate)
+                assert not re.search(r"(?<!\$)\b\d+\b", without_labels), (
                     f"queda un literal numerico: {predicate}"
                 )
     assert checked > 0, "ningun predicate en el golden, no hay nada que verificar"
@@ -249,12 +253,13 @@ def test_canonical_explains_belong_to_candidates(snapshot_fixture, request):
     ["mysql_snapshot", "postgres_snapshot"],
 )
 def test_explains_carry_engine_source(snapshot_fixture, request):
-    """Postgres explica por plan generico y MySQL por muestra. El source lo dice,
-    asi que un motor explains con la via del otro es detectable."""
+    """Postgres explica por plan generico (o toma el plan real que registro
+    auto_explain, si esta activo) y MySQL por muestra. El source lo dice, asi
+    que un motor explains con la via del otro es detectable."""
     raw = request.getfixturevalue(snapshot_fixture)
-    expected = "generic" if "postgres" in snapshot_fixture else "sample"
+    expected = {"generic", "auto_explain"} if "postgres" in snapshot_fixture else {"sample"}
     for explain in raw["canonic_explains"]:
-        assert explain["explain_source"] == expected
+        assert explain["explain_source"] in expected
 
 
 def test_active_queries_have_canonic_field(mysql_snapshot):
@@ -299,11 +304,22 @@ def test_locks_boolean_coercion(mysql_snapshot, postgres_snapshot):
     abierta al capturar), asi que el bucle sobre el no exertia presion. La
     coercion se verifica donde hay datos y el vacio se comprueba aparte.
     """
-    payload = SnapshotPayload.from_snapshot(postgres_snapshot)
-    assert payload.locks, (
-        "el golden de postgres deberia traer locks: sin ellos este test no "
-        "verifica la coercion de is_granted"
-    )
+    # Los locks del golden de Postgres eran los del propio pipeline (pg_roles,
+    # pg_stat_statements); LOCKS_QUERY ya excluye al usuario del pipeline y la
+    # bateria termina antes de capturar, asi que el golden puede llegar vacio.
+    # Se agrega una fila de otra sesion para que la coercion tenga que correr.
+    snapshot = {
+        **postgres_snapshot,
+        "locks": (postgres_snapshot["locks"] or []) + [{
+            "process_id": 1,
+            "database_name": "ql_demo",
+            "table_name": "sbtest1",
+            "lock_mode": "RowExclusiveLock",
+            "is_granted": True,
+        }],
+    }
+    payload = SnapshotPayload.from_snapshot(snapshot)
+    assert payload.locks
     for lock in payload.locks:
         assert lock.is_granted is True or lock.is_granted is False
     assert all(lock.is_granted is not None for lock in payload.locks)

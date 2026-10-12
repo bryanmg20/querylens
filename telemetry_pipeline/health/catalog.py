@@ -174,6 +174,16 @@ CATALOG: dict[str, IssueDef] = {
         "No se pudo generar el plan de algunas queries.",
         "Si persiste, contacta a soporte.",
     ),
+    # Info y no degraded: la query sigue en pg_stat_statements y fallaria en
+    # cada ciclo; como degraded dejaria la base degradada para siempre por un
+    # limite conocido del plan generico, sin nada que el cliente pueda arreglar.
+    "EXPLAIN_PARAM_TYPES_AMBIGUOUS": IssueDef(
+        "explain", "config", INFO,
+        "Algunas queries no admiten plan generico: solo pasan valores a funciones u "
+        "operadores con varias versiones y Postgres no puede elegir sin los tipos.",
+        "No requiere accion. Con auto_explain instalado, su plan llega del log cuando "
+        "una ejecucion pasa de auto_explain.log_min_duration.",
+    ),
     "NO_EXPLAINABLE_CANDIDATES": IssueDef(
         "explain", "config", INFO,
         "En este ciclo ninguna query candidata se pudo analizar (solo se analizan SELECT/WITH).",

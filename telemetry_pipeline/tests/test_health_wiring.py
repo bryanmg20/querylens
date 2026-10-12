@@ -111,6 +111,14 @@ def test_explain_denied_is_grouped_without_query_ids():
     assert report.status() == "degraded"
 
 
+def test_explain_ambiguous_param_types_keeps_the_run_ok():
+    report = HealthReport()
+    _run(_FakeConn(overrides={"EXPLAIN (GENERIC_PLAN": _pg_exc("42725")}), report)
+    assert report.issues[("EXPLAIN_PARAM_TYPES_AMBIGUOUS", "")]["count"] == 2
+    assert ("EXPLAIN_FAILED", "") not in report.issues
+    assert report.status() == "ok"
+
+
 def test_no_explainable_candidates_is_info():
     report = HealthReport()
     rows = [{

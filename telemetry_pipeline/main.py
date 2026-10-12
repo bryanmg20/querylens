@@ -19,6 +19,21 @@ logger = get_logger(__name__)
 # es del consumidor. Ver PIPELINE_FLOW ("Sin consumidor la cola crece").
 PAYLOAD_WARN_BYTES = 1_000_000
 _payload_warned: set[str] = set()
+# Histeresis de PAYLOAD_TOO_LARGE (I-14): abre por encima de PAYLOAD_WARN_BYTES
+# y solo se resuelve por debajo de PAYLOAD_CLEAR_BYTES. Sin ella, un snapshot
+# que oscila alrededor de 1 MB resolvia el issue en cada bajada y abria una
+# fila nueva en cada subida. El estado vive en el proceso (runner): tras un
+# reinicio, un payload entre los dos umbrales cuenta como bajo una vez.
+PAYLOAD_CLEAR_BYTES = 900_000
+_payload_large: set[str] = set()
+
+
+def _payload_too_large(label: str, size_bytes: int) -> bool:
+    if size_bytes > PAYLOAD_WARN_BYTES:
+        _payload_large.add(label)
+    elif size_bytes < PAYLOAD_CLEAR_BYTES:
+        _payload_large.discard(label)
+    return label in _payload_large
 
 
 def _log_payload_size(dialect: str, db_id: str | None, payload_json: str) -> int:
@@ -138,7 +153,7 @@ def _cycle(
 
     payload_json = snapshot.to_json()
     size_bytes = _log_payload_size(dialect, db_id, payload_json)
-    if size_bytes > PAYLOAD_WARN_BYTES:
+    if _payload_too_large(_health_db_id(dialect, db_id), size_bytes):
         report.add("PAYLOAD_TOO_LARGE", size_bytes=size_bytes)
     try:
         msg_id = send_to_queue(payload_json, querylens_engine)

@@ -82,8 +82,8 @@ def _query_block(**kwargs):
     "node_type,access_method",
     [
         ("Seq Scan", "full_table_scan"),
-        ("Index Scan", "index_lookup"),
-        ("Index Only Scan", "index_lookup"),
+        ("Index Scan", "full_index_scan"),
+        ("Index Only Scan", "full_index_scan"),
         ("Bitmap Heap Scan", "index_lookup"),
         ("Bitmap Index Scan", "index_lookup"),
     ],
@@ -279,12 +279,17 @@ def test_pg_explain_source_is_carried_through():
     "access_type,expected",
     [
         ("ALL", "full_table_scan"),
-        ("index", "index_lookup"),
+        ("index", "full_index_scan"),
         ("range", "index_lookup"),
         ("ref", "index_lookup"),
         ("eq_ref", "index_lookup"),
         ("const", "index_lookup"),
-        ("system", None),
+        ("system", "index_lookup"),
+        ("ref_or_null", "index_lookup"),
+        ("index_merge", "index_lookup"),
+        ("fulltext", "index_lookup"),
+        ("unique_subquery", "index_lookup"),
+        ("index_subquery", "index_lookup"),
     ],
 )
 def test_mysql_access_type_mapping(access_type, expected):
@@ -300,7 +305,7 @@ def test_mysql_access_type_mapping(access_type, expected):
 def test_mysql_unknown_access_type_is_not_guessed():
     """MySQL agrega modos de acceso con cada version. Uno desconocido queda en
     None y no inventado: el consumidor decide que hacer con la incertidumbre."""
-    plan = _mysql_normalize(_query_block(table=_mysql_node("t", access_type="index_merge")))
+    plan = _mysql_normalize(_query_block(table=_mysql_node("t", access_type="hash_probe_9")))
     assert plan["physical_operations"][0]["access_method"] is None
     assert plan["logical_shape"]["scans"] == 1
 
@@ -465,3 +470,138 @@ def test_mysql_non_boolean_flag_value_is_preserved():
     ))
     join = [op for op in plan["physical_operations"] if op["type"] == "join"][0]
     assert join["predicate"] == "(`a`.`c` = `b`.`c`)"
+
+
+# ---------- 007: plan canonico ----------
+
+def test_pg_index_scan_with_index_cond_is_a_lookup():
+    """Index Scan con Index Cond busca; sin ella recorre el indice entero."""
+    plan = _pg_normalize({"query_id": 1, "plan": _pg_plan(
+        "Index Scan", Alias="t", **{"Index Cond": "(id = $1)", "Index Name": "t_pkey"}
+    )})
+    assert plan["physical_operations"][0]["access_method"] == "index_lookup"
+
+
+def test_pg_bitmap_scan_gives_the_heap_its_condition_and_index():
+    """Caso 01 del 007: el heap traia la tabla sin condicion y el Bitmap Index
+    Scan la condicion sin tabla. La condicion va al heap (Recheck Cond) y el
+    Bitmap Index Scan hereda la tabla."""
+    plan = _pg_normalize({"query_id": 1, "plan": _pg_plan(
+        "Bitmap Heap Scan",
+        **{
+            "Alias": "o",
+            "Relation Name": "ql_pt_orders",
+            "Recheck Cond": "((status)::text = $1)",
+            "Plans": [_pg_child(
+                "Bitmap Index Scan",
+                **{"Index Name": "idx_status", "Index Cond": "((status)::text = $1)"},
+            )],
+        },
+    )})
+    heap, index = plan["physical_operations"]
+    assert (heap["relation"], heap["table_name"]) == ("o", "ql_pt_orders")
+    assert heap["predicate"] == "((status)::text = $1)"
+    assert heap["index_name"] == "idx_status"
+    assert (index["relation"], index["table_name"]) == ("o", "ql_pt_orders")
+    assert index["predicate"] is None
+    assert index["index_name"] == "idx_status"
+    assert plan["logical_shape"]["scans"] == 2
+
+
+def test_pg_bitmap_or_keeps_each_index_on_its_own_operation():
+    """Con BitmapOr hay dos indices e index_name es uno solo: el heap no elige
+    uno, cada Bitmap Index Scan conserva el suyo y hereda la tabla."""
+    plan = _pg_normalize({"query_id": 1, "plan": _pg_plan(
+        "Bitmap Heap Scan",
+        **{
+            "Alias": "t",
+            "Relation Name": "t",
+            "Recheck Cond": "((a = $1) OR (b = $2))",
+            "Filter": "(c > $3)",
+            "Plans": [_pg_child("BitmapOr", Plans=[
+                _pg_child("Bitmap Index Scan", **{"Index Name": "idx_a", "Index Cond": "(a = $1)"}),
+                _pg_child("Bitmap Index Scan", **{"Index Name": "idx_b", "Index Cond": "(b = $2)"}),
+            ])],
+        },
+    )})
+    heap, *indexes = plan["physical_operations"]
+    assert heap["predicate"] == "((a = $1) OR (b = $2)) AND (c > $3)"
+    assert heap["index_name"] is None
+    assert {op["index_name"] for op in indexes} == {"idx_a", "idx_b"}
+    assert all(op["relation"] == "t" and op["predicate"] is None for op in indexes)
+
+
+def test_pg_bitmap_relation_does_not_leak_outside_the_heap():
+    """Un scan hermano del heap no hereda su tabla."""
+    plan = _pg_normalize({"query_id": 1, "plan": _pg_plan_tree("Nested Loop", [
+        _pg_child("Bitmap Heap Scan", Alias="o", **{"Relation Name": "orders", "Plans": [
+            _pg_child("Bitmap Index Scan", **{"Index Name": "idx_o"}),
+        ]}),
+        _pg_child("Bitmap Index Scan", **{"Index Name": "idx_x"}),
+    ])})
+    orphan = [op for op in plan["physical_operations"] if op["index_name"] == "idx_x"][0]
+    assert orphan["relation"] is None
+
+
+def test_pg_index_cond_and_filter_are_both_kept():
+    """Caso 18 del 007: el Index Cond pisaba al Filter y se perdia la parte
+    que se revisa fila por fila."""
+    plan = _pg_normalize({"query_id": 1, "plan": _pg_plan(
+        "Index Scan",
+        Alias="o",
+        **{"Index Cond": "(created_at >= $1)", "Filter": "(total > $2)", "Index Name": "idx_c"},
+    )})
+    assert plan["physical_operations"][0]["predicate"] == "(created_at >= $1) AND (total > $2)"
+
+
+def test_pg_conditions_without_outer_parens_are_wrapped():
+    """`(a) OR (b)` empieza y termina con parentesis pero no esta encerrado:
+    sin envolverlo, el AND cambiaria el alcance del OR."""
+    plan = _pg_normalize({"query_id": 1, "plan": _pg_plan(
+        "Index Scan", Alias="t", **{"Index Cond": "(id = $1)", "Filter": "(a = $2) OR (b = $3)"},
+    )})
+    assert plan["physical_operations"][0]["predicate"] == "(id = $1) AND ((a = $2) OR (b = $3))"
+
+
+def test_pg_table_name_is_the_real_table_when_postgres_renames_it():
+    """Caso 35 del 007: la segunda lectura sin alias de una tabla en un UNION
+    llega como tabla_1. relation queda como alias, table_name es la real."""
+    plan = _pg_normalize({"query_id": 1, "plan": _pg_plan(
+        "Seq Scan", Alias="ql_pt_orders_1", **{"Relation Name": "ql_pt_orders"},
+    )})
+    op = plan["physical_operations"][0]
+    assert (op["relation"], op["table_name"]) == ("ql_pt_orders_1", "ql_pt_orders")
+
+
+def test_mysql_index_condition_and_attached_condition_are_both_kept():
+    """Con index condition pushdown una parte de la condicion esta en
+    index_condition, que no se copiaba."""
+    plan = _mysql_normalize(_query_block(table=_mysql_node(
+        "o",
+        access_type="range",
+        index_condition="(`db`.`o`.`created_at` >= '2026-03-01')",
+        attached_condition="(`db`.`o`.`total` > 50)",
+    )))
+    assert plan["physical_operations"][0]["predicate"] == (
+        "(`db`.`o`.`created_at` >= '2026-03-01') AND (`db`.`o`.`total` > 50)"
+    )
+    assert plan["physical_operations"][0]["table_name"] is None
+
+
+def test_mysql_estimated_rows_is_per_scan_not_cumulative():
+    """Caso 39 del 007: rows_produced_per_join de la tabla interna es el
+    acumulado del join (5 000 000 sobre 5 000 filas). estimated_rows es lo que
+    devuelve cada lectura, como Plan Rows en Postgres."""
+    plan = _mysql_normalize(_query_block(nested_loop=[
+        {"table": _mysql_node("o", rows_examined_per_scan=1000, filtered="100.00",
+                              rows_produced_per_join=1000)},
+        {"table": _mysql_node("c", rows_examined_per_scan=5000, filtered="10.00",
+                              rows_produced_per_join=5000000)},
+    ]))
+    rows = {op["relation"]: op["estimated_rows"] for op in plan["physical_operations"] if op["type"] == "scan"}
+    assert rows == {"o": 1000.0, "c": 500.0}
+
+
+def test_mysql_estimated_rows_falls_back_without_per_scan_fields():
+    plan = _mysql_normalize(_query_block(table=_mysql_node("t", rows_produced_per_join=42)))
+    assert plan["physical_operations"][0]["estimated_rows"] == 42
