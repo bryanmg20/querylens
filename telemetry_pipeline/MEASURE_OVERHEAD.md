@@ -1,5 +1,7 @@
 # Cómo se mide el sobrecosto del pipeline (`measure_overhead.py`)
 
+> **Medición anterior.** La vigente es v2 (`python -m overhead.run`): [`OVERHEAD_V2.md`](OVERHEAD_V2.md) explica por qué cambió el método. Este script y este documento se conservan sin cambios para comparar.
+
 Explicación honesta de qué hace cada fase, cómo mide, y cómo leer los resultados.
 
 **Objetivo del informe** (`PrimerInforme.md:47,136`): el sobrecosto de recolección debe ser **inferior al 5 %** sobre la métrica de rendimiento de la carga observada.

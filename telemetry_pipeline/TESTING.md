@@ -100,6 +100,7 @@ tests/
 ├── test_integration_engines.py          # motores reales + cola (integration)
 ├── test_logger.py                       # logger degradación (unit)
 ├── test_measure_overhead.py             # veredicto sobrecosto <5% (unit)
+├── test_overhead_stats.py              # estadística del sobrecosto v2 (unit)
 ├── test_normalize.py                    # locks, pids, timestamps, predicados (unit)
 ├── test_normalize_stage.py              # NormalizeStage + hooks (unit)
 ├── test_orchestrator.py                 # composición de stages (unit)
@@ -204,7 +205,17 @@ docker exec ql_sysbench bash /scripts/battery.sh 30 0 mysql
 
 El informe exige un sobrecosto **inferior al 5 %** sobre la métrica de rendimiento de la carga observada. La validación es **manual y reproducible** con el sandbox; CI no la gatea (CI solo valida que las extracciones se encolan).
 
-Detalle completo de fases, JSON y limitaciones: [`MEASURE_OVERHEAD.md`](MEASURE_OVERHEAD.md).
+**Medición vigente: v2** (`python -m overhead.run`). Método, perfiles, veredicto con intervalo de confianza y limitaciones: [`OVERHEAD_V2.md`](OVERHEAD_V2.md).
+
+```bash
+docker stop querylens_pipeline        # el daemon del compose ensucia la ventana "carga sola"
+cd telemetry_pipeline
+python -m overhead.run --profile quick                   # el arnés funciona (NO es evidencia)
+python -m overhead.run --profile serious --engine both   # evidencia (~1 h)
+docker start querylens_pipeline
+```
+
+Las subsecciones siguientes describen la **medición anterior** (`measure_overhead.py`), que se conserva sin cambios para comparar. Detalle completo: [`MEASURE_OVERHEAD.md`](MEASURE_OVERHEAD.md).
 
 ### Métrica del veredicto
 
