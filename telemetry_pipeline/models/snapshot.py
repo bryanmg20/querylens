@@ -172,6 +172,9 @@ class PhysicalOperation(BaseModel):
     type: Literal["scan", "join", "aggregate", "sort", "subquery", "distinct"]
     access_method: str | None = None
     relation: str | None = None
+    # Tabla real de un scan de Postgres (relation es el alias). En MySQL
+    # queda en None: el plan solo trae el alias.
+    table_name: str | None = None
     estimated_rows: Union[int, float] | None = None
     predicate: str | None = None
     index_name: str | None = None
