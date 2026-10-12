@@ -12,8 +12,9 @@ logger = get_logger(__name__)
 
 
 # Regla AP-04, igual para ambos motores. Condiciones de escaneo completo
-# copiadas de AP-02 (avoidable_full_scan.py) y deben quedar IDENTICAS a las
-# suyas: si se cambia una alla, se cambia aca en el mismo cambio.
+# copiadas de la version ANTERIOR de AP-02. Pendiente: AP-02 ahora se limita a
+# SELECT simples con selectividad real de la ventana (avoidable_full_scan.py);
+# decidir si AP-04 adopta la misma base.
 #   1. el plan tiene un full_table_scan
 #   2. sobre una tabla con >= DEFAULT_MIN_LIVE_ROWS filas vivas
 #   3. estimated_rows / live_rows <= DEFAULT_MAX_SELECTIVITY (sin estimacion, pasa)

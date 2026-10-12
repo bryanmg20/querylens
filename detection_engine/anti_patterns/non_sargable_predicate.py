@@ -63,13 +63,6 @@ _SUBTIPO_MENSAJES = {
         "Mover la operacion al lado de la constante (ej. `fecha > now() - interval '1 day'` "
         "en vez de `fecha + interval '1 day' > now()`).",
     ),
-    "leading_wildcard": (
-        "El patron de LIKE empieza con un comodin ('%...'), lo que impide que un indice B-Tree "
-        "acote el rango de busqueda por prefijo.",
-        "Si la busqueda es siempre por sufijo, evaluar un indice invertido/trigram (ej. pg_trgm) "
-        "o un indice funcional sobre el texto revertido; si es posible, reescribir la busqueda "
-        "para que el comodin no sea inicial.",
-    ),
     "implicit_cast": (
         "El predicado obliga a convertir el tipo de la columna para poder comparar (cast explicito "
         "sobre la columna en el plan, o una columna de texto/fecha comparada contra un literal "
@@ -234,8 +227,8 @@ def _detect_structural_issues_in_query(
     dialect: str = "postgres",
 ) -> list[tuple[str, str | None, str | None, str]]:
     # Respaldo sin EXPLAIN: busca function/arithmetic_on_column en el WHERE y
-    # en cada JOIN...ON. No detecta implicit_cast/leading_wildcard (necesitan el
-    # literal real, que canonic_query reemplaza por $1/?).
+    # en cada JOIN...ON. No detecta implicit_cast (necesita el literal real, que
+    # canonic_query reemplaza por $1/?).
     if not canonic_query:
         return []
 
@@ -316,7 +309,9 @@ def _detect_predicate_subtypes(
     column_types: dict[tuple[str | None, str, str], str],
     dialect: str = "postgres",
 ) -> list[tuple[str, str | None]]:
-    # Detecta las 4 formas de predicado no sargable en el AST del predicado real del plan.
+    # Detecta las 3 formas de predicado no sargable en el AST del predicado real del plan.
+    # El LIKE con comodin inicial ('%abc') no se detecta: no esta en la regla del
+    # informe y el pipeline redacta el patron a $n, asi que no se ve el '%'.
     try:
         tree = sqlglot.parse_one(_strip_engine_internal_markers(predicate), read=dialect)
     except Exception as e:
@@ -339,11 +334,6 @@ def _detect_predicate_subtypes(
     # comparaciones binarias: =, <>, >, >=, <, <=, LIKE, ILIKE
     for comparison in tree.find_all(_COMPARISON_TYPES):
         left, right = _unwrap_paren(comparison.this), _unwrap_paren(comparison.expression)
-
-        if isinstance(comparison, (exp.Like, exp.ILike)):
-            if isinstance(right, exp.Literal) and right.is_string and right.this.startswith("%"):
-                left_column = left.find(exp.Column)
-                _add("leading_wildcard", left_column.name if left_column is not None else None)
 
         for side in (left, right):
             column_in_side = side.find(exp.Column)
@@ -569,7 +559,7 @@ def detect_non_sargable_predicates(
                 )
             continue
 
-        # con EXPLAIN: predicado real del plan, los 4 subtipos
+        # con EXPLAIN: predicado real del plan, los 3 subtipos
         alias_map = resolve_table_aliases(candidate.canonic_query)
         operations = explain.get("canonical_plan", {}).get("physical_operations", [])
 
