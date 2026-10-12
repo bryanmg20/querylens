@@ -14,8 +14,10 @@ pytestmark = pytest.mark.unit
 @pytest.fixture(autouse=True)
 def _reset_warned():
     main._payload_warned.clear()
+    main._payload_large.clear()
     yield
     main._payload_warned.clear()
+    main._payload_large.clear()
 
 
 def test_payload_size_is_logged_as_debug(caplog):
@@ -44,3 +46,25 @@ def test_below_threshold_never_warns(caplog):
     with caplog.at_level("WARNING", logger="main"):
         main._log_payload_size("postgres", "db-small", "x" * (main.PAYLOAD_WARN_BYTES - 1))
     assert not [r for r in caplog.records if r.levelname == "WARNING"]
+
+# ---------- histeresis de PAYLOAD_TOO_LARGE (I-14) ----------
+
+
+def test_too_large_opens_above_warn_and_holds_between_thresholds():
+    big, middle = main.PAYLOAD_WARN_BYTES + 1, (main.PAYLOAD_WARN_BYTES + main.PAYLOAD_CLEAR_BYTES) // 2
+    assert main._payload_too_large("db-a", middle) is False
+    assert main._payload_too_large("db-a", big) is True
+    # Oscila alrededor de 1 MB: el issue sigue abierto, no se resuelve y reabre.
+    assert main._payload_too_large("db-a", middle) is True
+    assert main._payload_too_large("db-a", big) is True
+
+
+def test_too_large_resolves_only_below_clear():
+    main._payload_too_large("db-a", main.PAYLOAD_WARN_BYTES + 1)
+    assert main._payload_too_large("db-a", main.PAYLOAD_CLEAR_BYTES) is True
+    assert main._payload_too_large("db-a", main.PAYLOAD_CLEAR_BYTES - 1) is False
+
+
+def test_too_large_is_tracked_per_db():
+    main._payload_too_large("db-a", main.PAYLOAD_WARN_BYTES + 1)
+    assert main._payload_too_large("db-b", main.PAYLOAD_CLEAR_BYTES + 1) is False

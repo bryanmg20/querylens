@@ -3,6 +3,7 @@ import re
 
 from sqlglot import exp
 
+from models.snapshot import MAX_STATEMENT_TEXT_CHARS
 from models.stats import Stats
 
 # Nodos de sqlglot que cargan un dato real de la query. HexString/BitString/
@@ -60,7 +61,8 @@ def clean_mysql_sintax(query):
 # peso en el payload. Sobre este largo un statement queda en "Not available";
 # los candidatos no tienen tope (son pocos y su canonic_query alimenta el
 # analisis). MySQL no llega: DIGEST_TEXT se corta en max_digest_length (1024).
-MAX_STATEMENT_CANONIC_CHARS = 8192
+# Es el mismo tope con el que SnapshotPayload recorta query_text de statements.
+MAX_STATEMENT_CANONIC_CHARS = MAX_STATEMENT_TEXT_CHARS
 
 # sqlglot avisa con WARNING cada sentencia de utilidad que parsea como Command
 # (GRANT, ALTER EXTENSION, SHOW...). Con statements completos son varias por

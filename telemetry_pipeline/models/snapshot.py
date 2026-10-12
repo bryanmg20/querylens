@@ -1,7 +1,13 @@
 from datetime import datetime, timezone
 from typing import Annotated, Literal, TypeVar, Union
 
-from pydantic import BeforeValidator, BaseModel, ConfigDict, Field
+from pydantic import BeforeValidator, BaseModel, ConfigDict, Field, field_validator
+
+# Tope de query_text en statements (I-14). Es el mismo largo sobre el que
+# canonicalizers deja canonic_query en "Not available": por encima nada analiza
+# ese texto, solo viaja. pg_stat_statements guarda el texto completo, sin tope:
+# un INSERT masivo de sysbench pesa ~58 KB y 20 de ellos eran ~1 MB del payload.
+MAX_STATEMENT_TEXT_CHARS = 8192
 
 
 def _list_or_empty(value):
@@ -75,6 +81,9 @@ class StatementRow(BaseModel):
     disk_spill_indicator: int | None = None
     counters_epoch: Annotated[str | None, BeforeValidator(_to_iso)] = None
     canonic_query: str | None = None
+    # True cuando SnapshotPayload recorto query_text a MAX_STATEMENT_TEXT_CHARS.
+    # Solo pasa en statements: los candidatos viajan con el texto completo.
+    query_text_truncated: bool = False
 
 
 class StatementCandidate(StatementRow):
@@ -202,6 +211,18 @@ class SnapshotPayload(BaseModel):
     # extra='ignore' descartaria la clave en silencio.
     foreign_keys: ListOrNone[ForeignKeyRow] = []
     canonic_explains: ListOrNone[CanonicExplain] = []
+
+    @field_validator("statements", mode="after")
+    @classmethod
+    def _cap_statement_text(cls, rows):
+        """Recorta query_text de statements al serializar. canonic_query y el
+        EXPLAIN ya se armaron con el texto completo, y los candidatos
+        (top_impact_queries), que son lo que se analiza, no se tocan."""
+        for row in rows:
+            if len(row.query_text) > MAX_STATEMENT_TEXT_CHARS:
+                row.query_text = row.query_text[:MAX_STATEMENT_TEXT_CHARS]
+                row.query_text_truncated = True
+        return rows
 
     @classmethod
     def from_snapshot(cls, stats):
