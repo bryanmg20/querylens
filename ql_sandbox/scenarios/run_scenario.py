@@ -17,6 +17,12 @@ USO (desde la raiz del repo)
   python ql_sandbox/scenarios/run_scenario.py disk_spill
   python ql_sandbox/scenarios/run_scenario.py avoidable_full_scan --engine mysql
   python ql_sandbox/scenarios/run_scenario.py all --engine both
+  python ql_sandbox/scenarios/run_scenario.py n_plus_one --engine both --docker
+
+  --docker: el pipeline corre dentro del contenedor querylens_pipeline y los
+  snapshots los procesa el contenedor querylens_detection_engine (docker
+  compose de la raiz levantado, con la imagen al dia). Sirve cuando los venv
+  locales no se pueden usar, p. ej. si Windows bloquea la DLL de psycopg2.
 
   baseline_degradation tarda ~15 min: necesita 10 ventanas de 60 s de linea
   base antes de eliminar el indice.
@@ -47,12 +53,18 @@ PG_CONTAINER = "ql_postgres"
 MYSQL_CONTAINER = "ql_mysql"
 LOAD_CONTAINER = "ql_sysbench"
 QUERYLENS_CONTAINER = "querylens_db"
+PIPELINE_CONTAINER = "querylens_pipeline"
 WORKLOAD_SCRIPT = "/scripts/scenarios/workload.sh"
 STOP_FILE = "/tmp/ql_scn_stop"
 
 # db_id con el que pipeline_one_engine.py encola el snapshot de cada motor
 DB_ID_BY_ENGINE = {"postgres": "querylens-db-01-postgres", "mysql": "querylens-db-01-mysql"}
 PIPELINE_ONE_ENGINE = Path(__file__).resolve().parent / "pipeline_one_engine.py"
+
+# --docker: pipeline y detection_engine en sus contenedores, no en los venv
+USE_DOCKER = False
+# tope de espera a que el detection_engine del contenedor vacie la cola
+DOCKER_DRAIN_TIMEOUT_SECONDS = 120
 
 
 # ------------------------------------------------------------------
@@ -95,7 +107,10 @@ SETUP_SQL = {
     """,
 }
 
-TEARDOWN_SQL = "DROP TABLE IF EXISTS ql_scn; DROP TABLE IF EXISTS ql_scn_corr;"
+TEARDOWN_SQL = (
+    "DROP TABLE IF EXISTS ql_scn; DROP TABLE IF EXISTS ql_scn_corr; "
+    "DROP TABLE IF EXISTS ql_n1_orders; DROP TABLE IF EXISTS ql_n1_customers;"
+)
 
 # indices extra del escenario de AP-05 (mismo DDL en ambos motores)
 UNUSED_INDEX_SQL = """
@@ -140,6 +155,55 @@ CORRELATED_SQL = {
     """,
 }
 
+# tablas del escenario de AP-06: 500 clientes (region = id % 10, 50 por region)
+# y 2.500 pedidos (customer_id = 1 + id % 500, 5 por cliente) unidos por una FK.
+# workload.sh calcula los ids que devuelve cada consulta padre con estas formulas.
+N_PLUS_ONE_SQL = {
+    "postgres": """
+        DROP TABLE IF EXISTS ql_n1_orders;
+        DROP TABLE IF EXISTS ql_n1_customers;
+        CREATE TABLE ql_n1_customers (
+            id INT PRIMARY KEY,
+            region INT NOT NULL,
+            name TEXT NOT NULL
+        );
+        CREATE TABLE ql_n1_orders (
+            id INT PRIMARY KEY,
+            customer_id INT NOT NULL REFERENCES ql_n1_customers (id),
+            total NUMERIC(10, 2) NOT NULL
+        );
+        CREATE INDEX ql_n1_orders_customer_id ON ql_n1_orders (customer_id);
+        INSERT INTO ql_n1_customers SELECT g, g % 10, 'cliente ' || g FROM generate_series(1, 500) g;
+        INSERT INTO ql_n1_orders SELECT g, 1 + g % 500, g % 1000 FROM generate_series(1, 2500) g;
+        ANALYZE ql_n1_customers;
+        ANALYZE ql_n1_orders;
+    """,
+    "mysql": """
+        DROP TABLE IF EXISTS ql_n1_orders;
+        DROP TABLE IF EXISTS ql_n1_customers;
+        CREATE TABLE ql_n1_customers (
+            id INT PRIMARY KEY,
+            region INT NOT NULL,
+            name VARCHAR(40) NOT NULL
+        );
+        -- InnoDB crea el indice de customer_id junto con la FK
+        CREATE TABLE ql_n1_orders (
+            id INT PRIMARY KEY,
+            customer_id INT NOT NULL,
+            total DECIMAL(10, 2) NOT NULL,
+            CONSTRAINT ql_n1_orders_customer_fk FOREIGN KEY (customer_id) REFERENCES ql_n1_customers (id)
+        );
+        SET SESSION cte_max_recursion_depth = 5000;
+        INSERT INTO ql_n1_customers
+        WITH RECURSIVE g (n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM g WHERE n < 500)
+        SELECT n, n % 10, CONCAT('cliente ', n) FROM g;
+        INSERT INTO ql_n1_orders
+        WITH RECURSIVE g (n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM g WHERE n < 2500)
+        SELECT n, 1 + n % 500, n % 1000 FROM g;
+        ANALYZE TABLE ql_n1_customers, ql_n1_orders;
+    """,
+}
+
 DROP_K_INDEX_SQL = {
     "postgres": "DROP INDEX ql_scn_k;",
     "mysql": "DROP INDEX ql_scn_k ON ql_scn;",
@@ -156,6 +220,9 @@ class Expectation:
     match: Callable[[dict], bool]
     # por que podria fallar, si ya se sabe de antemano
     nota: str | None = None
+    # True: el escenario pasa si NINGUN hallazgo coincide en todos los ciclos
+    # (corridas de control); el hallazgo guardado es el que lo hizo fallar
+    absent: bool = False
 
 
 @dataclass
@@ -176,10 +243,26 @@ class Scenario:
     # necesita, y como dejarla al terminar
     server_setup: dict[str, str] = field(default_factory=dict)
     server_teardown: dict[str, str] = field(default_factory=dict)
+    # Toma un snapshot antes de arrancar la carga y no cuenta sus hallazgos: la
+    # primera ventana del escenario empieza despues de la preparacion. Sin el,
+    # la primera ventana se mide desde el ultimo snapshot del escenario anterior
+    # e incluye lo que su carga ejecuto hasta detenerse.
+    cut_snapshot: bool = False
 
 
 def _evidencia_text(finding: dict) -> str:
     return json.dumps(finding.get("evidencia") or {}, default=str)
+
+
+def _n_plus_one(table: str, direccion: str) -> Callable[[dict], bool]:
+    def match(finding: dict) -> bool:
+        evidencia = finding.get("evidencia") or {}
+        return (
+            finding["antipatron"] == "n_plus_one"
+            and finding.get("table_name") == table
+            and evidencia.get("direccion") == direccion
+        )
+    return match
 
 
 def _unused(index_name: str, subtipo: str) -> Callable[[dict], bool]:
@@ -302,6 +385,47 @@ SCENARIOS = {
                         "necesita EXPLAIN (consulta en top_impact y ejecutandose al tomar el snapshot) "
                         "y un snapshot anterior: el primer ciclo solo guarda los contadores"
                     ),
+                ),
+            ],
+        ),
+        Scenario(
+            name="n_plus_one",
+            descripcion=(
+                "AP-06: lee 50 clientes y consulta los pedidos de cada uno (uno a muchos), y lee "
+                "50 pedidos y consulta el cliente de cada uno (muchos a uno), en bucle."
+            ),
+            workload="n_plus_one",
+            workers=2,
+            extra_setup=lambda engine: N_PLUS_ONE_SQL[engine],
+            cut_snapshot=True,
+            expectations=[
+                Expectation(
+                    "n_plus_one uno_a_muchos: ql_n1_orders WHERE customer_id = ?",
+                    _n_plus_one("ql_n1_orders", "uno_a_muchos"),
+                    nota="padre e hija tienen que medirse contra el mismo snapshot anterior (o ser nuevas las dos)",
+                ),
+                Expectation(
+                    "n_plus_one muchos_a_uno: ql_n1_customers WHERE id = ?",
+                    _n_plus_one("ql_n1_customers", "muchos_a_uno"),
+                    nota="padre e hija tienen que medirse contra el mismo snapshot anterior (o ser nuevas las dos)",
+                ),
+            ],
+        ),
+        Scenario(
+            name="n_plus_one_control",
+            descripcion=(
+                "AP-06 (control): los mismos datos que n_plus_one, traidos con JOIN e IN (...). "
+                "No debe aparecer ningun n_plus_one."
+            ),
+            workload="n_plus_one_control",
+            workers=2,
+            extra_setup=lambda engine: N_PLUS_ONE_SQL[engine],
+            cut_snapshot=True,
+            expectations=[
+                Expectation(
+                    "ningun n_plus_one sobre las tablas ql_n1_*",
+                    lambda f: f["antipatron"] == "n_plus_one" and (f.get("table_name") or "").startswith("ql_n1_"),
+                    absent=True,
                 ),
             ],
         ),
@@ -449,10 +573,26 @@ def root_env() -> dict[str, str]:
 
 
 def run_pipeline(engine: str) -> None:
+    if USE_DOCKER:
+        # el contenedor ya trae las variables de conexion (MONITOR_*, QUERYLENS_*)
+        run(["docker", "cp", str(PIPELINE_ONE_ENGINE), f"{PIPELINE_CONTAINER}:/tmp/pipeline_one_engine.py"])
+        run(["docker", "exec", "-e", "QL_PIPELINE_DIR=/app", "-w", "/app", PIPELINE_CONTAINER,
+             "python", "/tmp/pipeline_one_engine.py", engine])
+        return
     run([venv_python(PIPELINE_DIR), str(PIPELINE_ONE_ENGINE), engine], cwd=PIPELINE_DIR, env=root_env())
 
 
 def drain_queue() -> int:
+    if USE_DOCKER:
+        # el detection_engine del contenedor consume la cola solo; un mensaje se
+        # archiva despues de guardar sus hallazgos, asi que cola vacia = procesado
+        pending = queue_length()
+        deadline = time.monotonic() + DOCKER_DRAIN_TIMEOUT_SECONDS
+        while queue_length() and time.monotonic() < deadline:
+            time.sleep(1)
+        if queue_length():
+            log(f"Aviso: la cola no se vacio en {DOCKER_DRAIN_TIMEOUT_SECONDS}s; esta corriendo querylens_detection_engine?")
+        return pending
     # --oneshot procesa un mensaje por llamada; se repite hasta vaciar la cola
     processed = 0
     pending = queue_length()
@@ -528,6 +668,11 @@ def run_scenario(scenario: Scenario, engine: str, keep: bool) -> list[tuple[Expe
         if scenario.extra_setup:
             exec_sql(engine, scenario.extra_setup(engine))
 
+        if scenario.cut_snapshot:
+            log("Snapshot de corte (sus hallazgos no cuentan)...")
+            run_pipeline(engine)
+            drain_queue()
+
         start = querylens_sql("SELECT now();")
 
         if scenario.workload:
@@ -547,13 +692,17 @@ def run_scenario(scenario: Scenario, engine: str, keep: bool) -> list[tuple[Expe
             for index, expectation in enumerate(scenario.expectations):
                 if results.get(index) is None:
                     results[index] = next((f for f in findings if expectation.match(f)), None)
-            met = sum(1 for value in results.values() if value is not None)
+            met = sum(
+                1 for index, expectation in enumerate(scenario.expectations)
+                if (results.get(index) is None) == expectation.absent
+            )
 
-            log(f"Ciclo {cycle}/{scenario.max_cycles} | esperados encontrados: {met}/{len(scenario.expectations)}")
+            log(f"Ciclo {cycle}/{scenario.max_cycles} | esperados cumplidos: {met}/{len(scenario.expectations)}")
             for line in diagnose(snapshots, engine):
                 print(line, flush=True)
 
-            if met == len(scenario.expectations):
+            # un control solo pasa si se corren todos los ciclos sin el hallazgo
+            if met == len(scenario.expectations) and not any(e.absent for e in scenario.expectations):
                 break
 
             if scenario.inject_after_cycle == cycle:
@@ -571,7 +720,7 @@ def run_scenario(scenario: Scenario, engine: str, keep: bool) -> list[tuple[Expe
             log(f"Configuracion restaurada: {scenario.server_teardown[engine].strip()}")
         if not keep:
             exec_sql(engine, TEARDOWN_SQL)
-            log("ql_scn eliminada.")
+            log("Tablas del escenario eliminadas.")
 
     return [(expectation, results.get(index)) for index, expectation in enumerate(scenario.expectations)]
 
@@ -582,7 +731,13 @@ def main() -> int:
     parser.add_argument("--engine", choices=["postgres", "mysql", "both"], default="postgres")
     parser.add_argument("--keep", action="store_true", help="no eliminar ql_scn al terminar")
     parser.add_argument("--list", action="store_true", help="listar escenarios")
+    parser.add_argument(
+        "--docker", action="store_true",
+        help="correr pipeline y detection_engine en sus contenedores en vez de los venv locales",
+    )
     args = parser.parse_args()
+    global USE_DOCKER
+    USE_DOCKER = args.docker
 
     if args.list or not args.scenario:
         for scenario in SCENARIOS.values():
@@ -608,11 +763,15 @@ def main() -> int:
     print("\n================ RESUMEN ================")
     failed = 0
     for name, engine, expectation, finding in summary:
-        if finding is not None:
+        if expectation.absent and finding is None:
+            print(f"PASS  {name:<24} {engine:<8} {expectation.descripcion}")
+        elif not expectation.absent and finding is not None:
             print(f"PASS  {name:<24} {engine:<8} {expectation.descripcion} (severidad={finding['severidad']})")
         else:
             failed += 1
             print(f"FAIL  {name:<24} {engine:<8} {expectation.descripcion}")
+            if expectation.absent:
+                print(f"      aparecio: query_id={finding.get('query_id')} table={finding.get('table_name')}")
             if expectation.nota:
                 print(f"      nota: {expectation.nota}")
     print(f"\n{len(summary) - failed}/{len(summary)} esperados encontrados.")

@@ -19,7 +19,12 @@ def _records(payload: Mapping[str, Any], key: str) -> list[Mapping[str, Any]]:
 class Statement:
     query_id: QueryId | None = None
     query_text: str | None = None
+    # texto normalizado en dialecto postgres; "Not available" si no se pudo parsear
+    canonic_query: str | None = None
     schema_name: str | None = None
+    # base del statement: en Postgres statements es de todo el servidor, en
+    # MySQL es igual a schema_name
+    database_name: str | None = None
     execution_count: int | None = None
     rows_returned: int | None = None
     avg_rows_per_call: float | None = None
@@ -76,6 +81,26 @@ class ColumnStat:
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> "ColumnStat":
+        return cls(**{field_name: data.get(field_name) for field_name in cls.__dataclass_fields__})
+
+
+@dataclass
+class ForeignKeyColumn:
+    """Una columna de una clave foranea. Las compuestas llegan como varias filas
+    con el mismo constraint_name, ordenadas por position. En Postgres solo
+    vienen las de la base conectada; en MySQL schema_name es la base."""
+
+    schema_name: str | None = None
+    table_name: str | None = None
+    column_name: str | None = None
+    referenced_schema_name: str | None = None
+    referenced_table_name: str | None = None
+    referenced_column_name: str | None = None
+    constraint_name: str | None = None
+    position: int | None = None
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> "ForeignKeyColumn":
         return cls(**{field_name: data.get(field_name) for field_name in cls.__dataclass_fields__})
 
 
@@ -162,6 +187,7 @@ class Snapshot:
     tables: list[TableStat] = field(default_factory=list)
     indexes: list[IndexStat] = field(default_factory=list)
     columns: list[ColumnStat] = field(default_factory=list)
+    foreign_keys: list[ForeignKeyColumn] = field(default_factory=list)
     active_queries: list[ActiveQuery] = field(default_factory=list)
     locks: list[Lock] = field(default_factory=list)
     canonic_explains: list[Mapping[str, Any]] = field(default_factory=list)
@@ -178,6 +204,7 @@ class Snapshot:
             tables=[TableStat.from_dict(item) for item in _records(payload, "tables")],
             indexes=[IndexStat.from_dict(item) for item in _records(payload, "indexes")],
             columns=[ColumnStat.from_dict(item) for item in _records(payload, "columns")],
+            foreign_keys=[ForeignKeyColumn.from_dict(item) for item in _records(payload, "foreign_keys")],
             active_queries=[ActiveQuery.from_dict(item) for item in _records(payload, "active_queries")],
             locks=[Lock.from_dict(item) for item in _records(payload, "locks")],
             canonic_explains=_records(payload, "canonic_explains"),
@@ -194,7 +221,7 @@ class Snapshot:
 @dataclass
 class StatementHistory:
     """Una fila de public.statement_samples: el estado de un query_id que los
-    detectores con ventana (AP-01, AP-07, AP-08) arrastran de un snapshot al siguiente."""
+    detectores con ventana (AP-01, AP-06, AP-07, AP-08) arrastran de un snapshot al siguiente."""
 
     query_id: str
     # hora del snapshot que dejo esta fila asi

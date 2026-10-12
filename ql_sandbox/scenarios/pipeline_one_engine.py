@@ -11,13 +11,17 @@ con dos diferencias pensadas solo para las pruebas:
 
 Se ejecuta con el python del venv de telemetry_pipeline:
   python pipeline_one_engine.py <postgres|mysql>
+o, con run_scenario.py --docker, dentro del contenedor querylens_pipeline.
 """
 
 import json
+import os
 import sys
 from pathlib import Path
 
-PIPELINE_DIR = Path(__file__).resolve().parents[2] / "telemetry_pipeline"
+# QL_PIPELINE_DIR: con run_scenario.py --docker este archivo se copia al
+# contenedor querylens_pipeline, donde el codigo esta en /app
+PIPELINE_DIR = Path(os.getenv("QL_PIPELINE_DIR") or Path(__file__).resolve().parents[2] / "telemetry_pipeline")
 sys.path.insert(0, str(PIPELINE_DIR))
 
 from collectors.factory import Engine_Factory  # noqa: E402

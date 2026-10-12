@@ -12,6 +12,7 @@ from .baseline_degradation import detect_baseline_degradation
 from .cardinality_misestimate import detect_cardinality_misestimates
 from .disk_spill import detect_disk_spill
 from .missing_index import detect_missing_indexes
+from .n_plus_one import detect_n_plus_one
 from .non_sargable_predicate import detect_non_sargable_predicates
 from .unused_index import DEFAULT_MIN_STATS_WINDOW, detect_unused_indexes
 
@@ -25,6 +26,7 @@ from .unused_index import DEFAULT_MIN_STATS_WINDOW, detect_unused_indexes
 ACTIVE_RULES = (
     "disk_spill",  # AP-07
     "baseline_degradation",  # AP-01
+    "n_plus_one",  # AP-06
 )
 
 
@@ -62,6 +64,11 @@ def detect_all(
             history,
         ),
         "baseline_degradation": lambda current_snapshot: detect_baseline_degradation(
+            current_snapshot,
+            history,
+            captured_at,
+        ),
+        "n_plus_one": lambda current_snapshot: detect_n_plus_one(
             current_snapshot,
             history,
             captured_at,
