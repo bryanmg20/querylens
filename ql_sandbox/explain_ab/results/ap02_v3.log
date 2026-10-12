@@ -1,0 +1,52 @@
+﻿[00:35:09] ===== ap02_avoidable_full_scan | postgres | v3 | regla avoidable_full_scan =====
+[00:35:09] pipeline: C:\Users\HP\Documents\GitHub\querylens-v3\telemetry_pipeline
+[00:35:17]   caso status_raro (esperado: si)
+[00:35:37]     -> FN (intentos de snapshot: 1)
+[00:35:37]   caso status_comun (esperado: no)
+[00:35:55]     -> VN (intentos de snapshot: 1)
+[00:35:55]   caso rango_reciente (esperado: si)
+[00:36:15]     -> FN (intentos de snapshot: 1)
+[00:36:15]   caso rango_amplio (esperado: no)
+[00:36:34]     -> VN (intentos de snapshot: 1)
+[00:36:34]   caso valor_casi_unico (esperado: si)
+[00:36:52]     -> VP (intentos de snapshot: 1)
+[00:36:52]   caso region_20pct (esperado: no)
+[00:37:11]     -> VN (intentos de snapshot: 1)
+[00:37:11]   caso indexado (esperado: no)
+[00:37:31]     -> VN (intentos de snapshot: 1)
+[00:37:31]   caso indexado_sesgado (esperado: no)
+[00:37:51]     -> VN (intentos de snapshot: 1)
+[00:37:51]   caso tabla_chica (esperado: no)
+[00:38:10]     -> VN (intentos de snapshot: 1)
+
+ap02_avoidable_full_scan | postgres | v3 | 9 casos
+  VP=1 FN=2 FP=0 VN=6 sin_explain=0 no_candidata=0 no_encontrada=0
+  precision=1.00 recall=0.33
+
+[00:38:10] resultado: ql_sandbox\explain_ab\results\ap02_avoidable_full_scan\postgres_v3.json
+[00:38:10] ===== ap02_avoidable_full_scan | mysql | v3 | regla avoidable_full_scan =====
+[00:38:10] pipeline: C:\Users\HP\Documents\GitHub\querylens-v3\telemetry_pipeline
+[00:38:53]   caso status_raro (esperado: si)
+[00:39:15]     -> VP (intentos de snapshot: 1)
+[00:39:15]   caso status_comun (esperado: no)
+[00:39:36]     -> FP (intentos de snapshot: 1)
+[00:39:36]   caso rango_reciente (esperado: si)
+[00:39:58]     -> FN (intentos de snapshot: 1)
+[00:39:58]   caso rango_amplio (esperado: no)
+[00:40:19]     -> VN (intentos de snapshot: 1)
+[00:40:19]   caso valor_casi_unico (esperado: si)
+[00:40:40]     -> VP (intentos de snapshot: 1)
+[00:40:40]   caso region_20pct (esperado: no)
+[00:41:02]     -> FP (intentos de snapshot: 1)
+[00:41:02]   caso indexado (esperado: no)
+[00:41:24]     -> VN (intentos de snapshot: 1)
+[00:41:24]   caso indexado_sesgado (esperado: no)
+[00:41:48]     -> VN (intentos de snapshot: 1)
+[00:41:48]   caso tabla_chica (esperado: no)
+[00:42:13]     -> VN (intentos de snapshot: 1)
+
+ap02_avoidable_full_scan | mysql | v3 | 9 casos
+  VP=2 FN=1 FP=2 VN=4 sin_explain=0 no_candidata=0 no_encontrada=0
+  precision=0.50 recall=0.67
+
+[00:42:14] resultado: ql_sandbox\explain_ab\results\ap02_avoidable_full_scan\mysql_v3.json
