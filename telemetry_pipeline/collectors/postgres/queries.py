@@ -37,6 +37,9 @@ SELECT
     max_exec_time AS max_time_ms,
     stddev_exec_time / NULLIF(mean_exec_time, 0) AS coeff_of_variation,
     temp_blks_written AS disk_spill_indicator,
+    -- temp_blks_written ya cuenta los ordenamientos que van a disco; la
+    -- columna existe para que las dos filas tengan la misma forma.
+    NULL::bigint AS sort_merge_passes,
     stats_since AS counters_epoch,
     d.datname AS database_name
 FROM pg_stat_statements s

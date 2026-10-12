@@ -79,6 +79,9 @@ class StatementRow(BaseModel):
     max_time_ms: float | None = None
     coeff_of_variation: float | None = None
     disk_spill_indicator: int | None = None
+    # MySQL: SUM_SORT_MERGE_PASSES. Postgres: None (temp_blks_written, en
+    # disk_spill_indicator, ya incluye los ordenamientos).
+    sort_merge_passes: int | None = None
     counters_epoch: Annotated[str | None, BeforeValidator(_to_iso)] = None
     canonic_query: str | None = None
     # True cuando SnapshotPayload recorto query_text a MAX_STATEMENT_TEXT_CHARS.

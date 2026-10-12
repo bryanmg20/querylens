@@ -15,7 +15,10 @@ def select_unstable_statements(stats: Stats):
 
 
 def select_disk_spill_indicator(stats: Stats):
-    stats['disk_spill_statements'] = [stmd for stmd in (stats.get('statements') or []) if stmd.get('disk_spill_indicator', 0) > 0]
+    stats['disk_spill_statements'] = [
+        stmd for stmd in (stats.get('statements') or [])
+        if (stmd.get('disk_spill_indicator') or 0) > 0 or (stmd.get('sort_merge_passes') or 0) > 0
+    ]
            
 
 def select_candidates_to_explain(stats: Stats, dialect: str = "postgres"):

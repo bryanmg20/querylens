@@ -83,6 +83,9 @@ SELECT
     CAST(ROUND(s.MAX_TIMER_WAIT / 1000000000.0, 6) AS DOUBLE)                  AS max_time_ms,
     NULL                                                                        AS coeff_of_variation,
     CAST(s.SUM_CREATED_TMP_DISK_TABLES AS SIGNED)                               AS disk_spill_indicator,
+    # Ordenamientos que fueron a disco: SUM_CREATED_TMP_DISK_TABLES no los cuenta
+    # (un ORDER BY con sort_buffer chico dio 118 merge passes y 0 tablas en disco).
+    CAST(s.SUM_SORT_MERGE_PASSES AS SIGNED)                                     AS sort_merge_passes,
     FIRST_SEEN AS counters_epoch
 FROM performance_schema.events_statements_summary_by_digest s
 WHERE s.DIGEST_TEXT IS NOT NULL
