@@ -253,12 +253,13 @@ def test_canonical_explains_belong_to_candidates(snapshot_fixture, request):
     ["mysql_snapshot", "postgres_snapshot"],
 )
 def test_explains_carry_engine_source(snapshot_fixture, request):
-    """Postgres explica por plan generico y MySQL por muestra. El source lo dice,
-    asi que un motor explains con la via del otro es detectable."""
+    """Postgres explica por plan generico (o toma el plan real que registro
+    auto_explain, si esta activo) y MySQL por muestra. El source lo dice, asi
+    que un motor explains con la via del otro es detectable."""
     raw = request.getfixturevalue(snapshot_fixture)
-    expected = "generic" if "postgres" in snapshot_fixture else "sample"
+    expected = {"generic", "auto_explain"} if "postgres" in snapshot_fixture else {"sample"}
     for explain in raw["canonic_explains"]:
-        assert explain["explain_source"] == expected
+        assert explain["explain_source"] in expected
 
 
 def test_active_queries_have_canonic_field(mysql_snapshot):
@@ -303,11 +304,22 @@ def test_locks_boolean_coercion(mysql_snapshot, postgres_snapshot):
     abierta al capturar), asi que el bucle sobre el no exertia presion. La
     coercion se verifica donde hay datos y el vacio se comprueba aparte.
     """
-    payload = SnapshotPayload.from_snapshot(postgres_snapshot)
-    assert payload.locks, (
-        "el golden de postgres deberia traer locks: sin ellos este test no "
-        "verifica la coercion de is_granted"
-    )
+    # Los locks del golden de Postgres eran los del propio pipeline (pg_roles,
+    # pg_stat_statements); LOCKS_QUERY ya excluye al usuario del pipeline y la
+    # bateria termina antes de capturar, asi que el golden puede llegar vacio.
+    # Se agrega una fila de otra sesion para que la coercion tenga que correr.
+    snapshot = {
+        **postgres_snapshot,
+        "locks": (postgres_snapshot["locks"] or []) + [{
+            "process_id": 1,
+            "database_name": "ql_demo",
+            "table_name": "sbtest1",
+            "lock_mode": "RowExclusiveLock",
+            "is_granted": True,
+        }],
+    }
+    payload = SnapshotPayload.from_snapshot(snapshot)
+    assert payload.locks
     for lock in payload.locks:
         assert lock.is_granted is True or lock.is_granted is False
     assert all(lock.is_granted is not None for lock in payload.locks)
