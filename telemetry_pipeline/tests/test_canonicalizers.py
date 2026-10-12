@@ -38,6 +38,24 @@ def test_clean_mysql_sintax():
     assert clean_mysql_sintax("SELECT DISTINCTROW a FROM t") == "SELECT DISTINCT a FROM t"
 
 
+@pytest.mark.parametrize(
+    "digest_text, expected",
+    [
+        ("SELECT `c` FROM `sbtest1` WHERE `k` IN (...)", "SELECT c FROM sbtest1 WHERE k IN ($1)"),
+        (
+            "SELECT * FROM `t` WHERE `k` NOT IN (...) AND `j` IN (...)",
+            "SELECT * FROM t WHERE NOT k IN ($1) AND j IN ($2)",
+        ),
+        ("INSERT INTO `t` ( `a` , `b` ) VALUES (...) /* , ... */", "INSERT INTO t (a, b) VALUES ($1)"),
+        ("INSERT INTO `t` VALUES (...)", "INSERT INTO t VALUES ($1)"),
+    ],
+)
+def test_mysql_digest_collapsed_lists_are_canonicalized(digest_text, expected):
+    """DIGEST_TEXT resume las listas en `(...)`, que sqlglot no lee: sin la
+    limpieza la query quedaba en "Not available" y el consumidor sin alias."""
+    assert canonicalize_query(clean_mysql_sintax(digest_text), "mysql") == expected
+
+
 def test_create_canonic_queries_pure():
     stats = {
         "top_impact_queries": [

@@ -52,7 +52,17 @@ def canonicalize_query(query_text, source_dialect="postgres"):
         return "Not available"
 
 
+# DIGEST_TEXT resume las listas: `IN (...)` y `VALUES (...) /* , ... */`.
+# sqlglot no lee `(...)` y la query quedaba en "Not available", sin canonic_query
+# ni alias para el consumidor. Se reemplazan por un solo `?`, el placeholder que
+# el digest ya usa para el resto de los valores.
+_DIGEST_VALUES_LIST = re.compile(r"\bVALUES\s*\(\s*\.\.\.\s*\)(?:\s*/\*\s*,\s*\.\.\.\s*\*/)?", re.IGNORECASE)
+_DIGEST_IN_LIST = re.compile(r"\bIN\s*\(\s*\.\.\.\s*\)", re.IGNORECASE)
+
+
 def clean_mysql_sintax(query):
+    query = _DIGEST_VALUES_LIST.sub("VALUES (?)", query)
+    query = _DIGEST_IN_LIST.sub("IN (?)", query)
     return query.replace("DISTINCTROW", "DISTINCT")
 
 
