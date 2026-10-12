@@ -164,11 +164,15 @@ def test_predicates_are_canonicalized(snapshot_fixture, request):
             assert "`" not in predicate, f"quedan backticks: {predicate}"
             assert "ql_demo." not in predicate, f"queda el schema: {predicate}"
             assert "<cache>" not in predicate, f"queda la marca cache: {predicate}"
-            assert not re.search(r"'[^']*'", predicate), (
+            # '$n' es el placeholder de un texto redactado (solo dice que era
+            # texto, no el valor); cualquier otro string entrecomillado es dato.
+            assert not re.search(r"'[^']*'", re.sub(r"'\$\d+'", "", predicate)), (
                 f"queda un literal string: {predicate}"
             )
             if snapshot_fixture == "mysql_snapshot":
-                assert not re.search(r"(?<!\$)\b\d+\b", predicate), (
+                # (SubPlan N) es la etiqueta de subconsulta, no un dato.
+                without_labels = re.sub(r"\(SubPlan \d+\)", "", predicate)
+                assert not re.search(r"(?<!\$)\b\d+\b", without_labels), (
                     f"queda un literal numerico: {predicate}"
                 )
     assert checked > 0, "ningun predicate en el golden, no hay nada que verificar"

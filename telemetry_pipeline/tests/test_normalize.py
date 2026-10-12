@@ -114,14 +114,14 @@ def test_clean_mysql_predicate_redacts_string_literals():
     """N-1: el plan se arma con la query real, asi que un LIKE con el valor
     del cliente viajaba tal cual a la cola. El string se reemplaza entero."""
     cleaned = clean_mysql_explain_predicate_dynamic("(c LIKE '%7%')")
-    assert cleaned == "(c LIKE $1)"
+    assert cleaned == "(c LIKE '$1')"
 
 
 def test_clean_mysql_predicate_redacts_multiple_literals_in_reading_order():
     cleaned = clean_mysql_explain_predicate_dynamic("(a.id BETWEEN 2000 AND 4000)")
     assert cleaned == "(a.id BETWEEN $1 AND $2)"
     cleaned = clean_mysql_explain_predicate_dynamic("(a.id = 1 AND b.c = 'x')")
-    assert cleaned == "(a.id = $1 AND b.c = $2)"
+    assert cleaned == "(a.id = $1 AND b.c = '$2')"
 
 
 def test_clean_mysql_predicate_keeps_null_and_booleans():
@@ -187,12 +187,46 @@ def test_clean_mysql_predicate_redacts_hex_and_bit_literals(predicate, secret):
 @pytest.mark.parametrize(
     "predicate, expected",
     [
-        ("t.c = 0xDEAD AND ((", "t.c = $1 AND (("),
-        ("t.c = X'0A1B' AND ((", "t.c = $1 AND (("),
-        ("t.f = b'1010' AND ((", "t.f = $1 AND (("),
+        ("t.c = 0xDEAD AND ((", "t.c = '$1' AND (("),
+        ("t.c = X'0A1B' AND ((", "t.c = '$1' AND (("),
+        ("t.f = b'1010' AND ((", "t.f = '$1' AND (("),
     ],
 )
 def test_clean_mysql_predicate_redacts_hex_on_fallback_path(predicate, expected):
     """El fallback por regex tampoco puede dejar el hex: ni crudo ni partido
     (X$1 o 0x$1 seguirian delatando la forma del dato)."""
+    assert clean_mysql_explain_predicate_dynamic(predicate) == expected
+
+
+def test_clean_mysql_predicate_keeps_number_or_text_kind():
+    """Punto 10 del 007: MySQL no muestra en el plan la conversion implicita
+    de `telefono = 5551234`. Sin saber si el valor era numero o texto el
+    consumidor no la puede detectar; el valor sigue sin viajar."""
+    assert clean_mysql_explain_predicate_dynamic("(`db`.`o`.`tel` = 5551234)") == "(o.tel = $1)"
+    assert clean_mysql_explain_predicate_dynamic("(`db`.`o`.`tel` = '5551234')") == "(o.tel = '$1')"
+
+
+@pytest.mark.parametrize(
+    "predicate, expected",
+    [
+        (
+            "(`db`.`o`.`customer_id` = (/* select#2 */ select min(`db`.`c`.`id`) "
+            "from `db`.`c` where (lower(`db`.`c`.`name`) = 'ana')))",
+            "(o.customer_id = (SubPlan 1))",
+        ),
+        (
+            "((`db`.`o`.`id` = 3) and exists(select 1 from `db`.`c` where (`db`.`c`.`x` = 'a')))",
+            "((o.id = $1) AND (SubPlan 1))",
+        ),
+        (
+            "(`db`.`o`.`id` in (select `db`.`c`.`id` from `db`.`c` where (`db`.`c`.`k` = 4)) "
+            "and (`db`.`o`.`z` = (select 1)))",
+            "(o.id IN (SubPlan 1) AND (o.z = (SubPlan 2)))",
+        ),
+    ],
+)
+def test_clean_mysql_predicate_labels_subqueries_like_postgres(predicate, expected):
+    """Caso 22 del 007: MySQL copia la subconsulta entera en el predicado de la
+    tabla de afuera y LOWER(c.name) parecia de "o". Va la etiqueta de Postgres;
+    los literales de adentro no consumen numeros de $n."""
     assert clean_mysql_explain_predicate_dynamic(predicate) == expected
