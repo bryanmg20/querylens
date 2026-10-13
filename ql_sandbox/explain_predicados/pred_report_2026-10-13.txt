@@ -1,0 +1,467 @@
+==============================================================================================================
+01 igualdad con indice:  SELECT id FROM ql_pt_orders WHERE status = 'raro'
+  [pg_generic] ql_pt_orders index_lookup     est=33333   pred=((status)::text = $1)
+               AP-03=[]  AP-04 igualdad/rango=(['status'], [])  AP-05=['status']
+  [pg_generic] ql_pt_orders index_lookup     est=33333   pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_generic] ! ql_pt_orders: Recheck Cond ((status)::text = $1) no se copia (Bitmap Heap Scan)
+  [pg_generic] ! Bitmap Index Scan sin relation (Index Cond ((status)::text = $1))
+  [pg_literal] ql_pt_orders index_lookup     est=1037    pred=((status)::text = $1)
+               AP-03=[]  AP-04 igualdad/rango=(['status'], [])  AP-05=['status']
+  [pg_literal] ql_pt_orders index_lookup     est=1037    pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_literal] ! ql_pt_orders: Recheck Cond ((status)::text = 'raro'::text) no se copia (Bitmap Heap Scan)
+  [pg_literal] ! Bitmap Index Scan sin relation (Index Cond ((status)::text = 'raro'::text))
+  [mysql     ] ql_pt_orders index_lookup     est=1000.0  pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+==============================================================================================================
+02 igualdad sin indice:  SELECT id FROM ql_pt_orders WHERE total = 10.5
+  [pg_generic] ql_pt_orders full_table_scan  est=100     pred=(total = $1)
+               AP-03=[]  AP-04 igualdad/rango=(['total'], [])  AP-05=['total']
+  [pg_literal] ql_pt_orders full_table_scan  est=100     pred=(total = $1)
+               AP-03=[]  AP-04 igualdad/rango=(['total'], [])  AP-05=['total']
+  [mysql     ] ql_pt_orders full_table_scan  est=9983.5  pred=(ql_pt_orders.total = $1)
+               AP-03=[]  AP-04 igualdad/rango=(['total'], [])  AP-05=['total']
+==============================================================================================================
+03 rango fechas:  SELECT id FROM ql_pt_orders WHERE created_at >= '2026-01-02' AND created_at < '2026-01-03'
+  [pg_generic] ql_pt_orders index_lookup     est=500     pred=((created_at >= $1) AND (created_at < $2))
+               AP-03=[]  AP-04 igualdad/rango=([], ['created_at'])  AP-05=['created_at']
+  [pg_literal] ql_pt_orders index_lookup     est=1485    pred=((created_at >= $1) AND (created_at < $2))
+               AP-03=[]  AP-04 igualdad/rango=([], ['created_at'])  AP-05=['created_at']
+  [mysql     ] ql_pt_orders index_lookup     est=1440.0  pred=((ql_pt_orders.created_at >= CAST('$1' AS TIMESTAMPTZ)) AND (ql_pt_orders.created_at < CAST('$2' AS TIMESTAMPTZ)))
+               AP-03=[]  AP-04 igualdad/rango=([], ['created_at'])  AP-05=['created_at']
+==============================================================================================================
+04 BETWEEN:  SELECT id FROM ql_pt_orders WHERE total BETWEEN 10 AND 20
+  [pg_generic] ql_pt_orders full_table_scan  est=500     pred=((total >= $1) AND (total <= $2))
+               AP-03=[]  AP-04 igualdad/rango=([], ['total'])  AP-05=['total']
+  [pg_literal] ql_pt_orders full_table_scan  est=10043   pred=((total >= $1) AND (total <= $2))
+               AP-03=[]  AP-04 igualdad/rango=([], ['total'])  AP-05=['total']
+  [mysql     ] ql_pt_orders full_table_scan  est=11091.67 pred=(ql_pt_orders.total BETWEEN $1 AND $2)
+               AP-03=[]  AP-04 igualdad/rango=([], ['total'])  AP-05=['total']
+==============================================================================================================
+05 IN lista:  SELECT id FROM ql_pt_orders WHERE status IN ('raro', 'pendiente')
+  [pg_generic] ql_pt_orders full_table_scan  est=66667   pred=((status)::text = ANY ((ARRAY[$1, $2])::text[]))
+               AP-03=[]  AP-04 igualdad/rango=(['status'], [])  AP-05=['status']
+  [pg_literal] ql_pt_orders index_lookup     est=29997   pred=((status)::text = ANY ($1))
+               AP-03=[]  AP-04 igualdad/rango=(['status'], [])  AP-05=['status']
+  [pg_literal] ql_pt_orders index_lookup     est=29997   pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_literal] ! ql_pt_orders: Recheck Cond ((status)::text = ANY ('{raro,pendiente}'::text[])) no se copia (Bitmap Heap Scan)
+  [pg_literal] ! Bitmap Index Scan sin relation (Index Cond ((status)::text = ANY ('{raro,pendiente}'::text[])))
+  [mysql     ] ql_pt_orders index_lookup     est=50917.0 pred=(ql_pt_orders.status IN ('$1', '$2'))
+               AP-03=[]  AP-04 igualdad/rango=(['status'], [])  AP-05=['status']
+==============================================================================================================
+06 distinto:  SELECT id FROM ql_pt_orders WHERE status <> 'entregado'
+  [pg_generic] ql_pt_orders full_table_scan  est=66667   pred=((status)::text <> $1)
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=['status']
+  [pg_literal] ql_pt_orders full_table_scan  est=29997   pred=((status)::text <> $1)
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=['status']
+  [mysql     ] ql_pt_orders index_lookup     est=49918.0 pred=(ql_pt_orders.status <> '$1')
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=['status']
+==============================================================================================================
+07 OR:  SELECT id FROM ql_pt_orders WHERE status = 'raro' OR total > 99
+  [pg_generic] ql_pt_orders full_table_scan  est=55556   pred=(((status)::text = $1) OR (total > $2))
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=['status', 'total']
+  [pg_literal] ql_pt_orders full_table_scan  est=2021    pred=(((status)::text = $1) OR (total > $2))
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=['status', 'total']
+  [mysql     ] ql_pt_orders full_table_scan  est=66550.01 pred=((ql_pt_orders.status = '$1') OR (ql_pt_orders.total > $2))
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=['status', 'total']
+==============================================================================================================
+08 IS NULL:  SELECT id FROM ql_pt_orders WHERE note IS NULL
+  [pg_generic] ql_pt_orders full_table_scan  est=10213   pred=(note IS NULL)
+               AP-03=[]  AP-04 igualdad/rango=(['note'], [])  AP-05=['note']
+  [pg_literal] ql_pt_orders full_table_scan  est=10213   pred=(note IS NULL)
+               AP-03=[]  AP-04 igualdad/rango=(['note'], [])  AP-05=['note']
+  [mysql     ] ql_pt_orders full_table_scan  est=9983.5  pred=(ql_pt_orders.note IS NULL)
+               AP-03=[]  AP-04 igualdad/rango=(['note'], [])  AP-05=['note']
+==============================================================================================================
+09 LIKE prefijo:  SELECT id FROM ql_pt_orders WHERE note LIKE 'nota1%'
+  [pg_generic] ql_pt_orders full_table_scan  est=500     pred=(note ~~ $1)
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=['note']
+  [pg_literal] ql_pt_orders full_table_scan  est=9069    pred=(note ~~ $1)
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=['note']
+  [mysql     ] ql_pt_orders full_table_scan  est=11091.67 pred=(ql_pt_orders.note LIKE '$1')
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=['note']
+==============================================================================================================
+10 LIKE sufijo:  SELECT id FROM ql_pt_orders WHERE note LIKE '%99'
+  [pg_generic] ql_pt_orders full_table_scan  est=500     pred=(note ~~ $1)
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=['note']
+  [pg_literal] ql_pt_orders full_table_scan  est=907     pred=(note ~~ $1)
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=['note']
+  [mysql     ] ql_pt_orders full_table_scan  est=11091.67 pred=(ql_pt_orders.note LIKE '$1')
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=['note']
+==============================================================================================================
+11 funcion LOWER:  SELECT id FROM ql_pt_customers WHERE LOWER(email) = 'user5@x.com'
+  [pg_generic] ql_pt_customers full_table_scan  est=25      pred=(lower((email)::text) = $1)
+               AP-03=[('function_on_column', 'email')]  AP-04 igualdad/rango=([], [])  AP-05=['email']
+  [pg_literal] ql_pt_customers full_table_scan  est=25      pred=(lower((email)::text) = $1)
+               AP-03=[('function_on_column', 'email')]  AP-04 igualdad/rango=([], [])  AP-05=['email']
+  [mysql     ] ql_pt_customers full_index_scan  est=5000.0  pred=(LOWER(ql_pt_customers.email) = '$1')
+               AP-03=[('function_on_column', 'email')]  AP-04 igualdad/rango=([], [])  AP-05=['email']
+  [mysql     ] ! ql_pt_customers: access_type index (recorre TODO el indice) -> index_lookup
+==============================================================================================================
+12 aritmetica:  SELECT id FROM ql_pt_orders WHERE total + 0 = 10
+  [pg_generic] ql_pt_orders full_table_scan  est=500     pred=((total + $1) = $2)
+               AP-03=[('arithmetic_on_column', 'total')]  AP-04 igualdad/rango=([], [])  AP-05=['total']
+  [pg_literal] ql_pt_orders full_table_scan  est=500     pred=((total + $1) = $2)
+               AP-03=[('arithmetic_on_column', 'total')]  AP-04 igualdad/rango=([], [])  AP-05=['total']
+  [mysql     ] ql_pt_orders full_table_scan  est=99835.0 pred=((ql_pt_orders.total + $1) = $2)
+               AP-03=[('arithmetic_on_column', 'total')]  AP-04 igualdad/rango=([], [])  AP-05=['total']
+==============================================================================================================
+13 DATE():  SELECT id FROM ql_pt_orders WHERE DATE(created_at) = '2026-01-02'
+  [pg_generic] ql_pt_orders full_table_scan  est=500     pred=(date(created_at) = $1)
+               AP-03=[('function_on_column', 'created_at')]  AP-04 igualdad/rango=([], [])  AP-05=['created_at']
+  [pg_literal] ql_pt_orders full_table_scan  est=500     pred=(date(created_at) = $1)
+               AP-03=[('function_on_column', 'created_at')]  AP-04 igualdad/rango=([], [])  AP-05=['created_at']
+  [mysql     ] ql_pt_orders full_index_scan  est=99835.0 pred=(CAST(ql_pt_orders.created_at AS DATE) = '$1')
+               AP-03=[('function_on_column', 'created_at')]  AP-04 igualdad/rango=([], [])  AP-05=['created_at']
+  [mysql     ] ! ql_pt_orders: access_type index (recorre TODO el indice) -> index_lookup
+==============================================================================================================
+14 CAST explicito:  SELECT id FROM ql_pt_orders WHERE CAST(code AS INTEGER) = 5
+  [pg_generic] ql_pt_orders full_table_scan  est=500     pred=((code)::integer = $1)
+               AP-03=[('implicit_cast', 'code')]  AP-04 igualdad/rango=([], [])  AP-05=['code']
+  [pg_literal] ql_pt_orders full_table_scan  est=500     pred=((code)::integer = $1)
+               AP-03=[('implicit_cast', 'code')]  AP-04 igualdad/rango=([], [])  AP-05=['code']
+  [mysql     ] ql_pt_orders full_table_scan  est=99835.0 pred=(CAST(ql_pt_orders.code AS BIGINT) = $1)
+               AP-03=[('implicit_cast', 'code')]  AP-04 igualdad/rango=([], [])  AP-05=['code']
+==============================================================================================================
+15 char contra numero (solo MySQL):  SELECT id FROM ql_pt_orders WHERE code = 5
+  [mysql     ] ql_pt_orders full_table_scan  est=9983.5  pred=(ql_pt_orders.code = $1)
+               AP-03=[('implicit_cast', 'code')]  AP-04 igualdad/rango=([], [])  AP-05=['code']
+==============================================================================================================
+16 int contra decimal:  SELECT id FROM ql_pt_orders WHERE customer_id = 5.0
+  [pg_generic] ql_pt_orders index_lookup     est=20      pred=(customer_id = $1)
+               AP-03=[]  AP-04 igualdad/rango=(['customer_id'], [])  AP-05=['customer_id']
+  [pg_generic] ql_pt_orders index_lookup     est=20      pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_generic] ! ql_pt_orders: Recheck Cond (customer_id = $1) no se copia (Bitmap Heap Scan)
+  [pg_generic] ! Bitmap Index Scan sin relation (Index Cond (customer_id = $1))
+  [pg_literal] ql_pt_orders full_table_scan  est=500     pred=((customer_id)::numeric = $1)
+               AP-03=[('implicit_cast', 'customer_id')]  AP-04 igualdad/rango=([], [])  AP-05=['customer_id']
+  [mysql     ] ql_pt_orders index_lookup     est=20.0    pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+==============================================================================================================
+17 indice + funcion:  SELECT id FROM ql_pt_orders WHERE status = 'raro' AND LOWER(note) = 'nota100'
+  [pg_generic] ql_pt_orders index_lookup     est=167     pred=((status)::text = $1) AND (lower(note) = $2)
+               AP-03=[('function_on_column', 'note')]  AP-04 igualdad/rango=(['status'], [])  AP-05=['note', 'status']
+  [pg_generic] ql_pt_orders index_lookup     est=33333   pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_generic] ! ql_pt_orders: Recheck Cond ((status)::text = $1) no se copia (Bitmap Heap Scan)
+  [pg_generic] ! Bitmap Index Scan sin relation (Index Cond ((status)::text = $1))
+  [pg_literal] ql_pt_orders index_lookup     est=5       pred=((status)::text = $1) AND (lower(note) = $2)
+               AP-03=[('function_on_column', 'note')]  AP-04 igualdad/rango=(['status'], [])  AP-05=['note', 'status']
+  [pg_literal] ql_pt_orders index_lookup     est=1037    pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_literal] ! ql_pt_orders: Recheck Cond ((status)::text = 'raro'::text) no se copia (Bitmap Heap Scan)
+  [pg_literal] ! Bitmap Index Scan sin relation (Index Cond ((status)::text = 'raro'::text))
+  [mysql     ] ql_pt_orders index_lookup     est=1000.0  pred=(LOWER(ql_pt_orders.note) = '$1')
+               AP-03=[('function_on_column', 'note')]  AP-04 igualdad/rango=([], [])  AP-05=['note']
+==============================================================================================================
+18 indice + otra columna:  SELECT id FROM ql_pt_orders WHERE created_at >= '2026-03-01' AND total > 50
+  [pg_generic] ql_pt_orders index_lookup     est=11111   pred=(created_at >= $1) AND (total > $2)
+               AP-03=[]  AP-04 igualdad/rango=([], ['created_at', 'total'])  AP-05=['created_at', 'total']
+  [pg_generic] ! ql_pt_orders: Index Cond (created_at >= $1) PISA Filter (total > $2)
+  [pg_literal] ql_pt_orders index_lookup     est=7368    pred=(created_at >= $1) AND (total > $2)
+               AP-03=[]  AP-04 igualdad/rango=([], ['created_at', 'total'])  AP-05=['created_at', 'total']
+  [pg_literal] ! ql_pt_orders: Index Cond (created_at >= '2026-03-01 00:00:00'::timestamp without time zone) PISA Filter (total > '50'::numeric)
+  [mysql     ] ql_pt_orders index_lookup     est=9400.39 pred=(ql_pt_orders.created_at >= CAST('$1' AS TIMESTAMPTZ)) AND (ql_pt_orders.total > $2)
+               AP-03=[]  AP-04 igualdad/rango=([], ['created_at', 'total'])  AP-05=['created_at', 'total']
+  [mysql     ] ! ql_pt_orders: index_condition (`ql_demo`.`ql_pt_orders`.`created_at` >= TIMESTAMP'2026-03-01 00:00:00') NO se copia
+==============================================================================================================
+19 JOIN con filtros:  SELECT o.id FROM ql_pt_orders o JOIN ql_pt_customers c ON c.id = o.customer_id WHERE c.region = 3 AND o.status = 'raro'
+  [pg_generic] o         index_lookup     est=33333   pred=((status)::text = $2)
+               AP-03=[]  AP-04 igualdad/rango=(['status'], [])  AP-05=['status']
+  [pg_generic] o         index_lookup     est=33333   pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_generic] c         full_table_scan  est=500     pred=(region = $1)
+               AP-03=[]  AP-04 igualdad/rango=(['region'], [])  AP-05=['region']
+  [pg_generic] ! Hash Join Hash Cond (o.customer_id = c.id) (va al join, no al scan)
+  [pg_generic] ! o: Recheck Cond ((status)::text = $2) no se copia (Bitmap Heap Scan)
+  [pg_generic] ! Bitmap Index Scan sin relation (Index Cond ((status)::text = $2))
+  [pg_literal] o         index_lookup     est=1037    pred=((status)::text = $1)
+               AP-03=[]  AP-04 igualdad/rango=(['status'], [])  AP-05=['status']
+  [pg_literal] o         index_lookup     est=1037    pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_literal] c         full_table_scan  est=500     pred=(region = $1)
+               AP-03=[]  AP-04 igualdad/rango=(['region'], [])  AP-05=['region']
+  [pg_literal] ! Hash Join Hash Cond (o.customer_id = c.id) (va al join, no al scan)
+  [pg_literal] ! o: Recheck Cond ((status)::text = 'raro'::text) no se copia (Bitmap Heap Scan)
+  [pg_literal] ! Bitmap Index Scan sin relation (Index Cond ((status)::text = 'raro'::text))
+  [mysql     ] o         index_lookup     est=1000.0  pred=(NOT o.customer_id IS NULL)
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=['customer_id']
+  [mysql     ] c         index_lookup     est=0.1     pred=(c.region = $1)
+               AP-03=[]  AP-04 igualdad/rango=(['region'], [])  AP-05=['region']
+==============================================================================================================
+20 IN subconsulta:  SELECT id FROM ql_pt_orders WHERE customer_id IN (SELECT id FROM ql_pt_customers WHERE region = 3)
+  [pg_generic] ql_pt_orders full_table_scan  est=100000  pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_generic] ql_pt_customers full_table_scan  est=500     pred=(region = $1)
+               AP-03=[]  AP-04 igualdad/rango=(['region'], [])  AP-05=['region']
+  [pg_generic] ! Hash Join Hash Cond (ql_pt_orders.customer_id = ql_pt_customers.id) (va al join, no al scan)
+  [pg_literal] ql_pt_orders full_table_scan  est=100000  pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_literal] ql_pt_customers full_table_scan  est=500     pred=(region = $1)
+               AP-03=[]  AP-04 igualdad/rango=(['region'], [])  AP-05=['region']
+  [pg_literal] ! Hash Join Hash Cond (ql_pt_orders.customer_id = ql_pt_customers.id) (va al join, no al scan)
+  [mysql     ] ql_pt_customers full_table_scan  est=500.0   pred=(ql_pt_customers.region = $1)
+               AP-03=[]  AP-04 igualdad/rango=(['region'], [])  AP-05=['region']
+  [mysql     ] ql_pt_orders index_lookup     est=20.0    pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+==============================================================================================================
+21 EXISTS correlacionado:  SELECT o.id FROM ql_pt_orders o WHERE EXISTS (SELECT 1 FROM ql_pt_customers c WHERE c.id = o.customer_id AND LOWER(c.email) LIKE 'user1%')
+  [pg_generic] c         full_table_scan  est=25      pred=(lower((email)::text) ~~ $1)
+               AP-03=[('function_on_column', 'email')]  AP-04 igualdad/rango=([], [])  AP-05=['email']
+  [pg_generic] o         index_lookup     est=20      pred=(customer_id = c.id)
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=['customer_id', 'id']
+  [pg_generic] o         index_lookup     est=20      pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_generic] ! o: Recheck Cond (customer_id = c.id) no se copia (Bitmap Heap Scan)
+  [pg_generic] ! Bitmap Index Scan sin relation (Index Cond (customer_id = c.id))
+  [pg_literal] c         full_table_scan  est=25      pred=(lower((email)::text) ~~ $1)
+               AP-03=[('function_on_column', 'email')]  AP-04 igualdad/rango=([], [])  AP-05=['email']
+  [pg_literal] o         index_lookup     est=20      pred=(customer_id = c.id)
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=['customer_id', 'id']
+  [pg_literal] o         index_lookup     est=20      pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_literal] ! o: Recheck Cond (customer_id = c.id) no se copia (Bitmap Heap Scan)
+  [pg_literal] ! Bitmap Index Scan sin relation (Index Cond (customer_id = c.id))
+  [mysql     ] c         full_index_scan  est=5000.0  pred=(LOWER(c.email) LIKE '$1')
+               AP-03=[('function_on_column', 'email')]  AP-04 igualdad/rango=([], [])  AP-05=['email']
+  [mysql     ] o         index_lookup     est=20.0    pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [mysql     ] ! c: access_type index (recorre TODO el indice) -> index_lookup
+==============================================================================================================
+22 subconsulta escalar:  SELECT o.id FROM ql_pt_orders o WHERE o.customer_id = (SELECT MIN(c.id) FROM ql_pt_customers c WHERE LOWER(c.name) = 'name7')
+  [pg_generic] o         index_lookup     est=20      pred=(customer_id = (InitPlan 2).col1)
+               AP-03=[]  AP-04 igualdad/rango=(['customer_id'], [])  AP-05=['customer_id']
+  [pg_generic] c         full_index_scan  est=25      pred=(lower((name)::text) = $1)
+               AP-03=[('function_on_column', 'name')]  AP-04 igualdad/rango=([], [])  AP-05=['name']
+  [pg_generic] o         index_lookup     est=20      pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_generic] ! o: Recheck Cond (customer_id = (InitPlan 2).col1) no se copia (Bitmap Heap Scan)
+  [pg_generic] ! Bitmap Index Scan sin relation (Index Cond (customer_id = (InitPlan 2).col1))
+  [pg_literal] o         index_lookup     est=20      pred=(customer_id = (InitPlan 2).col1)
+               AP-03=[]  AP-04 igualdad/rango=(['customer_id'], [])  AP-05=['customer_id']
+  [pg_literal] c         full_index_scan  est=25      pred=(lower((name)::text) = $1)
+               AP-03=[('function_on_column', 'name')]  AP-04 igualdad/rango=([], [])  AP-05=['name']
+  [pg_literal] o         index_lookup     est=20      pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_literal] ! o: Recheck Cond (customer_id = (InitPlan 2).col1) no se copia (Bitmap Heap Scan)
+  [pg_literal] ! Bitmap Index Scan sin relation (Index Cond (customer_id = (InitPlan 2).col1))
+  [mysql     ] o         index_lookup     est=20.0    pred=(o.customer_id = (SubPlan 1))
+               AP-03=[]  AP-04 igualdad/rango=(['customer_id'], [])  AP-05=['customer_id']
+  [mysql     ] c         full_table_scan  est=5000.0  pred=(LOWER(c.name) = '$1')
+               AP-03=[('function_on_column', 'name')]  AP-04 igualdad/rango=([], [])  AP-05=['name']
+==============================================================================================================
+23 CTE:  WITH r AS (SELECT id FROM ql_pt_customers WHERE region = 3) SELECT o.id FROM ql_pt_orders o JOIN r ON r.id = o.customer_id
+  [pg_generic] o         full_table_scan  est=100000  pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_generic] ql_pt_customers full_table_scan  est=500     pred=(region = $1)
+               AP-03=[]  AP-04 igualdad/rango=(['region'], [])  AP-05=['region']
+  [pg_generic] ! Hash Join Hash Cond (o.customer_id = ql_pt_customers.id) (va al join, no al scan)
+  [pg_literal] o         full_table_scan  est=100000  pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_literal] ql_pt_customers full_table_scan  est=500     pred=(region = $1)
+               AP-03=[]  AP-04 igualdad/rango=(['region'], [])  AP-05=['region']
+  [pg_literal] ! Hash Join Hash Cond (o.customer_id = ql_pt_customers.id) (va al join, no al scan)
+  [mysql     ] ql_pt_customers full_table_scan  est=500.0   pred=(ql_pt_customers.region = $1)
+               AP-03=[]  AP-04 igualdad/rango=(['region'], [])  AP-05=['region']
+  [mysql     ] o         index_lookup     est=20.0    pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+==============================================================================================================
+24 tabla derivada:  SELECT t.id FROM (SELECT id, total FROM ql_pt_orders WHERE total > 50) t WHERE t.id < 1000
+  [pg_generic] ql_pt_orders index_lookup     est=11111   pred=(id < $2) AND (total > $1)
+               AP-03=[]  AP-04 igualdad/rango=([], ['id', 'total'])  AP-05=['id', 'total']
+  [pg_generic] ! ql_pt_orders: Index Cond (id < $2) PISA Filter (total > $1)
+  [pg_literal] ql_pt_orders index_lookup     est=473     pred=(id < $1) AND (total > $2)
+               AP-03=[]  AP-04 igualdad/rango=([], ['id', 'total'])  AP-05=['id', 'total']
+  [pg_literal] ! ql_pt_orders: Index Cond (id < 1000) PISA Filter (total > '50'::numeric)
+  [mysql     ] ql_pt_orders index_lookup     est=332.97  pred=((ql_pt_orders.id < $1) AND (ql_pt_orders.total > $2))
+               AP-03=[]  AP-04 igualdad/rango=([], ['id', 'total'])  AP-05=['id', 'total']
+==============================================================================================================
+25 GROUP BY HAVING:  SELECT status, COUNT(*) FROM ql_pt_orders WHERE total > 50 GROUP BY status HAVING COUNT(*) > 10
+  [pg_generic] ql_pt_orders full_table_scan  est=33333   pred=(total > $1)
+               AP-03=[]  AP-04 igualdad/rango=([], ['total'])  AP-05=['total']
+  [pg_literal] ql_pt_orders full_table_scan  est=50143   pred=(total > $1)
+               AP-03=[]  AP-04 igualdad/rango=([], ['total'])  AP-05=['total']
+  [mysql     ] ql_pt_orders full_index_scan  est=33275.01 pred=(ql_pt_orders.total > $1)
+               AP-03=[]  AP-04 igualdad/rango=([], ['total'])  AP-05=['total']
+  [mysql     ] ! ql_pt_orders: access_type index (recorre TODO el indice) -> index_lookup
+==============================================================================================================
+26 ORDER BY LIMIT:  SELECT id FROM ql_pt_orders WHERE total > 50 ORDER BY created_at DESC LIMIT 10
+  [pg_generic] ql_pt_orders full_index_scan  est=33333   pred=(total > $1)
+               AP-03=[]  AP-04 igualdad/rango=([], ['total'])  AP-05=['total']
+  [pg_literal] ql_pt_orders full_index_scan  est=50143   pred=(total > $1)
+               AP-03=[]  AP-04 igualdad/rango=([], ['total'])  AP-05=['total']
+  [mysql     ] ql_pt_orders full_index_scan  est=3.33    pred=(ql_pt_orders.total > $1)
+               AP-03=[]  AP-04 igualdad/rango=([], ['total'])  AP-05=['total']
+  [mysql     ] ! ql_pt_orders: access_type index (recorre TODO el indice) -> index_lookup
+==============================================================================================================
+27 CASE en WHERE:  SELECT id FROM ql_pt_orders WHERE CASE WHEN status = 'raro' THEN 1 ELSE 0 END = 1
+  [pg_generic] ql_pt_orders full_table_scan  est=500     pred=(CASE WHEN ((status)::text = $1) THEN $2 ELSE $3 END = $4)
+               AP-03=[('function_on_column', 'status')]  AP-04 igualdad/rango=([], [])  AP-05=['status']
+  [pg_literal] ql_pt_orders full_table_scan  est=500     pred=(CASE WHEN ((status)::text = $1) THEN $2 ELSE $3 END = $4)
+               AP-03=[('function_on_column', 'status')]  AP-04 igualdad/rango=([], [])  AP-05=['status']
+  [mysql     ] ql_pt_orders full_index_scan  est=99835.0 pred=((CASE WHEN (ql_pt_orders.status = '$1') THEN $2 ELSE $3 END) = $4)
+               AP-03=[('function_on_column', 'status')]  AP-04 igualdad/rango=([], [])  AP-05=['status']
+  [mysql     ] ! ql_pt_orders: access_type index (recorre TODO el indice) -> index_lookup
+==============================================================================================================
+28 COALESCE:  SELECT id FROM ql_pt_orders WHERE COALESCE(note, '') = ''
+  [pg_generic] ql_pt_orders full_table_scan  est=500     pred=(COALESCE(note, $1) = $2)
+               AP-03=[('function_on_column', 'note')]  AP-04 igualdad/rango=([], [])  AP-05=['note']
+  [pg_literal] ql_pt_orders full_table_scan  est=500     pred=(COALESCE(note, $1) = $2)
+               AP-03=[('function_on_column', 'note')]  AP-04 igualdad/rango=([], [])  AP-05=['note']
+  [mysql     ] ql_pt_orders full_table_scan  est=99835.0 pred=(COALESCE(ql_pt_orders.note, '$1') = '$2')
+               AP-03=[('function_on_column', 'note')]  AP-04 igualdad/rango=([], [])  AP-05=['note']
+==============================================================================================================
+29 columna contra columna:  SELECT id FROM ql_pt_orders WHERE total > id
+  [pg_generic] ql_pt_orders full_table_scan  est=33333   pred=(total > (id)::numeric)
+               AP-03=[('implicit_cast', 'id')]  AP-04 igualdad/rango=([], [])  AP-05=['id', 'total']
+  [pg_literal] ql_pt_orders full_table_scan  est=33333   pred=(total > (id)::numeric)
+               AP-03=[('implicit_cast', 'id')]  AP-04 igualdad/rango=([], [])  AP-05=['id', 'total']
+  [mysql     ] ql_pt_orders full_table_scan  est=33275.01 pred=(ql_pt_orders.total > ql_pt_orders.id)
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=['id', 'total']
+==============================================================================================================
+30 NOT:  SELECT id FROM ql_pt_orders WHERE NOT (status = 'raro')
+  [pg_generic] ql_pt_orders full_table_scan  est=66667   pred=((status)::text <> $1)
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=['status']
+  [pg_literal] ql_pt_orders full_table_scan  est=98963   pred=((status)::text <> $1)
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=['status']
+  [mysql     ] ql_pt_orders index_lookup     est=49918.0 pred=(ql_pt_orders.status <> '$1')
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=['status']
+==============================================================================================================
+31 IN un valor:  SELECT id FROM ql_pt_orders WHERE id IN (5)
+  [pg_generic] ql_pt_orders index_lookup     est=1       pred=(id = $1)
+               AP-03=[]  AP-04 igualdad/rango=(['id'], [])  AP-05=['id']
+  [pg_literal] ql_pt_orders index_lookup     est=1       pred=(id = $1)
+               AP-03=[]  AP-04 igualdad/rango=(['id'], [])  AP-05=['id']
+  [mysql     ] ql_pt_orders index_lookup     est=1.0     pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+==============================================================================================================
+32 decimal negativo:  SELECT id FROM ql_pt_orders WHERE total > -5.5
+  [pg_generic] ql_pt_orders full_table_scan  est=33333   pred=(total > $1)
+               AP-03=[]  AP-04 igualdad/rango=([], ['total'])  AP-05=['total']
+  [pg_literal] ql_pt_orders full_table_scan  est=99990   pred=(total > $1)
+               AP-03=[]  AP-04 igualdad/rango=([], ['total'])  AP-05=['total']
+  [mysql     ] ql_pt_orders full_table_scan  est=33275.01 pred=(ql_pt_orders.total > -$1)
+               AP-03=[]  AP-04 igualdad/rango=([], ['total'])  AP-05=['total']
+==============================================================================================================
+33 texto con comilla:  SELECT id FROM ql_pt_customers WHERE name = 'O''Brien'
+  [pg_generic] ql_pt_customers full_table_scan  est=1       pred=((name)::text = $1)
+               AP-03=[]  AP-04 igualdad/rango=(['name'], [])  AP-05=['name']
+  [pg_literal] ql_pt_customers full_table_scan  est=1       pred=((name)::text = $1)
+               AP-03=[]  AP-04 igualdad/rango=(['name'], [])  AP-05=['name']
+  [mysql     ] ql_pt_customers full_table_scan  est=500.0   pred=(ql_pt_customers.name = '$1')
+               AP-03=[]  AP-04 igualdad/rango=(['name'], [])  AP-05=['name']
+==============================================================================================================
+34 LEFT JOIN anti-join:  SELECT c.id FROM ql_pt_customers c LEFT JOIN ql_pt_orders o ON o.customer_id = c.id WHERE o.id IS NULL
+  [pg_generic] o         full_table_scan  est=100000  pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_generic] c         full_table_scan  est=5000    pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_generic] ! Hash Join Hash Cond (o.customer_id = c.id) (va al join, no al scan)
+  [pg_literal] o         full_table_scan  est=100000  pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_literal] c         full_table_scan  est=5000    pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_literal] ! Hash Join Hash Cond (o.customer_id = c.id) (va al join, no al scan)
+  [mysql     ] c         full_index_scan  est=5000.0  pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [mysql     ] o         index_lookup     est=2.0     pred=<if>(found_match(o), (o.id is null), true)
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [mysql     ] ! c: access_type index (recorre TODO el indice) -> index_lookup
+==============================================================================================================
+35 UNION:  SELECT id FROM ql_pt_orders WHERE status = 'raro' UNION SELECT id FROM ql_pt_orders WHERE total > 99
+  [pg_generic] ql_pt_orders index_lookup     est=33333   pred=((status)::text = $1)
+               AP-03=[]  AP-04 igualdad/rango=(['status'], [])  AP-05=['status']
+  [pg_generic] ql_pt_orders index_lookup     est=33333   pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_generic] ql_pt_orders_1 full_table_scan  est=33333   pred=(total > $2)
+               AP-03=[]  AP-04 igualdad/rango=([], ['total'])  AP-05=['total']
+  [pg_generic] ! ql_pt_orders: Recheck Cond ((status)::text = $1) no se copia (Bitmap Heap Scan)
+  [pg_generic] ! Bitmap Index Scan sin relation (Index Cond ((status)::text = $1))
+  [pg_literal] ql_pt_orders index_lookup     est=1037    pred=((status)::text = $1)
+               AP-03=[]  AP-04 igualdad/rango=(['status'], [])  AP-05=['status']
+  [pg_literal] ql_pt_orders index_lookup     est=1037    pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_literal] ql_pt_orders_1 full_table_scan  est=994     pred=(total > $1)
+               AP-03=[]  AP-04 igualdad/rango=([], ['total'])  AP-05=['total']
+  [pg_literal] ! ql_pt_orders: Recheck Cond ((status)::text = 'raro'::text) no se copia (Bitmap Heap Scan)
+  [pg_literal] ! Bitmap Index Scan sin relation (Index Cond ((status)::text = 'raro'::text))
+  [mysql     ] ql_pt_orders index_lookup     est=1000.0  pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [mysql     ] ql_pt_orders full_table_scan  est=33275.01 pred=(ql_pt_orders.total > $1)
+               AP-03=[]  AP-04 igualdad/rango=([], ['total'])  AP-05=['total']
+==============================================================================================================
+36 self join:  SELECT a.id FROM ql_pt_orders a JOIN ql_pt_orders b ON b.id = a.id + 1 WHERE a.status = 'raro'
+  [pg_generic] a         index_lookup     est=33333   pred=((status)::text = $2)
+               AP-03=[]  AP-04 igualdad/rango=(['status'], [])  AP-05=['status']
+  [pg_generic] a         index_lookup     est=33333   pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_generic] b         full_table_scan  est=100000  pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_generic] ! Hash Join Hash Cond ((a.id + $1) = b.id) (va al join, no al scan)
+  [pg_generic] ! a: Recheck Cond ((status)::text = $2) no se copia (Bitmap Heap Scan)
+  [pg_generic] ! Bitmap Index Scan sin relation (Index Cond ((status)::text = $2))
+  [pg_literal] a         index_lookup     est=1037    pred=((status)::text = $1)
+               AP-03=[]  AP-04 igualdad/rango=(['status'], [])  AP-05=['status']
+  [pg_literal] a         index_lookup     est=1037    pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_literal] b         full_table_scan  est=100000  pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_literal] ! Hash Join Hash Cond ((a.id + 1) = b.id) (va al join, no al scan)
+  [pg_literal] ! a: Recheck Cond ((status)::text = 'raro'::text) no se copia (Bitmap Heap Scan)
+  [pg_literal] ! Bitmap Index Scan sin relation (Index Cond ((status)::text = 'raro'::text))
+  [mysql     ] a         index_lookup     est=1000.0  pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [mysql     ] b         index_lookup     est=1.0     pred=(b.id = (a.id + $1))
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=['id']
+==============================================================================================================
+37 concatenacion:  SELECT id FROM ql_pt_customers WHERE name || 'x' = 'name5x'
+  [pg_generic] ql_pt_customers full_table_scan  est=25      pred=(((name)::text || $1) = $2)
+               AP-03=[('arithmetic_on_column', 'name')]  AP-04 igualdad/rango=([], [])  AP-05=['name']
+  [pg_literal] ql_pt_customers full_table_scan  est=25      pred=(((name)::text || $1) = $2)
+               AP-03=[('arithmetic_on_column', 'name')]  AP-04 igualdad/rango=([], [])  AP-05=['name']
+  [mysql     ] ql_pt_customers full_table_scan  est=5000.0  pred=(ql_pt_customers.name || '$1' = '$2')
+               AP-03=[('arithmetic_on_column', 'name')]  AP-04 igualdad/rango=([], [])  AP-05=['name']
+==============================================================================================================
+38 intervalo:  SELECT id FROM ql_pt_orders WHERE created_at > NOW() - INTERVAL '1 day'
+  [pg_generic] ql_pt_orders index_lookup     est=33333   pred=(created_at > (now() - $1))
+               AP-03=[]  AP-04 igualdad/rango=([], ['created_at'])  AP-05=['created_at']
+  [pg_literal] ql_pt_orders index_lookup     est=1       pred=(created_at > (now() - $1))
+               AP-03=[]  AP-04 igualdad/rango=([], ['created_at'])  AP-05=['created_at']
+  [mysql     ] ql_pt_orders index_lookup     est=1.0     pred=(ql_pt_orders.created_at > ((NOW() - INTERVAL '$1 DAY')))
+               AP-03=[]  AP-04 igualdad/rango=([], ['created_at'])  AP-05=['created_at']
+==============================================================================================================
+39 funcion en el ON:  SELECT o.id FROM ql_pt_orders o JOIN ql_pt_customers c ON LOWER(c.email) = LOWER(o.note) WHERE o.status = 'raro'
+  [pg_generic] c         full_table_scan  est=5000    pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_generic] o         index_lookup     est=33333   pred=((status)::text = $1)
+               AP-03=[]  AP-04 igualdad/rango=(['status'], [])  AP-05=['status']
+  [pg_generic] o         index_lookup     est=33333   pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_generic] ! Merge Join Merge Cond ((lower((c.email)::text)) = (lower(o.note))) (va al join, no al scan)
+  [pg_generic] ! o: Recheck Cond ((status)::text = $1) no se copia (Bitmap Heap Scan)
+  [pg_generic] ! Bitmap Index Scan sin relation (Index Cond ((status)::text = $1))
+  [pg_literal] o         index_lookup     est=1037    pred=((status)::text = $1)
+               AP-03=[]  AP-04 igualdad/rango=(['status'], [])  AP-05=['status']
+  [pg_literal] o         index_lookup     est=1037    pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_literal] c         full_table_scan  est=5000    pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [pg_literal] ! Merge Join Merge Cond ((lower(o.note)) = (lower((c.email)::text))) (va al join, no al scan)
+  [pg_literal] ! o: Recheck Cond ((status)::text = 'raro'::text) no se copia (Bitmap Heap Scan)
+  [pg_literal] ! Bitmap Index Scan sin relation (Index Cond ((status)::text = 'raro'::text))
+  [mysql     ] o         index_lookup     est=1000.0  pred=None
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=[]
+  [mysql     ] c         full_index_scan  est=5000.0  pred=(LOWER(c.email) = LOWER(o.note))
+               AP-03=[('function_on_column', 'email')]  AP-04 igualdad/rango=([], [])  AP-05=['email', 'note']
+  [mysql     ] ! c: access_type index (recorre TODO el indice) -> index_lookup
+==============================================================================================================
+40 OR con funcion:  SELECT id FROM ql_pt_orders WHERE status = 'raro' OR LOWER(note) = 'nota5'
+  [pg_generic] ql_pt_orders full_table_scan  est=33667   pred=(((status)::text = $1) OR (lower(note) = $2))
+               AP-03=[('function_on_column', 'note')]  AP-04 igualdad/rango=([], [])  AP-05=['note', 'status']
+  [pg_literal] ql_pt_orders full_table_scan  est=1531    pred=(((status)::text = $1) OR (lower(note) = $2))
+               AP-03=[('function_on_column', 'note')]  AP-04 igualdad/rango=([], [])  AP-05=['note', 'status']
+  [mysql     ] ql_pt_orders full_table_scan  est=99835.0 pred=((ql_pt_orders.status = '$1') OR (LOWER(ql_pt_orders.note) = '$2'))
+               AP-03=[('function_on_column', 'note')]  AP-04 igualdad/rango=([], [])  AP-05=['note', 'status']

@@ -20,7 +20,7 @@ DEFAULT_MIN_STATS_WINDOW = timedelta(minutes=1)
 # Mismos artefactos internos que en non_sargable_predicate.py (SubPlan/InitPlan de
 # Postgres, marcadores <...> de MySQL); se duplica aca hasta confirmar ambos usos
 # por separado, igual que se hizo antes con resolve_table_aliases.
-_SUBPLAN_RE = re.compile(r"\((?:hashed\s+)?(?:SubPlan|InitPlan)\s+\d+\)")
+_SUBPLAN_RE = re.compile(r"\((?:hashed\s+)?(?:SubPlan|InitPlan)\s+\d+\)(?:\.col\d+)?")
 _INTERNAL_MARKER_RE = re.compile(r"<[a-zA-Z_]+>\((?:[^<>()]|\([^<>()]*\))*\)")
 _MAX_MARKER_PASSES = 10
 
@@ -148,7 +148,8 @@ def _collect_query_traffic(
             relation = operation.relation
             if not relation:
                 continue
-            real_table = alias_map.get(relation, relation)
+            # table_name: tabla real en Postgres (relation puede ser ql_pt_orders_1); None en MySQL
+            real_table = operation.table_name or alias_map.get(relation, relation)
             key = (candidate.schema_name, real_table)
             tables_with_traffic.add(key)
 
