@@ -10,3 +10,4 @@ Recopilación de documentación externa y decisiones del pipeline, antes mezclad
 | [004_decisiones_contrato.md](004_decisiones_contrato.md) | Decisiones de contrato del snapshot (query_id, disk_spill, avg_rows, source, schema_name, db_id, counters_epoch, plan canónico, validación previa) |
 | [005_evaluacion_alternativas_query_real.md](005_evaluacion_alternativas_query_real.md) | Evaluación de alternativas (sección 9): recuperación de la query real por tabla de actividad vs logs del servidor |
 | [006_instalacion_auto_explain.md](006_instalacion_auto_explain.md) | Guía para el DBA: activar `auto_explain` + log JSON y crear las funciones `querylens.log_files()` / `querylens.read_log()` (Postgres self-hosted) |
+| [009_contrato_compartido_detector.md](009_contrato_compartido_detector.md) | Contrato del snapshot movido a `contract/querylens_contract/`: desfases actuales con `detection_engine/models.py` y pasos para que el detector lo consuma |
