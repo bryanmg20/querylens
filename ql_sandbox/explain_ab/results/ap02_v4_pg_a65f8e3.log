@@ -1,0 +1,26 @@
+[17:38:54] ===== ap02_avoidable_full_scan | postgres | v4 | regla avoidable_full_scan =====
+[17:38:54] pipeline: C:\Users\HP\Documents\GitHub\querylens-v4\telemetry_pipeline
+[17:39:00]   caso status_raro (esperado: si)
+[17:39:19]     -> VP (intentos de snapshot: 1)
+[17:39:19]   caso status_comun (esperado: no)
+[17:39:37]     -> VN (intentos de snapshot: 1)
+[17:39:37]   caso rango_reciente (esperado: si)
+[17:39:55]     -> VP (intentos de snapshot: 1)
+[17:39:55]   caso rango_amplio (esperado: no)
+[17:40:14]     -> VN (intentos de snapshot: 1)
+[17:40:14]   caso valor_casi_unico (esperado: si)
+[17:40:33]     -> VP (intentos de snapshot: 1)
+[17:40:33]   caso region_20pct (esperado: no)
+[17:40:51]     -> VN (intentos de snapshot: 1)
+[17:40:51]   caso indexado (esperado: no)
+[17:41:10]     -> VN (intentos de snapshot: 1)
+[17:41:10]   caso indexado_sesgado (esperado: no)
+[17:41:29]     -> VN (intentos de snapshot: 1)
+[17:41:29]   caso tabla_chica (esperado: no)
+[17:41:48]     -> VN (intentos de snapshot: 1)
+
+ap02_avoidable_full_scan | postgres | v4 | 9 casos
+  VP=3 FN=0 FP=0 VN=6 detecta=0 no_detecta=0 sin_explain=0 no_candidata=0 no_encontrada=0
+  precision=1.00 recall=1.00
+
+[17:41:48] resultado: ql_sandbox\explain_ab\results\ap02_avoidable_full_scan\postgres_v4.json

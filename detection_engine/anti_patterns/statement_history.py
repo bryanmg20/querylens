@@ -2,7 +2,9 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timedelta, timezone
 from typing import Iterator
 
-from models import Snapshot, Statement, StatementHistory
+from querylens_contract import SnapshotPayload, StatementRow
+
+from models import StatementHistory
 
 
 # Estado por query que se guarda en public.statement_samples entre un snapshot
@@ -32,10 +34,11 @@ class Window:
 
 @dataclass
 class _Aggregated:
-    statement: Statement
+    statement: StatementRow
     calls: int
     total_ms: float
     disk_spill: int | None
+    sort_merge_passes: int | None
     rows: int | None
 
 
@@ -56,7 +59,7 @@ def parse_instant(value) -> datetime | None:
     return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
 
 
-def _aggregate_statements(snapshot: Snapshot) -> dict[str, _Aggregated]:
+def _aggregate_statements(snapshot: SnapshotPayload) -> dict[str, _Aggregated]:
     # pg_stat_statements separa el mismo queryid por userid/toplevel; el
     # snapshot descarta userid, asi que puede llegar repetido. Se suman los
     # contadores para que el delta no dependa de cual fila gano.
@@ -67,11 +70,13 @@ def _aggregate_statements(snapshot: Snapshot) -> dict[str, _Aggregated]:
         if statement.execution_count is None or statement.total_time_ms is None:
             continue
         key = str(statement.query_id)
-        entry = aggregated.setdefault(key, _Aggregated(statement, 0, 0.0, None, None))
+        entry = aggregated.setdefault(key, _Aggregated(statement, 0, 0.0, None, None, None))
         entry.calls += statement.execution_count
         entry.total_ms += statement.total_time_ms
         if statement.disk_spill_indicator is not None:
             entry.disk_spill = (entry.disk_spill or 0) + statement.disk_spill_indicator
+        if statement.sort_merge_passes is not None:
+            entry.sort_merge_passes = (entry.sort_merge_passes or 0) + statement.sort_merge_passes
         if statement.rows_returned is not None:
             entry.rows = (entry.rows or 0) + statement.rows_returned
     return aggregated
@@ -99,11 +104,11 @@ def _window_since(
 
 
 def evaluate_statements(
-    snapshot: Snapshot,
+    snapshot: SnapshotPayload,
     history: dict[str, StatementHistory],
     captured_at: datetime,
     min_calls: int = WINDOW_MIN_CALLS,
-) -> Iterator[tuple[Statement, Window | None, StatementHistory | None, StatementHistory | None]]:
+) -> Iterator[tuple[StatementRow, Window | None, StatementHistory | None, StatementHistory | None]]:
     # Por cada query del snapshot devuelve: su statement, la ventana actual (o
     # None), la fila anterior y la fila nueva a guardar (o None si no hay nada
     # que actualizar). No modifica `history`.
@@ -138,6 +143,7 @@ def evaluate_statements(
             execution_count=entry.calls,
             total_time_ms=entry.total_ms,
             disk_spill_indicator=entry.disk_spill,
+            sort_merge_passes=entry.sort_merge_passes,
             rows_returned=entry.rows,
             counters_epoch=epoch,
             window_means_ms=window_means,
@@ -147,7 +153,7 @@ def evaluate_statements(
 
 
 def next_statement_histories(
-    snapshot: Snapshot,
+    snapshot: SnapshotPayload,
     history: dict[str, StatementHistory],
     captured_at: datetime,
 ) -> list[StatementHistory]:

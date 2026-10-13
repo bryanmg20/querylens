@@ -1,0 +1,2248 @@
+{
+ "measurement": "ap01",
+ "engine": "postgres",
+ "cases": [
+  {
+   "cid": "ql_m01_t0.c0",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "query_ids": {
+    "target": "5128479396985721166"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m01_t0 WHERE lo = 8 AND c0 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c0",
+    "shape": "lo_count"
+   }
+  },
+  {
+   "cid": "ql_m01_t0.c1",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "query_ids": {
+    "target": "-6424327195673559506"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t0 WHERE lo = 8 AND c1 BETWEEN 8805 AND 8825"
+   },
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c1",
+    "shape": "lo_range"
+   }
+  },
+  {
+   "cid": "ql_m01_t0.c2",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "query_ids": {
+    "target": "7849656028159994711"
+   },
+   "queries": {
+    "target": "SELECT id, pad FROM ql_m01_t0 WHERE lo = 8 AND c2 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c2",
+    "shape": "lo_eq"
+   }
+  },
+  {
+   "cid": "ql_m01_t0.c3",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "215041700223228652"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t0 WHERE c3 BETWEEN 8805 AND 8835"
+   },
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c3",
+    "shape": "range"
+   }
+  },
+  {
+   "cid": "ql_m01_t0.c4",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "-5214734698828557874"
+   },
+   "queries": {
+    "target": "SELECT id, c4 FROM ql_m01_t0 WHERE c4 > 8805 ORDER BY c4 LIMIT 5"
+   },
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c4",
+    "shape": "order_limit"
+   }
+  },
+  {
+   "cid": "ql_m01_t0.c5",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "-8269493904543329249"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m01_t0 WHERE c5 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c5",
+    "shape": "count"
+   }
+  },
+  {
+   "cid": "ql_m01_t0.c6",
+   "role": "control",
+   "category": "control en tabla degradada",
+   "query_ids": {
+    "target": "-3808609469778332793"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t0 WHERE c6 BETWEEN 8805 AND 8835"
+   },
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c6",
+    "shape": "range"
+   }
+  },
+  {
+   "cid": "ql_m01_t0.c7",
+   "role": "control",
+   "category": "control en tabla degradada",
+   "query_ids": {
+    "target": "-8919586081636862200"
+   },
+   "queries": {
+    "target": "SELECT id, c7 FROM ql_m01_t0 WHERE c7 > 8805 ORDER BY c7 LIMIT 5"
+   },
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c7",
+    "shape": "order_limit"
+   }
+  },
+  {
+   "cid": "ql_m01_t0.c8",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "3723788268160730086"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t0 WHERE c8 IN (37303, 55537, 52577, 50054, 4135)"
+   },
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c8",
+    "shape": "in5"
+   }
+  },
+  {
+   "cid": "ql_m01_t0.c9",
+   "role": "control",
+   "category": "control en tabla degradada",
+   "query_ids": {
+    "target": "5012655687448356099"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m01_t0 WHERE c9 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c9",
+    "shape": "count"
+   }
+  },
+  {
+   "cid": "ql_m01_t0.c10",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "query_ids": {
+    "target": "2471603591639879376"
+   },
+   "queries": {
+    "target": "SELECT MAX(pad) FROM ql_m01_t0 WHERE c10 = 3"
+   },
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c10",
+    "shape": "hot_max"
+   }
+  },
+  {
+   "cid": "ql_m01_t0.c11",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "-5564252010868843526"
+   },
+   "queries": {
+    "target": "SELECT x.id, d.name FROM ql_m01_t0 x JOIN ql_m01_dim d ON d.id = x.lo WHERE x.c11 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c11",
+    "shape": "join"
+   }
+  },
+  {
+   "cid": "ql_m01_t0.c12",
+   "role": "control",
+   "category": "control en tabla degradada",
+   "query_ids": {
+    "target": "6289072101254099596"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t0 WHERE c12 IN (37303, 55537, 52577, 50054, 4135)"
+   },
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c12",
+    "shape": "in5"
+   }
+  },
+  {
+   "cid": "ql_m01_t0.c13",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "3255656097696647151"
+   },
+   "queries": {
+    "target": "SELECT MAX(id) FROM ql_m01_t0 WHERE c13 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c13",
+    "shape": "max"
+   }
+  },
+  {
+   "cid": "ql_m01_t1.c0",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "query_ids": {
+    "target": "5930904001922682123"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m01_t1 WHERE lo = 8 AND c0 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c0",
+    "shape": "lo_count"
+   }
+  },
+  {
+   "cid": "ql_m01_t1.c1",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "6609965070636666556"
+   },
+   "queries": {
+    "target": "SELECT 1 FROM ql_m01_t1 WHERE c1 = 8805 LIMIT 1"
+   },
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c1",
+    "shape": "exists"
+   }
+  },
+  {
+   "cid": "ql_m01_t1.c2",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "query_ids": {
+    "target": "6661119921221235296"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t1 WHERE c2 = 3 ORDER BY pad LIMIT 3"
+   },
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c2",
+    "shape": "hot_order"
+   }
+  },
+  {
+   "cid": "ql_m01_t1.c3",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "-7168570127902451165"
+   },
+   "queries": {
+    "target": "SELECT id, pad FROM ql_m01_t1 WHERE c3 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c3",
+    "shape": "eq"
+   }
+  },
+  {
+   "cid": "ql_m01_t1.c4",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "6376513985555030374"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t1 WHERE c4 BETWEEN 8805 AND 8835"
+   },
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c4",
+    "shape": "range"
+   }
+  },
+  {
+   "cid": "ql_m01_t1.c5",
+   "role": "control",
+   "category": "control en tabla degradada",
+   "query_ids": {
+    "target": "-144164495675867676"
+   },
+   "queries": {
+    "target": "SELECT x.id, d.name FROM ql_m01_t1 x JOIN ql_m01_dim d ON d.id = x.lo WHERE x.c5 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c5",
+    "shape": "join"
+   }
+  },
+  {
+   "cid": "ql_m01_t1.c6",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "query_ids": {
+    "target": "1582624097467140914"
+   },
+   "queries": {
+    "target": "SELECT id, pad FROM ql_m01_t1 WHERE c6 = 3"
+   },
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c6",
+    "shape": "hot_eq"
+   }
+  },
+  {
+   "cid": "ql_m01_t1.c7",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "query_ids": {
+    "target": "-4765861196919251125"
+   },
+   "queries": {
+    "target": "SELECT MAX(pad) FROM ql_m01_t1 WHERE c7 = 3"
+   },
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c7",
+    "shape": "hot_max"
+   }
+  },
+  {
+   "cid": "ql_m01_t1.c8",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "query_ids": {
+    "target": "-2793498236310592170"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t1 WHERE lo = 8 AND c8 BETWEEN 8805 AND 8825"
+   },
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c8",
+    "shape": "lo_range"
+   }
+  },
+  {
+   "cid": "ql_m01_t1.c9",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "-5475510448802299995"
+   },
+   "queries": {
+    "target": "SELECT id, c9 FROM ql_m01_t1 WHERE c9 > 8805 ORDER BY c9 LIMIT 5"
+   },
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c9",
+    "shape": "order_limit"
+   }
+  },
+  {
+   "cid": "ql_m01_t1.c10",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "85198104230522040"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m01_t1 WHERE c10 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c10",
+    "shape": "count"
+   }
+  },
+  {
+   "cid": "ql_m01_t1.c11",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "query_ids": {
+    "target": "-903688303252320056"
+   },
+   "queries": {
+    "target": "SELECT id, pad FROM ql_m01_t1 WHERE lo = 8 AND c11 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c11",
+    "shape": "lo_eq"
+   }
+  },
+  {
+   "cid": "ql_m01_t1.c12",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "query_ids": {
+    "target": "-530039592048366859"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m01_t1 WHERE lo = 8 AND c12 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c12",
+    "shape": "lo_count"
+   }
+  },
+  {
+   "cid": "ql_m01_t1.c13",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "1016281823268780885"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t1 WHERE c13 IN (37303, 55537, 52577, 50054, 4135)"
+   },
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c13",
+    "shape": "in5"
+   }
+  },
+  {
+   "cid": "ql_m01_t2.c0",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "7850818324720380147"
+   },
+   "queries": {
+    "target": "SELECT x.id, d.name FROM ql_m01_t2 x JOIN ql_m01_dim d ON d.id = x.lo WHERE x.c0 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c0",
+    "shape": "join"
+   }
+  },
+  {
+   "cid": "ql_m01_t2.c1",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "query_ids": {
+    "target": "-225272185096971296"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t2 WHERE c1 = 3 ORDER BY pad LIMIT 3"
+   },
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c1",
+    "shape": "hot_order"
+   }
+  },
+  {
+   "cid": "ql_m01_t2.c2",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "3850030417565749586"
+   },
+   "queries": {
+    "target": "SELECT MAX(id) FROM ql_m01_t2 WHERE c2 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c2",
+    "shape": "max"
+   }
+  },
+  {
+   "cid": "ql_m01_t2.c3",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "-288536149291977758"
+   },
+   "queries": {
+    "target": "SELECT 1 FROM ql_m01_t2 WHERE c3 = 8805 LIMIT 1"
+   },
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c3",
+    "shape": "exists"
+   }
+  },
+  {
+   "cid": "ql_m01_t2.c4",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "query_ids": {
+    "target": "7747702855525858627"
+   },
+   "queries": {
+    "target": "SELECT id, pad FROM ql_m01_t2 WHERE c4 = 3"
+   },
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c4",
+    "shape": "hot_eq"
+   }
+  },
+  {
+   "cid": "ql_m01_t2.c5",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "query_ids": {
+    "target": "1129809885810149873"
+   },
+   "queries": {
+    "target": "SELECT MAX(pad) FROM ql_m01_t2 WHERE c5 = 3"
+   },
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c5",
+    "shape": "hot_max"
+   }
+  },
+  {
+   "cid": "ql_m01_t2.c6",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "2946116818501720528"
+   },
+   "queries": {
+    "target": "SELECT id, pad FROM ql_m01_t2 WHERE c6 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c6",
+    "shape": "eq"
+   }
+  },
+  {
+   "cid": "ql_m01_t2.c7",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "2099210989769817270"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t2 WHERE c7 BETWEEN 8805 AND 8835"
+   },
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c7",
+    "shape": "range"
+   }
+  },
+  {
+   "cid": "ql_m01_t2.c8",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "649762249842660495"
+   },
+   "queries": {
+    "target": "SELECT id, c8 FROM ql_m01_t2 WHERE c8 > 8805 ORDER BY c8 LIMIT 5"
+   },
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c8",
+    "shape": "order_limit"
+   }
+  },
+  {
+   "cid": "ql_m01_t2.c9",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "-5039697504459817370"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m01_t2 WHERE c9 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c9",
+    "shape": "count"
+   }
+  },
+  {
+   "cid": "ql_m01_t2.c10",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "query_ids": {
+    "target": "177057235802521812"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t2 WHERE lo = 8 AND c10 BETWEEN 8805 AND 8825"
+   },
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c10",
+    "shape": "lo_range"
+   }
+  },
+  {
+   "cid": "ql_m01_t2.c11",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "-7540456839496052436"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t2 WHERE c11 IN (37303, 55537, 52577, 50054, 4135)"
+   },
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c11",
+    "shape": "in5"
+   }
+  },
+  {
+   "cid": "ql_m01_t2.c12",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "query_ids": {
+    "target": "2409729257306821384"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t2 WHERE c12 = 3 ORDER BY pad LIMIT 3"
+   },
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c12",
+    "shape": "hot_order"
+   }
+  },
+  {
+   "cid": "ql_m01_t2.c13",
+   "role": "control",
+   "category": "control en tabla degradada",
+   "query_ids": {
+    "target": "1234466902558592844"
+   },
+   "queries": {
+    "target": "SELECT MAX(id) FROM ql_m01_t2 WHERE c13 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c13",
+    "shape": "max"
+   }
+  },
+  {
+   "cid": "ql_m01_t3.c0",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "query_ids": {
+    "target": "2740836381016775885"
+   },
+   "queries": {
+    "target": "SELECT id, pad FROM ql_m01_t3 WHERE lo = 8 AND c0 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c0",
+    "shape": "lo_eq"
+   }
+  },
+  {
+   "cid": "ql_m01_t3.c1",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "-5326516834539103081"
+   },
+   "queries": {
+    "target": "SELECT x.id, d.name FROM ql_m01_t3 x JOIN ql_m01_dim d ON d.id = x.lo WHERE x.c1 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c1",
+    "shape": "join"
+   }
+  },
+  {
+   "cid": "ql_m01_t3.c2",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "query_ids": {
+    "target": "-1006995882231710880"
+   },
+   "queries": {
+    "target": "SELECT id, pad FROM ql_m01_t3 WHERE c2 = 3"
+   },
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c2",
+    "shape": "hot_eq"
+   }
+  },
+  {
+   "cid": "ql_m01_t3.c3",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "-645039095429094194"
+   },
+   "queries": {
+    "target": "SELECT MAX(id) FROM ql_m01_t3 WHERE c3 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c3",
+    "shape": "max"
+   }
+  },
+  {
+   "cid": "ql_m01_t3.c4",
+   "role": "control",
+   "category": "control en tabla degradada",
+   "query_ids": {
+    "target": "-3308594890686817808"
+   },
+   "queries": {
+    "target": "SELECT 1 FROM ql_m01_t3 WHERE c4 = 8805 LIMIT 1"
+   },
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c4",
+    "shape": "exists"
+   }
+  },
+  {
+   "cid": "ql_m01_t3.c5",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "-7432993105452464908"
+   },
+   "queries": {
+    "target": "SELECT 1 FROM ql_m01_t3 WHERE c5 = 8805 LIMIT 1"
+   },
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c5",
+    "shape": "exists"
+   }
+  },
+  {
+   "cid": "ql_m01_t3.c6",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "query_ids": {
+    "target": "4619920097115186961"
+   },
+   "queries": {
+    "target": "SELECT MAX(pad) FROM ql_m01_t3 WHERE c6 = 3"
+   },
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c6",
+    "shape": "hot_max"
+   }
+  },
+  {
+   "cid": "ql_m01_t3.c7",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "-1657973927555400748"
+   },
+   "queries": {
+    "target": "SELECT id, pad FROM ql_m01_t3 WHERE c7 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c7",
+    "shape": "eq"
+   }
+  },
+  {
+   "cid": "ql_m01_t3.c8",
+   "role": "control",
+   "category": "control en tabla degradada",
+   "query_ids": {
+    "target": "-8183760641294197253"
+   },
+   "queries": {
+    "target": "SELECT id, pad FROM ql_m01_t3 WHERE c8 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c8",
+    "shape": "eq"
+   }
+  },
+  {
+   "cid": "ql_m01_t3.c9",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "query_ids": {
+    "target": "-711554438612982492"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m01_t3 WHERE lo = 8 AND c9 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c9",
+    "shape": "lo_count"
+   }
+  },
+  {
+   "cid": "ql_m01_t3.c10",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "query_ids": {
+    "target": "4522645506506977633"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t3 WHERE lo = 8 AND c10 BETWEEN 8805 AND 8825"
+   },
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c10",
+    "shape": "lo_range"
+   }
+  },
+  {
+   "cid": "ql_m01_t3.c11",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "6162318451085227335"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t3 WHERE c11 BETWEEN 8805 AND 8835"
+   },
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c11",
+    "shape": "range"
+   }
+  },
+  {
+   "cid": "ql_m01_t3.c12",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "-6339349174149588450"
+   },
+   "queries": {
+    "target": "SELECT id, c12 FROM ql_m01_t3 WHERE c12 > 8805 ORDER BY c12 LIMIT 5"
+   },
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c12",
+    "shape": "order_limit"
+   }
+  },
+  {
+   "cid": "ql_m01_t3.c13",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "3582419568341569450"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m01_t3 WHERE c13 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c13",
+    "shape": "count"
+   }
+  },
+  {
+   "cid": "ql_m01_t4.c0",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "query_ids": {
+    "target": "-2119340313009788415"
+   },
+   "queries": {
+    "target": "SELECT id, pad FROM ql_m01_t4 WHERE lo = 8 AND c0 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c0",
+    "shape": "lo_eq"
+   }
+  },
+  {
+   "cid": "ql_m01_t4.c1",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "query_ids": {
+    "target": "4540881194475949814"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m01_t4 WHERE lo = 8 AND c1 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c1",
+    "shape": "lo_count"
+   }
+  },
+  {
+   "cid": "ql_m01_t4.c2",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "query_ids": {
+    "target": "-7194171553012554338"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t4 WHERE c2 = 3 ORDER BY pad LIMIT 3"
+   },
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c2",
+    "shape": "hot_order"
+   }
+  },
+  {
+   "cid": "ql_m01_t4.c3",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "query_ids": {
+    "target": "1995045984350872477"
+   },
+   "queries": {
+    "target": "SELECT id, pad FROM ql_m01_t4 WHERE c3 = 3"
+   },
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c3",
+    "shape": "hot_eq"
+   }
+  },
+  {
+   "cid": "ql_m01_t4.c4",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "query_ids": {
+    "target": "-1350050283191682018"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t4 WHERE lo = 8 AND c4 BETWEEN 8805 AND 8825"
+   },
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c4",
+    "shape": "lo_range"
+   }
+  },
+  {
+   "cid": "ql_m01_t4.c5",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "query_ids": {
+    "target": "-7136387509709342980"
+   },
+   "queries": {
+    "target": "SELECT id, pad FROM ql_m01_t4 WHERE lo = 8 AND c5 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c5",
+    "shape": "lo_eq"
+   }
+  },
+  {
+   "cid": "ql_m01_t4.c6",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "query_ids": {
+    "target": "-3686830014346487033"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m01_t4 WHERE lo = 8 AND c6 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c6",
+    "shape": "lo_count"
+   }
+  },
+  {
+   "cid": "ql_m01_t4.c7",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "query_ids": {
+    "target": "3091690437602356343"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t4 WHERE lo = 8 AND c7 BETWEEN 8805 AND 8825"
+   },
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c7",
+    "shape": "lo_range"
+   }
+  },
+  {
+   "cid": "ql_m01_t4.c8",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "5392514716969124747"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t4 WHERE c8 IN (37303, 55537, 52577, 50054, 4135)"
+   },
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c8",
+    "shape": "in5"
+   }
+  },
+  {
+   "cid": "ql_m01_t4.c9",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "-6013683903075902267"
+   },
+   "queries": {
+    "target": "SELECT x.id, d.name FROM ql_m01_t4 x JOIN ql_m01_dim d ON d.id = x.lo WHERE x.c9 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c9",
+    "shape": "join"
+   }
+  },
+  {
+   "cid": "ql_m01_t4.c10",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "query_ids": {
+    "target": "284241492001150549"
+   },
+   "queries": {
+    "target": "SELECT MAX(pad) FROM ql_m01_t4 WHERE c10 = 3"
+   },
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c10",
+    "shape": "hot_max"
+   }
+  },
+  {
+   "cid": "ql_m01_t4.c11",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "-8212482083605071455"
+   },
+   "queries": {
+    "target": "SELECT MAX(id) FROM ql_m01_t4 WHERE c11 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c11",
+    "shape": "max"
+   }
+  },
+  {
+   "cid": "ql_m01_t4.c12",
+   "role": "control",
+   "category": "control en tabla degradada",
+   "query_ids": {
+    "target": "3844782046733084870"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t4 WHERE c12 BETWEEN 8805 AND 8835"
+   },
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c12",
+    "shape": "range"
+   }
+  },
+  {
+   "cid": "ql_m01_t4.c13",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "8380724646380113072"
+   },
+   "queries": {
+    "target": "SELECT 1 FROM ql_m01_t4 WHERE c13 = 8805 LIMIT 1"
+   },
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c13",
+    "shape": "exists"
+   }
+  },
+  {
+   "cid": "ql_m01_t5.c0",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "4427512861689156858"
+   },
+   "queries": {
+    "target": "SELECT id, pad FROM ql_m01_t5 WHERE c0 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c0",
+    "shape": "eq"
+   }
+  },
+  {
+   "cid": "ql_m01_t5.c1",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "2149529455011532479"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t5 WHERE c1 BETWEEN 8805 AND 8835"
+   },
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c1",
+    "shape": "range"
+   }
+  },
+  {
+   "cid": "ql_m01_t5.c2",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "7464087601348433487"
+   },
+   "queries": {
+    "target": "SELECT id, c2 FROM ql_m01_t5 WHERE c2 > 8805 ORDER BY c2 LIMIT 5"
+   },
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c2",
+    "shape": "order_limit"
+   }
+  },
+  {
+   "cid": "ql_m01_t5.c3",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "8025085400883066388"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m01_t5 WHERE c3 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c3",
+    "shape": "count"
+   }
+  },
+  {
+   "cid": "ql_m01_t5.c4",
+   "role": "control",
+   "category": "control en tabla degradada",
+   "query_ids": {
+    "target": "-1264632115135803953"
+   },
+   "queries": {
+    "target": "SELECT id, c4 FROM ql_m01_t5 WHERE c4 > 8805 ORDER BY c4 LIMIT 5"
+   },
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c4",
+    "shape": "order_limit"
+   }
+  },
+  {
+   "cid": "ql_m01_t5.c5",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "query_ids": {
+    "target": "8425354838409134741"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t5 WHERE c5 = 3 ORDER BY pad LIMIT 3"
+   },
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c5",
+    "shape": "hot_order"
+   }
+  },
+  {
+   "cid": "ql_m01_t5.c6",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "query_ids": {
+    "target": "-7478509328088323689"
+   },
+   "queries": {
+    "target": "SELECT id, pad FROM ql_m01_t5 WHERE c6 = 3"
+   },
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c6",
+    "shape": "hot_eq"
+   }
+  },
+  {
+   "cid": "ql_m01_t5.c7",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "-1956810674339792861"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t5 WHERE c7 IN (37303, 55537, 52577, 50054, 4135)"
+   },
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c7",
+    "shape": "in5"
+   }
+  },
+  {
+   "cid": "ql_m01_t5.c8",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "query_ids": {
+    "target": "3923264788445403272"
+   },
+   "queries": {
+    "target": "SELECT id, pad FROM ql_m01_t5 WHERE lo = 8 AND c8 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c8",
+    "shape": "lo_eq"
+   }
+  },
+  {
+   "cid": "ql_m01_t5.c9",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "query_ids": {
+    "target": "-8738784932125002669"
+   },
+   "queries": {
+    "target": "SELECT MAX(pad) FROM ql_m01_t5 WHERE c9 = 3"
+   },
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c9",
+    "shape": "hot_max"
+   }
+  },
+  {
+   "cid": "ql_m01_t5.c10",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "1144340727371263479"
+   },
+   "queries": {
+    "target": "SELECT x.id, d.name FROM ql_m01_t5 x JOIN ql_m01_dim d ON d.id = x.lo WHERE x.c10 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c10",
+    "shape": "join"
+   }
+  },
+  {
+   "cid": "ql_m01_t5.c11",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "query_ids": {
+    "target": "-2990102880874911950"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t5 WHERE c11 = 3 ORDER BY pad LIMIT 3"
+   },
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c11",
+    "shape": "hot_order"
+   }
+  },
+  {
+   "cid": "ql_m01_t5.c12",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "1311730196095854741"
+   },
+   "queries": {
+    "target": "SELECT MAX(id) FROM ql_m01_t5 WHERE c12 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c12",
+    "shape": "max"
+   }
+  },
+  {
+   "cid": "ql_m01_t5.c13",
+   "role": "control",
+   "category": "control en tabla degradada",
+   "query_ids": {
+    "target": "5749070203207952583"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m01_t5 WHERE c13 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c13",
+    "shape": "count"
+   }
+  },
+  {
+   "cid": "ql_m01_t6.c0",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "-1042547584818469923"
+   },
+   "queries": {
+    "target": "SELECT 1 FROM ql_m01_t6 WHERE c0 = 8805 LIMIT 1"
+   },
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c0",
+    "shape": "exists"
+   }
+  },
+  {
+   "cid": "ql_m01_t6.c1",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "-3891106426184572707"
+   },
+   "queries": {
+    "target": "SELECT id, pad FROM ql_m01_t6 WHERE c1 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c1",
+    "shape": "eq"
+   }
+  },
+  {
+   "cid": "ql_m01_t6.c2",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "-5668411713311228689"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t6 WHERE c2 BETWEEN 8805 AND 8835"
+   },
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c2",
+    "shape": "range"
+   }
+  },
+  {
+   "cid": "ql_m01_t6.c3",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "query_ids": {
+    "target": "-1232229839736961471"
+   },
+   "queries": {
+    "target": "SELECT id, pad FROM ql_m01_t6 WHERE c3 = 3"
+   },
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c3",
+    "shape": "hot_eq"
+   }
+  },
+  {
+   "cid": "ql_m01_t6.c4",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "8839716177286684354"
+   },
+   "queries": {
+    "target": "SELECT id, c4 FROM ql_m01_t6 WHERE c4 > 8805 ORDER BY c4 LIMIT 5"
+   },
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c4",
+    "shape": "order_limit"
+   }
+  },
+  {
+   "cid": "ql_m01_t6.c5",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "query_ids": {
+    "target": "-6794160857196166027"
+   },
+   "queries": {
+    "target": "SELECT MAX(pad) FROM ql_m01_t6 WHERE c5 = 3"
+   },
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c5",
+    "shape": "hot_max"
+   }
+  },
+  {
+   "cid": "ql_m01_t6.c6",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "query_ids": {
+    "target": "4977990964149608468"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t6 WHERE c6 = 3 ORDER BY pad LIMIT 3"
+   },
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c6",
+    "shape": "hot_order"
+   }
+  },
+  {
+   "cid": "ql_m01_t6.c7",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "query_ids": {
+    "target": "-563316283551457550"
+   },
+   "queries": {
+    "target": "SELECT id, pad FROM ql_m01_t6 WHERE c7 = 3"
+   },
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c7",
+    "shape": "hot_eq"
+   }
+  },
+  {
+   "cid": "ql_m01_t6.c8",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "query_ids": {
+    "target": "-339584229536094640"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m01_t6 WHERE lo = 8 AND c8 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c8",
+    "shape": "lo_count"
+   }
+  },
+  {
+   "cid": "ql_m01_t6.c9",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "query_ids": {
+    "target": "629320928957847368"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t6 WHERE lo = 8 AND c9 BETWEEN 8805 AND 8825"
+   },
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c9",
+    "shape": "lo_range"
+   }
+  },
+  {
+   "cid": "ql_m01_t6.c10",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "2512658754173577898"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m01_t6 WHERE c10 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c10",
+    "shape": "count"
+   }
+  },
+  {
+   "cid": "ql_m01_t6.c11",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "query_ids": {
+    "target": "-1201305104457179356"
+   },
+   "queries": {
+    "target": "SELECT MAX(pad) FROM ql_m01_t6 WHERE c11 = 3"
+   },
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c11",
+    "shape": "hot_max"
+   }
+  },
+  {
+   "cid": "ql_m01_t6.c12",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "1026203553075678527"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t6 WHERE c12 IN (37303, 55537, 52577, 50054, 4135)"
+   },
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c12",
+    "shape": "in5"
+   }
+  },
+  {
+   "cid": "ql_m01_t6.c13",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "6960038058989742780"
+   },
+   "queries": {
+    "target": "SELECT x.id, d.name FROM ql_m01_t6 x JOIN ql_m01_dim d ON d.id = x.lo WHERE x.c13 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c13",
+    "shape": "join"
+   }
+  },
+  {
+   "cid": "ql_m01_t7.c0",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "256327231480776886"
+   },
+   "queries": {
+    "target": "SELECT MAX(id) FROM ql_m01_t7 WHERE c0 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c0",
+    "shape": "max"
+   }
+  },
+  {
+   "cid": "ql_m01_t7.c1",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "query_ids": {
+    "target": "966603555794839154"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t7 WHERE c1 = 3 ORDER BY pad LIMIT 3"
+   },
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c1",
+    "shape": "hot_order"
+   }
+  },
+  {
+   "cid": "ql_m01_t7.c2",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "8788946409678371121"
+   },
+   "queries": {
+    "target": "SELECT 1 FROM ql_m01_t7 WHERE c2 = 8805 LIMIT 1"
+   },
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c2",
+    "shape": "exists"
+   }
+  },
+  {
+   "cid": "ql_m01_t7.c3",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "1442982342560831561"
+   },
+   "queries": {
+    "target": "SELECT id, pad FROM ql_m01_t7 WHERE c3 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c3",
+    "shape": "eq"
+   }
+  },
+  {
+   "cid": "ql_m01_t7.c4",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "query_ids": {
+    "target": "948614941766758194"
+   },
+   "queries": {
+    "target": "SELECT id, pad FROM ql_m01_t7 WHERE lo = 8 AND c4 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c4",
+    "shape": "lo_eq"
+   }
+  },
+  {
+   "cid": "ql_m01_t7.c5",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "query_ids": {
+    "target": "-8712658318634603623"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m01_t7 WHERE lo = 8 AND c5 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c5",
+    "shape": "lo_count"
+   }
+  },
+  {
+   "cid": "ql_m01_t7.c6",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "query_ids": {
+    "target": "-7599471644714334004"
+   },
+   "queries": {
+    "target": "SELECT id, pad FROM ql_m01_t7 WHERE c6 = 3"
+   },
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c6",
+    "shape": "hot_eq"
+   }
+  },
+  {
+   "cid": "ql_m01_t7.c7",
+   "role": "control",
+   "category": "control en tabla degradada",
+   "query_ids": {
+    "target": "8919042936864741091"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t7 WHERE c7 IN (37303, 55537, 52577, 50054, 4135)"
+   },
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c7",
+    "shape": "in5"
+   }
+  },
+  {
+   "cid": "ql_m01_t7.c8",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "query_ids": {
+    "target": "-5854720511331110818"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t7 WHERE lo = 8 AND c8 BETWEEN 8805 AND 8825"
+   },
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c8",
+    "shape": "lo_range"
+   }
+  },
+  {
+   "cid": "ql_m01_t7.c9",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "-228084450233630536"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t7 WHERE c9 BETWEEN 8805 AND 8835"
+   },
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c9",
+    "shape": "range"
+   }
+  },
+  {
+   "cid": "ql_m01_t7.c10",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "query_ids": {
+    "target": "-5051685481978614110"
+   },
+   "queries": {
+    "target": "SELECT id, pad FROM ql_m01_t7 WHERE lo = 8 AND c10 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c10",
+    "shape": "lo_eq"
+   }
+  },
+  {
+   "cid": "ql_m01_t7.c11",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "query_ids": {
+    "target": "-1779463710993648609"
+   },
+   "queries": {
+    "target": "SELECT id, c11 FROM ql_m01_t7 WHERE c11 > 8805 ORDER BY c11 LIMIT 5"
+   },
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c11",
+    "shape": "order_limit"
+   }
+  },
+  {
+   "cid": "ql_m01_t7.c12",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "query_ids": {
+    "target": "419768517456490480"
+   },
+   "queries": {
+    "target": "SELECT MAX(pad) FROM ql_m01_t7 WHERE c12 = 3"
+   },
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c12",
+    "shape": "hot_max"
+   }
+  },
+  {
+   "cid": "ql_m01_t7.c13",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "query_ids": {
+    "target": "7919683196513436942"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m01_t7 WHERE lo = 8 AND c13 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c13",
+    "shape": "lo_count"
+   }
+  },
+  {
+   "cid": "ql_m01_t8.c0",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "-2345212780311925600"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t8 WHERE c0 BETWEEN 8805 AND 8835"
+   },
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c0",
+    "shape": "range"
+   }
+  },
+  {
+   "cid": "ql_m01_t8.c1",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "786693877968989208"
+   },
+   "queries": {
+    "target": "SELECT id, c1 FROM ql_m01_t8 WHERE c1 > 8805 ORDER BY c1 LIMIT 5"
+   },
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c1",
+    "shape": "order_limit"
+   }
+  },
+  {
+   "cid": "ql_m01_t8.c2",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "6853728386542462700"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m01_t8 WHERE c2 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c2",
+    "shape": "count"
+   }
+  },
+  {
+   "cid": "ql_m01_t8.c3",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "5826303785966345280"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t8 WHERE c3 IN (37303, 55537, 52577, 50054, 4135)"
+   },
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c3",
+    "shape": "in5"
+   }
+  },
+  {
+   "cid": "ql_m01_t8.c4",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "-6388322541045418510"
+   },
+   "queries": {
+    "target": "SELECT x.id, d.name FROM ql_m01_t8 x JOIN ql_m01_dim d ON d.id = x.lo WHERE x.c4 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c4",
+    "shape": "join"
+   }
+  },
+  {
+   "cid": "ql_m01_t8.c5",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "-6686632295097302398"
+   },
+   "queries": {
+    "target": "SELECT MAX(id) FROM ql_m01_t8 WHERE c5 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c5",
+    "shape": "max"
+   }
+  },
+  {
+   "cid": "ql_m01_t8.c6",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "-5154264771989676801"
+   },
+   "queries": {
+    "target": "SELECT 1 FROM ql_m01_t8 WHERE c6 = 8805 LIMIT 1"
+   },
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c6",
+    "shape": "exists"
+   }
+  },
+  {
+   "cid": "ql_m01_t8.c7",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "-2240429355989478990"
+   },
+   "queries": {
+    "target": "SELECT id, pad FROM ql_m01_t8 WHERE c7 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c7",
+    "shape": "eq"
+   }
+  },
+  {
+   "cid": "ql_m01_t8.c8",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "1031720069825749199"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t8 WHERE c8 BETWEEN 8805 AND 8835"
+   },
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c8",
+    "shape": "range"
+   }
+  },
+  {
+   "cid": "ql_m01_t8.c9",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "-5649211067945873428"
+   },
+   "queries": {
+    "target": "SELECT id, c9 FROM ql_m01_t8 WHERE c9 > 8805 ORDER BY c9 LIMIT 5"
+   },
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c9",
+    "shape": "order_limit"
+   }
+  },
+  {
+   "cid": "ql_m01_t8.c10",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "956237244709657005"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m01_t8 WHERE c10 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c10",
+    "shape": "count"
+   }
+  },
+  {
+   "cid": "ql_m01_t8.c11",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "-4788293975586382937"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t8 WHERE c11 IN (37303, 55537, 52577, 50054, 4135)"
+   },
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c11",
+    "shape": "in5"
+   }
+  },
+  {
+   "cid": "ql_m01_t8.c12",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "-3313467616227352673"
+   },
+   "queries": {
+    "target": "SELECT x.id, d.name FROM ql_m01_t8 x JOIN ql_m01_dim d ON d.id = x.lo WHERE x.c12 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c12",
+    "shape": "join"
+   }
+  },
+  {
+   "cid": "ql_m01_t8.c13",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "4193961191184513484"
+   },
+   "queries": {
+    "target": "SELECT MAX(id) FROM ql_m01_t8 WHERE c13 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c13",
+    "shape": "max"
+   }
+  },
+  {
+   "cid": "ql_m01_t9.c0",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "6498115936302328841"
+   },
+   "queries": {
+    "target": "SELECT 1 FROM ql_m01_t9 WHERE c0 = 8805 LIMIT 1"
+   },
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c0",
+    "shape": "exists"
+   }
+  },
+  {
+   "cid": "ql_m01_t9.c1",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "-7611543170211626134"
+   },
+   "queries": {
+    "target": "SELECT id, pad FROM ql_m01_t9 WHERE c1 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c1",
+    "shape": "eq"
+   }
+  },
+  {
+   "cid": "ql_m01_t9.c2",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "-6905773836792161708"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t9 WHERE c2 BETWEEN 8805 AND 8835"
+   },
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c2",
+    "shape": "range"
+   }
+  },
+  {
+   "cid": "ql_m01_t9.c3",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "-8293050557564473876"
+   },
+   "queries": {
+    "target": "SELECT id, c3 FROM ql_m01_t9 WHERE c3 > 8805 ORDER BY c3 LIMIT 5"
+   },
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c3",
+    "shape": "order_limit"
+   }
+  },
+  {
+   "cid": "ql_m01_t9.c4",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "-5996664512740802113"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m01_t9 WHERE c4 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c4",
+    "shape": "count"
+   }
+  },
+  {
+   "cid": "ql_m01_t9.c5",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "8180856880436189895"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t9 WHERE c5 IN (37303, 55537, 52577, 50054, 4135)"
+   },
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c5",
+    "shape": "in5"
+   }
+  },
+  {
+   "cid": "ql_m01_t9.c6",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "896550728251314116"
+   },
+   "queries": {
+    "target": "SELECT x.id, d.name FROM ql_m01_t9 x JOIN ql_m01_dim d ON d.id = x.lo WHERE x.c6 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c6",
+    "shape": "join"
+   }
+  },
+  {
+   "cid": "ql_m01_t9.c7",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "8828347494114586725"
+   },
+   "queries": {
+    "target": "SELECT MAX(id) FROM ql_m01_t9 WHERE c7 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c7",
+    "shape": "max"
+   }
+  },
+  {
+   "cid": "ql_m01_t9.c8",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "4586149211085665313"
+   },
+   "queries": {
+    "target": "SELECT 1 FROM ql_m01_t9 WHERE c8 = 8805 LIMIT 1"
+   },
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c8",
+    "shape": "exists"
+   }
+  },
+  {
+   "cid": "ql_m01_t9.c9",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "-3064729957341077479"
+   },
+   "queries": {
+    "target": "SELECT id, pad FROM ql_m01_t9 WHERE c9 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c9",
+    "shape": "eq"
+   }
+  },
+  {
+   "cid": "ql_m01_t9.c10",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "-4573184212206734827"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t9 WHERE c10 BETWEEN 8805 AND 8835"
+   },
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c10",
+    "shape": "range"
+   }
+  },
+  {
+   "cid": "ql_m01_t9.c11",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "7591764249505629798"
+   },
+   "queries": {
+    "target": "SELECT id, c11 FROM ql_m01_t9 WHERE c11 > 8805 ORDER BY c11 LIMIT 5"
+   },
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c11",
+    "shape": "order_limit"
+   }
+  },
+  {
+   "cid": "ql_m01_t9.c12",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "-7966236467527284631"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m01_t9 WHERE c12 = 8805"
+   },
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c12",
+    "shape": "count"
+   }
+  },
+  {
+   "cid": "ql_m01_t9.c13",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "query_ids": {
+    "target": "-2238593940293050368"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m01_t9 WHERE c13 IN (37303, 55537, 52577, 50054, 4135)"
+   },
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c13",
+    "shape": "in5"
+   }
+  }
+ ],
+ "collisions": {},
+ "discarded": []
+}

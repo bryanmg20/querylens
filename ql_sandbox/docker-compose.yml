@@ -74,6 +74,10 @@ services:
       MYSQL_PASSWORD: app_pass
     ports:
       - "3307:3306"
+    # performance_schema_max_sql_text_length: bytes de SQL_TEXT que guarda
+    # performance_schema (MySQL trae 1024). Si una muestra llega al limite el
+    # pipeline avisa QUERY_TEXT_TRUNCATED. Es de arranque: tras cambiarlo,
+    #   docker compose up -d mysql
     command: >
       --performance-schema=ON
       --performance-schema-instrument='statement/%=ON'
@@ -86,6 +90,7 @@ services:
       --performance-schema-consumer-events-waits-history=ON
       --performance-schema-instrument='wait/io/table/sql/handler=ON'
       --temptable_max_ram=1048576
+      --performance-schema-max-sql-text-length=${MYSQL_SQL_TEXT_LENGTH:-4096}
     volumes:
       - ./init/init_mysql.sql:/docker-entrypoint-initdb.d/init_mysql.sql
       - mysql_data:/var/lib/mysql

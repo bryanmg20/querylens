@@ -1,0 +1,3689 @@
+{
+ "measurement": "ap07",
+ "engine": "mysql",
+ "cases": [
+  {
+   "cid": "G1-t0",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/f36b1654ad478a9bdadedd5de9031c4e72df52d258850f23bcd48536d2b03aeb"
+   },
+   "queries": {
+    "target": "SELECT g_hi, COUNT(*) FROM ql_m07_t0 GROUP BY g_hi HAVING COUNT(*) > 4"
+   },
+   "meta": {
+    "template": "G1",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 172,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G2-t0",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/be25490ed0b203ee256f2ce0d8227de6cea49ac2b4e2995ddad97e7faa58538e"
+   },
+   "queries": {
+    "target": "SELECT g_mid, SUM(amt) FROM ql_m07_t0 GROUP BY g_mid HAVING SUM(amt) > 9000"
+   },
+   "meta": {
+    "template": "G2",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 93,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G3-t0",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/48261023005ddfdabbe4b81098b22ff7eaea3888d7809573472b9c3245e95693"
+   },
+   "queries": {
+    "target": "SELECT s, COUNT(*) FROM ql_m07_t0 GROUP BY s HAVING COUNT(*) > 6"
+   },
+   "meta": {
+    "template": "G3",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 212,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G4-t0",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/dcc5bd5c556bd644d160d5a0952ebbe880c8e9b3b5e78c362acbec3b670edbae"
+   },
+   "queries": {
+    "target": "SELECT g_hi, g_lo, MAX(amt) FROM ql_m07_t0 GROUP BY g_hi, g_lo HAVING MAX(amt) > 999"
+   },
+   "meta": {
+    "template": "G4",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 103,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G5-t0",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/17e33762292306709e0683210f6a888c808d9f5f676006ee1a065934878de459"
+   },
+   "queries": {
+    "target": "SELECT d, g_mid, COUNT(*) FROM ql_m07_t0 GROUP BY d, g_mid HAVING COUNT(*) > 2"
+   },
+   "meta": {
+    "template": "G5",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 100,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G6-t0",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/d3bf0f9c76d7fbc3863073ecb703f257f1be6f958c5405a157975f8b75742562"
+   },
+   "queries": {
+    "target": "SELECT fk % 40000, AVG(amt) FROM ql_m07_t0 GROUP BY fk % 40000 HAVING AVG(amt) > 995"
+   },
+   "meta": {
+    "template": "G6",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 112,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G7-t0",
+   "role": "positivo",
+   "category": "GROUP BY + ORDER BY",
+   "query_ids": {
+    "target": "ql_demo/6d298e5db4dd3b2159d48930e367d2635bde471a78ebc5c1aa9a48c6351597d3"
+   },
+   "queries": {
+    "target": "SELECT g_hi, COUNT(*) FROM ql_m07_t0 GROUP BY g_hi ORDER BY COUNT(*) DESC, g_hi LIMIT 5"
+   },
+   "meta": {
+    "template": "G7",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 85,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "D1-t0",
+   "role": "positivo",
+   "category": "DISTINCT",
+   "query_ids": {
+    "target": "ql_demo/e2233ad76eff976feb8ec3b1dea9afe5feb41464e829ee724398c7a4414cbaf4"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT DISTINCT g_hi FROM ql_m07_t0) x"
+   },
+   "meta": {
+    "template": "D1",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 55,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "D2-t0",
+   "role": "positivo",
+   "category": "DISTINCT",
+   "query_ids": {
+    "target": "ql_demo/f685ea0101290fd20d4b6af410916ade2920da884cfcb281fbf0e4c669fee4c2"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT DISTINCT s, g_lo FROM ql_m07_t0) x"
+   },
+   "meta": {
+    "template": "D2",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 129,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "W1-t0",
+   "role": "positivo",
+   "category": "ventana",
+   "query_ids": {
+    "target": "ql_demo/0b000c12ebd64d3a610756d5873e27363eac4fe5d9b25295612f6cadfa0b3f1f"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY g_mid ORDER BY amt) AS rn FROM ql_m07_t0) x WHERE rn = 1"
+   },
+   "meta": {
+    "template": "W1",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 6,
+    "calibracion_ms": 100,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "W2-t0",
+   "role": "positivo",
+   "category": "ventana",
+   "query_ids": {
+    "target": "ql_demo/007e07211fcc030fe2b46caeca3506ecee03d56b5108ea4474e942e82f59b6e2"
+   },
+   "queries": {
+    "target": "SELECT MAX(r) FROM (SELECT RANK() OVER (ORDER BY amt, id) AS r FROM ql_m07_t0) x"
+   },
+   "meta": {
+    "template": "W2",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 5,
+    "calibracion_ms": 53,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "W3-t0",
+   "role": "positivo",
+   "category": "ventana",
+   "query_ids": {
+    "target": "ql_demo/5e4eddc834fd27b1d6b15044283f78589f07bfa7c492d5f1935cda92ddc5c96d"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT g_hi, SUM(amt) OVER (PARTITION BY g_hi) AS t FROM ql_m07_t0) x WHERE t > 1500"
+   },
+   "meta": {
+    "template": "W3",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 4,
+    "calibracion_ms": 136,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "U1-t0",
+   "role": "positivo",
+   "category": "UNION / EXCEPT",
+   "query_ids": {
+    "target": "ql_demo/920b223f1299f515dde7db0101f614a799bfd098a226f7ebcd31dfb2dacf1761"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT g_hi FROM ql_m07_t0 UNION SELECT fk FROM ql_m07_t0) x"
+   },
+   "meta": {
+    "template": "U1",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 87,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "U2-t0",
+   "role": "positivo",
+   "category": "UNION / EXCEPT",
+   "query_ids": {
+    "target": "ql_demo/b78128be2cbb4a12569e8b8603f6d33e00bd2094e53a742b4426f119e73eb3ab"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT g_hi FROM ql_m07_t0 EXCEPT SELECT fk FROM ql_m07_t1) x"
+   },
+   "meta": {
+    "template": "U2",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 212,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "C1-t0",
+   "role": "positivo",
+   "category": "CTE / derivada",
+   "query_ids": {
+    "target": "ql_demo/97abb50a7d2ed349d1a8e37dd40e28b29db0b43828907dad4472707eccc0248b"
+   },
+   "queries": {
+    "target": "WITH c AS (SELECT g_hi, COUNT(*) AS n FROM ql_m07_t0 GROUP BY g_hi) SELECT COUNT(*) FROM c WHERE n > 2"
+   },
+   "meta": {
+    "template": "C1",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 81,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "C2-t0",
+   "role": "positivo",
+   "category": "CTE / derivada",
+   "query_ids": {
+    "target": "ql_demo/a4acda87043a97d09ad02a790e87f7d3371b4314a49145903b31bfa959ee4626"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT fk, MIN(d) AS m FROM ql_m07_t0 GROUP BY fk) x WHERE m > '2027-01-01'"
+   },
+   "meta": {
+    "template": "C2",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 82,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "Q1-t0",
+   "role": "positivo",
+   "category": "subconsulta IN",
+   "query_ids": {
+    "target": "ql_demo/86cb0935ea03cf15005026891a95204ddbc11f6664693a37a9321f7d2be4f48e"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m07_t0 WHERE g_hi IN (SELECT fk FROM ql_m07_t1 WHERE g_lo < 50)"
+   },
+   "meta": {
+    "template": "Q1",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 81,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G1-t1",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/9543975c4d5fab5f8949834f2bd848c00e5c951ee8ca04ed460166a5add1f723"
+   },
+   "queries": {
+    "target": "SELECT g_hi, COUNT(*) FROM ql_m07_t1 GROUP BY g_hi HAVING COUNT(*) > 4"
+   },
+   "meta": {
+    "template": "G1",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 164,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G2-t1",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/b2e3eab4c22947a1450535f1fbf0cce0701d538abceab9cac90d582e9b9e960c"
+   },
+   "queries": {
+    "target": "SELECT g_mid, SUM(amt) FROM ql_m07_t1 GROUP BY g_mid HAVING SUM(amt) > 9000"
+   },
+   "meta": {
+    "template": "G2",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 308,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G3-t1",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/9e7cac8face8b5c98c5d6d4dc06a7b5caf51c86ccc448a51c459b0d25faf3f66"
+   },
+   "queries": {
+    "target": "SELECT s, COUNT(*) FROM ql_m07_t1 GROUP BY s HAVING COUNT(*) > 6"
+   },
+   "meta": {
+    "template": "G3",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 322,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G4-t1",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/6cd15fcc924f872b56e33f33bdcdf1a8258d4bb5aa144b5ebef25466ef2947d9"
+   },
+   "queries": {
+    "target": "SELECT g_hi, g_lo, MAX(amt) FROM ql_m07_t1 GROUP BY g_hi, g_lo HAVING MAX(amt) > 999"
+   },
+   "meta": {
+    "template": "G4",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 173,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G5-t1",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/a1e5e71e79267f4c616dc42b12ed9e03c658e8c861725af206b466200c21ba11"
+   },
+   "queries": {
+    "target": "SELECT d, g_mid, COUNT(*) FROM ql_m07_t1 GROUP BY d, g_mid HAVING COUNT(*) > 2"
+   },
+   "meta": {
+    "template": "G5",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 161,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G6-t1",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/ef9dfa90c0c8088574e22c1a734704a110702ede51e11d2e800ca6d1ff87243c"
+   },
+   "queries": {
+    "target": "SELECT fk % 40000, AVG(amt) FROM ql_m07_t1 GROUP BY fk % 40000 HAVING AVG(amt) > 995"
+   },
+   "meta": {
+    "template": "G6",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 182,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G7-t1",
+   "role": "positivo",
+   "category": "GROUP BY + ORDER BY",
+   "query_ids": {
+    "target": "ql_demo/29d37d067ba2b661834fe59718162a227dc30f168ae6e3f3303217619800dbd4"
+   },
+   "queries": {
+    "target": "SELECT g_hi, COUNT(*) FROM ql_m07_t1 GROUP BY g_hi ORDER BY COUNT(*) DESC, g_hi LIMIT 5"
+   },
+   "meta": {
+    "template": "G7",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 140,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "D1-t1",
+   "role": "positivo",
+   "category": "DISTINCT",
+   "query_ids": {
+    "target": "ql_demo/c94e608582206e23bdc5748da17df15bf8d54d95ebcc29d3284ad8d67a055e6d"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT DISTINCT g_hi FROM ql_m07_t1) x"
+   },
+   "meta": {
+    "template": "D1",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 85,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "D2-t1",
+   "role": "positivo",
+   "category": "DISTINCT",
+   "query_ids": {
+    "target": "ql_demo/993e37aa8507a3f6eac932b1dc850f89168339f79a63a31a81af0801357ab4ab"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT DISTINCT s, g_lo FROM ql_m07_t1) x"
+   },
+   "meta": {
+    "template": "D2",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 194,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "W1-t1",
+   "role": "positivo",
+   "category": "ventana",
+   "query_ids": {
+    "target": "ql_demo/fa0d1b8e1ce4e12f5947bb7d74efaa9bb8435a8fef60547afd79a7fa09f6eaab"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY g_mid ORDER BY amt) AS rn FROM ql_m07_t1) x WHERE rn = 1"
+   },
+   "meta": {
+    "template": "W1",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 8,
+    "calibracion_ms": 139,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "W2-t1",
+   "role": "positivo",
+   "category": "ventana",
+   "query_ids": {
+    "target": "ql_demo/86f1c4a56aa8d973b01ed69995b9f3117c9def8c4440798c2b90aa0dee9f1993"
+   },
+   "queries": {
+    "target": "SELECT MAX(r) FROM (SELECT RANK() OVER (ORDER BY amt, id) AS r FROM ql_m07_t1) x"
+   },
+   "meta": {
+    "template": "W2",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 8,
+    "calibracion_ms": 80,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "W3-t1",
+   "role": "positivo",
+   "category": "ventana",
+   "query_ids": {
+    "target": "ql_demo/399813935fa78c92775c5d3923a467e94d058aa7dc0ba67d15b397dd8411140f"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT g_hi, SUM(amt) OVER (PARTITION BY g_hi) AS t FROM ql_m07_t1) x WHERE t > 1500"
+   },
+   "meta": {
+    "template": "W3",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 7,
+    "calibracion_ms": 220,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "U1-t1",
+   "role": "positivo",
+   "category": "UNION / EXCEPT",
+   "query_ids": {
+    "target": "ql_demo/eb8499ee88fd7efe5b1cc42bd304b96e1a06c3e5c4c1c457f7786792be882f2f"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT g_hi FROM ql_m07_t1 UNION SELECT fk FROM ql_m07_t1) x"
+   },
+   "meta": {
+    "template": "U1",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 312,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "U2-t1",
+   "role": "positivo",
+   "category": "UNION / EXCEPT",
+   "query_ids": {
+    "target": "ql_demo/e0a7b721242974b220ecd60482297105d5c25de6368a5889517aa354b2a29859"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT g_hi FROM ql_m07_t1 EXCEPT SELECT fk FROM ql_m07_t2) x"
+   },
+   "meta": {
+    "template": "U2",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 440,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "C1-t1",
+   "role": "positivo",
+   "category": "CTE / derivada",
+   "query_ids": {
+    "target": "ql_demo/138cf1fe21de84d6e0f48a682cb9c7273c76b4d3bb3485e61bf54994267f2a5e"
+   },
+   "queries": {
+    "target": "WITH c AS (SELECT g_hi, COUNT(*) AS n FROM ql_m07_t1 GROUP BY g_hi) SELECT COUNT(*) FROM c WHERE n > 2"
+   },
+   "meta": {
+    "template": "C1",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 139,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "C2-t1",
+   "role": "positivo",
+   "category": "CTE / derivada",
+   "query_ids": {
+    "target": "ql_demo/c914d8342531b690e2f779e82f1893f725658c5c4c24e285d91a2fcf52cfb04f"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT fk, MIN(d) AS m FROM ql_m07_t1 GROUP BY fk) x WHERE m > '2027-01-01'"
+   },
+   "meta": {
+    "template": "C2",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 142,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "Q1-t1",
+   "role": "positivo",
+   "category": "subconsulta IN",
+   "query_ids": {
+    "target": "ql_demo/1bb49d53f409af184238a19cae1f81d56db284ccd0aa9689a692420878b99f59"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m07_t1 WHERE g_hi IN (SELECT fk FROM ql_m07_t2 WHERE g_lo < 50)"
+   },
+   "meta": {
+    "template": "Q1",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 127,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G1-t2",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/7463ec167a93a29169e98df6c2059271c3d59801294c392bf543a1f438c3d1b8"
+   },
+   "queries": {
+    "target": "SELECT g_hi, COUNT(*) FROM ql_m07_t2 GROUP BY g_hi HAVING COUNT(*) > 4"
+   },
+   "meta": {
+    "template": "G1",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 249,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G2-t2",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/73e5e59c17a10f3494fe8f21c0a098b9994b721674527faf5e2fb83f37bfcc9a"
+   },
+   "queries": {
+    "target": "SELECT g_mid, SUM(amt) FROM ql_m07_t2 GROUP BY g_mid HAVING SUM(amt) > 9000"
+   },
+   "meta": {
+    "template": "G2",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 279,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G3-t2",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/605f4a87c114f4b1181815c53106ac54d26fc0f7dabd3d74a8a27634dab09ca0"
+   },
+   "queries": {
+    "target": "SELECT s, COUNT(*) FROM ql_m07_t2 GROUP BY s HAVING COUNT(*) > 6"
+   },
+   "meta": {
+    "template": "G3",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 528,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G4-t2",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/d56d35e27b03a7eefb05149fec0e0c9e05fbb8dde2f7ff8302c736db99b566fd"
+   },
+   "queries": {
+    "target": "SELECT g_hi, g_lo, MAX(amt) FROM ql_m07_t2 GROUP BY g_hi, g_lo HAVING MAX(amt) > 999"
+   },
+   "meta": {
+    "template": "G4",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 308,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G5-t2",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/bd88e069efd863865732ffb0bb80ba6b03934307e5bf44b277ddbf9000191ca2"
+   },
+   "queries": {
+    "target": "SELECT d, g_mid, COUNT(*) FROM ql_m07_t2 GROUP BY d, g_mid HAVING COUNT(*) > 2"
+   },
+   "meta": {
+    "template": "G5",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 282,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G6-t2",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/0becc0afd8d44b7497706b65d9607cb7d068de4f25a4854473d460132aec0801"
+   },
+   "queries": {
+    "target": "SELECT fk % 40000, AVG(amt) FROM ql_m07_t2 GROUP BY fk % 40000 HAVING AVG(amt) > 995"
+   },
+   "meta": {
+    "template": "G6",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 347,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G7-t2",
+   "role": "positivo",
+   "category": "GROUP BY + ORDER BY",
+   "query_ids": {
+    "target": "ql_demo/1fa274f3c47842d2d8ca10cb700591a3bbba3440ecc47659f3b7342012ce73e1"
+   },
+   "queries": {
+    "target": "SELECT g_hi, COUNT(*) FROM ql_m07_t2 GROUP BY g_hi ORDER BY COUNT(*) DESC, g_hi LIMIT 5"
+   },
+   "meta": {
+    "template": "G7",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 261,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "D1-t2",
+   "role": "positivo",
+   "category": "DISTINCT",
+   "query_ids": {
+    "target": "ql_demo/99a51555b4d3c58c266f1ecb2b70c39a9ff554b02d91f03090e3ac0a35261574"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT DISTINCT g_hi FROM ql_m07_t2) x"
+   },
+   "meta": {
+    "template": "D1",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 126,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "D2-t2",
+   "role": "positivo",
+   "category": "DISTINCT",
+   "query_ids": {
+    "target": "ql_demo/93cf357684719a423e5424f4c97b66769ae3d0e62c12d85744807d8d5e815601"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT DISTINCT s, g_lo FROM ql_m07_t2) x"
+   },
+   "meta": {
+    "template": "D2",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 329,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "W1-t2",
+   "role": "positivo",
+   "category": "ventana",
+   "query_ids": {
+    "target": "ql_demo/ff5557c91319b53460879d8f9207bde90bc2b8a9caa9ec037669dd04e7ce37e8"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY g_mid ORDER BY amt) AS rn FROM ql_m07_t2) x WHERE rn = 1"
+   },
+   "meta": {
+    "template": "W1",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 13,
+    "calibracion_ms": 216,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "W2-t2",
+   "role": "positivo",
+   "category": "ventana",
+   "query_ids": {
+    "target": "ql_demo/b077ed7f1b3014839cf6a411033b89cf928045cc09beb57e5c2a044a9b385f01"
+   },
+   "queries": {
+    "target": "SELECT MAX(r) FROM (SELECT RANK() OVER (ORDER BY amt, id) AS r FROM ql_m07_t2) x"
+   },
+   "meta": {
+    "template": "W2",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 12,
+    "calibracion_ms": 120,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "W3-t2",
+   "role": "positivo",
+   "category": "ventana",
+   "query_ids": {
+    "target": "ql_demo/8e56997646fd9f7d83bc04283ca089630e705d6bc2e2f28af17155a423d5d43c"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT g_hi, SUM(amt) OVER (PARTITION BY g_hi) AS t FROM ql_m07_t2) x WHERE t > 1500"
+   },
+   "meta": {
+    "template": "W3",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 10,
+    "calibracion_ms": 329,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "U1-t2",
+   "role": "positivo",
+   "category": "UNION / EXCEPT",
+   "query_ids": {
+    "target": "ql_demo/dd6368795a040eeea48cfbe5af46d9b581095f4f2db18e58db4234c1799decf5"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT g_hi FROM ql_m07_t2 UNION SELECT fk FROM ql_m07_t2) x"
+   },
+   "meta": {
+    "template": "U1",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 214,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "U2-t2",
+   "role": "positivo",
+   "category": "UNION / EXCEPT",
+   "query_ids": {
+    "target": "ql_demo/65a9e7ce6c414c47b7e2788be8945ef79319957821ce5adf61ea548ed12faee4"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT g_hi FROM ql_m07_t2 EXCEPT SELECT fk FROM ql_m07_t3) x"
+   },
+   "meta": {
+    "template": "U2",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 646,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "C1-t2",
+   "role": "positivo",
+   "category": "CTE / derivada",
+   "query_ids": {
+    "target": "ql_demo/7bbf621fe83791e63385cfe10b3529159dce8cd32290bc867c0d5f5274e17276"
+   },
+   "queries": {
+    "target": "WITH c AS (SELECT g_hi, COUNT(*) AS n FROM ql_m07_t2 GROUP BY g_hi) SELECT COUNT(*) FROM c WHERE n > 2"
+   },
+   "meta": {
+    "template": "C1",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 213,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "C2-t2",
+   "role": "positivo",
+   "category": "CTE / derivada",
+   "query_ids": {
+    "target": "ql_demo/34938c36ba892557f703c65d22b4d8cb7b771c61e0e470bdc8fe63a581fe1f3e"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT fk, MIN(d) AS m FROM ql_m07_t2 GROUP BY fk) x WHERE m > '2027-01-01'"
+   },
+   "meta": {
+    "template": "C2",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 216,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "Q1-t2",
+   "role": "positivo",
+   "category": "subconsulta IN",
+   "query_ids": {
+    "target": "ql_demo/d6eeb31bcf5314daf66f59e384231a06517c8fbf24e0c0f2858fd2aa3256de3e"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m07_t2 WHERE g_hi IN (SELECT fk FROM ql_m07_t3 WHERE g_lo < 50)"
+   },
+   "meta": {
+    "template": "Q1",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 188,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G1-t3",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/206f9ce25ca64a6e52a09c2c5b500dc992e52c1016195f9c91236b75ae04969f"
+   },
+   "queries": {
+    "target": "SELECT g_hi, COUNT(*) FROM ql_m07_t3 GROUP BY g_hi HAVING COUNT(*) > 4"
+   },
+   "meta": {
+    "template": "G1",
+    "table": "ql_m07_t3",
+    "rows": 120000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 386,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G2-t3",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/5dc89aa6e92eb153b4825dd6e206c2e1d88df9ea2958dedf6717b75c78ae5320"
+   },
+   "queries": {
+    "target": "SELECT g_mid, SUM(amt) FROM ql_m07_t3 GROUP BY g_mid HAVING SUM(amt) > 9000"
+   },
+   "meta": {
+    "template": "G2",
+    "table": "ql_m07_t3",
+    "rows": 120000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 395,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G3-t3",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/6181c7856da2dba615dd75b22f2134819beaf58ed41ecec769a2456eb0c5e25e"
+   },
+   "queries": {
+    "target": "SELECT s, COUNT(*) FROM ql_m07_t3 GROUP BY s HAVING COUNT(*) > 6"
+   },
+   "meta": {
+    "template": "G3",
+    "table": "ql_m07_t3",
+    "rows": 120000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 775,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G4-t3",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/240af5cf6b1bbc6fa8ed8909ae6f24777f17a99b5a2c5112a11df987f6ad11c6"
+   },
+   "queries": {
+    "target": "SELECT g_hi, g_lo, MAX(amt) FROM ql_m07_t3 GROUP BY g_hi, g_lo HAVING MAX(amt) > 999"
+   },
+   "meta": {
+    "template": "G4",
+    "table": "ql_m07_t3",
+    "rows": 120000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 438,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G5-t3",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/8a812145fa6953fde83336853048b50153340baca93a84a2d26ba02f71f3d4c7"
+   },
+   "queries": {
+    "target": "SELECT d, g_mid, COUNT(*) FROM ql_m07_t3 GROUP BY d, g_mid HAVING COUNT(*) > 2"
+   },
+   "meta": {
+    "template": "G5",
+    "table": "ql_m07_t3",
+    "rows": 120000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 510,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G6-t3",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/7773e184215bdba5fd626cda5b2976ea0af8dd398542047a8088a371c12730c0"
+   },
+   "queries": {
+    "target": "SELECT fk % 40000, AVG(amt) FROM ql_m07_t3 GROUP BY fk % 40000 HAVING AVG(amt) > 995"
+   },
+   "meta": {
+    "template": "G6",
+    "table": "ql_m07_t3",
+    "rows": 120000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 505,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G7-t3",
+   "role": "positivo",
+   "category": "GROUP BY + ORDER BY",
+   "query_ids": {
+    "target": "ql_demo/3455a07afcf7cff90fd83db96571beb764e5a1bc36a73b3e931c3c91e0a9a607"
+   },
+   "queries": {
+    "target": "SELECT g_hi, COUNT(*) FROM ql_m07_t3 GROUP BY g_hi ORDER BY COUNT(*) DESC, g_hi LIMIT 5"
+   },
+   "meta": {
+    "template": "G7",
+    "table": "ql_m07_t3",
+    "rows": 120000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 351,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "D1-t3",
+   "role": "positivo",
+   "category": "DISTINCT",
+   "query_ids": {
+    "target": "ql_demo/791ad65b306def189830f6a577cff28de23bbafd22cc1ee5f58e50853c374a17"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT DISTINCT g_hi FROM ql_m07_t3) x"
+   },
+   "meta": {
+    "template": "D1",
+    "table": "ql_m07_t3",
+    "rows": 120000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 188,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "D2-t3",
+   "role": "positivo",
+   "category": "DISTINCT",
+   "query_ids": {
+    "target": "ql_demo/2536378da11bffa4af4168305ee70a168064991aca22b04b24fe3c36d9a8c03a"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT DISTINCT s, g_lo FROM ql_m07_t3) x"
+   },
+   "meta": {
+    "template": "D2",
+    "table": "ql_m07_t3",
+    "rows": 120000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 484,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "W1-t3",
+   "role": "positivo",
+   "category": "ventana",
+   "query_ids": {
+    "target": "ql_demo/75062f2d1e0325cbd193610090e94270d21e6632ef845a92990a0f4f871aaf5e"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY g_mid ORDER BY amt) AS rn FROM ql_m07_t3) x WHERE rn = 1"
+   },
+   "meta": {
+    "template": "W1",
+    "table": "ql_m07_t3",
+    "rows": 120000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 22,
+    "calibracion_ms": 334,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "W2-t3",
+   "role": "positivo",
+   "category": "ventana",
+   "query_ids": {
+    "target": "ql_demo/648880b3c838c48b226b644eb59a9cc740282f3877cc36acabe13ffb3567357c"
+   },
+   "queries": {
+    "target": "SELECT MAX(r) FROM (SELECT RANK() OVER (ORDER BY amt, id) AS r FROM ql_m07_t3) x"
+   },
+   "meta": {
+    "template": "W2",
+    "table": "ql_m07_t3",
+    "rows": 120000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 19,
+    "calibracion_ms": 182,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "W3-t3",
+   "role": "positivo",
+   "category": "ventana",
+   "query_ids": {
+    "target": "ql_demo/e13f54e0fdb7a572ac14d7fec29535f85679347611b20f92ebd59dae578989ad"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT g_hi, SUM(amt) OVER (PARTITION BY g_hi) AS t FROM ql_m07_t3) x WHERE t > 1500"
+   },
+   "meta": {
+    "template": "W3",
+    "table": "ql_m07_t3",
+    "rows": 120000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 14,
+    "calibracion_ms": 592,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "U1-t3",
+   "role": "positivo",
+   "category": "UNION / EXCEPT",
+   "query_ids": {
+    "target": "ql_demo/c1d42b0ffc4a3e2edc3fa5ab150fbd5926681e1612a524d2f2217a109ea9f763"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT g_hi FROM ql_m07_t3 UNION SELECT fk FROM ql_m07_t3) x"
+   },
+   "meta": {
+    "template": "U1",
+    "table": "ql_m07_t3",
+    "rows": 120000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 309,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "U2-t3",
+   "role": "positivo",
+   "category": "UNION / EXCEPT",
+   "query_ids": {
+    "target": "ql_demo/b445564d23f8d358c11d5d3e40dbeee75414f5269da71d990fdf873dad48764e"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT g_hi FROM ql_m07_t3 EXCEPT SELECT fk FROM ql_m07_t4) x"
+   },
+   "meta": {
+    "template": "U2",
+    "table": "ql_m07_t3",
+    "rows": 120000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 926,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "C1-t3",
+   "role": "positivo",
+   "category": "CTE / derivada",
+   "query_ids": {
+    "target": "ql_demo/c74b7f584b80f494455b1f44fbcf039a4a4da6ed81033d5cc540a1b2751df295"
+   },
+   "queries": {
+    "target": "WITH c AS (SELECT g_hi, COUNT(*) AS n FROM ql_m07_t3 GROUP BY g_hi) SELECT COUNT(*) FROM c WHERE n > 2"
+   },
+   "meta": {
+    "template": "C1",
+    "table": "ql_m07_t3",
+    "rows": 120000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 338,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "C2-t3",
+   "role": "positivo",
+   "category": "CTE / derivada",
+   "query_ids": {
+    "target": "ql_demo/7684a75fd656ff86c53fb63e66dae89730fae817caef73930361d14c3af82656"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT fk, MIN(d) AS m FROM ql_m07_t3 GROUP BY fk) x WHERE m > '2027-01-01'"
+   },
+   "meta": {
+    "template": "C2",
+    "table": "ql_m07_t3",
+    "rows": 120000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 328,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "Q1-t3",
+   "role": "positivo",
+   "category": "subconsulta IN",
+   "query_ids": {
+    "target": "ql_demo/672256ba31c9a75d73833f801adbfe4f32059605a91eec41a6b1d89f3ffdcd41"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m07_t3 WHERE g_hi IN (SELECT fk FROM ql_m07_t4 WHERE g_lo < 50)"
+   },
+   "meta": {
+    "template": "Q1",
+    "table": "ql_m07_t3",
+    "rows": 120000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 298,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G1-t4",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/ce30975546dbb7548be266ffe3e22447e599917a77c8419f34095e4fbd28cf33"
+   },
+   "queries": {
+    "target": "SELECT g_hi, COUNT(*) FROM ql_m07_t4 GROUP BY g_hi HAVING COUNT(*) > 4"
+   },
+   "meta": {
+    "template": "G1",
+    "table": "ql_m07_t4",
+    "rows": 160000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 524,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G2-t4",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/cbbd73e06fa72188b382b7732c8fc7e9710a2a51e1a4d7604d65ed9389130e7c"
+   },
+   "queries": {
+    "target": "SELECT g_mid, SUM(amt) FROM ql_m07_t4 GROUP BY g_mid HAVING SUM(amt) > 9000"
+   },
+   "meta": {
+    "template": "G2",
+    "table": "ql_m07_t4",
+    "rows": 160000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 572,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G3-t4",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/c310db7720f6921fa6748ec9331e7fa8a1f2f22dfdd82490e5dbf14033530933"
+   },
+   "queries": {
+    "target": "SELECT s, COUNT(*) FROM ql_m07_t4 GROUP BY s HAVING COUNT(*) > 6"
+   },
+   "meta": {
+    "template": "G3",
+    "table": "ql_m07_t4",
+    "rows": 160000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 1089,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G4-t4",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/19bfa0f0d289d4362f72cd343b2c0fa3b09e2000d16f457b5fd5e48eab22e158"
+   },
+   "queries": {
+    "target": "SELECT g_hi, g_lo, MAX(amt) FROM ql_m07_t4 GROUP BY g_hi, g_lo HAVING MAX(amt) > 999"
+   },
+   "meta": {
+    "template": "G4",
+    "table": "ql_m07_t4",
+    "rows": 160000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 556,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G5-t4",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/662efbb02b486d6ca2621b037cdd8df7644638cff962cbe6a7fa7f0cde0163a4"
+   },
+   "queries": {
+    "target": "SELECT d, g_mid, COUNT(*) FROM ql_m07_t4 GROUP BY d, g_mid HAVING COUNT(*) > 2"
+   },
+   "meta": {
+    "template": "G5",
+    "table": "ql_m07_t4",
+    "rows": 160000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 641,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G6-t4",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/ea214c6ee2e1eed85278aa41f8dbc428185e4dc1065d741861cb7de5378eae33"
+   },
+   "queries": {
+    "target": "SELECT fk % 40000, AVG(amt) FROM ql_m07_t4 GROUP BY fk % 40000 HAVING AVG(amt) > 995"
+   },
+   "meta": {
+    "template": "G6",
+    "table": "ql_m07_t4",
+    "rows": 160000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 594,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G7-t4",
+   "role": "positivo",
+   "category": "GROUP BY + ORDER BY",
+   "query_ids": {
+    "target": "ql_demo/8d50585970cb022bc86bc8c4646222e9e3e4ea0c91e6ff8313a6ae1883b3e8f7"
+   },
+   "queries": {
+    "target": "SELECT g_hi, COUNT(*) FROM ql_m07_t4 GROUP BY g_hi ORDER BY COUNT(*) DESC, g_hi LIMIT 5"
+   },
+   "meta": {
+    "template": "G7",
+    "table": "ql_m07_t4",
+    "rows": 160000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 455,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "D1-t4",
+   "role": "positivo",
+   "category": "DISTINCT",
+   "query_ids": {
+    "target": "ql_demo/b8bc6bff4b4e9c4f3743cec2d4230ea489fc08ff7f214189e30c112665e0f66e"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT DISTINCT g_hi FROM ql_m07_t4) x"
+   },
+   "meta": {
+    "template": "D1",
+    "table": "ql_m07_t4",
+    "rows": 160000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 265,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "D2-t4",
+   "role": "positivo",
+   "category": "DISTINCT",
+   "query_ids": {
+    "target": "ql_demo/deacb9a2cfd39c03c47d58e70f2e50ff6a6d5420dee62024a0c24ea5372a9d7a"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT DISTINCT s, g_lo FROM ql_m07_t4) x"
+   },
+   "meta": {
+    "template": "D2",
+    "table": "ql_m07_t4",
+    "rows": 160000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 675,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "W1-t4",
+   "role": "positivo",
+   "category": "ventana",
+   "query_ids": {
+    "target": "ql_demo/66d9332c812a204c39e932c275ae4ee7c2a3ce49db86e36a76a0f547ef188ebc"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY g_mid ORDER BY amt) AS rn FROM ql_m07_t4) x WHERE rn = 1"
+   },
+   "meta": {
+    "template": "W1",
+    "table": "ql_m07_t4",
+    "rows": 160000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 28,
+    "calibracion_ms": 447,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "W2-t4",
+   "role": "positivo",
+   "category": "ventana",
+   "query_ids": {
+    "target": "ql_demo/8f867d6a316d4ad4cace8f24bb92840d2ee8fd7eed3bcd5f26a8235444b56bdf"
+   },
+   "queries": {
+    "target": "SELECT MAX(r) FROM (SELECT RANK() OVER (ORDER BY amt, id) AS r FROM ql_m07_t4) x"
+   },
+   "meta": {
+    "template": "W2",
+    "table": "ql_m07_t4",
+    "rows": 160000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 25,
+    "calibracion_ms": 235,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "W3-t4",
+   "role": "positivo",
+   "category": "ventana",
+   "query_ids": {
+    "target": "ql_demo/1eda22a70234ffbcf9ae00995a566a1b250580a6d65535aa410dcdd51dbbffdd"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT g_hi, SUM(amt) OVER (PARTITION BY g_hi) AS t FROM ql_m07_t4) x WHERE t > 1500"
+   },
+   "meta": {
+    "template": "W3",
+    "table": "ql_m07_t4",
+    "rows": 160000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 22,
+    "calibracion_ms": 706,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "U1-t4",
+   "role": "positivo",
+   "category": "UNION / EXCEPT",
+   "query_ids": {
+    "target": "ql_demo/9d954337307ebf0745ca372320b1b85f6181c89659d126edcb36ae8fd99b0f50"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT g_hi FROM ql_m07_t4 UNION SELECT fk FROM ql_m07_t4) x"
+   },
+   "meta": {
+    "template": "U1",
+    "table": "ql_m07_t4",
+    "rows": 160000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 443,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "U2-t4",
+   "role": "positivo",
+   "category": "UNION / EXCEPT",
+   "query_ids": {
+    "target": "ql_demo/b105f3764c105a038ed2686860f79eee0f4135912392c831c698490c972b084d"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT g_hi FROM ql_m07_t4 EXCEPT SELECT fk FROM ql_m07_t5) x"
+   },
+   "meta": {
+    "template": "U2",
+    "table": "ql_m07_t4",
+    "rows": 160000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 1304,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "C1-t4",
+   "role": "positivo",
+   "category": "CTE / derivada",
+   "query_ids": {
+    "target": "ql_demo/6052f0dc59b6c4f9d7dbb6642a454abb06d1f3041192f3bf09475295d0367cf8"
+   },
+   "queries": {
+    "target": "WITH c AS (SELECT g_hi, COUNT(*) AS n FROM ql_m07_t4 GROUP BY g_hi) SELECT COUNT(*) FROM c WHERE n > 2"
+   },
+   "meta": {
+    "template": "C1",
+    "table": "ql_m07_t4",
+    "rows": 160000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 480,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "C2-t4",
+   "role": "positivo",
+   "category": "CTE / derivada",
+   "query_ids": {
+    "target": "ql_demo/8099974a249c52752e752c2661d729e2c9afa673e174649e44f5e341f890975d"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT fk, MIN(d) AS m FROM ql_m07_t4 GROUP BY fk) x WHERE m > '2027-01-01'"
+   },
+   "meta": {
+    "template": "C2",
+    "table": "ql_m07_t4",
+    "rows": 160000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 446,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "Q1-t4",
+   "role": "positivo",
+   "category": "subconsulta IN",
+   "query_ids": {
+    "target": "ql_demo/77c16968fd7edd95440b5315f3d323c203815c04db0308a73c7cf7662bc9e079"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m07_t4 WHERE g_hi IN (SELECT fk FROM ql_m07_t5 WHERE g_lo < 50)"
+   },
+   "meta": {
+    "template": "Q1",
+    "table": "ql_m07_t4",
+    "rows": 160000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 345,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G1-t5",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/e432044c6cb647c5ad8fbf81e47c8a9b3fd3216f22799cf46a756a485fd1ddd2"
+   },
+   "queries": {
+    "target": "SELECT g_hi, COUNT(*) FROM ql_m07_t5 GROUP BY g_hi HAVING COUNT(*) > 4"
+   },
+   "meta": {
+    "template": "G1",
+    "table": "ql_m07_t5",
+    "rows": 200000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 667,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G2-t5",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/4092acff04b4f8d6ba52b9fc9fc5afe68e82292e2b58f48e497eaaeea1c6a057"
+   },
+   "queries": {
+    "target": "SELECT g_mid, SUM(amt) FROM ql_m07_t5 GROUP BY g_mid HAVING SUM(amt) > 9000"
+   },
+   "meta": {
+    "template": "G2",
+    "table": "ql_m07_t5",
+    "rows": 200000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 778,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G3-t5",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/ffdabfb7828e2c4bdfa417de143c81cefa5baf4296cdfa5b3fcbf44fc965f861"
+   },
+   "queries": {
+    "target": "SELECT s, COUNT(*) FROM ql_m07_t5 GROUP BY s HAVING COUNT(*) > 6"
+   },
+   "meta": {
+    "template": "G3",
+    "table": "ql_m07_t5",
+    "rows": 200000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 1354,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G4-t5",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/82d1e274e15e5106e55f9ce7505caeb02969bb4c48a68b73694eb44d2fe12abc"
+   },
+   "queries": {
+    "target": "SELECT g_hi, g_lo, MAX(amt) FROM ql_m07_t5 GROUP BY g_hi, g_lo HAVING MAX(amt) > 999"
+   },
+   "meta": {
+    "template": "G4",
+    "table": "ql_m07_t5",
+    "rows": 200000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 706,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G5-t5",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/91cbbffe506073881886e30bb55d69cdb210517f94a770eddb669b613321b459"
+   },
+   "queries": {
+    "target": "SELECT d, g_mid, COUNT(*) FROM ql_m07_t5 GROUP BY d, g_mid HAVING COUNT(*) > 2"
+   },
+   "meta": {
+    "template": "G5",
+    "table": "ql_m07_t5",
+    "rows": 200000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 798,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G6-t5",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/7c5614aa806a8e4d5b5dd2be7dbce040c1634f64d2007bd0fc7cbe60b5c78f17"
+   },
+   "queries": {
+    "target": "SELECT fk % 40000, AVG(amt) FROM ql_m07_t5 GROUP BY fk % 40000 HAVING AVG(amt) > 995"
+   },
+   "meta": {
+    "template": "G6",
+    "table": "ql_m07_t5",
+    "rows": 200000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 757,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "G7-t5",
+   "role": "positivo",
+   "category": "GROUP BY + ORDER BY",
+   "query_ids": {
+    "target": "ql_demo/cc4116f47512c903f19d74e41fc1e6851789286e5323b6272d5a501a79f5dc0b"
+   },
+   "queries": {
+    "target": "SELECT g_hi, COUNT(*) FROM ql_m07_t5 GROUP BY g_hi ORDER BY COUNT(*) DESC, g_hi LIMIT 5"
+   },
+   "meta": {
+    "template": "G7",
+    "table": "ql_m07_t5",
+    "rows": 200000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 593,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "D1-t5",
+   "role": "positivo",
+   "category": "DISTINCT",
+   "query_ids": {
+    "target": "ql_demo/a03add0b8d90ae7890234c023f16f836e802b4d69aeae9798ccc4f43d35d95e3"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT DISTINCT g_hi FROM ql_m07_t5) x"
+   },
+   "meta": {
+    "template": "D1",
+    "table": "ql_m07_t5",
+    "rows": 200000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 325,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "D2-t5",
+   "role": "positivo",
+   "category": "DISTINCT",
+   "query_ids": {
+    "target": "ql_demo/65812e443df6bacdc8785843e68668b7277a610a270518976d1778b7656471ed"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT DISTINCT s, g_lo FROM ql_m07_t5) x"
+   },
+   "meta": {
+    "template": "D2",
+    "table": "ql_m07_t5",
+    "rows": 200000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 983,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "W1-t5",
+   "role": "positivo",
+   "category": "ventana",
+   "query_ids": {
+    "target": "ql_demo/10fab46fd8a74dd0673a9a663500ce89ef0def6fc6bae3d6e159b7b1bb1c2dc9"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY g_mid ORDER BY amt) AS rn FROM ql_m07_t5) x WHERE rn = 1"
+   },
+   "meta": {
+    "template": "W1",
+    "table": "ql_m07_t5",
+    "rows": 200000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 35,
+    "calibracion_ms": 591,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "W2-t5",
+   "role": "positivo",
+   "category": "ventana",
+   "query_ids": {
+    "target": "ql_demo/914576fe8e4d8776d37b0e4458767f1c679fa304d861fae82eea8a9e1d33941f"
+   },
+   "queries": {
+    "target": "SELECT MAX(r) FROM (SELECT RANK() OVER (ORDER BY amt, id) AS r FROM ql_m07_t5) x"
+   },
+   "meta": {
+    "template": "W2",
+    "table": "ql_m07_t5",
+    "rows": 200000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 31,
+    "calibracion_ms": 283,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "W3-t5",
+   "role": "positivo",
+   "category": "ventana",
+   "query_ids": {
+    "target": "ql_demo/25ba85291f30da99cfae0b79733212d2d0c4c8dd11ea415686544ada71ff59fc"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT g_hi, SUM(amt) OVER (PARTITION BY g_hi) AS t FROM ql_m07_t5) x WHERE t > 1500"
+   },
+   "meta": {
+    "template": "W3",
+    "table": "ql_m07_t5",
+    "rows": 200000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 26,
+    "calibracion_ms": 824,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "U1-t5",
+   "role": "positivo",
+   "category": "UNION / EXCEPT",
+   "query_ids": {
+    "target": "ql_demo/70e9f882a2b15327a05887aa8c03b8892d6d56c4ed43bc98b8965703a544db1b"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT g_hi FROM ql_m07_t5 UNION SELECT fk FROM ql_m07_t5) x"
+   },
+   "meta": {
+    "template": "U1",
+    "table": "ql_m07_t5",
+    "rows": 200000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 582,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "U2-t5",
+   "role": "positivo",
+   "category": "UNION / EXCEPT",
+   "query_ids": {
+    "target": "ql_demo/3209c42e4a8256f678a99ce8677d94dbc63350f57523ff26d04685d1d17f1097"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM (SELECT g_hi FROM ql_m07_t5 EXCEPT SELECT fk FROM ql_m07_t0) x"
+   },
+   "meta": {
+    "template": "U2",
+    "table": "ql_m07_t5",
+    "rows": 200000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 1038,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "C1-t5",
+   "role": "positivo",
+   "category": "CTE / derivada",
+   "query_ids": {
+    "target": "ql_demo/1d566a76382b1b62b70316a282e6a6c216575878bede8bc2abeb816056402cba"
+   },
+   "queries": {
+    "target": "WITH c AS (SELECT g_hi, COUNT(*) AS n FROM ql_m07_t5 GROUP BY g_hi) SELECT COUNT(*) FROM c WHERE n > 2"
+   },
+   "meta": {
+    "template": "C1",
+    "table": "ql_m07_t5",
+    "rows": 200000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 589,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "D4-t0",
+   "role": "extra",
+   "category": "COUNT(DISTINCT) (solo ordenamiento: fuera de AP-07 en MySQL)",
+   "query_ids": {
+    "target": "ql_demo/6758c54df45d7cc636ef4b43d3278f2e48b228bea1ce6c05dcd67f10a41867cb"
+   },
+   "queries": {
+    "target": "SELECT g_lo, COUNT(DISTINCT s) FROM ql_m07_t0 GROUP BY g_lo"
+   },
+   "meta": {
+    "template": "D4",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 4,
+    "calibracion_ms": 44,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "S1-t0",
+   "role": "extra",
+   "category": "ORDER BY grande (solo ordenamiento: fuera de AP-07 en MySQL)",
+   "query_ids": {
+    "target": "ql_demo/052fc117a832336106cc571874213f5503148e70a64959d0c942b62df89483c8"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m07_t0 ORDER BY g_hi, id LIMIT 1 OFFSET 15000"
+   },
+   "meta": {
+    "template": "S1",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 5,
+    "calibracion_ms": 27,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "S2-t0",
+   "role": "extra",
+   "category": "ORDER BY grande (solo ordenamiento: fuera de AP-07 en MySQL)",
+   "query_ids": {
+    "target": "ql_demo/9a658370b939d9c4bbba2c36e9d0eed408108d526c9a13922b8b96e01dd591d5"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m07_t0 ORDER BY s DESC, id LIMIT 1 OFFSET 15000"
+   },
+   "meta": {
+    "template": "S2",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 7,
+    "calibracion_ms": 33,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "S3-t0",
+   "role": "extra",
+   "category": "ORDER BY grande (solo ordenamiento: fuera de AP-07 en MySQL)",
+   "query_ids": {
+    "target": "ql_demo/1c9b571642af8c561dc15e871540cd7ab60180b172df58acd46246628db6ad53"
+   },
+   "queries": {
+    "target": "SELECT id, amt FROM ql_m07_t0 ORDER BY amt, fk LIMIT 1 OFFSET 15000"
+   },
+   "meta": {
+    "template": "S3",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 6,
+    "calibracion_ms": 31,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "R1-t0",
+   "role": "extra",
+   "category": "ROLLUP (solo ordenamiento: fuera de AP-07 en MySQL)",
+   "query_ids": {
+    "target": "ql_demo/8bf4f462da437a0748fbf3158d3001e0cc1406afff747a546bd2633316632385"
+   },
+   "queries": {
+    "target": "SELECT g_mid, g_lo, COUNT(*) FROM ql_m07_t0 GROUP BY g_mid, g_lo WITH ROLLUP HAVING COUNT(*) > 40"
+   },
+   "meta": {
+    "template": "R1",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 6,
+    "calibracion_ms": 32,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "A2-t0",
+   "role": "extra",
+   "category": "agregado ordenado (solo ordenamiento: fuera de AP-07 en MySQL)",
+   "query_ids": {
+    "target": "ql_demo/919ab5c9a5dec816fcbdb893d739fe5f8100f124268141a2781ad9f9add7758f"
+   },
+   "queries": {
+    "target": "SELECT g_lo, LENGTH(GROUP_CONCAT(s ORDER BY s)) FROM ql_m07_t0 GROUP BY g_lo"
+   },
+   "meta": {
+    "template": "A2",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 4,
+    "calibracion_ms": 41,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "D4-t1",
+   "role": "extra",
+   "category": "COUNT(DISTINCT) (solo ordenamiento: fuera de AP-07 en MySQL)",
+   "query_ids": {
+    "target": "ql_demo/02ccf14ac0fbca19a4438639afabf7006ddc09953dedb0019cd2fbe27fc3e381"
+   },
+   "queries": {
+    "target": "SELECT g_lo, COUNT(DISTINCT s) FROM ql_m07_t1 GROUP BY g_lo"
+   },
+   "meta": {
+    "template": "D4",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 6,
+    "calibracion_ms": 63,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "S1-t1",
+   "role": "extra",
+   "category": "ORDER BY grande (solo ordenamiento: fuera de AP-07 en MySQL)",
+   "query_ids": {
+    "target": "ql_demo/9c0a1e23a30d35437bb6953090960a373e2a60cbca2c1114aa9b831e665723cf"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m07_t1 ORDER BY g_hi, id LIMIT 1 OFFSET 25000"
+   },
+   "meta": {
+    "template": "S1",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 8,
+    "calibracion_ms": 36,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "S2-t1",
+   "role": "extra",
+   "category": "ORDER BY grande (solo ordenamiento: fuera de AP-07 en MySQL)",
+   "query_ids": {
+    "target": "ql_demo/5429df88c4d1c1ab71b74aeec480ffcb3f2f6253950f5db301ed0e649aa2e654"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m07_t1 ORDER BY s DESC, id LIMIT 1 OFFSET 25000"
+   },
+   "meta": {
+    "template": "S2",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 10,
+    "calibracion_ms": 48,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "S3-t1",
+   "role": "extra",
+   "category": "ORDER BY grande (solo ordenamiento: fuera de AP-07 en MySQL)",
+   "query_ids": {
+    "target": "ql_demo/509aee95744a0f2d098411589671e0d727afc0c03abb36375dcbd9de575d7142"
+   },
+   "queries": {
+    "target": "SELECT id, amt FROM ql_m07_t1 ORDER BY amt, fk LIMIT 1 OFFSET 25000"
+   },
+   "meta": {
+    "template": "S3",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 8,
+    "calibracion_ms": 45,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "R1-t1",
+   "role": "extra",
+   "category": "ROLLUP (solo ordenamiento: fuera de AP-07 en MySQL)",
+   "query_ids": {
+    "target": "ql_demo/0775116acc34861596261e0eec461a29276483f69a58b080e2907654634f1255"
+   },
+   "queries": {
+    "target": "SELECT g_mid, g_lo, COUNT(*) FROM ql_m07_t1 GROUP BY g_mid, g_lo WITH ROLLUP HAVING COUNT(*) > 40"
+   },
+   "meta": {
+    "template": "R1",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 8,
+    "calibracion_ms": 45,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "A2-t1",
+   "role": "extra",
+   "category": "agregado ordenado (solo ordenamiento: fuera de AP-07 en MySQL)",
+   "query_ids": {
+    "target": "ql_demo/2147d8116f7ec2a8239f8ccd522d3afd78ec81dbd43bfc4600acc1b2cfc71726"
+   },
+   "queries": {
+    "target": "SELECT g_lo, LENGTH(GROUP_CONCAT(s ORDER BY s)) FROM ql_m07_t1 GROUP BY g_lo"
+   },
+   "meta": {
+    "template": "A2",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 65536; SET SESSION max_heap_table_size = 65536; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 6,
+    "calibracion_ms": 62,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "D4-t2",
+   "role": "extra",
+   "category": "COUNT(DISTINCT) (solo ordenamiento: fuera de AP-07 en MySQL)",
+   "query_ids": {
+    "target": "ql_demo/aca75fa723ab945e607869387d73fce80978f1a3f2638c72b62a43328d373aa6"
+   },
+   "queries": {
+    "target": "SELECT g_lo, COUNT(DISTINCT s) FROM ql_m07_t2 GROUP BY g_lo"
+   },
+   "meta": {
+    "template": "D4",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 10,
+    "calibracion_ms": 90,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "S1-t2",
+   "role": "extra",
+   "category": "ORDER BY grande (solo ordenamiento: fuera de AP-07 en MySQL)",
+   "query_ids": {
+    "target": "ql_demo/bdb41299e73e6a55fc2ecea77c80d4644845b349210203d1c673a77d0a61e64d"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m07_t2 ORDER BY g_hi, id LIMIT 1 OFFSET 40000"
+   },
+   "meta": {
+    "template": "S1",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 12,
+    "calibracion_ms": 52,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "S2-t2",
+   "role": "extra",
+   "category": "ORDER BY grande (solo ordenamiento: fuera de AP-07 en MySQL)",
+   "query_ids": {
+    "target": "ql_demo/c475c2964d0403457a0685f2ac894233f1f3ad531d3835dbbd939eb983b33227"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m07_t2 ORDER BY s DESC, id LIMIT 1 OFFSET 40000"
+   },
+   "meta": {
+    "template": "S2",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 16,
+    "calibracion_ms": 110,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "S3-t2",
+   "role": "extra",
+   "category": "ORDER BY grande (solo ordenamiento: fuera de AP-07 en MySQL)",
+   "query_ids": {
+    "target": "ql_demo/4119966ddc51290aa7162369ef8a400c35a6800b7a25c9ac392f49a1a11f6522"
+   },
+   "queries": {
+    "target": "SELECT id, amt FROM ql_m07_t2 ORDER BY amt, fk LIMIT 1 OFFSET 40000"
+   },
+   "meta": {
+    "template": "S3",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 13,
+    "calibracion_ms": 60,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "R1-t2",
+   "role": "extra",
+   "category": "ROLLUP (solo ordenamiento: fuera de AP-07 en MySQL)",
+   "query_ids": {
+    "target": "ql_demo/ce5b91c7cb563b38e9e58e1d99f5dadebc246fee3dbb7667b2f65fb430a5a6b9"
+   },
+   "queries": {
+    "target": "SELECT g_mid, g_lo, COUNT(*) FROM ql_m07_t2 GROUP BY g_mid, g_lo WITH ROLLUP HAVING COUNT(*) > 40"
+   },
+   "meta": {
+    "template": "R1",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 13,
+    "calibracion_ms": 68,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "A2-t2",
+   "role": "extra",
+   "category": "agregado ordenado (solo ordenamiento: fuera de AP-07 en MySQL)",
+   "query_ids": {
+    "target": "ql_demo/ddb3bcefe59e4a76fa3de581ce49bafae82b579aec54a01b970916f3a548852c"
+   },
+   "queries": {
+    "target": "SELECT g_lo, LENGTH(GROUP_CONCAT(s ORDER BY s)) FROM ql_m07_t2 GROUP BY g_lo"
+   },
+   "meta": {
+    "template": "A2",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 262144; SET SESSION max_heap_table_size = 262144; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 10,
+    "calibracion_ms": 93,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "D4-t3",
+   "role": "extra",
+   "category": "COUNT(DISTINCT) (solo ordenamiento: fuera de AP-07 en MySQL)",
+   "query_ids": {
+    "target": "ql_demo/1c804ad8d55e9bd26c51ca8dd6878646093de589e694d3441d06b9b21c6d5862"
+   },
+   "queries": {
+    "target": "SELECT g_lo, COUNT(DISTINCT s) FROM ql_m07_t3 GROUP BY g_lo"
+   },
+   "meta": {
+    "template": "D4",
+    "table": "ql_m07_t3",
+    "rows": 120000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 14,
+    "calibracion_ms": 155,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "S1-t3",
+   "role": "extra",
+   "category": "ORDER BY grande (solo ordenamiento: fuera de AP-07 en MySQL)",
+   "query_ids": {
+    "target": "ql_demo/cb7753c31c31c55be5dc71ab8188affe2b088542d71b5102baf222c1a8e5fa6b"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m07_t3 ORDER BY g_hi, id LIMIT 1 OFFSET 60000"
+   },
+   "meta": {
+    "template": "S1",
+    "table": "ql_m07_t3",
+    "rows": 120000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = MEMORY; SET SESSION tmp_table_size = 16384; SET SESSION max_heap_table_size = 16384; SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 20,
+    "calibracion_ms": 75,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K1-t0",
+   "role": "control",
+   "category": "GROUP BY chico",
+   "query_ids": {
+    "target": "ql_demo/9efa974d111f39f3ea7138ebb833126942a72b26771082b9792e08bf2733d731"
+   },
+   "queries": {
+    "target": "SELECT g_lo, COUNT(*) FROM ql_m07_t0 GROUP BY g_lo"
+   },
+   "meta": {
+    "template": "K1",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 21,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K2-t0",
+   "role": "control",
+   "category": "filtro + GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/a5b3fed2a9558fa0fc376366d0766582833aa6f12df25d7e22009ad4b7faab1a"
+   },
+   "queries": {
+    "target": "SELECT g_lo, AVG(amt) FROM ql_m07_t0 WHERE id < 3000 GROUP BY g_lo"
+   },
+   "meta": {
+    "template": "K2",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 13,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K3-t0",
+   "role": "control",
+   "category": "DISTINCT chico",
+   "query_ids": {
+    "target": "ql_demo/e7e15a933e72d97e3f26a1e7b3ae830577ce3b3ae1c8ce5a4660cb33e984b17e"
+   },
+   "queries": {
+    "target": "SELECT DISTINCT g_lo FROM ql_m07_t0 WHERE g_lo < 30"
+   },
+   "meta": {
+    "template": "K3",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 18,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K4-t0",
+   "role": "control",
+   "category": "top-N",
+   "query_ids": {
+    "target": "ql_demo/f3b787741a194a1bc0f365719496beda74c7bad272a76c58d738b61ae40b64c3"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m07_t0 WHERE id BETWEEN 1 AND 2000 ORDER BY amt LIMIT 10"
+   },
+   "meta": {
+    "template": "K4",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 13,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K5-t0",
+   "role": "control",
+   "category": "conteo",
+   "query_ids": {
+    "target": "ql_demo/12232f64118e2c19a867d6c96997b8cea6148f66a62a1b75989cc7217ed83500"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m07_t0 WHERE g_lo = 7"
+   },
+   "meta": {
+    "template": "K5",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 17,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K6-t0",
+   "role": "control",
+   "category": "orden por indice",
+   "query_ids": {
+    "target": "ql_demo/b52a5c31d03bad76cf08f586fdcf4423deb8d153f64df12548f9c4190969f973"
+   },
+   "queries": {
+    "target": "SELECT id, amt FROM ql_m07_t0 ORDER BY id DESC LIMIT 20"
+   },
+   "meta": {
+    "template": "K6",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 11,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K7-t0",
+   "role": "control",
+   "category": "GROUP BY chico",
+   "query_ids": {
+    "target": "ql_demo/3a9255fee569b408ab7dde3e3117da6b2401f03e9e090cf3a2efa4e67476f73e"
+   },
+   "queries": {
+    "target": "SELECT g_lo, MIN(d), MAX(d) FROM ql_m07_t0 GROUP BY g_lo"
+   },
+   "meta": {
+    "template": "K7",
+    "table": "ql_m07_t0",
+    "rows": 30000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 25,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K1-t1",
+   "role": "control",
+   "category": "GROUP BY chico",
+   "query_ids": {
+    "target": "ql_demo/968ba8c9761ebfb95662d4de5f3930df8eaa2c6c407a9285f57f29b936997070"
+   },
+   "queries": {
+    "target": "SELECT g_lo, COUNT(*) FROM ql_m07_t1 GROUP BY g_lo"
+   },
+   "meta": {
+    "template": "K1",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 27,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K2-t1",
+   "role": "control",
+   "category": "filtro + GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/c3ff27fe8c44b09eff9a32289cf687f2abb2d3664f5a3ec29d9a8590786e2d79"
+   },
+   "queries": {
+    "target": "SELECT g_lo, AVG(amt) FROM ql_m07_t1 WHERE id < 3000 GROUP BY g_lo"
+   },
+   "meta": {
+    "template": "K2",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 13,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K3-t1",
+   "role": "control",
+   "category": "DISTINCT chico",
+   "query_ids": {
+    "target": "ql_demo/0cc285e616cc7404b6e651244d2fa26dd2c7b909c36c58fed51e80711c857ada"
+   },
+   "queries": {
+    "target": "SELECT DISTINCT g_lo FROM ql_m07_t1 WHERE g_lo < 30"
+   },
+   "meta": {
+    "template": "K3",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 21,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K4-t1",
+   "role": "control",
+   "category": "top-N",
+   "query_ids": {
+    "target": "ql_demo/6fadcf325c2cba557305eecf9cb239850b3fb33d14231e9a6988632e2af5e24a"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m07_t1 WHERE id BETWEEN 1 AND 2000 ORDER BY amt LIMIT 10"
+   },
+   "meta": {
+    "template": "K4",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 11,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K5-t1",
+   "role": "control",
+   "category": "conteo",
+   "query_ids": {
+    "target": "ql_demo/f2e6af5dbe87a865e6e1d7391275609a145e038bb25816d143203c945bcf88b7"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m07_t1 WHERE g_lo = 7"
+   },
+   "meta": {
+    "template": "K5",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 21,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K6-t1",
+   "role": "control",
+   "category": "orden por indice",
+   "query_ids": {
+    "target": "ql_demo/1c657858fbb57ed9e48d3ec9d60dba506d0b8ffd2620ce81c1e77f7ef8fa6eb9"
+   },
+   "queries": {
+    "target": "SELECT id, amt FROM ql_m07_t1 ORDER BY id DESC LIMIT 20"
+   },
+   "meta": {
+    "template": "K6",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 11,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K7-t1",
+   "role": "control",
+   "category": "GROUP BY chico",
+   "query_ids": {
+    "target": "ql_demo/e4d4b432ca807961abc377d5a54b507d62f3d436ac92d9d56fcdf09494b86030"
+   },
+   "queries": {
+    "target": "SELECT g_lo, MIN(d), MAX(d) FROM ql_m07_t1 GROUP BY g_lo"
+   },
+   "meta": {
+    "template": "K7",
+    "table": "ql_m07_t1",
+    "rows": 50000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 31,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K1-t2",
+   "role": "control",
+   "category": "GROUP BY chico",
+   "query_ids": {
+    "target": "ql_demo/355fd516ad349691053395dd5d51931f783159c426ac3fa0c775f1058ddf3951"
+   },
+   "queries": {
+    "target": "SELECT g_lo, COUNT(*) FROM ql_m07_t2 GROUP BY g_lo"
+   },
+   "meta": {
+    "template": "K1",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 37,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K2-t2",
+   "role": "control",
+   "category": "filtro + GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/e53447f2381e4e2c3218621a332ad584245ab4609ea36bfaf5d6705d43477f42"
+   },
+   "queries": {
+    "target": "SELECT g_lo, AVG(amt) FROM ql_m07_t2 WHERE id < 3000 GROUP BY g_lo"
+   },
+   "meta": {
+    "template": "K2",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 13,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K3-t2",
+   "role": "control",
+   "category": "DISTINCT chico",
+   "query_ids": {
+    "target": "ql_demo/60499b4f1313d7d56ef190383f624e94c015219c65809593e1d8429bb98fdca9"
+   },
+   "queries": {
+    "target": "SELECT DISTINCT g_lo FROM ql_m07_t2 WHERE g_lo < 30"
+   },
+   "meta": {
+    "template": "K3",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 29,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K4-t2",
+   "role": "control",
+   "category": "top-N",
+   "query_ids": {
+    "target": "ql_demo/c41b78d3b6d5262b9576e59caa641299cf3a56b141f5e1dd3bfaa36d5a7adfd2"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m07_t2 WHERE id BETWEEN 1 AND 2000 ORDER BY amt LIMIT 10"
+   },
+   "meta": {
+    "template": "K4",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 12,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K5-t2",
+   "role": "control",
+   "category": "conteo",
+   "query_ids": {
+    "target": "ql_demo/966da972dfa851a642f9c3bc5a3f4ba27122e4ccc6a9fe167f093c00f4389f17"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m07_t2 WHERE g_lo = 7"
+   },
+   "meta": {
+    "template": "K5",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 27,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K6-t2",
+   "role": "control",
+   "category": "orden por indice",
+   "query_ids": {
+    "target": "ql_demo/bbd9a01b8758e3fabf870371fa5dfe536d23e36e858900d9b885b912cdf65822"
+   },
+   "queries": {
+    "target": "SELECT id, amt FROM ql_m07_t2 ORDER BY id DESC LIMIT 20"
+   },
+   "meta": {
+    "template": "K6",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 12,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K7-t2",
+   "role": "control",
+   "category": "GROUP BY chico",
+   "query_ids": {
+    "target": "ql_demo/3962acefaa7ed51ea8c30b0a9dcbd52d94abd6bcd594d676c3ddba9a74e7add6"
+   },
+   "queries": {
+    "target": "SELECT g_lo, MIN(d), MAX(d) FROM ql_m07_t2 GROUP BY g_lo"
+   },
+   "meta": {
+    "template": "K7",
+    "table": "ql_m07_t2",
+    "rows": 80000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 42,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K1-t3",
+   "role": "control",
+   "category": "GROUP BY chico",
+   "query_ids": {
+    "target": "ql_demo/002b51eb2c3ea9046b05471812d15855f4b0eba7b7bccfde9a091db4b33faf19"
+   },
+   "queries": {
+    "target": "SELECT g_lo, COUNT(*) FROM ql_m07_t3 GROUP BY g_lo"
+   },
+   "meta": {
+    "template": "K1",
+    "table": "ql_m07_t3",
+    "rows": 120000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 48,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K2-t3",
+   "role": "control",
+   "category": "filtro + GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/d09003d82dfb0191b8f9ebdd6625bf779e77cd3d9a86b4dcaadeec3f1deee03e"
+   },
+   "queries": {
+    "target": "SELECT g_lo, AVG(amt) FROM ql_m07_t3 WHERE id < 3000 GROUP BY g_lo"
+   },
+   "meta": {
+    "template": "K2",
+    "table": "ql_m07_t3",
+    "rows": 120000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 13,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K3-t3",
+   "role": "control",
+   "category": "DISTINCT chico",
+   "query_ids": {
+    "target": "ql_demo/bc3f07c6ae1d7f3cd9357537c9f1b0f4e1170cd97c0c8c9c2cc279e3e759e161"
+   },
+   "queries": {
+    "target": "SELECT DISTINCT g_lo FROM ql_m07_t3 WHERE g_lo < 30"
+   },
+   "meta": {
+    "template": "K3",
+    "table": "ql_m07_t3",
+    "rows": 120000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 36,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K4-t3",
+   "role": "control",
+   "category": "top-N",
+   "query_ids": {
+    "target": "ql_demo/16287cc3335eef8d34b8f3992091cac2c35dc4368eb54b31359a13c244dd1450"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m07_t3 WHERE id BETWEEN 1 AND 2000 ORDER BY amt LIMIT 10"
+   },
+   "meta": {
+    "template": "K4",
+    "table": "ql_m07_t3",
+    "rows": 120000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 13,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K5-t3",
+   "role": "control",
+   "category": "conteo",
+   "query_ids": {
+    "target": "ql_demo/cdc15af27a64d6c02c1e30d1e97c88df2cfba6c24b6b6a9c51aa67ea6ee97de7"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m07_t3 WHERE g_lo = 7"
+   },
+   "meta": {
+    "template": "K5",
+    "table": "ql_m07_t3",
+    "rows": 120000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 37,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K6-t3",
+   "role": "control",
+   "category": "orden por indice",
+   "query_ids": {
+    "target": "ql_demo/0525aca860141d40716b11fe5d09db468dfef3087730cb3f8be10f2268f8d5ff"
+   },
+   "queries": {
+    "target": "SELECT id, amt FROM ql_m07_t3 ORDER BY id DESC LIMIT 20"
+   },
+   "meta": {
+    "template": "K6",
+    "table": "ql_m07_t3",
+    "rows": 120000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 11,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K7-t3",
+   "role": "control",
+   "category": "GROUP BY chico",
+   "query_ids": {
+    "target": "ql_demo/3db5496ed1631308ba4b9629509f90814da51b59c4708f7710b16a3cf886d082"
+   },
+   "queries": {
+    "target": "SELECT g_lo, MIN(d), MAX(d) FROM ql_m07_t3 GROUP BY g_lo"
+   },
+   "meta": {
+    "template": "K7",
+    "table": "ql_m07_t3",
+    "rows": 120000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 58,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K1-t4",
+   "role": "control",
+   "category": "GROUP BY chico",
+   "query_ids": {
+    "target": "ql_demo/9fb62e272d1493bfe652b836e883ab1e43667c2ae52928ba268f54af8aeb12b5"
+   },
+   "queries": {
+    "target": "SELECT g_lo, COUNT(*) FROM ql_m07_t4 GROUP BY g_lo"
+   },
+   "meta": {
+    "template": "K1",
+    "table": "ql_m07_t4",
+    "rows": 160000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 63,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K2-t4",
+   "role": "control",
+   "category": "filtro + GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/5865b89a10fb9771f83688a32a6c8f66bc507fa445cf287422fa6c05460536f8"
+   },
+   "queries": {
+    "target": "SELECT g_lo, AVG(amt) FROM ql_m07_t4 WHERE id < 3000 GROUP BY g_lo"
+   },
+   "meta": {
+    "template": "K2",
+    "table": "ql_m07_t4",
+    "rows": 160000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 13,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K3-t4",
+   "role": "control",
+   "category": "DISTINCT chico",
+   "query_ids": {
+    "target": "ql_demo/43c9032a760c9522ce67d659d460c455ad013564ad6037552346c1cfbf5a43c0"
+   },
+   "queries": {
+    "target": "SELECT DISTINCT g_lo FROM ql_m07_t4 WHERE g_lo < 30"
+   },
+   "meta": {
+    "template": "K3",
+    "table": "ql_m07_t4",
+    "rows": 160000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 44,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K4-t4",
+   "role": "control",
+   "category": "top-N",
+   "query_ids": {
+    "target": "ql_demo/982bec41554b0a5bfb6e0b06d6cdd90fc33223fd94d9a5e9b5ab8c12c5ba9226"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m07_t4 WHERE id BETWEEN 1 AND 2000 ORDER BY amt LIMIT 10"
+   },
+   "meta": {
+    "template": "K4",
+    "table": "ql_m07_t4",
+    "rows": 160000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 12,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K5-t4",
+   "role": "control",
+   "category": "conteo",
+   "query_ids": {
+    "target": "ql_demo/2a4e08c490522cfd4412f7fe75fe907dc3f2102406192623472a62806685b9b2"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m07_t4 WHERE g_lo = 7"
+   },
+   "meta": {
+    "template": "K5",
+    "table": "ql_m07_t4",
+    "rows": 160000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 44,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K6-t4",
+   "role": "control",
+   "category": "orden por indice",
+   "query_ids": {
+    "target": "ql_demo/02e1095bdb6f778d08aea4631a7aa2374538b9ee6576331aa4e359d55ef136a1"
+   },
+   "queries": {
+    "target": "SELECT id, amt FROM ql_m07_t4 ORDER BY id DESC LIMIT 20"
+   },
+   "meta": {
+    "template": "K6",
+    "table": "ql_m07_t4",
+    "rows": 160000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 12,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K7-t4",
+   "role": "control",
+   "category": "GROUP BY chico",
+   "query_ids": {
+    "target": "ql_demo/24ff806cbd12dfe60ca3074cc9163e458a6fc3ce885a79c2ca1f1cba4823af41"
+   },
+   "queries": {
+    "target": "SELECT g_lo, MIN(d), MAX(d) FROM ql_m07_t4 GROUP BY g_lo"
+   },
+   "meta": {
+    "template": "K7",
+    "table": "ql_m07_t4",
+    "rows": 160000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 73,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K1-t5",
+   "role": "control",
+   "category": "GROUP BY chico",
+   "query_ids": {
+    "target": "ql_demo/48a2845a416aa8a2371206c483c31c6a55ce722127b910712f5169617e245db8"
+   },
+   "queries": {
+    "target": "SELECT g_lo, COUNT(*) FROM ql_m07_t5 GROUP BY g_lo"
+   },
+   "meta": {
+    "template": "K1",
+    "table": "ql_m07_t5",
+    "rows": 200000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 76,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K2-t5",
+   "role": "control",
+   "category": "filtro + GROUP BY",
+   "query_ids": {
+    "target": "ql_demo/9adc0438c27130c86af5c08b3bd896a98f0cc05e8fa6f3425d8c4235365a0022"
+   },
+   "queries": {
+    "target": "SELECT g_lo, AVG(amt) FROM ql_m07_t5 WHERE id < 3000 GROUP BY g_lo"
+   },
+   "meta": {
+    "template": "K2",
+    "table": "ql_m07_t5",
+    "rows": 200000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 13,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K3-t5",
+   "role": "control",
+   "category": "DISTINCT chico",
+   "query_ids": {
+    "target": "ql_demo/1ffd3b39749a8c5d263d2ba3bff84708767a8f5cba846604196659118e7a3944"
+   },
+   "queries": {
+    "target": "SELECT DISTINCT g_lo FROM ql_m07_t5 WHERE g_lo < 30"
+   },
+   "meta": {
+    "template": "K3",
+    "table": "ql_m07_t5",
+    "rows": 200000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 52,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K4-t5",
+   "role": "control",
+   "category": "top-N",
+   "query_ids": {
+    "target": "ql_demo/590361dcef4bc58115f2fa3ed13c30a774a7cf26f92c57295633aa28c603c8d7"
+   },
+   "queries": {
+    "target": "SELECT id FROM ql_m07_t5 WHERE id BETWEEN 1 AND 2000 ORDER BY amt LIMIT 10"
+   },
+   "meta": {
+    "template": "K4",
+    "table": "ql_m07_t5",
+    "rows": 200000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 12,
+    "calibracion_error": null
+   }
+  },
+  {
+   "cid": "K5-t5",
+   "role": "control",
+   "category": "conteo",
+   "query_ids": {
+    "target": "ql_demo/8861b7401d1b74cd7f60c7d93d015454c7ce0164304d9e81951da7e0e7d060f2"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m07_t5 WHERE g_lo = 7"
+   },
+   "meta": {
+    "template": "K5",
+    "table": "ql_m07_t5",
+    "rows": 200000,
+    "memoria": "SET SESSION internal_tmp_mem_storage_engine = DEFAULT; SET SESSION tmp_table_size = DEFAULT; SET SESSION max_heap_table_size = DEFAULT; SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 51,
+    "calibracion_error": null
+   }
+  }
+ ],
+ "collisions": {},
+ "discarded": [
+  {
+   "cid": "D3-t0",
+   "role": "positivo",
+   "reason": "no derramo",
+   "query": "SELECT COUNT(DISTINCT fk) FROM ql_m07_t0",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 0,
+   "calibracion_ms": 36,
+   "calibracion_error": null
+  },
+  {
+   "cid": "D3-t1",
+   "role": "positivo",
+   "reason": "no derramo",
+   "query": "SELECT COUNT(DISTINCT fk) FROM ql_m07_t1",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 0,
+   "calibracion_ms": 48,
+   "calibracion_error": null
+  },
+  {
+   "cid": "D3-t2",
+   "role": "positivo",
+   "reason": "no derramo",
+   "query": "SELECT COUNT(DISTINCT fk) FROM ql_m07_t2",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 0,
+   "calibracion_ms": 48,
+   "calibracion_error": null
+  },
+  {
+   "cid": "D3-t3",
+   "role": "positivo",
+   "reason": "no derramo",
+   "query": "SELECT COUNT(DISTINCT fk) FROM ql_m07_t3",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 0,
+   "calibracion_ms": 74,
+   "calibracion_error": null
+  },
+  {
+   "cid": "D3-t4",
+   "role": "positivo",
+   "reason": "no derramo",
+   "query": "SELECT COUNT(DISTINCT fk) FROM ql_m07_t4",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 0,
+   "calibracion_ms": 81,
+   "calibracion_error": null
+  },
+  {
+   "cid": "D3-t5",
+   "role": "positivo",
+   "reason": "no derramo",
+   "query": "SELECT COUNT(DISTINCT fk) FROM ql_m07_t5",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 0,
+   "calibracion_ms": 98,
+   "calibracion_error": null
+  },
+  {
+   "cid": "J1-t0",
+   "role": "positivo",
+   "reason": "no derramo",
+   "query": "SELECT COUNT(*) FROM ql_m07_t0 a JOIN ql_m07_t1 b ON b.fk = a.g_hi",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 0,
+   "calibracion_ms": 41,
+   "calibracion_error": null
+  },
+  {
+   "cid": "J1-t1",
+   "role": "positivo",
+   "reason": "no derramo",
+   "query": "SELECT COUNT(*) FROM ql_m07_t1 a JOIN ql_m07_t2 b ON b.fk = a.g_hi",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 0,
+   "calibracion_ms": 62,
+   "calibracion_error": null
+  },
+  {
+   "cid": "J1-t2",
+   "role": "positivo",
+   "reason": "no derramo",
+   "query": "SELECT COUNT(*) FROM ql_m07_t2 a JOIN ql_m07_t3 b ON b.fk = a.g_hi",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 0,
+   "calibracion_ms": 96,
+   "calibracion_error": null
+  },
+  {
+   "cid": "J1-t3",
+   "role": "positivo",
+   "reason": "no derramo",
+   "query": "SELECT COUNT(*) FROM ql_m07_t3 a JOIN ql_m07_t4 b ON b.fk = a.g_hi",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 0,
+   "calibracion_ms": 123,
+   "calibracion_error": null
+  },
+  {
+   "cid": "J1-t4",
+   "role": "positivo",
+   "reason": "no derramo",
+   "query": "SELECT COUNT(*) FROM ql_m07_t4 a JOIN ql_m07_t5 b ON b.fk = a.g_hi",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 0,
+   "calibracion_ms": 150,
+   "calibracion_error": null
+  },
+  {
+   "cid": "J1-t5",
+   "role": "positivo",
+   "reason": "no derramo",
+   "query": "SELECT COUNT(*) FROM ql_m07_t5 a JOIN ql_m07_t0 b ON b.fk = a.g_hi",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 0,
+   "calibracion_ms": 88,
+   "calibracion_error": null
+  },
+  {
+   "cid": "D4-t4",
+   "role": "positivo",
+   "reason": "extra sobrante",
+   "query": "SELECT g_lo, COUNT(DISTINCT s) FROM ql_m07_t4 GROUP BY g_lo",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 20,
+   "calibracion_ms": 218,
+   "calibracion_error": null
+  },
+  {
+   "cid": "D4-t5",
+   "role": "positivo",
+   "reason": "extra sobrante",
+   "query": "SELECT g_lo, COUNT(DISTINCT s) FROM ql_m07_t5 GROUP BY g_lo",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 26,
+   "calibracion_ms": 227,
+   "calibracion_error": null
+  },
+  {
+   "cid": "S1-t4",
+   "role": "positivo",
+   "reason": "extra sobrante",
+   "query": "SELECT id FROM ql_m07_t4 ORDER BY g_hi, id LIMIT 1 OFFSET 80000",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 26,
+   "calibracion_ms": 100,
+   "calibracion_error": null
+  },
+  {
+   "cid": "S1-t5",
+   "role": "positivo",
+   "reason": "extra sobrante",
+   "query": "SELECT id FROM ql_m07_t5 ORDER BY g_hi, id LIMIT 1 OFFSET 100000",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 33,
+   "calibracion_ms": 129,
+   "calibracion_error": null
+  },
+  {
+   "cid": "S2-t3",
+   "role": "positivo",
+   "reason": "extra sobrante",
+   "query": "SELECT id FROM ql_m07_t3 ORDER BY s DESC, id LIMIT 1 OFFSET 60000",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 27,
+   "calibracion_ms": 115,
+   "calibracion_error": null
+  },
+  {
+   "cid": "S2-t4",
+   "role": "positivo",
+   "reason": "extra sobrante",
+   "query": "SELECT id FROM ql_m07_t4 ORDER BY s DESC, id LIMIT 1 OFFSET 80000",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 35,
+   "calibracion_ms": 175,
+   "calibracion_error": null
+  },
+  {
+   "cid": "S2-t5",
+   "role": "positivo",
+   "reason": "extra sobrante",
+   "query": "SELECT id FROM ql_m07_t5 ORDER BY s DESC, id LIMIT 1 OFFSET 100000",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 44,
+   "calibracion_ms": 175,
+   "calibracion_error": null
+  },
+  {
+   "cid": "S3-t3",
+   "role": "positivo",
+   "reason": "extra sobrante",
+   "query": "SELECT id, amt FROM ql_m07_t3 ORDER BY amt, fk LIMIT 1 OFFSET 60000",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 22,
+   "calibracion_ms": 90,
+   "calibracion_error": null
+  },
+  {
+   "cid": "S3-t4",
+   "role": "positivo",
+   "reason": "extra sobrante",
+   "query": "SELECT id, amt FROM ql_m07_t4 ORDER BY amt, fk LIMIT 1 OFFSET 80000",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 28,
+   "calibracion_ms": 117,
+   "calibracion_error": null
+  },
+  {
+   "cid": "S3-t5",
+   "role": "positivo",
+   "reason": "extra sobrante",
+   "query": "SELECT id, amt FROM ql_m07_t5 ORDER BY amt, fk LIMIT 1 OFFSET 100000",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 35,
+   "calibracion_ms": 143,
+   "calibracion_error": null
+  },
+  {
+   "cid": "R1-t3",
+   "role": "positivo",
+   "reason": "extra sobrante",
+   "query": "SELECT g_mid, g_lo, COUNT(*) FROM ql_m07_t3 GROUP BY g_mid, g_lo WITH ROLLUP HAVING COUNT(*) > 40",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 22,
+   "calibracion_ms": 104,
+   "calibracion_error": null
+  },
+  {
+   "cid": "R1-t4",
+   "role": "positivo",
+   "reason": "extra sobrante",
+   "query": "SELECT g_mid, g_lo, COUNT(*) FROM ql_m07_t4 GROUP BY g_mid, g_lo WITH ROLLUP HAVING COUNT(*) > 40",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 28,
+   "calibracion_ms": 157,
+   "calibracion_error": null
+  },
+  {
+   "cid": "R1-t5",
+   "role": "positivo",
+   "reason": "extra sobrante",
+   "query": "SELECT g_mid, g_lo, COUNT(*) FROM ql_m07_t5 GROUP BY g_mid, g_lo WITH ROLLUP HAVING COUNT(*) > 40",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 35,
+   "calibracion_ms": 172,
+   "calibracion_error": null
+  },
+  {
+   "cid": "A2-t3",
+   "role": "positivo",
+   "reason": "extra sobrante",
+   "query": "SELECT g_lo, LENGTH(GROUP_CONCAT(s ORDER BY s)) FROM ql_m07_t3 GROUP BY g_lo",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 14,
+   "calibracion_ms": 138,
+   "calibracion_error": null
+  },
+  {
+   "cid": "A2-t4",
+   "role": "positivo",
+   "reason": "extra sobrante",
+   "query": "SELECT g_lo, LENGTH(GROUP_CONCAT(s ORDER BY s)) FROM ql_m07_t4 GROUP BY g_lo",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 20,
+   "calibracion_ms": 201,
+   "calibracion_error": null
+  },
+  {
+   "cid": "A2-t5",
+   "role": "positivo",
+   "reason": "extra sobrante",
+   "query": "SELECT g_lo, LENGTH(GROUP_CONCAT(s ORDER BY s)) FROM ql_m07_t5 GROUP BY g_lo",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 26,
+   "calibracion_ms": 245,
+   "calibracion_error": null
+  },
+  {
+   "cid": "C2-t5",
+   "role": "positivo",
+   "reason": "positivo sobrante",
+   "query": "SELECT COUNT(*) FROM (SELECT fk, MIN(d) AS m FROM ql_m07_t5 GROUP BY fk) x WHERE m > '2027-01-01'",
+   "calibracion_spill": 1,
+   "calibracion_merge_passes": 0,
+   "calibracion_ms": 843,
+   "calibracion_error": null
+  },
+  {
+   "cid": "Q1-t5",
+   "role": "positivo",
+   "reason": "positivo sobrante",
+   "query": "SELECT COUNT(*) FROM ql_m07_t5 WHERE g_hi IN (SELECT fk FROM ql_m07_t0 WHERE g_lo < 50)",
+   "calibracion_spill": 1,
+   "calibracion_merge_passes": 0,
+   "calibracion_ms": 100,
+   "calibracion_error": null
+  },
+  {
+   "cid": "K6-t5",
+   "role": "control",
+   "reason": "control sobrante",
+   "query": "SELECT id, amt FROM ql_m07_t5 ORDER BY id DESC LIMIT 20",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 0,
+   "calibracion_ms": 11,
+   "calibracion_error": null
+  },
+  {
+   "cid": "K7-t5",
+   "role": "control",
+   "reason": "control sobrante",
+   "query": "SELECT g_lo, MIN(d), MAX(d) FROM ql_m07_t5 GROUP BY g_lo",
+   "calibracion_spill": 0,
+   "calibracion_merge_passes": 0,
+   "calibracion_ms": 88,
+   "calibracion_error": null
+  }
+ ]
+}

@@ -134,7 +134,8 @@ services:
     # Consumidor de la cola analyze_job (detection_engine/main.py): lee los
     # snapshots que encola el pipeline, detecta antipatrones y guarda los
     # hallazgos en la tabla hallazgos. Contexto = raiz del repo porque necesita
-    # querylens_database/ (DDL de hallazgos y statement_samples).
+    # querylens_database/ (DDL de hallazgos y statement_samples) y contract/
+    # (modelos del snapshot compartidos con el pipeline).
     build:
       context: .
       dockerfile: detection_engine/Dockerfile

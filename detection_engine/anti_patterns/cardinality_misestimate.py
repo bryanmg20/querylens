@@ -3,8 +3,9 @@ from datetime import datetime, timedelta, timezone
 
 import sqlglot
 from sqlglot import exp
+from querylens_contract import SnapshotPayload, StatementCandidate
 
-from models import CandidateStatement, Hallazgo, Snapshot, StatementHistory
+from models import Hallazgo, StatementHistory
 from logger import get_logger
 
 from .table_aliases import resolve_table_aliases
@@ -73,7 +74,7 @@ def _parse_instant(value) -> datetime | None:
     return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
 
 
-def _current_counters(snapshot: Snapshot) -> dict[str, tuple[int, int | None, str | None]]:
+def _current_counters(snapshot: SnapshotPayload) -> dict[str, tuple[int, int | None, str | None]]:
     # (ejecuciones, filas devueltas, counters_epoch) por query, sumando las filas
     # repetidas igual que la fila guardada en statement_samples: si no, la resta
     # compararia el valor de una sola fila contra la suma de todas
@@ -192,7 +193,7 @@ def _filter_columns(select: exp.Select, alias_map: dict[str, str]) -> dict[str, 
     return columns_by_table
 
 
-def _is_postgres(candidate: CandidateStatement) -> bool:
+def _is_postgres(candidate: StatementCandidate) -> bool:
     # Postgres entrega queryid como entero y MySQL el DIGEST como texto; mientras
     # los dos snapshots compartan db_id, es la forma de saber el motor
     return isinstance(candidate.query_id, int)
@@ -202,7 +203,7 @@ def _qualified(schema_name: str | None, table: str) -> str:
     return f"{schema_name}.{table}" if schema_name else table
 
 
-def _recommendation(candidate: CandidateStatement, columns_by_table: dict[str, list[str]], tables: list[str]) -> str:
+def _recommendation(candidate: StatementCandidate, columns_by_table: dict[str, list[str]], tables: list[str]) -> str:
     schema = candidate.schema_name
     if not columns_by_table:
         # el error no viene de un filtro sobre columnas sino de los joins
@@ -257,7 +258,7 @@ def _recommendation(candidate: CandidateStatement, columns_by_table: dict[str, l
 # Detecta consultas cuya estimacion de filas del EXPLAIN difiere en al menos un
 # orden de magnitud de las filas que devolvieron en la ultima ventana
 def detect_cardinality_misestimates(
-    snapshot: Snapshot,
+    snapshot: SnapshotPayload,
     history: dict[str, StatementHistory] | None = None,
     captured_at: datetime | None = None,
 ) -> list[Hallazgo]:
@@ -268,9 +269,9 @@ def detect_cardinality_misestimates(
     previous_snapshot_at = max((row.captured_at for row in history.values()), default=None)
     counters = _current_counters(snapshot)
     explains_by_query_id = {
-        explain.get("query_id"): explain
+        explain.query_id: explain
         for explain in snapshot.canonic_explains
-        if explain.get("query_id") is not None
+        if explain.query_id is not None
     }
 
     findings = []
@@ -280,14 +281,12 @@ def detect_cardinality_misestimates(
         explain = explains_by_query_id.get(candidate.query_id)
         if explain is None:
             continue
-        # el snapshot llega sin validar: un plan viejo (sin output_rows), un
-        # EXPLAIN sin filas (ej. "Impossible WHERE" en MySQL) o un valor no
-        # numerico se saltan en vez de romper el job completo
-        estimates = (explain.get("canonical_plan") or {}).get("estimates") or {}
-        try:
-            estimated_rows = float(estimates.get("output_rows"))
-        except (TypeError, ValueError):
+        # un EXPLAIN sin filas (ej. "Impossible WHERE" en MySQL) llega con
+        # output_rows en None: se salta en vez de romper el job completo
+        output_rows = explain.canonical_plan.estimates.output_rows
+        if output_rows is None:
             continue
+        estimated_rows = float(output_rows)
 
         select = _parse_select(candidate.canonic_query)
         if _exclusion(select) is not None:

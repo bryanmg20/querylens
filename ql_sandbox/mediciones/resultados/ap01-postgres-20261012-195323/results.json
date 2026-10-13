@@ -1,0 +1,9501 @@
+{
+ "meta": {
+  "run_id": "ap01-postgres-20261012-195323",
+  "db_id": "medicion-ap01-postgres-20261012-195323",
+  "engine": "postgres",
+  "measurement": "ap01",
+  "cycles": 14,
+  "interval": 60,
+  "started": "2026-10-13 00:53:24.569332+00",
+  "cycle_times": [
+   {
+    "cycle": 1,
+    "msg_id": 104,
+    "start": "2026-10-13 00:53:58.912192+00",
+    "end": "2026-10-13 00:54:06.485853+00"
+   },
+   {
+    "cycle": 2,
+    "msg_id": 105,
+    "start": "2026-10-13 00:54:58.906518+00",
+    "end": "2026-10-13 00:55:06.530714+00"
+   },
+   {
+    "cycle": 3,
+    "msg_id": 106,
+    "start": "2026-10-13 00:55:58.898724+00",
+    "end": "2026-10-13 00:56:06.614619+00"
+   },
+   {
+    "cycle": 4,
+    "msg_id": 107,
+    "start": "2026-10-13 00:56:58.910961+00",
+    "end": "2026-10-13 00:57:06.738107+00"
+   },
+   {
+    "cycle": 5,
+    "msg_id": 108,
+    "start": "2026-10-13 00:57:58.903303+00",
+    "end": "2026-10-13 00:58:07.538638+00"
+   },
+   {
+    "cycle": 6,
+    "msg_id": 109,
+    "start": "2026-10-13 00:58:58.912957+00",
+    "end": "2026-10-13 00:59:07.9261+00"
+   },
+   {
+    "cycle": 7,
+    "msg_id": 110,
+    "start": "2026-10-13 00:59:58.903593+00",
+    "end": "2026-10-13 01:00:07.908664+00"
+   },
+   {
+    "cycle": 8,
+    "msg_id": 111,
+    "start": "2026-10-13 01:00:58.914813+00",
+    "end": "2026-10-13 01:01:07.857221+00"
+   },
+   {
+    "cycle": 9,
+    "msg_id": 112,
+    "start": "2026-10-13 01:01:58.936754+00",
+    "end": "2026-10-13 01:02:09.080282+00"
+   },
+   {
+    "cycle": 10,
+    "msg_id": 113,
+    "start": "2026-10-13 01:02:58.933454+00",
+    "end": "2026-10-13 01:03:04.15049+00"
+   },
+   {
+    "cycle": 11,
+    "msg_id": 114,
+    "start": "2026-10-13 01:03:58.948316+00",
+    "end": "2026-10-13 01:04:04.292269+00"
+   },
+   {
+    "cycle": 12,
+    "msg_id": 115,
+    "start": "2026-10-13 01:04:58.976736+00",
+    "end": "2026-10-13 01:05:09.13912+00"
+   },
+   {
+    "cycle": 13,
+    "msg_id": 116,
+    "start": "2026-10-13 01:05:58.98949+00",
+    "end": "2026-10-13 01:06:05.545832+00"
+   },
+   {
+    "cycle": 14,
+    "msg_id": 117,
+    "start": "2026-10-13 01:06:59.00091+00",
+    "end": "2026-10-13 01:07:05.558812+00"
+   }
+  ]
+ },
+ "summary": {
+  "positivos": 100,
+  "detectados": 100,
+  "recall": 1.0,
+  "recall_ic95": [
+   0.963,
+   1.0
+  ],
+  "positivos_validos": 100,
+  "detectados_validos": 100,
+  "recall_validos": 1.0,
+  "recall_validos_ic95": [
+   0.963,
+   1.0
+  ],
+  "controles": 40,
+  "controles_marcados": 0,
+  "falsos_positivos": 0,
+  "tasa_fp": 0.0,
+  "tasa_fp_ic95": [
+   -0.0,
+   0.0876
+  ],
+  "extra": 0,
+  "extra_detectados": 0,
+  "cumple_90": true,
+  "por_categoria": {
+   "indice menos selectivo": {
+    "casos": 25,
+    "validos": 25,
+    "detectados": 25
+   },
+   "indice eliminado": {
+    "casos": 50,
+    "validos": 50,
+    "detectados": 50
+   },
+   "crecimiento de datos": {
+    "casos": 25,
+    "validos": 25,
+    "detectados": 25
+   }
+  },
+  "controles_por_categoria": {
+   "control en tabla degradada": {
+    "casos": 12,
+    "marcados": 0,
+    "falsos_positivos": 0
+   },
+   "control en tabla sin cambios": {
+    "casos": 28,
+    "marcados": 0,
+    "falsos_positivos": 0
+   }
+  },
+  "fp_antes_de_degradar": 0,
+  "controles_degradados_de_verdad": 0,
+  "detectados_tarde": 0,
+  "latencia_ventanas": {
+   "1": 100
+  }
+ },
+ "results": [
+  {
+   "cid": "ql_m01_t0.c0",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "qid": "5128479396985721166",
+   "query": "SELECT COUNT(*) FROM ql_m01_t0 WHERE lo = 8 AND c0 = 8805",
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c0",
+    "shape": "lo_count"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.051,
+   "after": {
+    "12": {
+     "mean_ms": 18.515,
+     "median_ms": 0.051,
+     "ratio": 362.38,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 18.655,
+     "median_ms": 0.051,
+     "ratio": 365.12,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 18.628,
+     "median_ms": 0.051,
+     "ratio": 364.59,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t0.c1",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "qid": "-6424327195673559506",
+   "query": "SELECT id FROM ql_m01_t0 WHERE lo = 8 AND c1 BETWEEN 8805 AND 8825",
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c1",
+    "shape": "lo_range"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.058,
+   "after": {
+    "12": {
+     "mean_ms": 17.518,
+     "median_ms": 0.058,
+     "ratio": 303.22,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 17.265,
+     "median_ms": 0.059,
+     "ratio": 292.65,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 16.591,
+     "median_ms": 0.059,
+     "ratio": 281.23,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t0.c2",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "qid": "7849656028159994711",
+   "query": "SELECT id, pad FROM ql_m01_t0 WHERE lo = 8 AND c2 = 8805",
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c2",
+    "shape": "lo_eq"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.05,
+   "after": {
+    "12": {
+     "mean_ms": 19.118,
+     "median_ms": 0.043,
+     "ratio": 440.0,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 17.396,
+     "median_ms": 0.043,
+     "ratio": 400.35,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 17.625,
+     "median_ms": 0.043,
+     "ratio": 405.64,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t0.c3",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "215041700223228652",
+   "query": "SELECT id FROM ql_m01_t0 WHERE c3 BETWEEN 8805 AND 8835",
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c3",
+    "shape": "range"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.306,
+   "after": {
+    "12": {
+     "mean_ms": 21.911,
+     "median_ms": 0.289,
+     "ratio": 75.92,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 22.34,
+     "median_ms": 0.289,
+     "ratio": 77.4,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 20.264,
+     "median_ms": 0.289,
+     "ratio": 70.21,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t0.c4",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "-5214734698828557874",
+   "query": "SELECT id, c4 FROM ql_m01_t0 WHERE c4 > 8805 ORDER BY c4 LIMIT 5",
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c4",
+    "shape": "order_limit"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.089,
+   "after": {
+    "12": {
+     "mean_ms": 24.971,
+     "median_ms": 0.084,
+     "ratio": 296.76,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 25.793,
+     "median_ms": 0.084,
+     "ratio": 306.53,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 24.79,
+     "median_ms": 0.084,
+     "ratio": 294.61,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t0.c5",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "-8269493904543329249",
+   "query": "SELECT COUNT(*) FROM ql_m01_t0 WHERE c5 = 8805",
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c5",
+    "shape": "count"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.05,
+   "after": {
+    "12": {
+     "mean_ms": 17.829,
+     "median_ms": 0.049,
+     "ratio": 365.79,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 17.717,
+     "median_ms": 0.049,
+     "ratio": 363.5,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 18.019,
+     "median_ms": 0.049,
+     "ratio": 369.68,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t0.c6",
+   "role": "control",
+   "category": "control en tabla degradada",
+   "qid": "-3808609469778332793",
+   "query": "SELECT id FROM ql_m01_t0 WHERE c6 BETWEEN 8805 AND 8835",
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c6",
+    "shape": "range"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.288,
+   "after": {
+    "12": {
+     "mean_ms": 0.808,
+     "median_ms": 0.281,
+     "ratio": 2.88,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.442,
+     "median_ms": 0.281,
+     "ratio": 1.57,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.481,
+     "median_ms": 0.281,
+     "ratio": 1.71,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t0.c7",
+   "role": "control",
+   "category": "control en tabla degradada",
+   "qid": "-8919586081636862200",
+   "query": "SELECT id, c7 FROM ql_m01_t0 WHERE c7 > 8805 ORDER BY c7 LIMIT 5",
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c7",
+    "shape": "order_limit"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.094,
+   "after": {
+    "12": {
+     "mean_ms": 0.086,
+     "median_ms": 0.09,
+     "ratio": 0.96,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.116,
+     "median_ms": 0.088,
+     "ratio": 1.31,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.088,
+     "median_ms": 0.088,
+     "ratio": 1.0,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t0.c8",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "3723788268160730086",
+   "query": "SELECT id FROM ql_m01_t0 WHERE c8 IN (37303, 55537, 52577, 50054, 4135)",
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c8",
+    "shape": "in5"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.138,
+   "after": {
+    "12": {
+     "mean_ms": 26.214,
+     "median_ms": 0.136,
+     "ratio": 192.65,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 28.372,
+     "median_ms": 0.136,
+     "ratio": 208.51,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 28.428,
+     "median_ms": 0.136,
+     "ratio": 208.93,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t0.c9",
+   "role": "control",
+   "category": "control en tabla degradada",
+   "qid": "5012655687448356099",
+   "query": "SELECT COUNT(*) FROM ql_m01_t0 WHERE c9 = 8805",
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c9",
+    "shape": "count"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.055,
+   "after": {
+    "12": {
+     "mean_ms": 0.076,
+     "median_ms": 0.054,
+     "ratio": 1.39,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.065,
+     "median_ms": 0.054,
+     "ratio": 1.2,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.063,
+     "median_ms": 0.054,
+     "ratio": 1.15,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t0.c10",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "qid": "2471603591639879376",
+   "query": "SELECT MAX(pad) FROM ql_m01_t0 WHERE c10 = 3",
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c10",
+    "shape": "hot_max"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.053,
+   "after": {
+    "12": {
+     "mean_ms": 7.655,
+     "median_ms": 0.054,
+     "ratio": 142.84,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 5.88,
+     "median_ms": 0.055,
+     "ratio": 106.13,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 6.074,
+     "median_ms": 0.056,
+     "ratio": 108.05,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t0.c11",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "-5564252010868843526",
+   "query": "SELECT x.id, d.name FROM ql_m01_t0 x JOIN ql_m01_dim d ON d.id = x.lo WHERE x.c11 = 8805",
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c11",
+    "shape": "join"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.084,
+   "after": {
+    "12": {
+     "mean_ms": 22.814,
+     "median_ms": 0.082,
+     "ratio": 278.52,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 25.522,
+     "median_ms": 0.082,
+     "ratio": 311.59,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 24.126,
+     "median_ms": 0.082,
+     "ratio": 294.54,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t0.c12",
+   "role": "control",
+   "category": "control en tabla degradada",
+   "qid": "6289072101254099596",
+   "query": "SELECT id FROM ql_m01_t0 WHERE c12 IN (37303, 55537, 52577, 50054, 4135)",
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c12",
+    "shape": "in5"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.132,
+   "after": {
+    "12": {
+     "mean_ms": 0.17,
+     "median_ms": 0.127,
+     "ratio": 1.33,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.17,
+     "median_ms": 0.127,
+     "ratio": 1.34,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.204,
+     "median_ms": 0.127,
+     "ratio": 1.61,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t0.c13",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "3255656097696647151",
+   "query": "SELECT MAX(id) FROM ql_m01_t0 WHERE c13 = 8805",
+   "meta": {
+    "table": "ql_m01_t0",
+    "column": "c13",
+    "shape": "max"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.065,
+   "after": {
+    "12": {
+     "mean_ms": 21.956,
+     "median_ms": 0.062,
+     "ratio": 354.11,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 24.377,
+     "median_ms": 0.062,
+     "ratio": 393.17,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 24.557,
+     "median_ms": 0.062,
+     "ratio": 396.06,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t1.c0",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "qid": "5930904001922682123",
+   "query": "SELECT COUNT(*) FROM ql_m01_t1 WHERE lo = 8 AND c0 = 8805",
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c0",
+    "shape": "lo_count"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.048,
+   "after": {
+    "12": {
+     "mean_ms": 14.463,
+     "median_ms": 0.049,
+     "ratio": 294.38,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 12.935,
+     "median_ms": 0.051,
+     "ratio": 251.79,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 12.624,
+     "median_ms": 0.051,
+     "ratio": 245.74,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t1.c1",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "6609965070636666556",
+   "query": "SELECT 1 FROM ql_m01_t1 WHERE c1 = 8805 LIMIT 1",
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c1",
+    "shape": "exists"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.046,
+   "after": {
+    "12": {
+     "mean_ms": 9.758,
+     "median_ms": 0.044,
+     "ratio": 223.38,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 9.537,
+     "median_ms": 0.044,
+     "ratio": 215.42,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 6.766,
+     "median_ms": 0.044,
+     "ratio": 152.84,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t1.c2",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "qid": "6661119921221235296",
+   "query": "SELECT id FROM ql_m01_t1 WHERE c2 = 3 ORDER BY pad LIMIT 3",
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c2",
+    "shape": "hot_order"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.049,
+   "after": {
+    "12": {
+     "mean_ms": 5.813,
+     "median_ms": 0.049,
+     "ratio": 117.58,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 6.469,
+     "median_ms": 0.05,
+     "ratio": 129.97,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 6.707,
+     "median_ms": 0.051,
+     "ratio": 132.33,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t1.c3",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "-7168570127902451165",
+   "query": "SELECT id, pad FROM ql_m01_t1 WHERE c3 = 8805",
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c3",
+    "shape": "eq"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.044,
+   "after": {
+    "12": {
+     "mean_ms": 17.252,
+     "median_ms": 0.043,
+     "ratio": 404.68,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 17.521,
+     "median_ms": 0.043,
+     "ratio": 410.99,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 18.045,
+     "median_ms": 0.043,
+     "ratio": 423.29,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t1.c4",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "6376513985555030374",
+   "query": "SELECT id FROM ql_m01_t1 WHERE c4 BETWEEN 8805 AND 8835",
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c4",
+    "shape": "range"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.296,
+   "after": {
+    "12": {
+     "mean_ms": 19.853,
+     "median_ms": 0.284,
+     "ratio": 69.99,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 21.191,
+     "median_ms": 0.284,
+     "ratio": 74.7,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 22.54,
+     "median_ms": 0.284,
+     "ratio": 79.46,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t1.c5",
+   "role": "control",
+   "category": "control en tabla degradada",
+   "qid": "-144164495675867676",
+   "query": "SELECT x.id, d.name FROM ql_m01_t1 x JOIN ql_m01_dim d ON d.id = x.lo WHERE x.c5 = 8805",
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c5",
+    "shape": "join"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.066,
+   "after": {
+    "12": {
+     "mean_ms": 0.107,
+     "median_ms": 0.06,
+     "ratio": 1.77,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.081,
+     "median_ms": 0.06,
+     "ratio": 1.35,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.083,
+     "median_ms": 0.06,
+     "ratio": 1.38,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t1.c6",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "qid": "1582624097467140914",
+   "query": "SELECT id, pad FROM ql_m01_t1 WHERE c6 = 3",
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c6",
+    "shape": "hot_eq"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.051,
+   "after": {
+    "12": {
+     "mean_ms": 9.94,
+     "median_ms": 0.05,
+     "ratio": 200.59,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 10.103,
+     "median_ms": 0.05,
+     "ratio": 203.88,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 8.967,
+     "median_ms": 0.05,
+     "ratio": 180.97,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t1.c7",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "qid": "-4765861196919251125",
+   "query": "SELECT MAX(pad) FROM ql_m01_t1 WHERE c7 = 3",
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c7",
+    "shape": "hot_max"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.049,
+   "after": {
+    "12": {
+     "mean_ms": 5.881,
+     "median_ms": 0.049,
+     "ratio": 119.74,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 5.446,
+     "median_ms": 0.052,
+     "ratio": 105.58,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 5.387,
+     "median_ms": 0.052,
+     "ratio": 103.69,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t1.c8",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "qid": "-2793498236310592170",
+   "query": "SELECT id FROM ql_m01_t1 WHERE lo = 8 AND c8 BETWEEN 8805 AND 8825",
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c8",
+    "shape": "lo_range"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.052,
+   "after": {
+    "12": {
+     "mean_ms": 19.326,
+     "median_ms": 0.052,
+     "ratio": 371.22,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 16.416,
+     "median_ms": 0.052,
+     "ratio": 315.32,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 16.925,
+     "median_ms": 0.052,
+     "ratio": 325.1,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t1.c9",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "-5475510448802299995",
+   "query": "SELECT id, c9 FROM ql_m01_t1 WHERE c9 > 8805 ORDER BY c9 LIMIT 5",
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c9",
+    "shape": "order_limit"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.061,
+   "after": {
+    "12": {
+     "mean_ms": 24.776,
+     "median_ms": 0.058,
+     "ratio": 428.13,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 23.887,
+     "median_ms": 0.058,
+     "ratio": 412.77,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 21.972,
+     "median_ms": 0.058,
+     "ratio": 379.69,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t1.c10",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "85198104230522040",
+   "query": "SELECT COUNT(*) FROM ql_m01_t1 WHERE c10 = 8805",
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c10",
+    "shape": "count"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.049,
+   "after": {
+    "12": {
+     "mean_ms": 22.663,
+     "median_ms": 0.048,
+     "ratio": 474.6,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 25.929,
+     "median_ms": 0.048,
+     "ratio": 542.99,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 26.159,
+     "median_ms": 0.048,
+     "ratio": 547.8,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t1.c11",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "qid": "-903688303252320056",
+   "query": "SELECT id, pad FROM ql_m01_t1 WHERE lo = 8 AND c11 = 8805",
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c11",
+    "shape": "lo_eq"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.045,
+   "after": {
+    "12": {
+     "mean_ms": 16.408,
+     "median_ms": 0.045,
+     "ratio": 362.18,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 17.447,
+     "median_ms": 0.045,
+     "ratio": 385.12,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 15.993,
+     "median_ms": 0.047,
+     "ratio": 339.42,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t1.c12",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "qid": "-530039592048366859",
+   "query": "SELECT COUNT(*) FROM ql_m01_t1 WHERE lo = 8 AND c12 = 8805",
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c12",
+    "shape": "lo_count"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.046,
+   "after": {
+    "12": {
+     "mean_ms": 17.617,
+     "median_ms": 0.044,
+     "ratio": 398.91,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 15.778,
+     "median_ms": 0.044,
+     "ratio": 357.26,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 16.84,
+     "median_ms": 0.045,
+     "ratio": 374.01,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t1.c13",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "1016281823268780885",
+   "query": "SELECT id FROM ql_m01_t1 WHERE c13 IN (37303, 55537, 52577, 50054, 4135)",
+   "meta": {
+    "table": "ql_m01_t1",
+    "column": "c13",
+    "shape": "in5"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.143,
+   "after": {
+    "12": {
+     "mean_ms": 24.17,
+     "median_ms": 0.137,
+     "ratio": 176.71,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 27.306,
+     "median_ms": 0.137,
+     "ratio": 199.64,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 27.764,
+     "median_ms": 0.139,
+     "ratio": 199.48,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t2.c0",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "7850818324720380147",
+   "query": "SELECT x.id, d.name FROM ql_m01_t2 x JOIN ql_m01_dim d ON d.id = x.lo WHERE x.c0 = 8805",
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c0",
+    "shape": "join"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.071,
+   "after": {
+    "12": {
+     "mean_ms": 13.118,
+     "median_ms": 0.07,
+     "ratio": 188.48,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 14.511,
+     "median_ms": 0.07,
+     "ratio": 208.49,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 14.598,
+     "median_ms": 0.07,
+     "ratio": 209.74,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t2.c1",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "qid": "-225272185096971296",
+   "query": "SELECT id FROM ql_m01_t2 WHERE c1 = 3 ORDER BY pad LIMIT 3",
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c1",
+    "shape": "hot_order"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.056,
+   "after": {
+    "12": {
+     "mean_ms": 7.535,
+     "median_ms": 0.053,
+     "ratio": 141.96,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 7.473,
+     "median_ms": 0.053,
+     "ratio": 140.79,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 6.882,
+     "median_ms": 0.057,
+     "ratio": 120.04,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t2.c2",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "3850030417565749586",
+   "query": "SELECT MAX(id) FROM ql_m01_t2 WHERE c2 = 8805",
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c2",
+    "shape": "max"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.056,
+   "after": {
+    "12": {
+     "mean_ms": 15.662,
+     "median_ms": 0.057,
+     "ratio": 273.37,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 16.317,
+     "median_ms": 0.057,
+     "ratio": 284.8,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 16.031,
+     "median_ms": 0.061,
+     "ratio": 263.02,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t2.c3",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "-288536149291977758",
+   "query": "SELECT 1 FROM ql_m01_t2 WHERE c3 = 8805 LIMIT 1",
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c3",
+    "shape": "exists"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.057,
+   "after": {
+    "12": {
+     "mean_ms": 7.472,
+     "median_ms": 0.056,
+     "ratio": 133.12,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 9.357,
+     "median_ms": 0.056,
+     "ratio": 166.72,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 9.086,
+     "median_ms": 0.059,
+     "ratio": 155.22,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t2.c4",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "qid": "7747702855525858627",
+   "query": "SELECT id, pad FROM ql_m01_t2 WHERE c4 = 3",
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c4",
+    "shape": "hot_eq"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.044,
+   "after": {
+    "12": {
+     "mean_ms": 9.229,
+     "median_ms": 0.042,
+     "ratio": 220.52,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 8.745,
+     "median_ms": 0.042,
+     "ratio": 208.94,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 9.469,
+     "median_ms": 0.042,
+     "ratio": 226.25,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t2.c5",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "qid": "1129809885810149873",
+   "query": "SELECT MAX(pad) FROM ql_m01_t2 WHERE c5 = 3",
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c5",
+    "shape": "hot_max"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.036,
+   "after": {
+    "12": {
+     "mean_ms": 6.567,
+     "median_ms": 0.033,
+     "ratio": 198.83,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 6.906,
+     "median_ms": 0.033,
+     "ratio": 209.09,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 6.366,
+     "median_ms": 0.033,
+     "ratio": 192.73,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t2.c6",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "2946116818501720528",
+   "query": "SELECT id, pad FROM ql_m01_t2 WHERE c6 = 8805",
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c6",
+    "shape": "eq"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.056,
+   "after": {
+    "12": {
+     "mean_ms": 17.945,
+     "median_ms": 0.055,
+     "ratio": 325.61,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 18.39,
+     "median_ms": 0.055,
+     "ratio": 333.69,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 17.974,
+     "median_ms": 0.055,
+     "ratio": 326.15,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t2.c7",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "2099210989769817270",
+   "query": "SELECT id FROM ql_m01_t2 WHERE c7 BETWEEN 8805 AND 8835",
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c7",
+    "shape": "range"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.294,
+   "after": {
+    "12": {
+     "mean_ms": 13.691,
+     "median_ms": 0.295,
+     "ratio": 46.36,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 13.542,
+     "median_ms": 0.298,
+     "ratio": 45.43,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 14.807,
+     "median_ms": 0.308,
+     "ratio": 48.1,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t2.c8",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "649762249842660495",
+   "query": "SELECT id, c8 FROM ql_m01_t2 WHERE c8 > 8805 ORDER BY c8 LIMIT 5",
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c8",
+    "shape": "order_limit"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.085,
+   "after": {
+    "12": {
+     "mean_ms": 23.788,
+     "median_ms": 0.082,
+     "ratio": 290.86,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 25.843,
+     "median_ms": 0.082,
+     "ratio": 315.99,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 25.738,
+     "median_ms": 0.082,
+     "ratio": 314.71,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t2.c9",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "-5039697504459817370",
+   "query": "SELECT COUNT(*) FROM ql_m01_t2 WHERE c9 = 8805",
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c9",
+    "shape": "count"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.057,
+   "after": {
+    "12": {
+     "mean_ms": 20.695,
+     "median_ms": 0.055,
+     "ratio": 377.19,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 21.605,
+     "median_ms": 0.055,
+     "ratio": 393.78,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 22.497,
+     "median_ms": 0.055,
+     "ratio": 410.03,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t2.c10",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "qid": "177057235802521812",
+   "query": "SELECT id FROM ql_m01_t2 WHERE lo = 8 AND c10 BETWEEN 8805 AND 8825",
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c10",
+    "shape": "lo_range"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.054,
+   "after": {
+    "12": {
+     "mean_ms": 17.725,
+     "median_ms": 0.053,
+     "ratio": 335.69,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 17.557,
+     "median_ms": 0.053,
+     "ratio": 332.49,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 16.38,
+     "median_ms": 0.053,
+     "ratio": 308.29,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t2.c11",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "-7540456839496052436",
+   "query": "SELECT id FROM ql_m01_t2 WHERE c11 IN (37303, 55537, 52577, 50054, 4135)",
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c11",
+    "shape": "in5"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.126,
+   "after": {
+    "12": {
+     "mean_ms": 28.893,
+     "median_ms": 0.122,
+     "ratio": 236.2,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 32.152,
+     "median_ms": 0.127,
+     "ratio": 252.45,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 31.824,
+     "median_ms": 0.127,
+     "ratio": 249.88,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t2.c12",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "qid": "2409729257306821384",
+   "query": "SELECT id FROM ql_m01_t2 WHERE c12 = 3 ORDER BY pad LIMIT 3",
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c12",
+    "shape": "hot_order"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.067,
+   "after": {
+    "12": {
+     "mean_ms": 5.972,
+     "median_ms": 0.065,
+     "ratio": 92.27,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 6.697,
+     "median_ms": 0.065,
+     "ratio": 103.48,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 6.382,
+     "median_ms": 0.065,
+     "ratio": 98.61,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t2.c13",
+   "role": "control",
+   "category": "control en tabla degradada",
+   "qid": "1234466902558592844",
+   "query": "SELECT MAX(id) FROM ql_m01_t2 WHERE c13 = 8805",
+   "meta": {
+    "table": "ql_m01_t2",
+    "column": "c13",
+    "shape": "max"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.062,
+   "after": {
+    "12": {
+     "mean_ms": 0.092,
+     "median_ms": 0.061,
+     "ratio": 1.51,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.081,
+     "median_ms": 0.061,
+     "ratio": 1.32,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.128,
+     "median_ms": 0.061,
+     "ratio": 2.09,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t3.c0",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "qid": "2740836381016775885",
+   "query": "SELECT id, pad FROM ql_m01_t3 WHERE lo = 8 AND c0 = 8805",
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c0",
+    "shape": "lo_eq"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.034,
+   "after": {
+    "12": {
+     "mean_ms": 16.699,
+     "median_ms": 0.032,
+     "ratio": 529.72,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 15.834,
+     "median_ms": 0.032,
+     "ratio": 502.28,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 15.869,
+     "median_ms": 0.032,
+     "ratio": 503.39,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t3.c1",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "-5326516834539103081",
+   "query": "SELECT x.id, d.name FROM ql_m01_t3 x JOIN ql_m01_dim d ON d.id = x.lo WHERE x.c1 = 8805",
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c1",
+    "shape": "join"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.076,
+   "after": {
+    "12": {
+     "mean_ms": 17.794,
+     "median_ms": 0.076,
+     "ratio": 232.99,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 20.878,
+     "median_ms": 0.076,
+     "ratio": 273.37,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 19.271,
+     "median_ms": 0.076,
+     "ratio": 252.33,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t3.c2",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "qid": "-1006995882231710880",
+   "query": "SELECT id, pad FROM ql_m01_t3 WHERE c2 = 3",
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c2",
+    "shape": "hot_eq"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.043,
+   "after": {
+    "12": {
+     "mean_ms": 5.66,
+     "median_ms": 0.043,
+     "ratio": 131.67,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 3.73,
+     "median_ms": 0.043,
+     "ratio": 85.77,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 4.31,
+     "median_ms": 0.043,
+     "ratio": 99.11,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t3.c3",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "-645039095429094194",
+   "query": "SELECT MAX(id) FROM ql_m01_t3 WHERE c3 = 8805",
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c3",
+    "shape": "max"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.067,
+   "after": {
+    "12": {
+     "mean_ms": 22.802,
+     "median_ms": 0.063,
+     "ratio": 362.24,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 18.834,
+     "median_ms": 0.064,
+     "ratio": 294.81,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 18.772,
+     "median_ms": 0.064,
+     "ratio": 293.39,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t3.c4",
+   "role": "control",
+   "category": "control en tabla degradada",
+   "qid": "-3308594890686817808",
+   "query": "SELECT 1 FROM ql_m01_t3 WHERE c4 = 8805 LIMIT 1",
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c4",
+    "shape": "exists"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.046,
+   "after": {
+    "12": {
+     "mean_ms": 0.072,
+     "median_ms": 0.044,
+     "ratio": 1.62,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.065,
+     "median_ms": 0.044,
+     "ratio": 1.47,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.074,
+     "median_ms": 0.044,
+     "ratio": 1.67,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t3.c5",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "-7432993105452464908",
+   "query": "SELECT 1 FROM ql_m01_t3 WHERE c5 = 8805 LIMIT 1",
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c5",
+    "shape": "exists"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.043,
+   "after": {
+    "12": {
+     "mean_ms": 8.251,
+     "median_ms": 0.043,
+     "ratio": 193.37,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 10.279,
+     "median_ms": 0.043,
+     "ratio": 237.78,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 11.543,
+     "median_ms": 0.043,
+     "ratio": 267.04,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t3.c6",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "qid": "4619920097115186961",
+   "query": "SELECT MAX(pad) FROM ql_m01_t3 WHERE c6 = 3",
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c6",
+    "shape": "hot_max"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.045,
+   "after": {
+    "12": {
+     "mean_ms": 5.432,
+     "median_ms": 0.045,
+     "ratio": 121.29,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 4.591,
+     "median_ms": 0.045,
+     "ratio": 102.51,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 4.609,
+     "median_ms": 0.045,
+     "ratio": 102.92,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t3.c7",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "-1657973927555400748",
+   "query": "SELECT id, pad FROM ql_m01_t3 WHERE c7 = 8805",
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c7",
+    "shape": "eq"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.068,
+   "after": {
+    "12": {
+     "mean_ms": 18.261,
+     "median_ms": 0.067,
+     "ratio": 274.17,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 18.184,
+     "median_ms": 0.067,
+     "ratio": 273.03,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 19.059,
+     "median_ms": 0.067,
+     "ratio": 286.16,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t3.c8",
+   "role": "control",
+   "category": "control en tabla degradada",
+   "qid": "-8183760641294197253",
+   "query": "SELECT id, pad FROM ql_m01_t3 WHERE c8 = 8805",
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c8",
+    "shape": "eq"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.057,
+   "after": {
+    "12": {
+     "mean_ms": 0.069,
+     "median_ms": 0.057,
+     "ratio": 1.21,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.085,
+     "median_ms": 0.057,
+     "ratio": 1.49,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.072,
+     "median_ms": 0.059,
+     "ratio": 1.22,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t3.c9",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "qid": "-711554438612982492",
+   "query": "SELECT COUNT(*) FROM ql_m01_t3 WHERE lo = 8 AND c9 = 8805",
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c9",
+    "shape": "lo_count"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.042,
+   "after": {
+    "12": {
+     "mean_ms": 12.297,
+     "median_ms": 0.04,
+     "ratio": 306.63,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 11.334,
+     "median_ms": 0.04,
+     "ratio": 282.6,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 11.989,
+     "median_ms": 0.04,
+     "ratio": 298.95,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t3.c10",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "qid": "4522645506506977633",
+   "query": "SELECT id FROM ql_m01_t3 WHERE lo = 8 AND c10 BETWEEN 8805 AND 8825",
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c10",
+    "shape": "lo_range"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.038,
+   "after": {
+    "12": {
+     "mean_ms": 16.749,
+     "median_ms": 0.038,
+     "ratio": 443.58,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 15.253,
+     "median_ms": 0.038,
+     "ratio": 403.96,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 13.479,
+     "median_ms": 0.038,
+     "ratio": 356.97,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t3.c11",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "6162318451085227335",
+   "query": "SELECT id FROM ql_m01_t3 WHERE c11 BETWEEN 8805 AND 8835",
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c11",
+    "shape": "range"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.286,
+   "after": {
+    "12": {
+     "mean_ms": 24.773,
+     "median_ms": 0.275,
+     "ratio": 89.92,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 26.559,
+     "median_ms": 0.275,
+     "ratio": 96.41,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 24.866,
+     "median_ms": 0.28,
+     "ratio": 88.86,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t3.c12",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "-6339349174149588450",
+   "query": "SELECT id, c12 FROM ql_m01_t3 WHERE c12 > 8805 ORDER BY c12 LIMIT 5",
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c12",
+    "shape": "order_limit"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.088,
+   "after": {
+    "12": {
+     "mean_ms": 31.126,
+     "median_ms": 0.089,
+     "ratio": 351.57,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 33.7,
+     "median_ms": 0.089,
+     "ratio": 380.65,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 35.228,
+     "median_ms": 0.089,
+     "ratio": 397.91,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t3.c13",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "3582419568341569450",
+   "query": "SELECT COUNT(*) FROM ql_m01_t3 WHERE c13 = 8805",
+   "meta": {
+    "table": "ql_m01_t3",
+    "column": "c13",
+    "shape": "count"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.06,
+   "after": {
+    "12": {
+     "mean_ms": 17.67,
+     "median_ms": 0.055,
+     "ratio": 322.88,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 19.471,
+     "median_ms": 0.055,
+     "ratio": 355.79,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 19.426,
+     "median_ms": 0.055,
+     "ratio": 354.98,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t4.c0",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "qid": "-2119340313009788415",
+   "query": "SELECT id, pad FROM ql_m01_t4 WHERE lo = 8 AND c0 = 8805",
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c0",
+    "shape": "lo_eq"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.045,
+   "after": {
+    "12": {
+     "mean_ms": 15.644,
+     "median_ms": 0.045,
+     "ratio": 351.3,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 15.465,
+     "median_ms": 0.045,
+     "ratio": 347.29,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 14.13,
+     "median_ms": 0.047,
+     "ratio": 302.67,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t4.c1",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "qid": "4540881194475949814",
+   "query": "SELECT COUNT(*) FROM ql_m01_t4 WHERE lo = 8 AND c1 = 8805",
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c1",
+    "shape": "lo_count"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.045,
+   "after": {
+    "12": {
+     "mean_ms": 16.102,
+     "median_ms": 0.043,
+     "ratio": 370.2,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 16.723,
+     "median_ms": 0.044,
+     "ratio": 375.92,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 14.259,
+     "median_ms": 0.044,
+     "ratio": 320.52,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t4.c2",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "qid": "-7194171553012554338",
+   "query": "SELECT id FROM ql_m01_t4 WHERE c2 = 3 ORDER BY pad LIMIT 3",
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c2",
+    "shape": "hot_order"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.049,
+   "after": {
+    "12": {
+     "mean_ms": 3.184,
+     "median_ms": 0.048,
+     "ratio": 66.48,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 3.495,
+     "median_ms": 0.048,
+     "ratio": 72.98,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 3.564,
+     "median_ms": 0.048,
+     "ratio": 74.42,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t4.c3",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "qid": "1995045984350872477",
+   "query": "SELECT id, pad FROM ql_m01_t4 WHERE c3 = 3",
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c3",
+    "shape": "hot_eq"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.051,
+   "after": {
+    "12": {
+     "mean_ms": 6.859,
+     "median_ms": 0.049,
+     "ratio": 139.11,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 8.452,
+     "median_ms": 0.051,
+     "ratio": 165.6,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 8.079,
+     "median_ms": 0.054,
+     "ratio": 150.47,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t4.c4",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "qid": "-1350050283191682018",
+   "query": "SELECT id FROM ql_m01_t4 WHERE lo = 8 AND c4 BETWEEN 8805 AND 8825",
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c4",
+    "shape": "lo_range"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.08,
+   "after": {
+    "12": {
+     "mean_ms": 15.381,
+     "median_ms": 0.07,
+     "ratio": 219.86,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 16.383,
+     "median_ms": 0.07,
+     "ratio": 234.19,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 17.561,
+     "median_ms": 0.07,
+     "ratio": 251.03,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t4.c5",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "qid": "-7136387509709342980",
+   "query": "SELECT id, pad FROM ql_m01_t4 WHERE lo = 8 AND c5 = 8805",
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c5",
+    "shape": "lo_eq"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.081,
+   "after": {
+    "12": {
+     "mean_ms": 14.321,
+     "median_ms": 0.055,
+     "ratio": 261.95,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 15.275,
+     "median_ms": 0.055,
+     "ratio": 279.4,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 17.06,
+     "median_ms": 0.055,
+     "ratio": 312.05,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t4.c6",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "qid": "-3686830014346487033",
+   "query": "SELECT COUNT(*) FROM ql_m01_t4 WHERE lo = 8 AND c6 = 8805",
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c6",
+    "shape": "lo_count"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.08,
+   "after": {
+    "12": {
+     "mean_ms": 12.935,
+     "median_ms": 0.073,
+     "ratio": 176.13,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 11.121,
+     "median_ms": 0.073,
+     "ratio": 151.43,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 11.205,
+     "median_ms": 0.073,
+     "ratio": 152.57,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t4.c7",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "qid": "3091690437602356343",
+   "query": "SELECT id FROM ql_m01_t4 WHERE lo = 8 AND c7 BETWEEN 8805 AND 8825",
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c7",
+    "shape": "lo_range"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.091,
+   "after": {
+    "12": {
+     "mean_ms": 11.297,
+     "median_ms": 0.1,
+     "ratio": 112.71,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 11.824,
+     "median_ms": 0.1,
+     "ratio": 117.97,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 11.249,
+     "median_ms": 0.1,
+     "ratio": 112.23,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t4.c8",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "5392514716969124747",
+   "query": "SELECT id FROM ql_m01_t4 WHERE c8 IN (37303, 55537, 52577, 50054, 4135)",
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c8",
+    "shape": "in5"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.201,
+   "after": {
+    "12": {
+     "mean_ms": 25.451,
+     "median_ms": 0.126,
+     "ratio": 201.6,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 29.965,
+     "median_ms": 0.126,
+     "ratio": 237.36,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 28.407,
+     "median_ms": 0.126,
+     "ratio": 225.02,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t4.c9",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "-6013683903075902267",
+   "query": "SELECT x.id, d.name FROM ql_m01_t4 x JOIN ql_m01_dim d ON d.id = x.lo WHERE x.c9 = 8805",
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c9",
+    "shape": "join"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.082,
+   "after": {
+    "12": {
+     "mean_ms": 17.45,
+     "median_ms": 0.077,
+     "ratio": 225.88,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 15.859,
+     "median_ms": 0.077,
+     "ratio": 205.29,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 15.186,
+     "median_ms": 0.077,
+     "ratio": 196.58,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t4.c10",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "qid": "284241492001150549",
+   "query": "SELECT MAX(pad) FROM ql_m01_t4 WHERE c10 = 3",
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c10",
+    "shape": "hot_max"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.048,
+   "after": {
+    "12": {
+     "mean_ms": 5.26,
+     "median_ms": 0.046,
+     "ratio": 115.2,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 5.855,
+     "median_ms": 0.048,
+     "ratio": 122.22,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 5.751,
+     "median_ms": 0.052,
+     "ratio": 111.24,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t4.c11",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "-8212482083605071455",
+   "query": "SELECT MAX(id) FROM ql_m01_t4 WHERE c11 = 8805",
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c11",
+    "shape": "max"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.096,
+   "after": {
+    "12": {
+     "mean_ms": 16.55,
+     "median_ms": 0.074,
+     "ratio": 223.33,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 17.689,
+     "median_ms": 0.074,
+     "ratio": 238.71,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 14.788,
+     "median_ms": 0.074,
+     "ratio": 199.56,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t4.c12",
+   "role": "control",
+   "category": "control en tabla degradada",
+   "qid": "3844782046733084870",
+   "query": "SELECT id FROM ql_m01_t4 WHERE c12 BETWEEN 8805 AND 8835",
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c12",
+    "shape": "range"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.305,
+   "after": {
+    "12": {
+     "mean_ms": 0.761,
+     "median_ms": 0.288,
+     "ratio": 2.64,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.628,
+     "median_ms": 0.288,
+     "ratio": 2.18,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.627,
+     "median_ms": 0.288,
+     "ratio": 2.17,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t4.c13",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "8380724646380113072",
+   "query": "SELECT 1 FROM ql_m01_t4 WHERE c13 = 8805 LIMIT 1",
+   "meta": {
+    "table": "ql_m01_t4",
+    "column": "c13",
+    "shape": "exists"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.095,
+   "after": {
+    "12": {
+     "mean_ms": 7.915,
+     "median_ms": 0.09,
+     "ratio": 87.93,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 9.993,
+     "median_ms": 0.09,
+     "ratio": 111.01,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 10.458,
+     "median_ms": 0.09,
+     "ratio": 116.18,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t5.c0",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "4427512861689156858",
+   "query": "SELECT id, pad FROM ql_m01_t5 WHERE c0 = 8805",
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c0",
+    "shape": "eq"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.096,
+   "after": {
+    "12": {
+     "mean_ms": 14.34,
+     "median_ms": 0.088,
+     "ratio": 162.35,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 15.179,
+     "median_ms": 0.088,
+     "ratio": 171.84,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 14.46,
+     "median_ms": 0.088,
+     "ratio": 163.7,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t5.c1",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "2149529455011532479",
+   "query": "SELECT id FROM ql_m01_t5 WHERE c1 BETWEEN 8805 AND 8835",
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c1",
+    "shape": "range"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.302,
+   "after": {
+    "12": {
+     "mean_ms": 16.622,
+     "median_ms": 0.229,
+     "ratio": 72.52,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 20.047,
+     "median_ms": 0.229,
+     "ratio": 87.46,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 19.96,
+     "median_ms": 0.229,
+     "ratio": 87.08,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t5.c2",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "7464087601348433487",
+   "query": "SELECT id, c2 FROM ql_m01_t5 WHERE c2 > 8805 ORDER BY c2 LIMIT 5",
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c2",
+    "shape": "order_limit"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.129,
+   "after": {
+    "12": {
+     "mean_ms": 23.305,
+     "median_ms": 0.116,
+     "ratio": 200.22,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 24.046,
+     "median_ms": 0.116,
+     "ratio": 206.58,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 23.698,
+     "median_ms": 0.116,
+     "ratio": 203.6,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t5.c3",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "8025085400883066388",
+   "query": "SELECT COUNT(*) FROM ql_m01_t5 WHERE c3 = 8805",
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c3",
+    "shape": "count"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.087,
+   "after": {
+    "12": {
+     "mean_ms": 14.516,
+     "median_ms": 0.081,
+     "ratio": 178.98,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 15.693,
+     "median_ms": 0.081,
+     "ratio": 193.5,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 15.242,
+     "median_ms": 0.081,
+     "ratio": 187.94,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t5.c4",
+   "role": "control",
+   "category": "control en tabla degradada",
+   "qid": "-1264632115135803953",
+   "query": "SELECT id, c4 FROM ql_m01_t5 WHERE c4 > 8805 ORDER BY c4 LIMIT 5",
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c4",
+    "shape": "order_limit"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.124,
+   "after": {
+    "12": {
+     "mean_ms": 0.12,
+     "median_ms": 0.087,
+     "ratio": 1.38,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.085,
+     "median_ms": 0.087,
+     "ratio": 0.99,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.098,
+     "median_ms": 0.085,
+     "ratio": 1.16,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t5.c5",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "qid": "8425354838409134741",
+   "query": "SELECT id FROM ql_m01_t5 WHERE c5 = 3 ORDER BY pad LIMIT 3",
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c5",
+    "shape": "hot_order"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.068,
+   "after": {
+    "12": {
+     "mean_ms": 5.826,
+     "median_ms": 0.063,
+     "ratio": 92.4,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 6.128,
+     "median_ms": 0.063,
+     "ratio": 97.17,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 6.588,
+     "median_ms": 0.063,
+     "ratio": 104.48,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t5.c6",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "qid": "-7478509328088323689",
+   "query": "SELECT id, pad FROM ql_m01_t5 WHERE c6 = 3",
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c6",
+    "shape": "hot_eq"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.053,
+   "after": {
+    "12": {
+     "mean_ms": 7.166,
+     "median_ms": 0.053,
+     "ratio": 135.15,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 6.22,
+     "median_ms": 0.053,
+     "ratio": 117.3,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 7.071,
+     "median_ms": 0.053,
+     "ratio": 133.35,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t5.c7",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "-1956810674339792861",
+   "query": "SELECT id FROM ql_m01_t5 WHERE c7 IN (37303, 55537, 52577, 50054, 4135)",
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c7",
+    "shape": "in5"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.192,
+   "after": {
+    "12": {
+     "mean_ms": 20.063,
+     "median_ms": 0.143,
+     "ratio": 140.39,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 22.786,
+     "median_ms": 0.143,
+     "ratio": 159.44,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 23.166,
+     "median_ms": 0.143,
+     "ratio": 162.1,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t5.c8",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "qid": "3923264788445403272",
+   "query": "SELECT id, pad FROM ql_m01_t5 WHERE lo = 8 AND c8 = 8805",
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c8",
+    "shape": "lo_eq"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.114,
+   "after": {
+    "12": {
+     "mean_ms": 16.993,
+     "median_ms": 0.073,
+     "ratio": 234.28,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 15.888,
+     "median_ms": 0.073,
+     "ratio": 219.05,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 15.225,
+     "median_ms": 0.073,
+     "ratio": 209.9,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t5.c9",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "qid": "-8738784932125002669",
+   "query": "SELECT MAX(pad) FROM ql_m01_t5 WHERE c9 = 3",
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c9",
+    "shape": "hot_max"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.059,
+   "after": {
+    "12": {
+     "mean_ms": 4.339,
+     "median_ms": 0.057,
+     "ratio": 76.23,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 4.777,
+     "median_ms": 0.057,
+     "ratio": 83.93,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 5.501,
+     "median_ms": 0.057,
+     "ratio": 96.65,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t5.c10",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "1144340727371263479",
+   "query": "SELECT x.id, d.name FROM ql_m01_t5 x JOIN ql_m01_dim d ON d.id = x.lo WHERE x.c10 = 8805",
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c10",
+    "shape": "join"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.116,
+   "after": {
+    "12": {
+     "mean_ms": 19.861,
+     "median_ms": 0.105,
+     "ratio": 189.44,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 22.465,
+     "median_ms": 0.105,
+     "ratio": 214.28,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 23.367,
+     "median_ms": 0.105,
+     "ratio": 222.88,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t5.c11",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "qid": "-2990102880874911950",
+   "query": "SELECT id FROM ql_m01_t5 WHERE c11 = 3 ORDER BY pad LIMIT 3",
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c11",
+    "shape": "hot_order"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.062,
+   "after": {
+    "12": {
+     "mean_ms": 3.89,
+     "median_ms": 0.062,
+     "ratio": 62.78,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 5.211,
+     "median_ms": 0.062,
+     "ratio": 84.08,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 4.963,
+     "median_ms": 0.062,
+     "ratio": 80.08,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t5.c12",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "1311730196095854741",
+   "query": "SELECT MAX(id) FROM ql_m01_t5 WHERE c12 = 8805",
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c12",
+    "shape": "max"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.087,
+   "after": {
+    "12": {
+     "mean_ms": 18.082,
+     "median_ms": 0.078,
+     "ratio": 230.67,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 15.663,
+     "median_ms": 0.078,
+     "ratio": 199.82,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 18.148,
+     "median_ms": 0.078,
+     "ratio": 231.51,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t5.c13",
+   "role": "control",
+   "category": "control en tabla degradada",
+   "qid": "5749070203207952583",
+   "query": "SELECT COUNT(*) FROM ql_m01_t5 WHERE c13 = 8805",
+   "meta": {
+    "table": "ql_m01_t5",
+    "column": "c13",
+    "shape": "count"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.075,
+   "after": {
+    "12": {
+     "mean_ms": 0.061,
+     "median_ms": 0.069,
+     "ratio": 0.88,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.062,
+     "median_ms": 0.065,
+     "ratio": 0.95,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.058,
+     "median_ms": 0.063,
+     "ratio": 0.93,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t6.c0",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "-1042547584818469923",
+   "query": "SELECT 1 FROM ql_m01_t6 WHERE c0 = 8805 LIMIT 1",
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c0",
+    "shape": "exists"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.083,
+   "after": {
+    "12": {
+     "mean_ms": 9.119,
+     "median_ms": 0.065,
+     "ratio": 140.89,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 7.855,
+     "median_ms": 0.065,
+     "ratio": 121.36,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 7.259,
+     "median_ms": 0.065,
+     "ratio": 112.15,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t6.c1",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "-3891106426184572707",
+   "query": "SELECT id, pad FROM ql_m01_t6 WHERE c1 = 8805",
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c1",
+    "shape": "eq"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.089,
+   "after": {
+    "12": {
+     "mean_ms": 16.023,
+     "median_ms": 0.074,
+     "ratio": 216.2,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 17.979,
+     "median_ms": 0.074,
+     "ratio": 242.58,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 18.872,
+     "median_ms": 0.074,
+     "ratio": 254.63,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t6.c2",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "-5668411713311228689",
+   "query": "SELECT id FROM ql_m01_t6 WHERE c2 BETWEEN 8805 AND 8835",
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c2",
+    "shape": "range"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.391,
+   "after": {
+    "12": {
+     "mean_ms": 17.736,
+     "median_ms": 0.313,
+     "ratio": 56.66,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 20.842,
+     "median_ms": 0.313,
+     "ratio": 66.59,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 20.272,
+     "median_ms": 0.313,
+     "ratio": 64.77,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t6.c3",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "qid": "-1232229839736961471",
+   "query": "SELECT id, pad FROM ql_m01_t6 WHERE c3 = 3",
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c3",
+    "shape": "hot_eq"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.053,
+   "after": {
+    "12": {
+     "mean_ms": 7.102,
+     "median_ms": 0.051,
+     "ratio": 140.44,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 8.307,
+     "median_ms": 0.051,
+     "ratio": 164.26,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 8.497,
+     "median_ms": 0.051,
+     "ratio": 168.01,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t6.c4",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "8839716177286684354",
+   "query": "SELECT id, c4 FROM ql_m01_t6 WHERE c4 > 8805 ORDER BY c4 LIMIT 5",
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c4",
+    "shape": "order_limit"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.103,
+   "after": {
+    "12": {
+     "mean_ms": 23.763,
+     "median_ms": 0.097,
+     "ratio": 244.86,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 26.576,
+     "median_ms": 0.097,
+     "ratio": 273.84,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 25.87,
+     "median_ms": 0.097,
+     "ratio": 266.57,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t6.c5",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "qid": "-6794160857196166027",
+   "query": "SELECT MAX(pad) FROM ql_m01_t6 WHERE c5 = 3",
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c5",
+    "shape": "hot_max"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.061,
+   "after": {
+    "12": {
+     "mean_ms": 5.105,
+     "median_ms": 0.06,
+     "ratio": 85.03,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 6.441,
+     "median_ms": 0.06,
+     "ratio": 107.28,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 6.585,
+     "median_ms": 0.06,
+     "ratio": 109.68,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t6.c6",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "qid": "4977990964149608468",
+   "query": "SELECT id FROM ql_m01_t6 WHERE c6 = 3 ORDER BY pad LIMIT 3",
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c6",
+    "shape": "hot_order"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.055,
+   "after": {
+    "12": {
+     "mean_ms": 5.705,
+     "median_ms": 0.054,
+     "ratio": 104.97,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 5.556,
+     "median_ms": 0.054,
+     "ratio": 102.23,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 6.008,
+     "median_ms": 0.055,
+     "ratio": 108.91,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t6.c7",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "qid": "-563316283551457550",
+   "query": "SELECT id, pad FROM ql_m01_t6 WHERE c7 = 3",
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c7",
+    "shape": "hot_eq"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.05,
+   "after": {
+    "12": {
+     "mean_ms": 4.41,
+     "median_ms": 0.047,
+     "ratio": 93.82,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 5.373,
+     "median_ms": 0.051,
+     "ratio": 105.1,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 6.552,
+     "median_ms": 0.051,
+     "ratio": 128.18,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t6.c8",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "qid": "-339584229536094640",
+   "query": "SELECT COUNT(*) FROM ql_m01_t6 WHERE lo = 8 AND c8 = 8805",
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c8",
+    "shape": "lo_count"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.059,
+   "after": {
+    "12": {
+     "mean_ms": 15.426,
+     "median_ms": 0.05,
+     "ratio": 307.22,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 15.792,
+     "median_ms": 0.051,
+     "ratio": 307.33,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 15.088,
+     "median_ms": 0.051,
+     "ratio": 293.64,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t6.c9",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "qid": "629320928957847368",
+   "query": "SELECT id FROM ql_m01_t6 WHERE lo = 8 AND c9 BETWEEN 8805 AND 8825",
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c9",
+    "shape": "lo_range"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.081,
+   "after": {
+    "12": {
+     "mean_ms": 14.909,
+     "median_ms": 0.077,
+     "ratio": 192.67,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 14.456,
+     "median_ms": 0.077,
+     "ratio": 186.81,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 14.886,
+     "median_ms": 0.077,
+     "ratio": 192.37,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t6.c10",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "2512658754173577898",
+   "query": "SELECT COUNT(*) FROM ql_m01_t6 WHERE c10 = 8805",
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c10",
+    "shape": "count"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.049,
+   "after": {
+    "12": {
+     "mean_ms": 20.761,
+     "median_ms": 0.04,
+     "ratio": 512.79,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 22.137,
+     "median_ms": 0.04,
+     "ratio": 546.77,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 20.94,
+     "median_ms": 0.04,
+     "ratio": 517.2,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t6.c11",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "qid": "-1201305104457179356",
+   "query": "SELECT MAX(pad) FROM ql_m01_t6 WHERE c11 = 3",
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c11",
+    "shape": "hot_max"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.053,
+   "after": {
+    "12": {
+     "mean_ms": 3.467,
+     "median_ms": 0.05,
+     "ratio": 68.96,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 3.968,
+     "median_ms": 0.052,
+     "ratio": 76.51,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 4.904,
+     "median_ms": 0.052,
+     "ratio": 94.56,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t6.c12",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "1026203553075678527",
+   "query": "SELECT id FROM ql_m01_t6 WHERE c12 IN (37303, 55537, 52577, 50054, 4135)",
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c12",
+    "shape": "in5"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.156,
+   "after": {
+    "12": {
+     "mean_ms": 29.386,
+     "median_ms": 0.135,
+     "ratio": 217.13,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 32.093,
+     "median_ms": 0.135,
+     "ratio": 237.14,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 31.369,
+     "median_ms": 0.135,
+     "ratio": 231.78,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t6.c13",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "6960038058989742780",
+   "query": "SELECT x.id, d.name FROM ql_m01_t6 x JOIN ql_m01_dim d ON d.id = x.lo WHERE x.c13 = 8805",
+   "meta": {
+    "table": "ql_m01_t6",
+    "column": "c13",
+    "shape": "join"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.053,
+   "after": {
+    "12": {
+     "mean_ms": 15.201,
+     "median_ms": 0.051,
+     "ratio": 297.64,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 15.145,
+     "median_ms": 0.051,
+     "ratio": 296.55,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 13.142,
+     "median_ms": 0.051,
+     "ratio": 257.33,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t7.c0",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "256327231480776886",
+   "query": "SELECT MAX(id) FROM ql_m01_t7 WHERE c0 = 8805",
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c0",
+    "shape": "max"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.062,
+   "after": {
+    "12": {
+     "mean_ms": 18.878,
+     "median_ms": 0.064,
+     "ratio": 296.25,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 17.063,
+     "median_ms": 0.065,
+     "ratio": 262.04,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 16.874,
+     "median_ms": 0.065,
+     "ratio": 259.12,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t7.c1",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "qid": "966603555794839154",
+   "query": "SELECT id FROM ql_m01_t7 WHERE c1 = 3 ORDER BY pad LIMIT 3",
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c1",
+    "shape": "hot_order"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.063,
+   "after": {
+    "12": {
+     "mean_ms": 4.099,
+     "median_ms": 0.061,
+     "ratio": 66.68,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 5.469,
+     "median_ms": 0.061,
+     "ratio": 88.97,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 6.206,
+     "median_ms": 0.061,
+     "ratio": 100.95,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t7.c2",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "8788946409678371121",
+   "query": "SELECT 1 FROM ql_m01_t7 WHERE c2 = 8805 LIMIT 1",
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c2",
+    "shape": "exists"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.051,
+   "after": {
+    "12": {
+     "mean_ms": 9.219,
+     "median_ms": 0.048,
+     "ratio": 192.08,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 9.849,
+     "median_ms": 0.048,
+     "ratio": 205.2,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 9.484,
+     "median_ms": 0.048,
+     "ratio": 197.59,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t7.c3",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "1442982342560831561",
+   "query": "SELECT id, pad FROM ql_m01_t7 WHERE c3 = 8805",
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c3",
+    "shape": "eq"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.07,
+   "after": {
+    "12": {
+     "mean_ms": 16.526,
+     "median_ms": 0.067,
+     "ratio": 247.93,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 17.835,
+     "median_ms": 0.067,
+     "ratio": 267.57,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 17.388,
+     "median_ms": 0.067,
+     "ratio": 260.86,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t7.c4",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "qid": "948614941766758194",
+   "query": "SELECT id, pad FROM ql_m01_t7 WHERE lo = 8 AND c4 = 8805",
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c4",
+    "shape": "lo_eq"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.047,
+   "after": {
+    "12": {
+     "mean_ms": 13.361,
+     "median_ms": 0.046,
+     "ratio": 288.09,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 13.424,
+     "median_ms": 0.046,
+     "ratio": 289.43,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 14.508,
+     "median_ms": 0.046,
+     "ratio": 312.81,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t7.c5",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "qid": "-8712658318634603623",
+   "query": "SELECT COUNT(*) FROM ql_m01_t7 WHERE lo = 8 AND c5 = 8805",
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c5",
+    "shape": "lo_count"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.058,
+   "after": {
+    "12": {
+     "mean_ms": 15.459,
+     "median_ms": 0.055,
+     "ratio": 281.95,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 15.906,
+     "median_ms": 0.055,
+     "ratio": 290.11,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 16.314,
+     "median_ms": 0.055,
+     "ratio": 297.55,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t7.c6",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "qid": "-7599471644714334004",
+   "query": "SELECT id, pad FROM ql_m01_t7 WHERE c6 = 3",
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c6",
+    "shape": "hot_eq"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.051,
+   "after": {
+    "12": {
+     "mean_ms": 7.823,
+     "median_ms": 0.05,
+     "ratio": 155.18,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 7.733,
+     "median_ms": 0.05,
+     "ratio": 153.4,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 8.434,
+     "median_ms": 0.052,
+     "ratio": 162.34,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t7.c7",
+   "role": "control",
+   "category": "control en tabla degradada",
+   "qid": "8919042936864741091",
+   "query": "SELECT id FROM ql_m01_t7 WHERE c7 IN (37303, 55537, 52577, 50054, 4135)",
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c7",
+    "shape": "in5"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.148,
+   "after": {
+    "12": {
+     "mean_ms": 0.241,
+     "median_ms": 0.135,
+     "ratio": 1.79,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.33,
+     "median_ms": 0.135,
+     "ratio": 2.45,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.175,
+     "median_ms": 0.135,
+     "ratio": 1.3,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t7.c8",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "qid": "-5854720511331110818",
+   "query": "SELECT id FROM ql_m01_t7 WHERE lo = 8 AND c8 BETWEEN 8805 AND 8825",
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c8",
+    "shape": "lo_range"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.061,
+   "after": {
+    "12": {
+     "mean_ms": 14.91,
+     "median_ms": 0.056,
+     "ratio": 263.91,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 15.18,
+     "median_ms": 0.056,
+     "ratio": 268.68,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 15.148,
+     "median_ms": 0.056,
+     "ratio": 268.12,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t7.c9",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "-228084450233630536",
+   "query": "SELECT id FROM ql_m01_t7 WHERE c9 BETWEEN 8805 AND 8835",
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c9",
+    "shape": "range"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.323,
+   "after": {
+    "12": {
+     "mean_ms": 20.084,
+     "median_ms": 0.28,
+     "ratio": 71.68,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 22.425,
+     "median_ms": 0.28,
+     "ratio": 80.04,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 21.118,
+     "median_ms": 0.28,
+     "ratio": 75.37,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t7.c10",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "qid": "-5051685481978614110",
+   "query": "SELECT id, pad FROM ql_m01_t7 WHERE lo = 8 AND c10 = 8805",
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c10",
+    "shape": "lo_eq"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.034,
+   "after": {
+    "12": {
+     "mean_ms": 13.796,
+     "median_ms": 0.032,
+     "ratio": 430.36,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 13.113,
+     "median_ms": 0.032,
+     "ratio": 409.06,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 12.922,
+     "median_ms": 0.032,
+     "ratio": 403.09,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t7.c11",
+   "role": "positivo",
+   "category": "indice eliminado",
+   "qid": "-1779463710993648609",
+   "query": "SELECT id, c11 FROM ql_m01_t7 WHERE c11 > 8805 ORDER BY c11 LIMIT 5",
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c11",
+    "shape": "order_limit"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.107,
+   "after": {
+    "12": {
+     "mean_ms": 28.153,
+     "median_ms": 0.096,
+     "ratio": 294.2,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 32.798,
+     "median_ms": 0.096,
+     "ratio": 342.75,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 33.46,
+     "median_ms": 0.096,
+     "ratio": 349.66,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t7.c12",
+   "role": "positivo",
+   "category": "crecimiento de datos",
+   "qid": "419768517456490480",
+   "query": "SELECT MAX(pad) FROM ql_m01_t7 WHERE c12 = 3",
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c12",
+    "shape": "hot_max"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.052,
+   "after": {
+    "12": {
+     "mean_ms": 4.544,
+     "median_ms": 0.051,
+     "ratio": 88.65,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 5.497,
+     "median_ms": 0.051,
+     "ratio": 107.24,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 6.181,
+     "median_ms": 0.051,
+     "ratio": 120.57,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t7.c13",
+   "role": "positivo",
+   "category": "indice menos selectivo",
+   "qid": "7919683196513436942",
+   "query": "SELECT COUNT(*) FROM ql_m01_t7 WHERE lo = 8 AND c13 = 8805",
+   "meta": {
+    "table": "ql_m01_t7",
+    "column": "c13",
+    "shape": "lo_count"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.064,
+   "after": {
+    "12": {
+     "mean_ms": 12.721,
+     "median_ms": 0.056,
+     "ratio": 226.2,
+     "calls": 60,
+     "degradada": true
+    },
+    "13": {
+     "mean_ms": 13.365,
+     "median_ms": 0.056,
+     "ratio": 237.65,
+     "calls": 60,
+     "degradada": true
+    },
+    "14": {
+     "mean_ms": 14.567,
+     "median_ms": 0.056,
+     "ratio": 259.02,
+     "calls": 60,
+     "degradada": true
+    }
+   },
+   "valid": true,
+   "detected": true,
+   "detected_late": false,
+   "detected_windows": [
+    12,
+    13,
+    14
+   ],
+   "first_window_after": 1,
+   "false_before_injection": [],
+   "flagged_rule_met": [
+    12,
+    13,
+    14
+   ],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t8.c0",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "-2345212780311925600",
+   "query": "SELECT id FROM ql_m01_t8 WHERE c0 BETWEEN 8805 AND 8835",
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c0",
+    "shape": "range"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.276,
+   "after": {
+    "12": {
+     "mean_ms": 0.676,
+     "median_ms": 0.275,
+     "ratio": 2.46,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.535,
+     "median_ms": 0.275,
+     "ratio": 1.94,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.424,
+     "median_ms": 0.275,
+     "ratio": 1.54,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t8.c1",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "786693877968989208",
+   "query": "SELECT id, c1 FROM ql_m01_t8 WHERE c1 > 8805 ORDER BY c1 LIMIT 5",
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c1",
+    "shape": "order_limit"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.089,
+   "after": {
+    "12": {
+     "mean_ms": 0.098,
+     "median_ms": 0.09,
+     "ratio": 1.08,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.097,
+     "median_ms": 0.091,
+     "ratio": 1.06,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.09,
+     "median_ms": 0.091,
+     "ratio": 0.99,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t8.c2",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "6853728386542462700",
+   "query": "SELECT COUNT(*) FROM ql_m01_t8 WHERE c2 = 8805",
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c2",
+    "shape": "count"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.059,
+   "after": {
+    "12": {
+     "mean_ms": 0.093,
+     "median_ms": 0.055,
+     "ratio": 1.68,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.084,
+     "median_ms": 0.055,
+     "ratio": 1.53,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.079,
+     "median_ms": 0.055,
+     "ratio": 1.43,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t8.c3",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "5826303785966345280",
+   "query": "SELECT id FROM ql_m01_t8 WHERE c3 IN (37303, 55537, 52577, 50054, 4135)",
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c3",
+    "shape": "in5"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.096,
+   "after": {
+    "12": {
+     "mean_ms": 0.251,
+     "median_ms": 0.081,
+     "ratio": 3.1,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.14,
+     "median_ms": 0.081,
+     "ratio": 1.72,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.138,
+     "median_ms": 0.081,
+     "ratio": 1.7,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t8.c4",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "-6388322541045418510",
+   "query": "SELECT x.id, d.name FROM ql_m01_t8 x JOIN ql_m01_dim d ON d.id = x.lo WHERE x.c4 = 8805",
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c4",
+    "shape": "join"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.071,
+   "after": {
+    "12": {
+     "mean_ms": 0.074,
+     "median_ms": 0.065,
+     "ratio": 1.13,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.094,
+     "median_ms": 0.065,
+     "ratio": 1.44,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.097,
+     "median_ms": 0.065,
+     "ratio": 1.48,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t8.c5",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "-6686632295097302398",
+   "query": "SELECT MAX(id) FROM ql_m01_t8 WHERE c5 = 8805",
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c5",
+    "shape": "max"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.047,
+   "after": {
+    "12": {
+     "mean_ms": 0.111,
+     "median_ms": 0.047,
+     "ratio": 2.38,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.062,
+     "median_ms": 0.047,
+     "ratio": 1.34,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.066,
+     "median_ms": 0.047,
+     "ratio": 1.42,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t8.c6",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "-5154264771989676801",
+   "query": "SELECT 1 FROM ql_m01_t8 WHERE c6 = 8805 LIMIT 1",
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c6",
+    "shape": "exists"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.046,
+   "after": {
+    "12": {
+     "mean_ms": 0.059,
+     "median_ms": 0.045,
+     "ratio": 1.33,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.206,
+     "median_ms": 0.045,
+     "ratio": 4.62,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.063,
+     "median_ms": 0.045,
+     "ratio": 1.41,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t8.c7",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "-2240429355989478990",
+   "query": "SELECT id, pad FROM ql_m01_t8 WHERE c7 = 8805",
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c7",
+    "shape": "eq"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.053,
+   "after": {
+    "12": {
+     "mean_ms": 0.117,
+     "median_ms": 0.053,
+     "ratio": 2.22,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.068,
+     "median_ms": 0.053,
+     "ratio": 1.29,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.065,
+     "median_ms": 0.054,
+     "ratio": 1.22,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t8.c8",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "1031720069825749199",
+   "query": "SELECT id FROM ql_m01_t8 WHERE c8 BETWEEN 8805 AND 8835",
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c8",
+    "shape": "range"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.183,
+   "after": {
+    "12": {
+     "mean_ms": 0.395,
+     "median_ms": 0.175,
+     "ratio": 2.26,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.36,
+     "median_ms": 0.175,
+     "ratio": 2.06,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.418,
+     "median_ms": 0.175,
+     "ratio": 2.39,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t8.c9",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "-5649211067945873428",
+   "query": "SELECT id, c9 FROM ql_m01_t8 WHERE c9 > 8805 ORDER BY c9 LIMIT 5",
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c9",
+    "shape": "order_limit"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.089,
+   "after": {
+    "12": {
+     "mean_ms": 0.155,
+     "median_ms": 0.082,
+     "ratio": 1.88,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.136,
+     "median_ms": 0.082,
+     "ratio": 1.65,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.11,
+     "median_ms": 0.082,
+     "ratio": 1.34,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t8.c10",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "956237244709657005",
+   "query": "SELECT COUNT(*) FROM ql_m01_t8 WHERE c10 = 8805",
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c10",
+    "shape": "count"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.043,
+   "after": {
+    "12": {
+     "mean_ms": 0.188,
+     "median_ms": 0.043,
+     "ratio": 4.36,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.083,
+     "median_ms": 0.043,
+     "ratio": 1.93,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.118,
+     "median_ms": 0.043,
+     "ratio": 2.73,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t8.c11",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "-4788293975586382937",
+   "query": "SELECT id FROM ql_m01_t8 WHERE c11 IN (37303, 55537, 52577, 50054, 4135)",
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c11",
+    "shape": "in5"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.119,
+   "after": {
+    "12": {
+     "mean_ms": 0.184,
+     "median_ms": 0.116,
+     "ratio": 1.58,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.117,
+     "median_ms": 0.118,
+     "ratio": 0.99,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.121,
+     "median_ms": 0.117,
+     "ratio": 1.03,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t8.c12",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "-3313467616227352673",
+   "query": "SELECT x.id, d.name FROM ql_m01_t8 x JOIN ql_m01_dim d ON d.id = x.lo WHERE x.c12 = 8805",
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c12",
+    "shape": "join"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.063,
+   "after": {
+    "12": {
+     "mean_ms": 0.138,
+     "median_ms": 0.061,
+     "ratio": 2.25,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.081,
+     "median_ms": 0.061,
+     "ratio": 1.32,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.08,
+     "median_ms": 0.061,
+     "ratio": 1.31,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t8.c13",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "4193961191184513484",
+   "query": "SELECT MAX(id) FROM ql_m01_t8 WHERE c13 = 8805",
+   "meta": {
+    "table": "ql_m01_t8",
+    "column": "c13",
+    "shape": "max"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.061,
+   "after": {
+    "12": {
+     "mean_ms": 0.069,
+     "median_ms": 0.06,
+     "ratio": 1.15,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.056,
+     "median_ms": 0.06,
+     "ratio": 0.94,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.06,
+     "median_ms": 0.058,
+     "ratio": 1.03,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t9.c0",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "6498115936302328841",
+   "query": "SELECT 1 FROM ql_m01_t9 WHERE c0 = 8805 LIMIT 1",
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c0",
+    "shape": "exists"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.051,
+   "after": {
+    "12": {
+     "mean_ms": 0.06,
+     "median_ms": 0.05,
+     "ratio": 1.19,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.183,
+     "median_ms": 0.05,
+     "ratio": 3.65,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.092,
+     "median_ms": 0.05,
+     "ratio": 1.85,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t9.c1",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "-7611543170211626134",
+   "query": "SELECT id, pad FROM ql_m01_t9 WHERE c1 = 8805",
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c1",
+    "shape": "eq"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.067,
+   "after": {
+    "12": {
+     "mean_ms": 0.064,
+     "median_ms": 0.067,
+     "ratio": 0.96,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.098,
+     "median_ms": 0.065,
+     "ratio": 1.52,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.066,
+     "median_ms": 0.065,
+     "ratio": 1.02,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t9.c2",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "-6905773836792161708",
+   "query": "SELECT id FROM ql_m01_t9 WHERE c2 BETWEEN 8805 AND 8835",
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c2",
+    "shape": "range"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.21,
+   "after": {
+    "12": {
+     "mean_ms": 0.521,
+     "median_ms": 0.193,
+     "ratio": 2.7,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.615,
+     "median_ms": 0.193,
+     "ratio": 3.18,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.435,
+     "median_ms": 0.193,
+     "ratio": 2.25,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t9.c3",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "-8293050557564473876",
+   "query": "SELECT id, c3 FROM ql_m01_t9 WHERE c3 > 8805 ORDER BY c3 LIMIT 5",
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c3",
+    "shape": "order_limit"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.062,
+   "after": {
+    "12": {
+     "mean_ms": 0.116,
+     "median_ms": 0.058,
+     "ratio": 2.01,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.355,
+     "median_ms": 0.058,
+     "ratio": 6.15,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.145,
+     "median_ms": 0.058,
+     "ratio": 2.52,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t9.c4",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "-5996664512740802113",
+   "query": "SELECT COUNT(*) FROM ql_m01_t9 WHERE c4 = 8805",
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c4",
+    "shape": "count"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.042,
+   "after": {
+    "12": {
+     "mean_ms": 0.073,
+     "median_ms": 0.041,
+     "ratio": 1.76,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.076,
+     "median_ms": 0.041,
+     "ratio": 1.83,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.061,
+     "median_ms": 0.041,
+     "ratio": 1.47,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t9.c5",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "8180856880436189895",
+   "query": "SELECT id FROM ql_m01_t9 WHERE c5 IN (37303, 55537, 52577, 50054, 4135)",
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c5",
+    "shape": "in5"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.127,
+   "after": {
+    "12": {
+     "mean_ms": 0.38,
+     "median_ms": 0.125,
+     "ratio": 3.03,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.144,
+     "median_ms": 0.125,
+     "ratio": 1.15,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.147,
+     "median_ms": 0.125,
+     "ratio": 1.17,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t9.c6",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "896550728251314116",
+   "query": "SELECT x.id, d.name FROM ql_m01_t9 x JOIN ql_m01_dim d ON d.id = x.lo WHERE x.c6 = 8805",
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c6",
+    "shape": "join"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.068,
+   "after": {
+    "12": {
+     "mean_ms": 0.129,
+     "median_ms": 0.066,
+     "ratio": 1.96,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.104,
+     "median_ms": 0.066,
+     "ratio": 1.59,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.091,
+     "median_ms": 0.067,
+     "ratio": 1.37,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t9.c7",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "8828347494114586725",
+   "query": "SELECT MAX(id) FROM ql_m01_t9 WHERE c7 = 8805",
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c7",
+    "shape": "max"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.059,
+   "after": {
+    "12": {
+     "mean_ms": 0.099,
+     "median_ms": 0.056,
+     "ratio": 1.78,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.106,
+     "median_ms": 0.057,
+     "ratio": 1.86,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.069,
+     "median_ms": 0.059,
+     "ratio": 1.18,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t9.c8",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "4586149211085665313",
+   "query": "SELECT 1 FROM ql_m01_t9 WHERE c8 = 8805 LIMIT 1",
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c8",
+    "shape": "exists"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.051,
+   "after": {
+    "12": {
+     "mean_ms": 0.042,
+     "median_ms": 0.05,
+     "ratio": 0.83,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.041,
+     "median_ms": 0.05,
+     "ratio": 0.83,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.043,
+     "median_ms": 0.049,
+     "ratio": 0.88,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t9.c9",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "-3064729957341077479",
+   "query": "SELECT id, pad FROM ql_m01_t9 WHERE c9 = 8805",
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c9",
+    "shape": "eq"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.044,
+   "after": {
+    "12": {
+     "mean_ms": 0.052,
+     "median_ms": 0.044,
+     "ratio": 1.2,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.05,
+     "median_ms": 0.044,
+     "ratio": 1.15,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.048,
+     "median_ms": 0.044,
+     "ratio": 1.11,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t9.c10",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "-4573184212206734827",
+   "query": "SELECT id FROM ql_m01_t9 WHERE c10 BETWEEN 8805 AND 8835",
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c10",
+    "shape": "range"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.253,
+   "after": {
+    "12": {
+     "mean_ms": 0.673,
+     "median_ms": 0.253,
+     "ratio": 2.66,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.324,
+     "median_ms": 0.253,
+     "ratio": 1.28,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.364,
+     "median_ms": 0.253,
+     "ratio": 1.44,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t9.c11",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "7591764249505629798",
+   "query": "SELECT id, c11 FROM ql_m01_t9 WHERE c11 > 8805 ORDER BY c11 LIMIT 5",
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c11",
+    "shape": "order_limit"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.092,
+   "after": {
+    "12": {
+     "mean_ms": 0.166,
+     "median_ms": 0.085,
+     "ratio": 1.95,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.1,
+     "median_ms": 0.085,
+     "ratio": 1.17,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.137,
+     "median_ms": 0.085,
+     "ratio": 1.6,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t9.c12",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "-7966236467527284631",
+   "query": "SELECT COUNT(*) FROM ql_m01_t9 WHERE c12 = 8805",
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c12",
+    "shape": "count"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.065,
+   "after": {
+    "12": {
+     "mean_ms": 0.047,
+     "median_ms": 0.066,
+     "ratio": 0.72,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.064,
+     "median_ms": 0.061,
+     "ratio": 1.06,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.048,
+     "median_ms": 0.06,
+     "ratio": 0.8,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  },
+  {
+   "cid": "ql_m01_t9.c13",
+   "role": "control",
+   "category": "control en tabla sin cambios",
+   "qid": "-2238593940293050368",
+   "query": "SELECT id FROM ql_m01_t9 WHERE c13 IN (37303, 55537, 52577, 50054, 4135)",
+   "meta": {
+    "table": "ql_m01_t9",
+    "column": "c13",
+    "shape": "in5"
+   },
+   "baseline_windows": 10,
+   "baseline_mean_ms": 0.13,
+   "after": {
+    "12": {
+     "mean_ms": 0.201,
+     "median_ms": 0.126,
+     "ratio": 1.59,
+     "calls": 60,
+     "degradada": false
+    },
+    "13": {
+     "mean_ms": 0.15,
+     "median_ms": 0.126,
+     "ratio": 1.19,
+     "calls": 60,
+     "degradada": false
+    },
+    "14": {
+     "mean_ms": 0.17,
+     "median_ms": 0.126,
+     "ratio": 1.34,
+     "calls": 60,
+     "degradada": false
+    }
+   },
+   "valid": false,
+   "detected": false,
+   "detected_late": false,
+   "detected_windows": [],
+   "first_window_after": null,
+   "false_before_injection": [],
+   "flagged_rule_met": [],
+   "flagged_rule_not_met": [],
+   "fp": false,
+   "calls_per_window": [
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60,
+    60
+   ]
+  }
+ ]
+}

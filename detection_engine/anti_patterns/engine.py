@@ -1,17 +1,16 @@
 from collections.abc import Iterable
 from datetime import datetime, timedelta
 
-from models import Hallazgo, Snapshot, StatementHistory
+from querylens_contract import SnapshotPayload
 
-from .avoidable_full_scan import (
-    DEFAULT_MAX_SELECTIVITY,
-    DEFAULT_MIN_LIVE_ROWS,
-    detect_avoidable_full_scans,
-)
+from models import Hallazgo, StatementHistory
+
+from .avoidable_full_scan import detect_avoidable_full_scans
 from .baseline_degradation import detect_baseline_degradation
 from .cardinality_misestimate import detect_cardinality_misestimates
 from .disk_spill import detect_disk_spill
-from .missing_index import detect_missing_indexes
+from .missing_index import DEFAULT_MAX_SELECTIVITY, DEFAULT_MIN_LIVE_ROWS, detect_missing_indexes
+from .n_plus_one import detect_n_plus_one
 from .non_sargable_predicate import detect_non_sargable_predicates
 from .unused_index import DEFAULT_MIN_STATS_WINDOW, detect_unused_indexes
 
@@ -25,12 +24,13 @@ from .unused_index import DEFAULT_MIN_STATS_WINDOW, detect_unused_indexes
 ACTIVE_RULES = (
     "disk_spill",  # AP-07
     "baseline_degradation",  # AP-01
+    "n_plus_one",  # AP-06
 )
 
 
 # Ejecuta un detector puntual por nombre, o los de ACTIVE_RULES si no se especifica ninguno
 def detect_all(
-    snapshot: Snapshot,
+    snapshot: SnapshotPayload,
     rule: str | None = None,
     min_live_rows: int = DEFAULT_MIN_LIVE_ROWS,
     max_selectivity: float = DEFAULT_MAX_SELECTIVITY,
@@ -41,13 +41,15 @@ def detect_all(
     # mapea nombre de regla -> funcion detectora, para poder seleccionarla por nombre
     detectors = {
         "disk_spill": lambda current_snapshot: detect_disk_spill(current_snapshot, history, captured_at),
+        # umbrales propios (SELECT simples, selectividad real de la ventana)
         "avoidable_full_scan": lambda current_snapshot: detect_avoidable_full_scans(
             current_snapshot,
-            min_live_rows,
-            max_selectivity,
+            history,
+            captured_at,
         ),
-        # mismos umbrales que avoidable_full_scan: la base de escaneo completo es identica
-        "missing_index": lambda current_snapshot: detect_missing_indexes(
+        # min_live_rows / max_selectivity son los de AP-04, que sigue con la
+        # base vieja de AP-02 (selectividad estimada, 10 %)
+        "missing_index":lambda current_snapshot: detect_missing_indexes(
             current_snapshot,
             min_live_rows,
             max_selectivity,
@@ -62,6 +64,11 @@ def detect_all(
             history,
         ),
         "baseline_degradation": lambda current_snapshot: detect_baseline_degradation(
+            current_snapshot,
+            history,
+            captured_at,
+        ),
+        "n_plus_one": lambda current_snapshot: detect_n_plus_one(
             current_snapshot,
             history,
             captured_at,

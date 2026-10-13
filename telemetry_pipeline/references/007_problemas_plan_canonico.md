@@ -1,7 +1,7 @@
-# Problemas del plan canónico y de lación (revisión 2026-10-12)
+# Problemas del plan canónico y de la redacción (revisión 2026-10-12)
 
 Revisión hecha desde el lado de los detectores (detection_engine), con una batería de 40 consultas ejecutadas en los dos motores con el `EXPLAIN` y el normalizador reales del pipeline. La batería, su reporte y los planes crudos están en `ql_sandbox/explain_predicados/` (ver su `README.md` para correrla de nuevo).
- redac
+
 Cada problema trae qué pasa, un ejemplo de la batería, la solución propuesta en el pipeline y qué detectores afecta. La sección final lista lo que **no** tiene arreglo en el pipeline, para que no se busque ahí.
 
 Detectores mencionados: AP-02 escaneo completo evitable, AP-03 predicado no sargable, AP-04 índice ausente, AP-05 índice no utilizado o redundante, AP-07 vertido a disco, AP-08 error grave de estimación de cardinalidad.
