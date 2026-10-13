@@ -2,10 +2,12 @@ import argparse
 import time
 from datetime import datetime, timezone
 
+from pydantic import ValidationError
+from querylens_contract import SnapshotPayload
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
-from models import Hallazgo, Snapshot
+from models import Hallazgo
 from anti_patterns.statement_history import STALE_AFTER, next_statement_histories
 from anti_patterns.engine import detect_all
 from querylens_connection import get_connection_querylens_db
@@ -47,11 +49,12 @@ def archive_job(engine: Engine, msg_id: int) -> None:
         )
 
 
-# Convierte el mensaje en un Snapshot, corre las reglas y reporta los hallazgos
+# Valida el mensaje contra el contrato, corre las reglas y reporta los hallazgos
 def process_job(engine: Engine, job: dict) -> list[Hallazgo]:
     msg_id = job["msg_id"]
     payload = job["message"]
-    snapshot = Snapshot.from_dict(payload)
+    # lanza ValidationError si el mensaje no cumple el contrato del pipeline
+    snapshot = SnapshotPayload.model_validate(payload)
     # el snapshot no trae hora de captura; enqueued_at es lo mas cercano y es
     # estable entre reintentos del mismo job
     captured_at = job.get("enqueued_at") or datetime.now(timezone.utc)
@@ -66,8 +69,8 @@ def process_job(engine: Engine, job: dict) -> list[Hallazgo]:
     findings = detect_all(snapshot, history=history, captured_at=captured_at)
 
     logger.info(
-        "Job %s recibido | source=%s | enqueued_at=%s",
-        msg_id, snapshot.source, job.get("enqueued_at"),
+        "Job %s recibido | db_id=%s | enqueued_at=%s",
+        msg_id, snapshot.db_id, job.get("enqueued_at"),
     )
     logger.info(
         "  statements=%d | tables=%d | indexes=%d | active_queries=%d | locks=%d",
@@ -89,7 +92,7 @@ def process_job(engine: Engine, job: dict) -> list[Hallazgo]:
 
     logger.info("  hallazgos=%d", len(findings))
     print(f"\n--- RESULTADOS (msg_id={msg_id}) ---")
-    print(f"Source: {snapshot.source}")
+    print(f"db_id: {snapshot.db_id}")
     print(f"Hallazgos: {len(findings)}")
     for finding in findings:
         print(
@@ -145,6 +148,16 @@ def main(oneshot: bool = False) -> None:
                 process_job(engine, job)
                 archive_job(engine, job["msg_id"])
                 logger.info("Job %s procesado y archivado en a_%s.", job["msg_id"], QUEUE_NAME)
+                if oneshot:
+                    return
+            except ValidationError as error:
+                # Un mensaje que no cumple el contrato tampoco lo va a cumplir en
+                # el reintento: se archiva para no reintentarlo para siempre
+                logger.error(
+                    "Job %s no cumple el contrato del snapshot; se archiva sin procesar: %s",
+                    job["msg_id"], error,
+                )
+                archive_job(engine, job["msg_id"])
                 if oneshot:
                     return
             except Exception:

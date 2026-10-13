@@ -3,8 +3,9 @@ from datetime import datetime, timedelta, timezone
 
 import sqlglot
 from sqlglot import exp
+from querylens_contract import SnapshotPayload
 
-from models import Hallazgo, Snapshot, StatementHistory
+from models import Hallazgo, StatementHistory
 from logger import get_logger
 
 from .table_aliases import resolve_table_aliases
@@ -92,11 +93,12 @@ def _parse_index_ref(
     return method, columns, is_unique, is_partial
 
 
-def _stats_window_is_fresh(snapshot: Snapshot, min_window: timedelta) -> bool:
-    # Si el reset de estadisticas fue hace menos de min_window, index_scans == 0 no prueba nada aun.
-    if not snapshot.stats_reset_timestamp:
+def _stats_window_is_fresh(snapshot: SnapshotPayload, min_window: timedelta) -> bool:
+    # Si el servidor arranco hace menos de min_window, index_scans == 0 no prueba nada aun.
+    # Es la hora de arranque, no un reset de pg_stat_*: un pg_stat_reset() manual no se ve aqui.
+    if not snapshot.server_start_timestamp:
         return False
-    raw = snapshot.stats_reset_timestamp[0].get("stats_reset")
+    raw = snapshot.server_start_timestamp[0].server_start_time
     if not raw:
         return False
     try:
@@ -104,32 +106,32 @@ def _stats_window_is_fresh(snapshot: Snapshot, min_window: timedelta) -> bool:
     except ValueError:
         return False
     if reset_at.tzinfo is None:
-        # MySQL no trae offset; se asume UTC, el error de unas horas no afecta un umbral en dias
+        # llega como UTC naive en los dos motores (el pipeline lo normaliza)
         reset_at = reset_at.replace(tzinfo=timezone.utc)
     return datetime.now(timezone.utc) - reset_at < min_window
 
 
-def _used_index_names(snapshot: Snapshot) -> set[str]:
+def _used_index_names(snapshot: SnapshotPayload) -> set[str]:
     # Indices citados por su nombre en algun plan real capturado: evidencia directa de uso.
     return {
-        operation.get("index_name")
+        operation.index_name
         for explain in snapshot.canonic_explains
-        for operation in explain.get("canonical_plan", {}).get("physical_operations", [])
-        if operation.get("index_name")
+        for operation in explain.canonical_plan.physical_operations
+        if operation.index_name
     }
 
 
 def _collect_query_traffic(
-    snapshot: Snapshot,
+    snapshot: SnapshotPayload,
 ) -> tuple[dict[tuple[str | None, str], list[dict]], set[tuple[str | None, str]]]:
     # Un solo recorrido de top_impact_queries: que tablas tienen trafico real, y
     # cuales full scans filtran por que columna (para priorizar "no usado" mas abajo).
     # Clave (schema_name, tabla): schema_name es el de la query completa
     # (candidate.schema_name), no por tabla individual dentro de ella.
     explains_by_query_id = {
-        explain.get("query_id"): explain
+        explain.query_id: explain
         for explain in snapshot.canonic_explains
-        if explain.get("query_id") is not None
+        if explain.query_id is not None
     }
     full_scan_columns_by_table: dict[tuple[str | None, str], list[dict]] = {}
     tables_with_traffic: set[tuple[str | None, str]] = set()
@@ -140,21 +142,21 @@ def _collect_query_traffic(
             continue
 
         alias_map = resolve_table_aliases(candidate.canonic_query)
-        for operation in explain.get("canonical_plan", {}).get("physical_operations", []):
-            if operation.get("type") != "scan":
+        for operation in explain.canonical_plan.physical_operations:
+            if operation.type != "scan":
                 continue
-            relation = operation.get("relation")
+            relation = operation.relation
             if not relation:
                 continue
             real_table = alias_map.get(relation, relation)
             key = (candidate.schema_name, real_table)
             tables_with_traffic.add(key)
 
-            if operation.get("access_method") != "full_table_scan":
+            if operation.access_method != "full_table_scan":
                 continue
             full_scan_columns_by_table.setdefault(key, []).append({
                 "query_id": candidate.query_id,
-                "columns": _predicate_columns(operation.get("predicate")),
+                "columns": _predicate_columns(operation.predicate),
                 "execution_count": candidate.execution_count,
                 "mean_time_ms": candidate.mean_time_ms,
             })
@@ -177,7 +179,7 @@ def _parse_instant(value) -> datetime | None:
     return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
 
 
-def _current_counters(snapshot: Snapshot) -> dict[str, tuple[int, float, str | None]]:
+def _current_counters(snapshot: SnapshotPayload) -> dict[str, tuple[int, float, str | None]]:
     # (ejecuciones, tiempo total, counters_epoch) por query, sumando filas
     # repetidas igual que la fila guardada en statement_samples
     counters: dict[str, tuple[int, float, str | None]] = {}
@@ -255,7 +257,7 @@ def _filter_columns_by_table(
 
 
 def _collect_filter_traffic(
-    snapshot: Snapshot,
+    snapshot: SnapshotPayload,
     history: dict[str, StatementHistory],
     full_scan_columns_by_table: dict[tuple[str | None, str], list[dict]],
 ) -> dict[tuple[str | None, str], list[dict]]:
@@ -360,7 +362,7 @@ def _full_scan_entries_for_table(
 
 
 def _detect_unused(
-    snapshot: Snapshot,
+    snapshot: SnapshotPayload,
     used_index_names: set[str],
     traffic: dict[tuple[str | None, str], list[dict]],
     redundant_index_names: set[tuple[str | None, str, str]],
@@ -455,7 +457,7 @@ def _keeps_over(keeper, keeper_unique: bool, other, other_unique: bool) -> bool:
 
 
 def _detect_redundant(
-    snapshot: Snapshot,
+    snapshot: SnapshotPayload,
     used_index_names: set[str],
     traffic: dict[tuple[str | None, str], list[dict]],
 ) -> list[Hallazgo]:
@@ -587,7 +589,7 @@ def _detect_redundant(
 
 
 def detect_unused_indexes(
-    snapshot: Snapshot,
+    snapshot: SnapshotPayload,
     min_stats_window: timedelta = DEFAULT_MIN_STATS_WINDOW,
     history: dict[str, StatementHistory] | None = None,
 ) -> list[Hallazgo]:

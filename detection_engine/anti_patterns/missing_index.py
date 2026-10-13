@@ -2,8 +2,9 @@ import re
 
 import sqlglot
 from sqlglot import exp
+from querylens_contract import SnapshotPayload
 
-from models import Hallazgo, Snapshot
+from models import Hallazgo
 from logger import get_logger
 
 from .table_aliases import resolve_table_aliases
@@ -201,15 +202,15 @@ def _suggested_index(table_name: str, equality: list[str], range_: list[str]) ->
 
 # Detecta escaneos completos evitables cuyas columnas filtradas no tienen indice
 def detect_missing_indexes(
-    snapshot: Snapshot,
+    snapshot: SnapshotPayload,
     min_live_rows: int = DEFAULT_MIN_LIVE_ROWS,
     max_selectivity: float = DEFAULT_MAX_SELECTIVITY,
 ) -> list[Hallazgo]:
     findings = []
     explains_by_query_id = {
-        explain.get("query_id"): explain
+        explain.query_id: explain
         for explain in snapshot.canonic_explains
-        if explain.get("query_id") is not None
+        if explain.query_id is not None
     }
     # claves con schema para no confundir tablas homonimas de schemas distintos
     live_rows_by_table: dict[tuple[str | None, str], int] = {}
@@ -237,13 +238,13 @@ def detect_missing_indexes(
             continue
 
         alias_map = resolve_table_aliases(candidate.canonic_query)
-        operations = explain.get("canonical_plan", {}).get("physical_operations", [])
+        operations = explain.canonical_plan.physical_operations
         for operation in operations:
             # condicion 1 (AP-02)
-            if operation.get("type") != "scan" or operation.get("access_method") != "full_table_scan":
+            if operation.type != "scan" or operation.access_method != "full_table_scan":
                 continue
 
-            relation = operation.get("relation")
+            relation = operation.relation
             real_table = alias_map.get(relation, relation)
             if not real_table:
                 continue
@@ -254,13 +255,13 @@ def detect_missing_indexes(
                 continue
 
             # condicion 3 (AP-02)
-            estimated_rows = operation.get("estimated_rows")
+            estimated_rows = operation.estimated_rows
             selectivity = estimated_rows / live_rows if estimated_rows is not None else None
             if selectivity is not None and selectivity > max_selectivity:
                 continue
 
             # condicion 4: columnas de esta tabla filtradas contra un valor
-            predicate = operation.get("predicate")
+            predicate = operation.predicate
             if not predicate:
                 continue
 

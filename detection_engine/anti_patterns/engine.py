@@ -1,7 +1,9 @@
 from collections.abc import Iterable
 from datetime import datetime, timedelta
 
-from models import Hallazgo, Snapshot, StatementHistory
+from querylens_contract import SnapshotPayload
+
+from models import Hallazgo, StatementHistory
 
 from .avoidable_full_scan import detect_avoidable_full_scans
 from .baseline_degradation import detect_baseline_degradation
@@ -28,7 +30,7 @@ ACTIVE_RULES = (
 
 # Ejecuta un detector puntual por nombre, o los de ACTIVE_RULES si no se especifica ninguno
 def detect_all(
-    snapshot: Snapshot,
+    snapshot: SnapshotPayload,
     rule: str | None = None,
     min_live_rows: int = DEFAULT_MIN_LIVE_ROWS,
     max_selectivity: float = DEFAULT_MAX_SELECTIVITY,

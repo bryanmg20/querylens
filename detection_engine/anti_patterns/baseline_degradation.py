@@ -1,7 +1,9 @@
 from datetime import datetime, timezone
 from statistics import median
 
-from models import Hallazgo, Snapshot, StatementHistory
+from querylens_contract import SnapshotPayload
+
+from models import Hallazgo, StatementHistory
 
 from .statement_history import WINDOW_MIN_CALLS, evaluate_statements
 
@@ -51,7 +53,7 @@ def _severity(extra_ms: float) -> str:
 
 # Detecta queries cuyo tiempo medio de la ultima ventana se salio de su propia linea base
 def detect_baseline_degradation(
-    snapshot: Snapshot,
+    snapshot: SnapshotPayload,
     history: dict[str, StatementHistory] | None = None,
     captured_at: datetime | None = None,
     min_calls: int = DEFAULT_MIN_CALLS,

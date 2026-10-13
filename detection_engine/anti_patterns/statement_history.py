@@ -2,7 +2,9 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timedelta, timezone
 from typing import Iterator
 
-from models import Snapshot, Statement, StatementHistory
+from querylens_contract import SnapshotPayload, StatementRow
+
+from models import StatementHistory
 
 
 # Estado por query que se guarda en public.statement_samples entre un snapshot
@@ -32,7 +34,7 @@ class Window:
 
 @dataclass
 class _Aggregated:
-    statement: Statement
+    statement: StatementRow
     calls: int
     total_ms: float
     disk_spill: int | None
@@ -57,7 +59,7 @@ def parse_instant(value) -> datetime | None:
     return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
 
 
-def _aggregate_statements(snapshot: Snapshot) -> dict[str, _Aggregated]:
+def _aggregate_statements(snapshot: SnapshotPayload) -> dict[str, _Aggregated]:
     # pg_stat_statements separa el mismo queryid por userid/toplevel; el
     # snapshot descarta userid, asi que puede llegar repetido. Se suman los
     # contadores para que el delta no dependa de cual fila gano.
@@ -102,11 +104,11 @@ def _window_since(
 
 
 def evaluate_statements(
-    snapshot: Snapshot,
+    snapshot: SnapshotPayload,
     history: dict[str, StatementHistory],
     captured_at: datetime,
     min_calls: int = WINDOW_MIN_CALLS,
-) -> Iterator[tuple[Statement, Window | None, StatementHistory | None, StatementHistory | None]]:
+) -> Iterator[tuple[StatementRow, Window | None, StatementHistory | None, StatementHistory | None]]:
     # Por cada query del snapshot devuelve: su statement, la ventana actual (o
     # None), la fila anterior y la fila nueva a guardar (o None si no hay nada
     # que actualizar). No modifica `history`.
@@ -151,7 +153,7 @@ def evaluate_statements(
 
 
 def next_statement_histories(
-    snapshot: Snapshot,
+    snapshot: SnapshotPayload,
     history: dict[str, StatementHistory],
     captured_at: datetime,
 ) -> list[StatementHistory]:

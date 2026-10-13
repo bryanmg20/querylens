@@ -3,8 +3,9 @@ from datetime import datetime, timezone
 
 import sqlglot
 from sqlglot import exp
+from querylens_contract import SnapshotPayload
 
-from models import Hallazgo, Snapshot, StatementHistory
+from models import Hallazgo, StatementHistory
 from logger import get_logger
 
 from .table_aliases import resolve_table_aliases
@@ -415,7 +416,7 @@ def _parse_instant(value) -> datetime | None:
     return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
 
 
-def _current_calls(snapshot: Snapshot) -> dict[str, tuple[int, str | None]]:
+def _current_calls(snapshot: SnapshotPayload) -> dict[str, tuple[int, str | None]]:
     # (ejecuciones, counters_epoch) por query, sumando filas repetidas igual que
     # la fila guardada en statement_samples
     calls_by_query: dict[str, tuple[int, str | None]] = {}
@@ -448,7 +449,7 @@ def _executed_since_previous_snapshot(
 
 
 def detect_non_sargable_predicates(
-    snapshot: Snapshot,
+    snapshot: SnapshotPayload,
     history: dict[str, StatementHistory] | None = None,
 ) -> list[Hallazgo]:
     # Detecta predicados no sargables en top_impact_queries y cruza cada
@@ -460,9 +461,9 @@ def detect_non_sargable_predicates(
     calls_by_query = _current_calls(snapshot)
 
     explains_by_query_id = {
-        explain.get("query_id"): explain
+        explain.query_id: explain
         for explain in snapshot.canonic_explains
-        if explain.get("query_id") is not None
+        if explain.query_id is not None
     }
     # claves con schema para no confundir tablas homonimas de schemas distintos
     column_types: dict[tuple[str | None, str, str], str] = {
@@ -561,17 +562,17 @@ def detect_non_sargable_predicates(
 
         # con EXPLAIN: predicado real del plan, los 3 subtipos
         alias_map = resolve_table_aliases(candidate.canonic_query)
-        operations = explain.get("canonical_plan", {}).get("physical_operations", [])
+        operations = explain.canonical_plan.physical_operations
 
         for operation in operations:
-            if operation.get("type") != "scan":
+            if operation.type != "scan":
                 continue
 
-            predicate = operation.get("predicate")
+            predicate = operation.predicate
             if not predicate:
                 continue
 
-            relation = operation.get("relation")
+            relation = operation.relation
             real_table = alias_map.get(relation, relation)
             subtipos = _detect_predicate_subtypes(predicate, real_table, candidate.schema_name, column_types)
 
@@ -587,7 +588,7 @@ def detect_non_sargable_predicates(
                 findings.append(
                     Hallazgo(
                         antipatron="non_sargable_predicate",
-                        severidad="high" if operation.get("access_method") == "full_table_scan" else "medium",
+                        severidad="high" if operation.access_method == "full_table_scan" else "medium",
                         evidencia={
                             "query_id": candidate.query_id,
                             "query_text": candidate.query_text,
@@ -599,8 +600,8 @@ def detect_non_sargable_predicates(
                             "relation": relation,
                             "column": column_name,
                             "index_exists": index_exists,
-                            "access_method": operation.get("access_method"),
-                            "estimated_rows": operation.get("estimated_rows"),
+                            "access_method": operation.access_method,
+                            "estimated_rows": operation.estimated_rows,
                             "fuente": "plan",
                         },
                         explicacion=explicacion,

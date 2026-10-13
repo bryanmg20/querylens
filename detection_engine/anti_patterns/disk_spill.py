@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
-from models import CandidateStatement, Hallazgo, Snapshot, StatementHistory
+from querylens_contract import SnapshotPayload, StatementCandidate
+
+from models import Hallazgo, StatementHistory
 
 from .table_aliases import resolve_table_aliases
 
@@ -75,7 +77,7 @@ def _parse_instant(value) -> datetime | None:
     return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
 
 
-def _current_counters(snapshot: Snapshot) -> dict[str, tuple[int, float, int | None, int | None, str | None]]:
+def _current_counters(snapshot: SnapshotPayload) -> dict[str, tuple[int, float, int | None, int | None, str | None]]:
     # (ejecuciones, tiempo total, spill, merge passes, counters_epoch) por query,
     # sumando las filas repetidas igual que la fila guardada en statement_samples:
     # si no, la resta compararia el valor de una sola fila contra la suma de todas
@@ -158,7 +160,7 @@ def _severity(window_ms: float) -> str:
     return "low"
 
 
-def _unit(candidate: CandidateStatement) -> str:
+def _unit(candidate: StatementCandidate) -> str:
     # Postgres entrega queryid como entero y MySQL el DIGEST como texto; mientras
     # los dos snapshots compartan db_id, es la forma de saber el motor
     return _UNIT_POSTGRES if isinstance(candidate.query_id, int) else _UNIT_MYSQL
@@ -166,7 +168,7 @@ def _unit(candidate: CandidateStatement) -> str:
 
 # Detecta consultas que escribieron datos temporales en disco en la ultima ventana
 def detect_disk_spill(
-    snapshot: Snapshot,
+    snapshot: SnapshotPayload,
     history: dict[str, StatementHistory] | None = None,
     captured_at: datetime | None = None,
 ) -> list[Hallazgo]:

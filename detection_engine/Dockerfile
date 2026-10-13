@@ -21,6 +21,11 @@ RUN apt-get update \
     && apt-get purge -y --auto-remove build-essential libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Contrato del snapshot compartido con el pipeline (contract/querylens_contract):
+# el detector valida cada mensaje de analyze_job con los mismos modelos.
+COPY contract/ /contract/
+RUN pip install --no-cache-dir /contract
+
 COPY detection_engine/ .
 
 # /querylens_database queda como hermana de /app: storage.py la resuelve como

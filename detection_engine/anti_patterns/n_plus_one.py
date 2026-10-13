@@ -3,8 +3,9 @@ from datetime import datetime, timedelta, timezone
 
 import sqlglot
 from sqlglot import exp
+from querylens_contract import ForeignKeyRow, SnapshotPayload, StatementRow
 
-from models import ForeignKeyColumn, Hallazgo, Snapshot, Statement, StatementHistory
+from models import Hallazgo, StatementHistory
 from logger import get_logger
 
 logger = get_logger(__name__)
@@ -62,7 +63,7 @@ class _RowsWindow:
 @dataclass
 class _Query:
     query_id: str
-    statement: Statement
+    statement: StatementRow
     window: _RowsWindow
     # captured_at de la fila contra la que se resto (None si la query es nueva)
     window_start: datetime | None
@@ -97,10 +98,10 @@ def _parse_instant(value) -> datetime | None:
     return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
 
 
-def _current_counters(snapshot: Snapshot) -> dict[str, tuple[Statement, int, int | None, str | None]]:
+def _current_counters(snapshot: SnapshotPayload) -> dict[str, tuple[StatementRow, int, int | None, str | None]]:
     # (primer statement, ejecuciones, filas devueltas, counters_epoch) por query,
     # sumando las filas repetidas igual que la fila guardada en statement_samples
-    counters: dict[str, tuple[Statement, int, int | None, str | None]] = {}
+    counters: dict[str, tuple[StatementRow, int, int | None, str | None]] = {}
     for statement in snapshot.statements:
         if statement.query_id is None or statement.execution_count is None:
             continue
@@ -234,10 +235,10 @@ def _equalities(
     return equalities
 
 
-def _relations(foreign_keys: list[ForeignKeyColumn]) -> list[_Relation]:
+def _relations(foreign_keys: list[ForeignKeyRow]) -> list[_Relation]:
     # agrupa las filas de foreign_keys por constraint: una compuesta llega como
     # varias filas, una por columna, ordenadas por position
-    grouped: dict[tuple, list[ForeignKeyColumn]] = {}
+    grouped: dict[tuple, list[ForeignKeyRow]] = {}
     for row in foreign_keys:
         if not (row.table_name and row.column_name and row.referenced_table_name and row.referenced_column_name):
             continue
@@ -292,7 +293,7 @@ def _qualified(table: tuple[str | None, str]) -> str:
 # Detecta queries que se ejecutan una vez por cada fila que devolvio otra query
 # en la misma ventana, unidas por una clave foranea
 def detect_n_plus_one(
-    snapshot: Snapshot,
+    snapshot: SnapshotPayload,
     history: dict[str, StatementHistory] | None = None,
     captured_at: datetime | None = None,
 ) -> list[Hallazgo]:

@@ -3,8 +3,9 @@ from datetime import datetime, timedelta, timezone
 
 import sqlglot
 from sqlglot import exp
+from querylens_contract import SnapshotPayload
 
-from models import Hallazgo, Snapshot, StatementHistory
+from models import Hallazgo, StatementHistory
 from logger import get_logger
 
 from .table_aliases import resolve_table_aliases
@@ -73,7 +74,7 @@ def _parse_instant(value) -> datetime | None:
     return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
 
 
-def _current_counters(snapshot: Snapshot) -> dict[str, tuple[int, int | None, str | None]]:
+def _current_counters(snapshot: SnapshotPayload) -> dict[str, tuple[int, int | None, str | None]]:
     # (ejecuciones, filas devueltas, counters_epoch) por query, sumando las filas
     # repetidas igual que la fila guardada en statement_samples. Misma logica que AP-08.
     counters: dict[str, tuple[int, int | None, str | None]] = {}
@@ -166,7 +167,7 @@ def _simple_select_table(canonic_query: str | None) -> str | None:
 # Detecta SELECT simples que recorren completa una tabla grande para devolver
 # una fraccion chica de sus filas
 def detect_avoidable_full_scans(
-    snapshot: Snapshot,
+    snapshot: SnapshotPayload,
     history: dict[str, StatementHistory] | None = None,
     captured_at: datetime | None = None,
     min_live_rows: int = DEFAULT_MIN_LIVE_ROWS,
@@ -183,9 +184,9 @@ def detect_avoidable_full_scans(
     findings = []
     # indexa los EXPLAIN por query_id para poder cruzarlos con cada candidato
     explains_by_query_id = {
-        explain.get("query_id"): explain
+        explain.query_id: explain
         for explain in snapshot.canonic_explains
-        if explain.get("query_id") is not None
+        if explain.query_id is not None
     }
     # tamano real de cada tabla. Clave con schema para no confundir tablas
     # homonimas de schemas distintos
@@ -235,12 +236,12 @@ def detect_avoidable_full_scans(
             continue
 
         alias_map = resolve_table_aliases(candidate.canonic_query)
-        operations = explain.get("canonical_plan", {}).get("physical_operations", [])
+        operations = explain.canonical_plan.physical_operations
         for operation in operations:
             # condicion 3: full scan sobre la tabla del SELECT
-            if operation.get("type") != "scan" or operation.get("access_method") != "full_table_scan":
+            if operation.type != "scan" or operation.access_method != "full_table_scan":
                 continue
-            relation = operation.get("relation")
+            relation = operation.relation
             if alias_map.get(relation, relation) != table_name:
                 continue
 
@@ -266,16 +267,16 @@ def detect_avoidable_full_scans(
                         "schema_name": candidate.schema_name,
                         "tables": [table_name],
                         "relation": relation,
-                        "predicate": operation.get("predicate"),
+                        "predicate": operation.predicate,
                         "live_rows": live_rows,
                         "rows_per_call": round(rows_per_call, 2),
                         "selectivity": selectivity,
                         # solo informativo: la regla usa las filas reales
-                        "estimated_rows": operation.get("estimated_rows"),
+                        "estimated_rows": operation.estimated_rows,
                         "window_calls": window.calls,
                         "window_rows": window.rows,
                         "query_new_in_window": window.new_query,
-                        "explain_source": explain.get("explain_source"),
+                        "explain_source": explain.explain_source,
                         "mean_time_ms": candidate.mean_time_ms,
                         "total_time_ms": candidate.total_time_ms,
                         "execution_count": candidate.execution_count,
