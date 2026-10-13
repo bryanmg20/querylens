@@ -51,8 +51,10 @@ def test_d1_char_to_text_is_still_implicit_cast():
     assert _subtypes("((code)::text = $1)") == [("implicit_cast", "code")]
 
 
-def test_d1_unknown_type_is_still_reported():
-    assert _subtypes("((status)::text = $1)", table=None) == [("implicit_cast", "status")]
+def test_d1_unknown_type_is_assumed_varchar():
+    # igual que AP-04 indice ausente: sin tipo se asume varchar, para que los dos
+    # detectores no se contradigan sobre el mismo predicado
+    assert _subtypes("((status)::text = $1)", table=None) == []
 
 
 def test_d1_other_casts_are_still_reported():
@@ -97,7 +99,7 @@ def test_d4_parameterized_index_cond_from_other_table():
 
 
 def test_d4_missing_index_ignores_other_table():
-    equality, range_ = _filtered_columns("((o.customer_id = c.id) AND (o.note = '$1'))", _belongs_to("o"))
+    equality, range_, _ = _filtered_columns("((o.customer_id = c.id) AND (o.note = '$1'))", _belongs_to("o"))
     assert equality == ["note"] and range_ == []
 
 
@@ -153,7 +155,8 @@ def _snapshot(query_id, canonic_query, operations, execution_count=50, rows_retu
         "server_start_timestamp": [{"server_start_time": "2026-10-01 00:00:00"}],
         "canonic_explains": [{
             "query_id": query_id,
-            "explain_source": "generic_plan",
+            # valores reales del pipeline: generic / auto_explain (Postgres), sample (MySQL)
+            "explain_source": "sample" if isinstance(query_id, str) else "generic",
             "canonical_plan": {"physical_operations": operations},
         }],
     })
@@ -182,11 +185,157 @@ def test_d3_non_sargable_skips_query_without_executions_even_with_plan():
     assert len(detect_non_sargable_predicates(snapshot, _history(PG_QUERY_ID, 40))) == 1
 
 
+NOW = datetime(2026, 10, 13, 10, 6, tzinfo=timezone.utc)
+
+
 def test_d3_missing_index_skips_query_without_executions():
     operations = [{**FULL_SCAN_NOTE[0], "predicate": "(note = $1)"}]
     snapshot = _snapshot(PG_QUERY_ID, "SELECT id FROM ql_pt_orders WHERE note = $1", operations)
-    assert detect_missing_indexes(snapshot, history=_history(PG_QUERY_ID, 50)) == []
-    assert len(detect_missing_indexes(snapshot, history=_history(PG_QUERY_ID, 40))) == 1
+    assert detect_missing_indexes(snapshot, _history(PG_QUERY_ID, 50), NOW) == []
+    assert len(detect_missing_indexes(snapshot, _history(PG_QUERY_ID, 40), NOW)) == 1
+
+
+# AP-04 indice ausente con la base de AP-02 escaneo completo evitable
+
+def _missing(query_id, canonic_query, operation, previous_calls=30, previous_rows=30):
+    # ventana: 20 ejecuciones y 20 filas devueltas (1 fila por ejecucion)
+    snapshot = _snapshot(query_id, canonic_query, [operation])
+    return detect_missing_indexes(snapshot, _history(query_id, previous_calls, previous_rows), NOW)
+
+
+MYSQL_FULL_SCAN = {
+    "type": "scan", "access_method": "full_table_scan", "relation": "ql_pt_orders",
+    "table_name": None, "index_name": None,
+}
+
+
+def test_ap04_uses_real_selectivity_not_estimate():
+    # caso 04 (MySQL): BETWEEN sin indice, MySQL estima la constante 11,1 %
+    operation = {**MYSQL_FULL_SCAN, "estimated_rows": 11091.67,
+                 "predicate": "(ql_pt_orders.note BETWEEN '$1' AND '$2')"}
+    findings = _missing(MYSQL_QUERY_ID, "SELECT id FROM ql_pt_orders WHERE note BETWEEN $1 AND $2", operation)
+    assert [(f.evidencia["range_columns"], f.evidencia["selectivity"]) for f in findings] == [(["note"], 1e-05)]
+
+
+def test_ap04_skips_when_real_selectivity_is_high():
+    # 20 ejecuciones que devuelven 20.000 filas cada una (20 % de la tabla)
+    operation = {**MYSQL_FULL_SCAN, "estimated_rows": 10, "predicate": "(ql_pt_orders.note = '$1')"}
+    snapshot = _snapshot(MYSQL_QUERY_ID, "SELECT id FROM ql_pt_orders WHERE note = $1", [operation],
+                         execution_count=50, rows_returned=400_000 + 30)
+    assert detect_missing_indexes(snapshot, _history(MYSQL_QUERY_ID, 30, 30), NOW) == []
+
+
+def test_ap04_requires_min_window_calls():
+    operation = {**MYSQL_FULL_SCAN, "estimated_rows": 10, "predicate": "(ql_pt_orders.note = '$1')"}
+    assert _missing(MYSQL_QUERY_ID, "SELECT id FROM ql_pt_orders WHERE note = $1", operation,
+                    previous_calls=45, previous_rows=45) == []
+
+
+def test_ap04_only_simple_selects():
+    operation = {**MYSQL_FULL_SCAN, "estimated_rows": 10, "predicate": "(ql_pt_orders.note = '$1')"}
+    for query in (
+        "SELECT id FROM ql_pt_orders WHERE note = $1 LIMIT 10",
+        "SELECT COUNT(*) FROM ql_pt_orders WHERE note = $1",
+        "SELECT o.id FROM ql_pt_orders AS o JOIN ql_pt_customers AS c ON c.id = o.customer_id WHERE o.note = $1",
+    ):
+        assert _missing(MYSQL_QUERY_ID, query, operation) == [], query
+
+
+def test_ap04_like_is_not_counted():
+    # casos 09/10: el patron llega redactado y no se sabe si empieza con %
+    belongs = _belongs_to("ql_pt_orders")
+    for predicate in ("(note ~~ $1)", "(ql_pt_orders.note LIKE '$1')", "(note ~~ '$1%'::text)"):
+        assert _filtered_columns(predicate, belongs) == ([], [], []), predicate
+    # con otra condicion en el AND, esa si se evalua
+    assert _filtered_columns("((ql_pt_orders.note LIKE '$1') AND (ql_pt_orders.total = $2))", belongs) == (
+        ["total"], [], []
+    )
+
+
+# AP-04 indice ausente: conversion de tipo sobre la columna
+
+def _types(**types):
+    return lambda name: types.get(name)
+
+
+def test_ap04_mysql_text_column_against_number_is_discarded():
+    # caso 15: code es char y se compara con un numero -> el indice no serviria
+    belongs = _belongs_to("ql_pt_orders")
+    assert _filtered_columns("(ql_pt_orders.code = $1)", belongs, _types(code="char"), "mysql") == ([], [], [])
+    assert _filtered_columns("(ql_pt_orders.code IN ($1, '$2'))", belongs, _types(code="varchar"), "mysql") == (
+        [], [], []
+    )
+    # con texto no hay conversion
+    assert _filtered_columns("(ql_pt_orders.code = '$1')", belongs, _types(code="char"), "mysql") == (
+        ["code"], [], []
+    )
+    # columna numerica contra numero: tampoco
+    assert _filtered_columns("(ql_pt_orders.total = $1)", belongs, _types(total="decimal"), "mysql") == (
+        ["total"], [], []
+    )
+
+
+def test_ap04_mysql_unknown_type_counts_but_unverified():
+    belongs = _belongs_to("ql_pt_orders")
+    assert _filtered_columns("(ql_pt_orders.code = $1)", belongs, _types(), "mysql") == (["code"], [], ["code"])
+
+
+def test_ap04_postgres_text_cast_depends_on_column_type():
+    belongs = _belongs_to("ql_pt_orders")
+    predicate = "((code)::text = $1)"
+    assert _filtered_columns(predicate, belongs, _types(code="character varying")) == (["code"], [], [])
+    assert _filtered_columns(predicate, belongs, _types(code="character")) == ([], [], [])
+    assert _filtered_columns(predicate, belongs, _types()) == (["code"], [], ["code"])
+    # otros casts (int -> numeric) se descartan siempre
+    assert _filtered_columns("((customer_id)::numeric = $1)", belongs, _types(customer_id="integer")) == (
+        [], [], []
+    )
+
+
+def test_ap04_is_null_counts_as_equality():
+    # caso 08: el indice resuelve IS NULL en los dos motores
+    belongs = _belongs_to("ql_pt_orders")
+    assert _filtered_columns("(note IS NULL)", belongs) == (["note"], [], [])
+    # MySQL sin tipo: IS NULL no tiene valor que pueda provocar una conversion
+    assert _filtered_columns("(ql_pt_orders.note IS NULL)", belongs, _types(), "mysql") == (["note"], [], [])
+    # IS NOT NULL (y el NOT ... IS NULL que agrega MySQL) no cuentan
+    assert _filtered_columns("(note IS NOT NULL)", belongs) == ([], [], [])
+    assert _filtered_columns("(NOT ql_pt_orders.note IS NULL)", belongs) == ([], [], [])
+    assert _filtered_columns("((note IS NULL) AND (total > $1))", belongs) == (["note"], ["total"], [])
+
+
+def test_ap04_finding_marks_unverified_conversion():
+    operation = {**MYSQL_FULL_SCAN, "estimated_rows": 10, "predicate": "(ql_pt_orders.total = $1)"}
+    finding, = _missing(MYSQL_QUERY_ID, "SELECT id FROM ql_pt_orders WHERE total = $1", operation)
+    # total no esta en TYPES del snapshot de prueba: tipo desconocido
+    assert finding.evidencia["conversion_verificada"] is False
+    assert finding.evidencia["conversion_sin_verificar_por"] == ["tipo_de_columna_desconocido"]
+    assert "No se pudo descartar" in finding.explicacion
+
+    operation = {**MYSQL_FULL_SCAN, "estimated_rows": 10, "predicate": "(ql_pt_orders.note = '$1')"}
+    finding, = _missing(MYSQL_QUERY_ID, "SELECT id FROM ql_pt_orders WHERE note = $1", operation)
+    assert finding.evidencia["conversion_verificada"] is True
+
+    # MySQL: tel es varchar y se compara con un numero -> sin hallazgo
+    operation = {**MYSQL_FULL_SCAN, "estimated_rows": 10, "predicate": "(ql_pt_orders.tel = $1)"}
+    assert _missing(MYSQL_QUERY_ID, "SELECT id FROM ql_pt_orders WHERE tel = $1", operation) == []
+
+
+def test_ap04_postgres_generic_plan_is_unverified():
+    operation = {**FULL_SCAN_NOTE[0], "predicate": "(note = $1)"}
+    snapshot = _snapshot(PG_QUERY_ID, "SELECT id FROM ql_pt_orders WHERE note = $1", [operation])
+    finding, = detect_missing_indexes(snapshot, _history(PG_QUERY_ID, 30, 30), NOW)
+    assert finding.evidencia["conversion_sin_verificar_por"] == ["plan_generico"]
+
+
+def test_ap04_full_index_scan_on_composite_index():
+    # indice (status, total): MySQL recorre el indice entero filtrando total
+    operation = {**MYSQL_FULL_SCAN, "access_method": "full_index_scan", "index_name": "idx_status_total",
+                 "estimated_rows": 9983.5, "predicate": "(ql_pt_orders.total = $1)"}
+    findings = _missing(MYSQL_QUERY_ID, "SELECT id FROM ql_pt_orders WHERE total = $1", operation)
+    assert [(f.evidencia["access_method"], f.evidencia["equality_columns"]) for f in findings] == [
+        ("full_index_scan", ["total"])
+    ]
 
 
 def test_d8_table_name_resolves_renamed_relation():
@@ -194,7 +343,7 @@ def test_d8_table_name_resolves_renamed_relation():
     operations = [{**FULL_SCAN_NOTE[0], "relation": "ql_pt_orders_1", "predicate": "(note = $1)"}]
     snapshot = _snapshot(PG_QUERY_ID, "SELECT id FROM ql_pt_orders WHERE note = $1", operations)
 
-    missing = detect_missing_indexes(snapshot)
+    missing = detect_missing_indexes(snapshot, _history(PG_QUERY_ID, 30, rows_returned=30), NOW)
     assert [f.table_name for f in missing] == ["ql_pt_orders"]
 
     sargable_ops = [{**operations[0], "predicate": "(lower(note) = $1)"}]

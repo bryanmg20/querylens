@@ -114,13 +114,14 @@ def _is_cast_on_column(side: exp.Expression) -> bool:
 
 def _is_varchar_text_cast(side: exp.Expression, data_type: str | None) -> bool:
     # `(columna)::text` sobre una columna varchar: no es una conversion que
-    # impida el indice (ver _VARCHAR_TYPES). Con tipo desconocido se reporta.
+    # impida el indice (ver _VARCHAR_TYPES). Con tipo desconocido se asume
+    # varchar (lo comun), igual que AP-04: si no, los dos detectores darian
+    # diagnosticos contradictorios sobre el mismo predicado.
     return (
         isinstance(side, exp.Cast)
         and side.to.is_type(exp.DataType.Type.TEXT)
         and isinstance(_unwrap_paren(side.this), exp.Column)
-        and bool(data_type)
-        and data_type.strip().lower() in _VARCHAR_TYPES
+        and (not data_type or data_type.strip().lower() in _VARCHAR_TYPES)
     )
 
 

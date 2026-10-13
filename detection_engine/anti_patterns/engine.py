@@ -47,13 +47,14 @@ def detect_all(
             history,
             captured_at,
         ),
-        # min_live_rows / max_selectivity son los de AP-04, que sigue con la
-        # base vieja de AP-02 (selectividad estimada, 10 %)
-        "missing_index":lambda current_snapshot: detect_missing_indexes(
+        # misma base de escaneo completo que AP-02 (SELECT simples, selectividad
+        # real de la ventana)
+        "missing_index": lambda current_snapshot: detect_missing_indexes(
             current_snapshot,
+            history,
+            captured_at,
             min_live_rows,
             max_selectivity,
-            history,
         ),
         "non_sargable_predicate": lambda current_snapshot: detect_non_sargable_predicates(
             current_snapshot,
