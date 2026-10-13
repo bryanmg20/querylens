@@ -90,6 +90,10 @@ services:
     # activas. Sin consumidor en la cola, revisar el crecimiento de PGMQ.
     build:
       context: ./telemetry_pipeline
+      # querylens_contract (modelos del snapshot) vive en ./contract, fuera del
+      # contexto; el Dockerfile lo copia con COPY --from=contract.
+      additional_contexts:
+        contract: ./contract
     container_name: querylens_pipeline
     environment:
       # La cola vive en el servicio postgres de esta red: 5432 AQUI dentro,

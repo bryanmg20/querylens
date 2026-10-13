@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy.dialects import postgresql
 
 from collectors.postgres.collector import Postgres_Collector
-from models.snapshot import SnapshotPayload
+from querylens_contract.snapshot import SnapshotPayload
 from orchestrator import Orchestrator
 
 pytestmark = pytest.mark.unit

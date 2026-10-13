@@ -1,6 +1,6 @@
 """Validadores de SnapshotPayload.
 
-Los BeforeValidator de models/snapshot.py son la frontera donde el snapshot deja
+Los BeforeValidator de querylens_contract/snapshot.py son la frontera donde el snapshot deja
 de ser un dict arbitrario y pasa a ser el contrato que consume el pipeline de
 analisis. Un validador que deja pasar lo incorrecto no falla ruidosamente: el
 analizador recibe is_granted como string o blocking_pids como string y falla
@@ -13,7 +13,7 @@ import pytest
 
 from datetime import datetime, timedelta, timezone
 
-from models.snapshot import (
+from querylens_contract.snapshot import (
     ActiveQueryRow,
     LockRow,
     MAX_STATEMENT_TEXT_CHARS,

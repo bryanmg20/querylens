@@ -3,7 +3,7 @@ import re
 import sqlglot
 from sqlglot import exp
 
-from models.snapshot import _to_naive_utc
+from querylens_contract.snapshot import _to_naive_utc
 from models.stats import Stats
 from stages import canonicalizers
 
@@ -42,7 +42,7 @@ def normalize_statement_epochs(stats: Stats):
     Postgres (`stats_since`, timestamptz) y MySQL (`FIRST_SEEN`, DATETIME) llegan
     con tipos distintos: uno con zona y el otro naive. La sesion MySQL se fija a
     +00:00 (init_command en config/connections) y el timestamptz se pasa a UTC
-    (models.snapshot._to_naive_utc). Se hornean a la misma representacion que usa
+    (querylens_contract.snapshot._to_naive_utc). Se hornean a la misma representacion que usa
     `normalize_active_query_timestamps`, asi el consumidor puede compararlas
     entre motores sin parsear dos formatos.
     """

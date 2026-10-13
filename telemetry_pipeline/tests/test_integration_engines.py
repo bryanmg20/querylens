@@ -20,7 +20,7 @@ from config.connections import (
     get_connection_querylens_db,
 )
 from enqueue import send_to_queue
-from models.snapshot import SnapshotPayload
+from querylens_contract.snapshot import SnapshotPayload
 from orchestrator import Orchestrator
 from stages.collect import CollectStage
 from stages.sql_text import is_explainable_command
