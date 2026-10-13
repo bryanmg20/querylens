@@ -19,7 +19,8 @@ logger = get_logger(__name__)
 #   2. >= DEFAULT_MIN_WINDOW_CALLS ejecuciones en la ventana (delta desde el
 #      snapshot anterior). Ademas evita re-reportar queries que ya no corren y
 #      siguen en top_impact por tiempo acumulado.
-#   3. el plan recorre completa esa tabla (full_table_scan)
+#   3. el plan recorre completa esa tabla (full_table_scan) o un indice entero
+#      sin usarlo para filtrar (full_index_scan, ver _FULL_SCAN_METHODS)
 #   4. la tabla tiene >= DEFAULT_MIN_LIVE_ROWS filas vivas
 #   5. devuelve <= DEFAULT_MAX_SELECTIVITY de las filas recorridas:
 #      (filas devueltas / ejecuciones de la ventana) / live_rows
@@ -44,6 +45,15 @@ logger = get_logger(__name__)
 DEFAULT_MIN_LIVE_ROWS = 10_000  # tabla considerada "grande" para este chequeo
 DEFAULT_MAX_SELECTIVITY = 0.1  # devuelve como maximo el 10% de las filas recorridas
 DEFAULT_MIN_WINDOW_CALLS = 10
+
+# full_index_scan (MySQL `index`, Postgres Index Scan sin Index Cond) pasa por
+# una entrada del indice por cada fila: en un SELECT simple examina toda la
+# tabla igual que un full_table_scan. MySQL lo elige en vez de ALL cuando un
+# indice cubre las columnas (ej. LOWER(email) = ... con indice en email), asi
+# que sin esto la misma consulta se detecta en Postgres y no en MySQL. Solo
+# dejaria de leer todo si algo corta antes (LIMIT, MIN/MAX, EXISTS), y eso ya
+# lo excluye la condicion 1.
+_FULL_SCAN_METHODS = ("full_table_scan", "full_index_scan")
 
 # Igual que AP-07/AP-08: una query sin fila guardada cuyo counters_epoch esta a
 # menos de esto de la hora del snapshot empezo a contar dentro de la ventana.
@@ -239,10 +249,11 @@ def detect_avoidable_full_scans(
         operations = explain.canonical_plan.physical_operations
         for operation in operations:
             # condicion 3: full scan sobre la tabla del SELECT
-            if operation.type != "scan" or operation.access_method != "full_table_scan":
+            if operation.type != "scan" or operation.access_method not in _FULL_SCAN_METHODS:
                 continue
             relation = operation.relation
-            if alias_map.get(relation, relation) != table_name:
+            # table_name: tabla real en Postgres (relation puede ser ql_pt_orders_1); None en MySQL
+            if (operation.table_name or alias_map.get(relation, relation)) != table_name:
                 continue
 
             # condicion 4
@@ -256,6 +267,14 @@ def detect_avoidable_full_scans(
             if selectivity > max_selectivity:
                 continue
 
+            if operation.access_method == "full_index_scan":
+                scan_text = (
+                    f"La consulta recorre completo un indice de la tabla {table_name} sin usarlo para "
+                    f"filtrar (una entrada por cada una de sus {live_rows:,} filas vivas)"
+                )
+            else:
+                scan_text = f"La consulta recorre completa la tabla {table_name} ({live_rows:,} filas vivas)"
+
             findings.append(
                 Hallazgo(
                     antipatron="avoidable_full_scan",
@@ -267,6 +286,8 @@ def detect_avoidable_full_scans(
                         "schema_name": candidate.schema_name,
                         "tables": [table_name],
                         "relation": relation,
+                        "access_method": operation.access_method,
+                        "index_name": operation.index_name,
                         "predicate": operation.predicate,
                         "live_rows": live_rows,
                         "rows_per_call": round(rows_per_call, 2),
@@ -282,7 +303,7 @@ def detect_avoidable_full_scans(
                         "execution_count": candidate.execution_count,
                     },
                     explicacion=(
-                        f"La consulta recorre completa la tabla {table_name} ({live_rows:,} filas vivas) "
+                        f"{scan_text} "
                         f"y en la ultima ventana devolvio en promedio {rows_per_call:,.0f} filas por "
                         f"ejecucion ({selectivity:.2%} de la tabla) en {window.calls} ejecuciones."
                     ),
@@ -294,6 +315,7 @@ def detect_avoidable_full_scans(
                     table_name=table_name,
                 )
             )
-            # un SELECT simple tiene un solo scan de su tabla
+            # un SELECT simple tiene un solo escaneo completo de su tabla (un plan
+            # bitmap de Postgres da dos scans, pero son index_lookup)
             break
     return findings
