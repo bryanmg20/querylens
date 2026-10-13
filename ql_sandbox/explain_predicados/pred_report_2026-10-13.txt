@@ -69,11 +69,11 @@
 ==============================================================================================================
 08 IS NULL:  SELECT id FROM ql_pt_orders WHERE note IS NULL
   [pg_generic] ql_pt_orders full_table_scan  est=10213   pred=(note IS NULL)
-               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=['note']
+               AP-03=[]  AP-04 igualdad/rango=(['note'], [])  AP-05=['note']
   [pg_literal] ql_pt_orders full_table_scan  est=10213   pred=(note IS NULL)
-               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=['note']
+               AP-03=[]  AP-04 igualdad/rango=(['note'], [])  AP-05=['note']
   [mysql     ] ql_pt_orders full_table_scan  est=9983.5  pred=(ql_pt_orders.note IS NULL)
-               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=['note']
+               AP-03=[]  AP-04 igualdad/rango=(['note'], [])  AP-05=['note']
 ==============================================================================================================
 09 LIKE prefijo:  SELECT id FROM ql_pt_orders WHERE note LIKE 'nota1%'
   [pg_generic] ql_pt_orders full_table_scan  est=500     pred=(note ~~ $1)
@@ -81,7 +81,7 @@
   [pg_literal] ql_pt_orders full_table_scan  est=9069    pred=(note ~~ $1)
                AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=['note']
   [mysql     ] ql_pt_orders full_table_scan  est=11091.67 pred=(ql_pt_orders.note LIKE '$1')
-               AP-03=[]  AP-04 igualdad/rango=([], ['note'])  AP-05=['note']
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=['note']
 ==============================================================================================================
 10 LIKE sufijo:  SELECT id FROM ql_pt_orders WHERE note LIKE '%99'
   [pg_generic] ql_pt_orders full_table_scan  est=500     pred=(note ~~ $1)
@@ -89,7 +89,7 @@
   [pg_literal] ql_pt_orders full_table_scan  est=907     pred=(note ~~ $1)
                AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=['note']
   [mysql     ] ql_pt_orders full_table_scan  est=11091.67 pred=(ql_pt_orders.note LIKE '$1')
-               AP-03=[]  AP-04 igualdad/rango=([], ['note'])  AP-05=['note']
+               AP-03=[]  AP-04 igualdad/rango=([], [])  AP-05=['note']
 ==============================================================================================================
 11 funcion LOWER:  SELECT id FROM ql_pt_customers WHERE LOWER(email) = 'user5@x.com'
   [pg_generic] ql_pt_customers full_table_scan  est=25      pred=(lower((email)::text) = $1)
@@ -127,7 +127,7 @@
 ==============================================================================================================
 15 char contra numero (solo MySQL):  SELECT id FROM ql_pt_orders WHERE code = 5
   [mysql     ] ql_pt_orders full_table_scan  est=9983.5  pred=(ql_pt_orders.code = $1)
-               AP-03=[('implicit_cast', 'code')]  AP-04 igualdad/rango=(['code'], [])  AP-05=['code']
+               AP-03=[('implicit_cast', 'code')]  AP-04 igualdad/rango=([], [])  AP-05=['code']
 ==============================================================================================================
 16 int contra decimal:  SELECT id FROM ql_pt_orders WHERE customer_id = 5.0
   [pg_generic] ql_pt_orders index_lookup     est=20      pred=(customer_id = $1)

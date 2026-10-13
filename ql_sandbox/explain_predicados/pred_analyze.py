@@ -47,7 +47,10 @@ def analyze(sql, scans, engine):
             return alias_map.get(col.table, col.table) == real
 
         ap03 = _detect_predicate_subtypes(pred, real, None, TYPES, engine=engine, belongs_to_table=belongs) if pred else []
-        ap04 = _filtered_columns(pred, belongs) if pred else ([], [])
+        def type_of(name, real=real):
+            return TYPES.get((None, real, name))
+
+        ap04 = _filtered_columns(pred, belongs, type_of, engine)[:2] if pred else ([], [])
         ap05 = sorted(_predicate_columns(pred)) if pred else []
         rows.append({"rel": rel, "real": real, "acc": op.get("access_method"), "est": op.get("estimated_rows"),
                      "pred": pred, "ap03": sorted(ap03), "ap04": ap04, "ap05": ap05})
