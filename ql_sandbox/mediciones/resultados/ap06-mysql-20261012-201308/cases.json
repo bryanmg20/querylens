@@ -1,0 +1,2769 @@
+{
+ "measurement": "ap06",
+ "engine": "mysql",
+ "cases": [
+  {
+   "cid": "p0-u0-r2",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/500b5a488b2944559c55c1337e2b20a723c7cf5d707282ea4af819fdca11d9dc",
+    "parent": "ql_demo/cd744046305a67ac07bf19d5b87fac25c851690351267048b599699e18b6a309"
+   },
+   "queries": {
+    "target": "SELECT id, amount FROM ql_m06_c0 WHERE p_id = 1",
+    "parent": "SELECT id, name FROM ql_m06_p0 WHERE id BETWEEN 2428 AND 2429"
+   },
+   "meta": {
+    "pair": 0,
+    "direction": "uno_a_muchos",
+    "shape": 0,
+    "r": 2,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p0-u1-r3",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/e74909f3b897cc02c2aed4b4161a3ba8eeeeacd24956303e8edb1c56002ee620",
+    "parent": "ql_demo/aeb5890c43d88664397cc144ad06a35fef2dd7b47d475bb894054a0be0f7f69c"
+   },
+   "queries": {
+    "target": "SELECT * FROM ql_m06_c0 WHERE p_id = 1",
+    "parent": "SELECT id, region FROM ql_m06_p0 WHERE id >= 2428 ORDER BY id LIMIT 3"
+   },
+   "meta": {
+    "pair": 0,
+    "direction": "uno_a_muchos",
+    "shape": 1,
+    "r": 3,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p0-u2-r4",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/10a2ca30cc7865744b206a034641e6a8887b8e57a837f6e874514629173c70f5",
+    "parent": "ql_demo/c5b568d1918ec3e95fe5999019fd43d7ff86a9c950035e539442fc98c3451186"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m06_c0 WHERE p_id = 1",
+    "parent": "SELECT p.id, p.name FROM ql_m06_p0 p JOIN ql_m06_region g ON g.id = p.region WHERE p.id BETWEEN 2428 AND 2431"
+   },
+   "meta": {
+    "pair": 0,
+    "direction": "uno_a_muchos",
+    "shape": 2,
+    "r": 4,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p0-u3-r5",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/adf5ba1e9bacd8412c4a1704590000dd31831f61bd4552689a69df060d2ad1cb",
+    "parent": "ql_demo/64a0344117aae199619ef162c029e4f7315d7185bb9eeed92309625b1dfdfede"
+   },
+   "queries": {
+    "target": "SELECT id, status FROM ql_m06_c0 WHERE p_id = 1 AND status = 1",
+    "parent": "SELECT id, name, flag FROM ql_m06_p0 WHERE id > 2427 AND id < 2433"
+   },
+   "meta": {
+    "pair": 0,
+    "direction": "uno_a_muchos",
+    "shape": 3,
+    "r": 5,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p0-u4-r6",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/c4922c36888da8e7d91fd80603cb3706ba40fa73a90b2677567550f29c9e7385",
+    "parent": "ql_demo/c8e2ee47cd9240db08e696af84f211c721a5a0cbe5d8ee1640bf6660a6153e05"
+   },
+   "queries": {
+    "target": "SELECT id, amount, note FROM ql_m06_c0 WHERE p_id = 1 ORDER BY id DESC LIMIT 3",
+    "parent": "SELECT id FROM ql_m06_p0 WHERE id IN (2428, 2429, 2430, 2431, 2432, 2433)"
+   },
+   "meta": {
+    "pair": 0,
+    "direction": "uno_a_muchos",
+    "shape": 4,
+    "r": 6,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p0-m0-r8",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/8209c3922a2697de8488123ccf6c0dd9c24eb0085a9b3241f0d791bb440fef40",
+    "parent": "ql_demo/69de0eddb8143bcf5b6971ff8cd71bb10ebb7593c114db6dcad6bf2afc00901a"
+   },
+   "queries": {
+    "target": "SELECT name FROM ql_m06_p0 WHERE id = 1",
+    "parent": "SELECT id, p_id FROM ql_m06_c0 WHERE id BETWEEN 9710 AND 9717"
+   },
+   "meta": {
+    "pair": 0,
+    "direction": "muchos_a_uno",
+    "shape": 0,
+    "r": 8,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p0-m1-r10",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/6e4082230c9b7cabd336722d3e93f46b55504b7e2dcb2b0338164eeefe3cb2b7",
+    "parent": "ql_demo/53330506758068030bf555ed3b28986cd400860e3c38efa43bcafeca5157ed99"
+   },
+   "queries": {
+    "target": "SELECT * FROM ql_m06_p0 WHERE id = 1",
+    "parent": "SELECT id, p_id, amount FROM ql_m06_c0 WHERE id >= 9710 ORDER BY id LIMIT 10"
+   },
+   "meta": {
+    "pair": 0,
+    "direction": "muchos_a_uno",
+    "shape": 1,
+    "r": 10,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p0-m2-r12",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/78e0210fb043585523387ddd805eac9bd7be5f34bea25d62138f97c01cda6d43",
+    "parent": "ql_demo/0be277dbdf52776c89b762fc23ce635460e6f4fefbdc600509930e03e0c0ad7d"
+   },
+   "queries": {
+    "target": "SELECT id, region FROM ql_m06_p0 WHERE id = 1",
+    "parent": "SELECT c.id, c.p_id FROM ql_m06_c0 c JOIN ql_m06_region g ON g.id = c.status WHERE c.id BETWEEN 9710 AND 9721"
+   },
+   "meta": {
+    "pair": 0,
+    "direction": "muchos_a_uno",
+    "shape": 2,
+    "r": 12,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p0-m3-r15",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/80a5d7607ab76f1a1f7691a91f91f9522dfecdcc357fa3cc7bfb43b26f60e626",
+    "parent": "ql_demo/475c4870536664f960c008d8264e14876414dddcdbd14892546b180eabf3fdc3"
+   },
+   "queries": {
+    "target": "SELECT name, flag FROM ql_m06_p0 WHERE id = 1 AND flag >= 0",
+    "parent": "SELECT id, p_id, note FROM ql_m06_c0 WHERE id > 9709 AND id < 9725"
+   },
+   "meta": {
+    "pair": 0,
+    "direction": "muchos_a_uno",
+    "shape": 3,
+    "r": 15,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p0-m4-r20",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/8ff3294b27cf23f8f47dd16c87db1f4535caff73d712d5274f8c47780d42e29c",
+    "parent": "ql_demo/da8bf6a84a249287e39084105cc4933930263befdf3c123e88bf8204e58b84ee"
+   },
+   "queries": {
+    "target": "SELECT p.name, p.region FROM ql_m06_p0 p WHERE p.id = 1 LIMIT 1",
+    "parent": "SELECT id, p_id FROM ql_m06_c0 WHERE id IN (9710, 9711, 9712, 9713, 9714, 9715, 9716, 9717, 9718, 9719, 9720, 9721, 9722, 9723, 9724, 9725, 9726, 9727, 9728, 9729)"
+   },
+   "meta": {
+    "pair": 0,
+    "direction": "muchos_a_uno",
+    "shape": 4,
+    "r": 20,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p1-u0-r25",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/ac422221a50db2797c474080fc3ef397a600fa771a3c7b0a58c87b52195b1a39",
+    "parent": "ql_demo/78f30cfa33acbed098bf8ada9badc2958983aeff3bbe36365bed217c14fa5a95"
+   },
+   "queries": {
+    "target": "SELECT id, amount FROM ql_m06_c1 WHERE p_id = 1",
+    "parent": "SELECT id, name FROM ql_m06_p1 WHERE id BETWEEN 2428 AND 2452"
+   },
+   "meta": {
+    "pair": 1,
+    "direction": "uno_a_muchos",
+    "shape": 0,
+    "r": 25,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p1-u1-r30",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/17690d764fcda60a0cadd80c3eeefe7005c7b0816e662f3e336c5d69c41e4f25",
+    "parent": "ql_demo/33b5a4c263ee9518868062e2605264f4d44e4352b26521c5148ff147bfc7897a"
+   },
+   "queries": {
+    "target": "SELECT * FROM ql_m06_c1 WHERE p_id = 1",
+    "parent": "SELECT id, region FROM ql_m06_p1 WHERE id >= 2428 ORDER BY id LIMIT 30"
+   },
+   "meta": {
+    "pair": 1,
+    "direction": "uno_a_muchos",
+    "shape": 1,
+    "r": 30,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p1-u2-r40",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/16c4456194f20835759c30aa9c030938bfcf3c24bcfc49fe889d95c34d2e1ac2",
+    "parent": "ql_demo/ea00ac8632134da0ec934135bdbe508914a0485a6d7b52c2d5ba6a1fac981e08"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m06_c1 WHERE p_id = 1",
+    "parent": "SELECT p.id, p.name FROM ql_m06_p1 p JOIN ql_m06_region g ON g.id = p.region WHERE p.id BETWEEN 2428 AND 2467"
+   },
+   "meta": {
+    "pair": 1,
+    "direction": "uno_a_muchos",
+    "shape": 2,
+    "r": 40,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p1-u3-r50",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/19fe889b970a453c40130fc63e4e9375f159a57885692e64911398a1d705034f",
+    "parent": "ql_demo/5c48fa6ae966c549d8fb78b1318c21fb52ce4d8bc1c682094e5bcd6dd9a57697"
+   },
+   "queries": {
+    "target": "SELECT id, status FROM ql_m06_c1 WHERE p_id = 1 AND status = 1",
+    "parent": "SELECT id, name, flag FROM ql_m06_p1 WHERE id > 2427 AND id < 2478"
+   },
+   "meta": {
+    "pair": 1,
+    "direction": "uno_a_muchos",
+    "shape": 3,
+    "r": 50,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p1-u4-r75",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/0b32326036158bfd0e045ae436a6697a41a6ff237aa803e0620bfef4c60d08e0",
+    "parent": "ql_demo/bc7234b2a72fd02f81b8af270a51892812bf060253ec08511190fa1aac3354ce"
+   },
+   "queries": {
+    "target": "SELECT id, amount, note FROM ql_m06_c1 WHERE p_id = 1 ORDER BY id DESC LIMIT 3",
+    "parent": "SELECT id FROM ql_m06_p1 WHERE id IN (2428, 2429, 2430, 2431, 2432, 2433, 2434, 2435, 2436, 2437, 2438, 2439, 2440, 2441, 2442, 2443, 2444, 2445, 2446, 2447, 2448, 2449, 2450, 2451, 2452, 2453, 2454, 2455, 2456, 2457, 2458, 2459, 2460, 2461, 2462, 2463, 2464, 2465, 2466, 2467, 2468, 2469, 2470, 2471, 2472, 2473, 2474, 2475, 2476, 2477, 2478, 2479, 2480, 2481, 2482, 2483, 2484, 2485, 2486, 2487, 2488, 2489, 2490, 2491, 2492, 2493, 2494, 2495, 2496, 2497, 2498, 2499, 2500, 2501, 2502)"
+   },
+   "meta": {
+    "pair": 1,
+    "direction": "uno_a_muchos",
+    "shape": 4,
+    "r": 75,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p1-m0-r100",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/5f6484c20336c9123524a299bfff472bb54e955bc2736c168fce4400d5352117",
+    "parent": "ql_demo/2316fc6c468660767c6a4ea62397144704d9a82db2c90e9833b363897cd44938"
+   },
+   "queries": {
+    "target": "SELECT name FROM ql_m06_p1 WHERE id = 1",
+    "parent": "SELECT id, p_id FROM ql_m06_c1 WHERE id BETWEEN 9710 AND 9809"
+   },
+   "meta": {
+    "pair": 1,
+    "direction": "muchos_a_uno",
+    "shape": 0,
+    "r": 100,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p1-m1-r2",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/3445679a8d9e7de47ec01696552b7a740f57ad82fa377a48c5261c76e2549f07",
+    "parent": "ql_demo/46f87a1aba66f330da0327a64f993a2c15a8ff8f0a25969ffd1eb0b02b986cc7"
+   },
+   "queries": {
+    "target": "SELECT * FROM ql_m06_p1 WHERE id = 1",
+    "parent": "SELECT id, p_id, amount FROM ql_m06_c1 WHERE id >= 9710 ORDER BY id LIMIT 2"
+   },
+   "meta": {
+    "pair": 1,
+    "direction": "muchos_a_uno",
+    "shape": 1,
+    "r": 2,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p1-m2-r3",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/80e1f9143f0b2266e666a3c03091245aab28c73ba7d25fa9a81b9849086cb06c",
+    "parent": "ql_demo/ee647350cd05ec4cbffa4a18cadc2f1555198033827d0bf08a23b14477e76de6"
+   },
+   "queries": {
+    "target": "SELECT id, region FROM ql_m06_p1 WHERE id = 1",
+    "parent": "SELECT c.id, c.p_id FROM ql_m06_c1 c JOIN ql_m06_region g ON g.id = c.status WHERE c.id BETWEEN 9710 AND 9712"
+   },
+   "meta": {
+    "pair": 1,
+    "direction": "muchos_a_uno",
+    "shape": 2,
+    "r": 3,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p1-m3-r4",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/3a676257846672e8afa3f91ea8456476f4d9990d7346719701cbc0e453eefd88",
+    "parent": "ql_demo/50b39f8007e2d8d417f760069848a46c0d0ac7d70121c0ceece2ad3439f484ba"
+   },
+   "queries": {
+    "target": "SELECT name, flag FROM ql_m06_p1 WHERE id = 1 AND flag >= 0",
+    "parent": "SELECT id, p_id, note FROM ql_m06_c1 WHERE id > 9709 AND id < 9714"
+   },
+   "meta": {
+    "pair": 1,
+    "direction": "muchos_a_uno",
+    "shape": 3,
+    "r": 4,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p1-m4-r5",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/c2ad56d137d0e7779ae6e7eed0e57acdf476b2302e3b5d3e207fa7f7c8df9a51",
+    "parent": "ql_demo/ce38ae6bee9a4704bf18f63894c0170fcf1771eddbeab6070513d27a87b6fda5"
+   },
+   "queries": {
+    "target": "SELECT p.name, p.region FROM ql_m06_p1 p WHERE p.id = 1 LIMIT 1",
+    "parent": "SELECT id, p_id FROM ql_m06_c1 WHERE id IN (9710, 9711, 9712, 9713, 9714)"
+   },
+   "meta": {
+    "pair": 1,
+    "direction": "muchos_a_uno",
+    "shape": 4,
+    "r": 5,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p2-u0-r6",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/dcd2e3576da6bbb6a4ef5239cf893637206dde14265e61c6002acc5334e94344",
+    "parent": "ql_demo/ab7471bf64296d2129984c13e54eec2323ac3a187b712f4970ac0db15b57faf8"
+   },
+   "queries": {
+    "target": "SELECT id, amount FROM ql_m06_c2 WHERE p_id = 1",
+    "parent": "SELECT id, name FROM ql_m06_p2 WHERE id BETWEEN 2428 AND 2433"
+   },
+   "meta": {
+    "pair": 2,
+    "direction": "uno_a_muchos",
+    "shape": 0,
+    "r": 6,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p2-u1-r8",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/22ef20aaf99b3a3947d8f101dcbbad4ebb9343e6150f8767eae9553423af0c07",
+    "parent": "ql_demo/9f9dc53963cb49e11969459eb5a646687ae56a5d507a71121a4af9c086b62996"
+   },
+   "queries": {
+    "target": "SELECT * FROM ql_m06_c2 WHERE p_id = 1",
+    "parent": "SELECT id, region FROM ql_m06_p2 WHERE id >= 2428 ORDER BY id LIMIT 8"
+   },
+   "meta": {
+    "pair": 2,
+    "direction": "uno_a_muchos",
+    "shape": 1,
+    "r": 8,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p2-u2-r10",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/e5f5174f91b107abf27a6bc3edfff9fe945d28d148593a8c599c9689851c85cd",
+    "parent": "ql_demo/366a7a660c25bb6610af4020d94b85bace7ed46eb8910a2b9b7aa503b7f3ff63"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m06_c2 WHERE p_id = 1",
+    "parent": "SELECT p.id, p.name FROM ql_m06_p2 p JOIN ql_m06_region g ON g.id = p.region WHERE p.id BETWEEN 2428 AND 2437"
+   },
+   "meta": {
+    "pair": 2,
+    "direction": "uno_a_muchos",
+    "shape": 2,
+    "r": 10,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p2-u3-r12",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/6438fe5aa3d981c005fb72e0e28ee5185f54588b6408490edc67ae20322dda15",
+    "parent": "ql_demo/f4c2cfcb36e71f53af19e855404f204555a1172cfab6033b0e72b43f6888114c"
+   },
+   "queries": {
+    "target": "SELECT id, status FROM ql_m06_c2 WHERE p_id = 1 AND status = 1",
+    "parent": "SELECT id, name, flag FROM ql_m06_p2 WHERE id > 2427 AND id < 2440"
+   },
+   "meta": {
+    "pair": 2,
+    "direction": "uno_a_muchos",
+    "shape": 3,
+    "r": 12,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p2-u4-r15",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/31286bae3293f1d765f4151926ac1528adb8b2fd781b4063044ddcc5560f94d0",
+    "parent": "ql_demo/7393ab228006bc3a554fa0781ee8034b1c0a295c9b4f8ce11944286d683c6c30"
+   },
+   "queries": {
+    "target": "SELECT id, amount, note FROM ql_m06_c2 WHERE p_id = 1 ORDER BY id DESC LIMIT 3",
+    "parent": "SELECT id FROM ql_m06_p2 WHERE id IN (2428, 2429, 2430, 2431, 2432, 2433, 2434, 2435, 2436, 2437, 2438, 2439, 2440, 2441, 2442)"
+   },
+   "meta": {
+    "pair": 2,
+    "direction": "uno_a_muchos",
+    "shape": 4,
+    "r": 15,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p2-m0-r20",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/afbd3f03fc9868c952b137fc79d7d2db39454c2bdcd3caf9e5e976de0877676b",
+    "parent": "ql_demo/34d72a6b3dd79959ceb6a7e6100becb8d9f96dd911fe8397cf28378654bcf0c2"
+   },
+   "queries": {
+    "target": "SELECT name FROM ql_m06_p2 WHERE id = 1",
+    "parent": "SELECT id, p_id FROM ql_m06_c2 WHERE id BETWEEN 9710 AND 9729"
+   },
+   "meta": {
+    "pair": 2,
+    "direction": "muchos_a_uno",
+    "shape": 0,
+    "r": 20,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p2-m1-r25",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/e7451500c7ce1c8ddcfc286173b6c8f4f88257d8e47e89adc3779cb424c076a3",
+    "parent": "ql_demo/5f9a87be773a522ecd6a6cbdb2e624ebed5da5e7692cf0f5e6eff5b2493e9d6d"
+   },
+   "queries": {
+    "target": "SELECT * FROM ql_m06_p2 WHERE id = 1",
+    "parent": "SELECT id, p_id, amount FROM ql_m06_c2 WHERE id >= 9710 ORDER BY id LIMIT 25"
+   },
+   "meta": {
+    "pair": 2,
+    "direction": "muchos_a_uno",
+    "shape": 1,
+    "r": 25,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p2-m2-r30",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/04c7d3881e067b5ac0d8009c42ceb138c23da519a11cd73e33108ea238d95ed1",
+    "parent": "ql_demo/35a91a04514f8fd85f3c6335ed6eb63f3d1d5f1820ebbc9a1238b7d2913cd47a"
+   },
+   "queries": {
+    "target": "SELECT id, region FROM ql_m06_p2 WHERE id = 1",
+    "parent": "SELECT c.id, c.p_id FROM ql_m06_c2 c JOIN ql_m06_region g ON g.id = c.status WHERE c.id BETWEEN 9710 AND 9739"
+   },
+   "meta": {
+    "pair": 2,
+    "direction": "muchos_a_uno",
+    "shape": 2,
+    "r": 30,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p2-m3-r40",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/df719765ee81faa1d3f38d200162185fc333a48bb3fa0bede8f53791aba78c8c",
+    "parent": "ql_demo/5d7dcd33693bfb100993de57c9115171f5f2b97439eeeaf0dbe258912df85b85"
+   },
+   "queries": {
+    "target": "SELECT name, flag FROM ql_m06_p2 WHERE id = 1 AND flag >= 0",
+    "parent": "SELECT id, p_id, note FROM ql_m06_c2 WHERE id > 9709 AND id < 9750"
+   },
+   "meta": {
+    "pair": 2,
+    "direction": "muchos_a_uno",
+    "shape": 3,
+    "r": 40,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p2-m4-r50",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/221a6b1f34e95c97d8456fc682280056e0990752d2374934224534dcdc777c3e",
+    "parent": "ql_demo/ed46d1a686fd386fcea565c78881ceb676c9adf81775c4eca7f3fd5555dbf050"
+   },
+   "queries": {
+    "target": "SELECT p.name, p.region FROM ql_m06_p2 p WHERE p.id = 1 LIMIT 1",
+    "parent": "SELECT id, p_id FROM ql_m06_c2 WHERE id IN (9710, 9711, 9712, 9713, 9714, 9715, 9716, 9717, 9718, 9719, 9720, 9721, 9722, 9723, 9724, 9725, 9726, 9727, 9728, 9729, 9730, 9731, 9732, 9733, 9734, 9735, 9736, 9737, 9738, 9739, 9740, 9741, 9742, 9743, 9744, 9745, 9746, 9747, 9748, 9749, 9750, 9751, 9752, 9753, 9754, 9755, 9756, 9757, 9758, 9759)"
+   },
+   "meta": {
+    "pair": 2,
+    "direction": "muchos_a_uno",
+    "shape": 4,
+    "r": 50,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p3-u0-r75",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/4650618ef1911045d83ccb4c4eaef4b27e52a54b5ba7214aff107877293f6c4a",
+    "parent": "ql_demo/fc24159284e6d14cf423047b7adf4696a9a2e7dd3dcd0487e4ca4dc6d7afad1f"
+   },
+   "queries": {
+    "target": "SELECT id, amount FROM ql_m06_c3 WHERE p_id = 1",
+    "parent": "SELECT id, name FROM ql_m06_p3 WHERE id BETWEEN 2428 AND 2502"
+   },
+   "meta": {
+    "pair": 3,
+    "direction": "uno_a_muchos",
+    "shape": 0,
+    "r": 75,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p3-u1-r100",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/1ddfee395c76b3a7acce8fa0f01a3dba6e57de094871aef6c2c687edaa077983",
+    "parent": "ql_demo/a3e5b57b6db83f36b07a2909a3bef1a4fe1ac828e881fe5123420601bab360fd"
+   },
+   "queries": {
+    "target": "SELECT * FROM ql_m06_c3 WHERE p_id = 1",
+    "parent": "SELECT id, region FROM ql_m06_p3 WHERE id >= 2428 ORDER BY id LIMIT 100"
+   },
+   "meta": {
+    "pair": 3,
+    "direction": "uno_a_muchos",
+    "shape": 1,
+    "r": 100,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p3-u2-r2",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/5345a73a34d15ee9d0606ecbbe9f8b96c7324763121e15dd427834bde1144df6",
+    "parent": "ql_demo/3fcdc7c7f61d935a9337271efd6aca441fad3c0b1c4fdae5581c3e027757cfb8"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m06_c3 WHERE p_id = 1",
+    "parent": "SELECT p.id, p.name FROM ql_m06_p3 p JOIN ql_m06_region g ON g.id = p.region WHERE p.id BETWEEN 2428 AND 2429"
+   },
+   "meta": {
+    "pair": 3,
+    "direction": "uno_a_muchos",
+    "shape": 2,
+    "r": 2,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p3-u3-r3",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/4c6d8572220872204eb10e0146e5e7401f8f8e8e6fe68788e0a2447c8bfe2d36",
+    "parent": "ql_demo/fc50eae68ec3541f59e16995be31880d6426fe7076b11e2a4543c7b6dda945f3"
+   },
+   "queries": {
+    "target": "SELECT id, status FROM ql_m06_c3 WHERE p_id = 1 AND status = 1",
+    "parent": "SELECT id, name, flag FROM ql_m06_p3 WHERE id > 2427 AND id < 2431"
+   },
+   "meta": {
+    "pair": 3,
+    "direction": "uno_a_muchos",
+    "shape": 3,
+    "r": 3,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p3-u4-r4",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/9a0213030734ab66639fdf1c976f7aebfcbdc0a4b3027b492ac01bb881b2f3ab",
+    "parent": "ql_demo/8bfabae0929044d499c6f34040150674d8e42727421b316eac6a5b8895b1a25a"
+   },
+   "queries": {
+    "target": "SELECT id, amount, note FROM ql_m06_c3 WHERE p_id = 1 ORDER BY id DESC LIMIT 3",
+    "parent": "SELECT id FROM ql_m06_p3 WHERE id IN (2428, 2429, 2430, 2431)"
+   },
+   "meta": {
+    "pair": 3,
+    "direction": "uno_a_muchos",
+    "shape": 4,
+    "r": 4,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p3-m0-r5",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/b598e3675f0341d3c6e0aef7fd9c2022228c5fcc90942167a3684002ee7d86a1",
+    "parent": "ql_demo/f02b33f92acb9cc845b4c1fc3d96b849af6065f5dbd969faa482f854d2876645"
+   },
+   "queries": {
+    "target": "SELECT name FROM ql_m06_p3 WHERE id = 1",
+    "parent": "SELECT id, p_id FROM ql_m06_c3 WHERE id BETWEEN 9710 AND 9714"
+   },
+   "meta": {
+    "pair": 3,
+    "direction": "muchos_a_uno",
+    "shape": 0,
+    "r": 5,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p3-m1-r6",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/dc3e189bc200990301f9085597c12ff8dc3adf7e8952ef641e055c106a865141",
+    "parent": "ql_demo/2e1c63e604dd7c2fd1b9887b9608c0a2fffe85ccf6fd572e379064874c6a120c"
+   },
+   "queries": {
+    "target": "SELECT * FROM ql_m06_p3 WHERE id = 1",
+    "parent": "SELECT id, p_id, amount FROM ql_m06_c3 WHERE id >= 9710 ORDER BY id LIMIT 6"
+   },
+   "meta": {
+    "pair": 3,
+    "direction": "muchos_a_uno",
+    "shape": 1,
+    "r": 6,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p3-m2-r8",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/0560fdf2274bac7d6a4fe810c6b2435df928c98c5eb3e34c083dbadc2dac1e1a",
+    "parent": "ql_demo/39a25a395028df9d487d101d5af49794520ff241b53222b3799d1a244fd2ce85"
+   },
+   "queries": {
+    "target": "SELECT id, region FROM ql_m06_p3 WHERE id = 1",
+    "parent": "SELECT c.id, c.p_id FROM ql_m06_c3 c JOIN ql_m06_region g ON g.id = c.status WHERE c.id BETWEEN 9710 AND 9717"
+   },
+   "meta": {
+    "pair": 3,
+    "direction": "muchos_a_uno",
+    "shape": 2,
+    "r": 8,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p3-m3-r10",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/6b357758d2be1906932c0560d416740470c04a93bd0075adde99631d9092235e",
+    "parent": "ql_demo/75956b9b5c74942ca2efce3ef76176f32fedafa8d9e72252e2ff46f01424cbd0"
+   },
+   "queries": {
+    "target": "SELECT name, flag FROM ql_m06_p3 WHERE id = 1 AND flag >= 0",
+    "parent": "SELECT id, p_id, note FROM ql_m06_c3 WHERE id > 9709 AND id < 9720"
+   },
+   "meta": {
+    "pair": 3,
+    "direction": "muchos_a_uno",
+    "shape": 3,
+    "r": 10,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p3-m4-r12",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/729ac63790e07bec49c40188ff697851b11e5f702f45b529e8241162ec876b9e",
+    "parent": "ql_demo/93d6757ff78d87810ed5db92e6b8ac1e8ff43edb9fa3fd122d9413fa6121826d"
+   },
+   "queries": {
+    "target": "SELECT p.name, p.region FROM ql_m06_p3 p WHERE p.id = 1 LIMIT 1",
+    "parent": "SELECT id, p_id FROM ql_m06_c3 WHERE id IN (9710, 9711, 9712, 9713, 9714, 9715, 9716, 9717, 9718, 9719, 9720, 9721)"
+   },
+   "meta": {
+    "pair": 3,
+    "direction": "muchos_a_uno",
+    "shape": 4,
+    "r": 12,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p4-u0-r15",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/29fef47401ec8900a28b6b892599161320c1dbcd34c1dcbead1a5c3597c48bcc",
+    "parent": "ql_demo/7cb36369e2d03a8b63c0c938404a0723fc85b63be0112a0ceee2d7d8ce085b24"
+   },
+   "queries": {
+    "target": "SELECT id, amount FROM ql_m06_c4 WHERE p_id = 1",
+    "parent": "SELECT id, name FROM ql_m06_p4 WHERE id BETWEEN 2428 AND 2442"
+   },
+   "meta": {
+    "pair": 4,
+    "direction": "uno_a_muchos",
+    "shape": 0,
+    "r": 15,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p4-u1-r20",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/442067c3ab1c9a586b6bd0e80865f96a561d2a0295a886a12b634c212f3d9056",
+    "parent": "ql_demo/d4bfba5997fdb94698b82bae20844bbea752aef420edf9d7fa70ba545576bbe4"
+   },
+   "queries": {
+    "target": "SELECT * FROM ql_m06_c4 WHERE p_id = 1",
+    "parent": "SELECT id, region FROM ql_m06_p4 WHERE id >= 2428 ORDER BY id LIMIT 20"
+   },
+   "meta": {
+    "pair": 4,
+    "direction": "uno_a_muchos",
+    "shape": 1,
+    "r": 20,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p4-u2-r25",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/6fa8e9edf556768838903ef935cc315e7c1932d27386dfef10703e8e53547d23",
+    "parent": "ql_demo/85e8997d6a60f26fc73ad0ba29a5484082f47bec85b52226f40c7e4d20d8e5a0"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m06_c4 WHERE p_id = 1",
+    "parent": "SELECT p.id, p.name FROM ql_m06_p4 p JOIN ql_m06_region g ON g.id = p.region WHERE p.id BETWEEN 2428 AND 2452"
+   },
+   "meta": {
+    "pair": 4,
+    "direction": "uno_a_muchos",
+    "shape": 2,
+    "r": 25,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p4-u3-r30",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/5b33cf4b771ba2b9025d581007c610f21d6049e3c05e050588f8fd88e85f9785",
+    "parent": "ql_demo/ca61cbfa2d478d277321b5f530b23bb02722fef0b75b5b259c97345bf96b8b61"
+   },
+   "queries": {
+    "target": "SELECT id, status FROM ql_m06_c4 WHERE p_id = 1 AND status = 1",
+    "parent": "SELECT id, name, flag FROM ql_m06_p4 WHERE id > 2427 AND id < 2458"
+   },
+   "meta": {
+    "pair": 4,
+    "direction": "uno_a_muchos",
+    "shape": 3,
+    "r": 30,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p4-u4-r40",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/941dac639ca5e93d34b4ecbf2df51272005f02805153e4ba2ffbef597d6aba56",
+    "parent": "ql_demo/1f8cbad8cb4c32a47ba88dc7f5f7d095e22bbcdd30494548fe172ec4ac2d3121"
+   },
+   "queries": {
+    "target": "SELECT id, amount, note FROM ql_m06_c4 WHERE p_id = 1 ORDER BY id DESC LIMIT 3",
+    "parent": "SELECT id FROM ql_m06_p4 WHERE id IN (2428, 2429, 2430, 2431, 2432, 2433, 2434, 2435, 2436, 2437, 2438, 2439, 2440, 2441, 2442, 2443, 2444, 2445, 2446, 2447, 2448, 2449, 2450, 2451, 2452, 2453, 2454, 2455, 2456, 2457, 2458, 2459, 2460, 2461, 2462, 2463, 2464, 2465, 2466, 2467)"
+   },
+   "meta": {
+    "pair": 4,
+    "direction": "uno_a_muchos",
+    "shape": 4,
+    "r": 40,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p4-m0-r50",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/5a959773d24073e70e7848d500ed75fd5b05e464d6abe15a3bbb0231ee8b75eb",
+    "parent": "ql_demo/cdd5ce6e716ebdb3833d42386c15ed8fefe58346722841e540ec5c6a88f6a2cd"
+   },
+   "queries": {
+    "target": "SELECT name FROM ql_m06_p4 WHERE id = 1",
+    "parent": "SELECT id, p_id FROM ql_m06_c4 WHERE id BETWEEN 9710 AND 9759"
+   },
+   "meta": {
+    "pair": 4,
+    "direction": "muchos_a_uno",
+    "shape": 0,
+    "r": 50,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p4-m1-r75",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/f2a293e064fe0a4b506d8e7c231b9671569506b2563a8290043a1f06a5eafdb8",
+    "parent": "ql_demo/15fcdcc4634966a3dd994fc977473bcf2981c0bb143ca5c070a84595b106cb90"
+   },
+   "queries": {
+    "target": "SELECT * FROM ql_m06_p4 WHERE id = 1",
+    "parent": "SELECT id, p_id, amount FROM ql_m06_c4 WHERE id >= 9710 ORDER BY id LIMIT 75"
+   },
+   "meta": {
+    "pair": 4,
+    "direction": "muchos_a_uno",
+    "shape": 1,
+    "r": 75,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p4-m2-r100",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/22b0403171979822c3f552a6a465c016accc3b46cd538f24773e209e17d8595e",
+    "parent": "ql_demo/9f8f312a1ee0cbd2ea258b75bf199c8a73983b989fd7738113b3250ac81e8745"
+   },
+   "queries": {
+    "target": "SELECT id, region FROM ql_m06_p4 WHERE id = 1",
+    "parent": "SELECT c.id, c.p_id FROM ql_m06_c4 c JOIN ql_m06_region g ON g.id = c.status WHERE c.id BETWEEN 9710 AND 9809"
+   },
+   "meta": {
+    "pair": 4,
+    "direction": "muchos_a_uno",
+    "shape": 2,
+    "r": 100,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p4-m3-r2",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/946700802e4f6e935bc1959fa0033a09406c3d7e9269262542ccf5817595c6e2",
+    "parent": "ql_demo/c6178676c7524c5d164473255889be52edeeb7daa900f2889161af4b93c6d751"
+   },
+   "queries": {
+    "target": "SELECT name, flag FROM ql_m06_p4 WHERE id = 1 AND flag >= 0",
+    "parent": "SELECT id, p_id, note FROM ql_m06_c4 WHERE id > 9709 AND id < 9712"
+   },
+   "meta": {
+    "pair": 4,
+    "direction": "muchos_a_uno",
+    "shape": 3,
+    "r": 2,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p4-m4-r3",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/7d607d4f193b6121c0ad2779227769113c1fa6cb3413a9b143ae155c3da55817",
+    "parent": "ql_demo/b75443360acb2493868e35ecabfd047c279f6cbd4091a9ba7766109588fa4f85"
+   },
+   "queries": {
+    "target": "SELECT p.name, p.region FROM ql_m06_p4 p WHERE p.id = 1 LIMIT 1",
+    "parent": "SELECT id, p_id FROM ql_m06_c4 WHERE id IN (9710, 9711, 9712)"
+   },
+   "meta": {
+    "pair": 4,
+    "direction": "muchos_a_uno",
+    "shape": 4,
+    "r": 3,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p5-u0-r4",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/ebbd55e3b7a3feb3601e3d859109ed9194506c05d47d57267737264ca1558237",
+    "parent": "ql_demo/4e6115f4f7b2eb9919757be1c97f9e912306f4f1af6d933ba2c6dafbe6b0a1ff"
+   },
+   "queries": {
+    "target": "SELECT id, amount FROM ql_m06_c5 WHERE p_id = 1",
+    "parent": "SELECT id, name FROM ql_m06_p5 WHERE id BETWEEN 2428 AND 2431"
+   },
+   "meta": {
+    "pair": 5,
+    "direction": "uno_a_muchos",
+    "shape": 0,
+    "r": 4,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p5-u1-r5",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/57fd7dd0ad1dc75ca9156bf1fd580337b4e1b173b2c0629a23f0c5b976f2a4f1",
+    "parent": "ql_demo/fbbd19b61387e225670c9e3b038632a82799416c0435f586cf9d62f24aaeb3e2"
+   },
+   "queries": {
+    "target": "SELECT * FROM ql_m06_c5 WHERE p_id = 1",
+    "parent": "SELECT id, region FROM ql_m06_p5 WHERE id >= 2428 ORDER BY id LIMIT 5"
+   },
+   "meta": {
+    "pair": 5,
+    "direction": "uno_a_muchos",
+    "shape": 1,
+    "r": 5,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p5-u2-r6",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/0c5d59d8c7eb39d2d1f0c511d424a769e15448d6b2e66266fc0e4648e1a5762d",
+    "parent": "ql_demo/e130132b3b9a0fe2aff3c3ad7d16a84d6f5f46922cf45ffc2b5c449363966d4b"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m06_c5 WHERE p_id = 1",
+    "parent": "SELECT p.id, p.name FROM ql_m06_p5 p JOIN ql_m06_region g ON g.id = p.region WHERE p.id BETWEEN 2428 AND 2433"
+   },
+   "meta": {
+    "pair": 5,
+    "direction": "uno_a_muchos",
+    "shape": 2,
+    "r": 6,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p5-u3-r8",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/9f900c14a97d35bf38999ceb79190dbd3fe50c2f4e0681e1ef9d0943e67a5a11",
+    "parent": "ql_demo/340e10e3e01049dcf8fe19b8132bed228805d779b6d5d950f85623f20f36008a"
+   },
+   "queries": {
+    "target": "SELECT id, status FROM ql_m06_c5 WHERE p_id = 1 AND status = 1",
+    "parent": "SELECT id, name, flag FROM ql_m06_p5 WHERE id > 2427 AND id < 2436"
+   },
+   "meta": {
+    "pair": 5,
+    "direction": "uno_a_muchos",
+    "shape": 3,
+    "r": 8,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p5-u4-r10",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/b56cf81fa5209bba5a489f109a02a39635c66f6dc0a1b8ea2cdfbc9f21460f62",
+    "parent": "ql_demo/16de1fbdc886f724b75990e8e214d576a77a10119e937cc5389869269be1b9e7"
+   },
+   "queries": {
+    "target": "SELECT id, amount, note FROM ql_m06_c5 WHERE p_id = 1 ORDER BY id DESC LIMIT 3",
+    "parent": "SELECT id FROM ql_m06_p5 WHERE id IN (2428, 2429, 2430, 2431, 2432, 2433, 2434, 2435, 2436, 2437)"
+   },
+   "meta": {
+    "pair": 5,
+    "direction": "uno_a_muchos",
+    "shape": 4,
+    "r": 10,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p5-m0-r12",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/bd069366ceda6a0006f6a822cdf1acdbba0a5781e7829794f615dee0a030014f",
+    "parent": "ql_demo/a5c59b2dc00240a924e86821b94a1a8cd909a4704beeb28f343a2b638e1b64be"
+   },
+   "queries": {
+    "target": "SELECT name FROM ql_m06_p5 WHERE id = 1",
+    "parent": "SELECT id, p_id FROM ql_m06_c5 WHERE id BETWEEN 9710 AND 9721"
+   },
+   "meta": {
+    "pair": 5,
+    "direction": "muchos_a_uno",
+    "shape": 0,
+    "r": 12,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p5-m1-r15",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/c89a45000acf4e4b8e7a5d58d311c2d575c94b6ef94a06ebadeafa3cbf779766",
+    "parent": "ql_demo/2dd25b5df681bae3935cc0f144ec6cbb5f6efd79a183743085f7446d08791c16"
+   },
+   "queries": {
+    "target": "SELECT * FROM ql_m06_p5 WHERE id = 1",
+    "parent": "SELECT id, p_id, amount FROM ql_m06_c5 WHERE id >= 9710 ORDER BY id LIMIT 15"
+   },
+   "meta": {
+    "pair": 5,
+    "direction": "muchos_a_uno",
+    "shape": 1,
+    "r": 15,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p5-m2-r20",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/9230dd68ca281b9a492352d0cfea001fb8451483667dce612023676072683a59",
+    "parent": "ql_demo/62ef5298f9a47a35a09d5742a5054354380fc2ae9acf064826cfc9934d8e0d6b"
+   },
+   "queries": {
+    "target": "SELECT id, region FROM ql_m06_p5 WHERE id = 1",
+    "parent": "SELECT c.id, c.p_id FROM ql_m06_c5 c JOIN ql_m06_region g ON g.id = c.status WHERE c.id BETWEEN 9710 AND 9729"
+   },
+   "meta": {
+    "pair": 5,
+    "direction": "muchos_a_uno",
+    "shape": 2,
+    "r": 20,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p5-m3-r25",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/779c70dd48088df08b39521fabb5ca1a04697e5e5e4dd37a3405d49a63a5ec83",
+    "parent": "ql_demo/d7189d286de13115d4f3f01167e6a5caf0a41cac505ece8a16b855a2053c6cf9"
+   },
+   "queries": {
+    "target": "SELECT name, flag FROM ql_m06_p5 WHERE id = 1 AND flag >= 0",
+    "parent": "SELECT id, p_id, note FROM ql_m06_c5 WHERE id > 9709 AND id < 9735"
+   },
+   "meta": {
+    "pair": 5,
+    "direction": "muchos_a_uno",
+    "shape": 3,
+    "r": 25,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p5-m4-r30",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/01b0dcdc0be05181f7b63a84fb29243d7813aa6b54eb6db4a5a853b789188d8f",
+    "parent": "ql_demo/13e2bd8f2eab091a411d7740ef07ec771b680b8dc156a7d9c82795063348d1e4"
+   },
+   "queries": {
+    "target": "SELECT p.name, p.region FROM ql_m06_p5 p WHERE p.id = 1 LIMIT 1",
+    "parent": "SELECT id, p_id FROM ql_m06_c5 WHERE id IN (9710, 9711, 9712, 9713, 9714, 9715, 9716, 9717, 9718, 9719, 9720, 9721, 9722, 9723, 9724, 9725, 9726, 9727, 9728, 9729, 9730, 9731, 9732, 9733, 9734, 9735, 9736, 9737, 9738, 9739)"
+   },
+   "meta": {
+    "pair": 5,
+    "direction": "muchos_a_uno",
+    "shape": 4,
+    "r": 30,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p6-u0-r40",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/3e0ed5ba609b69ffb3c558b2022b0ab6a5353961386d6738fe5dea400adb0ad6",
+    "parent": "ql_demo/ad315d6ae0f87b0fb0cc191f90d3003380de8c3705590c8e68d165b0f547bb53"
+   },
+   "queries": {
+    "target": "SELECT id, amount FROM ql_m06_c6 WHERE p_id = 1",
+    "parent": "SELECT id, name FROM ql_m06_p6 WHERE id BETWEEN 2428 AND 2467"
+   },
+   "meta": {
+    "pair": 6,
+    "direction": "uno_a_muchos",
+    "shape": 0,
+    "r": 40,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p6-u1-r50",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/f0b52d309af7872b313da3ced5eaab67586b8c6b62b63331d77462d4c184c5bc",
+    "parent": "ql_demo/f6659a7f95e7d5b17851ca5d83d6f31dcd1f1b84eea89bc11be1056c39598299"
+   },
+   "queries": {
+    "target": "SELECT * FROM ql_m06_c6 WHERE p_id = 1",
+    "parent": "SELECT id, region FROM ql_m06_p6 WHERE id >= 2428 ORDER BY id LIMIT 50"
+   },
+   "meta": {
+    "pair": 6,
+    "direction": "uno_a_muchos",
+    "shape": 1,
+    "r": 50,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p6-u2-r75",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/77b4a75ac923dd7b044b5285a5be1e22f270bc065ea79e4ddc5f2bc4f6e4b952",
+    "parent": "ql_demo/030bbeb9d8a40e3a6a3cb6e4e6ec3dd4aa4a452d5609886b6e1be481722adf62"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m06_c6 WHERE p_id = 1",
+    "parent": "SELECT p.id, p.name FROM ql_m06_p6 p JOIN ql_m06_region g ON g.id = p.region WHERE p.id BETWEEN 2428 AND 2502"
+   },
+   "meta": {
+    "pair": 6,
+    "direction": "uno_a_muchos",
+    "shape": 2,
+    "r": 75,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p6-u3-r100",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/7f3f1dd86bbef79b4b2dd861b240bb1a096c96a61cee3a29223b33c085c32c3e",
+    "parent": "ql_demo/83b62ed0366f1829442e796b8bafe9f1baef0ebd97819d917d2944181ea3ecdc"
+   },
+   "queries": {
+    "target": "SELECT id, status FROM ql_m06_c6 WHERE p_id = 1 AND status = 1",
+    "parent": "SELECT id, name, flag FROM ql_m06_p6 WHERE id > 2427 AND id < 2528"
+   },
+   "meta": {
+    "pair": 6,
+    "direction": "uno_a_muchos",
+    "shape": 3,
+    "r": 100,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p6-u4-r2",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/59c0b4c9cffc82bdc60464257148eab8580ef48bf512771cbfe54979ecfecad1",
+    "parent": "ql_demo/b3082d97e77f919a6a4755bf3ab113783be5e020d55e9c41a7e8a2ed43652054"
+   },
+   "queries": {
+    "target": "SELECT id, amount, note FROM ql_m06_c6 WHERE p_id = 1 ORDER BY id DESC LIMIT 3",
+    "parent": "SELECT id FROM ql_m06_p6 WHERE id IN (2428, 2429)"
+   },
+   "meta": {
+    "pair": 6,
+    "direction": "uno_a_muchos",
+    "shape": 4,
+    "r": 2,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p6-m0-r3",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/b24039487338c15c4ed27dc481983f12d522a1095592fff0852be69b34b52cb1",
+    "parent": "ql_demo/9dcb6c163a05e17c6dfe3ebe307e8c838ca5f0d64a2886122388a3971972c68e"
+   },
+   "queries": {
+    "target": "SELECT name FROM ql_m06_p6 WHERE id = 1",
+    "parent": "SELECT id, p_id FROM ql_m06_c6 WHERE id BETWEEN 9710 AND 9712"
+   },
+   "meta": {
+    "pair": 6,
+    "direction": "muchos_a_uno",
+    "shape": 0,
+    "r": 3,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p6-m1-r4",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/cd733210e0e77c20498071f9291a4a5cdb0197b4c264cac4a56fa424e12b2290",
+    "parent": "ql_demo/16d6599e0d396695a52c06b7643ecab533305259d25e0079cda706fb04aba8c3"
+   },
+   "queries": {
+    "target": "SELECT * FROM ql_m06_p6 WHERE id = 1",
+    "parent": "SELECT id, p_id, amount FROM ql_m06_c6 WHERE id >= 9710 ORDER BY id LIMIT 4"
+   },
+   "meta": {
+    "pair": 6,
+    "direction": "muchos_a_uno",
+    "shape": 1,
+    "r": 4,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p6-m2-r5",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/d15bf4ebb9adc5f1cbca6faa6574fa9a7f7239226d8b4aa3fd75a9fca55154cd",
+    "parent": "ql_demo/b3c817663db4498bf5e84360cc1ceee3fcd8183c490d40267f3c42690b99463d"
+   },
+   "queries": {
+    "target": "SELECT id, region FROM ql_m06_p6 WHERE id = 1",
+    "parent": "SELECT c.id, c.p_id FROM ql_m06_c6 c JOIN ql_m06_region g ON g.id = c.status WHERE c.id BETWEEN 9710 AND 9714"
+   },
+   "meta": {
+    "pair": 6,
+    "direction": "muchos_a_uno",
+    "shape": 2,
+    "r": 5,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p6-m3-r6",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/53939805f003e9faa258913c97eb7eee268d8eef35cfe19702deb363b8a0ff3b",
+    "parent": "ql_demo/b3afecef6635a45bd51e750029430da8ce021a4faf9b81d323749aec7169f222"
+   },
+   "queries": {
+    "target": "SELECT name, flag FROM ql_m06_p6 WHERE id = 1 AND flag >= 0",
+    "parent": "SELECT id, p_id, note FROM ql_m06_c6 WHERE id > 9709 AND id < 9716"
+   },
+   "meta": {
+    "pair": 6,
+    "direction": "muchos_a_uno",
+    "shape": 3,
+    "r": 6,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p6-m4-r8",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/5a68d4f464971cf5b0f87630a15dbbec972525266e5498de552a61abf5474502",
+    "parent": "ql_demo/5bdaf3ba6f2e9075a6b687a0528d06abdf229b3900f5fa90286177acae9a4bf7"
+   },
+   "queries": {
+    "target": "SELECT p.name, p.region FROM ql_m06_p6 p WHERE p.id = 1 LIMIT 1",
+    "parent": "SELECT id, p_id FROM ql_m06_c6 WHERE id IN (9710, 9711, 9712, 9713, 9714, 9715, 9716, 9717)"
+   },
+   "meta": {
+    "pair": 6,
+    "direction": "muchos_a_uno",
+    "shape": 4,
+    "r": 8,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p7-u0-r10",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/6aa37a7edb784c53955070f8a8f3ceb08f1354f7181d98a24a96ed4efdfd70bf",
+    "parent": "ql_demo/177b5fb19d252180b9ec932fac506e95b802b4f5364537438a42480268536dc5"
+   },
+   "queries": {
+    "target": "SELECT id, amount FROM ql_m06_c7 WHERE p_id = 1",
+    "parent": "SELECT id, name FROM ql_m06_p7 WHERE id BETWEEN 2428 AND 2437"
+   },
+   "meta": {
+    "pair": 7,
+    "direction": "uno_a_muchos",
+    "shape": 0,
+    "r": 10,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p7-u1-r12",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/e2623364540223c719c1caa5e0c63526720f9a41e89d3fa37bfa875b93d9786a",
+    "parent": "ql_demo/1fddb7f45dd9119fe1c35a0f60d28ef8348016da23222e51b2d0b0251ce4b8aa"
+   },
+   "queries": {
+    "target": "SELECT * FROM ql_m06_c7 WHERE p_id = 1",
+    "parent": "SELECT id, region FROM ql_m06_p7 WHERE id >= 2428 ORDER BY id LIMIT 12"
+   },
+   "meta": {
+    "pair": 7,
+    "direction": "uno_a_muchos",
+    "shape": 1,
+    "r": 12,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p7-u2-r15",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/f3b66aa7563345954c0a1b6438272f746dbf64d371e14c4e8892f5e0846337d4",
+    "parent": "ql_demo/ded50b997a3273bf6bd10671632080d7835f89ce7a6f229f3f0614d00d8fbcae"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m06_c7 WHERE p_id = 1",
+    "parent": "SELECT p.id, p.name FROM ql_m06_p7 p JOIN ql_m06_region g ON g.id = p.region WHERE p.id BETWEEN 2428 AND 2442"
+   },
+   "meta": {
+    "pair": 7,
+    "direction": "uno_a_muchos",
+    "shape": 2,
+    "r": 15,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p7-u3-r20",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/e8a879057bf8528a79bca16847577dd23b7a83e539b7a750de249a580815599e",
+    "parent": "ql_demo/1b4600291ec67b6ff9bcc810d064db3346b806ca1224273bb4caeb261e79c7f5"
+   },
+   "queries": {
+    "target": "SELECT id, status FROM ql_m06_c7 WHERE p_id = 1 AND status = 1",
+    "parent": "SELECT id, name, flag FROM ql_m06_p7 WHERE id > 2427 AND id < 2448"
+   },
+   "meta": {
+    "pair": 7,
+    "direction": "uno_a_muchos",
+    "shape": 3,
+    "r": 20,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p7-u4-r25",
+   "role": "positivo",
+   "category": "uno_a_muchos",
+   "query_ids": {
+    "target": "ql_demo/b36da8bd4959358ecaef32c92770f24164819295f82320cb1d936f93bb08b187",
+    "parent": "ql_demo/63d667282c4499a13dda6711a3f5866d66d186955cac8eba32dd2acbcd5d6342"
+   },
+   "queries": {
+    "target": "SELECT id, amount, note FROM ql_m06_c7 WHERE p_id = 1 ORDER BY id DESC LIMIT 3",
+    "parent": "SELECT id FROM ql_m06_p7 WHERE id IN (2428, 2429, 2430, 2431, 2432, 2433, 2434, 2435, 2436, 2437, 2438, 2439, 2440, 2441, 2442, 2443, 2444, 2445, 2446, 2447, 2448, 2449, 2450, 2451, 2452)"
+   },
+   "meta": {
+    "pair": 7,
+    "direction": "uno_a_muchos",
+    "shape": 4,
+    "r": 25,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p7-m0-r30",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/9962a25900aaf50e03d0940c8d1aaac007b40277eda5cdfb0d611a8daeabecd2",
+    "parent": "ql_demo/7fb41110ce0ed2be70a8050be3ba0882200999adbd64a11d96d2a72de26b1499"
+   },
+   "queries": {
+    "target": "SELECT name FROM ql_m06_p7 WHERE id = 1",
+    "parent": "SELECT id, p_id FROM ql_m06_c7 WHERE id BETWEEN 9710 AND 9739"
+   },
+   "meta": {
+    "pair": 7,
+    "direction": "muchos_a_uno",
+    "shape": 0,
+    "r": 30,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p7-m1-r40",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/d59ad83527c0a7eb965293e04d9426384c7279715e3be5dfdde8e776e8c37d91",
+    "parent": "ql_demo/db84a2d1ae3812b09643d68bfde9a325f9b8ad1e3d3dc4125c08bc5ee3d907ac"
+   },
+   "queries": {
+    "target": "SELECT * FROM ql_m06_p7 WHERE id = 1",
+    "parent": "SELECT id, p_id, amount FROM ql_m06_c7 WHERE id >= 9710 ORDER BY id LIMIT 40"
+   },
+   "meta": {
+    "pair": 7,
+    "direction": "muchos_a_uno",
+    "shape": 1,
+    "r": 40,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p7-m2-r50",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/fbe4ab0e6a269c858c984af1206a8f18fb172cceb048c45b8fe2db3d00ef4c97",
+    "parent": "ql_demo/68c7730ff37a185075646d64920de48c8eadfad7083ae2839b58b1892bd3147c"
+   },
+   "queries": {
+    "target": "SELECT id, region FROM ql_m06_p7 WHERE id = 1",
+    "parent": "SELECT c.id, c.p_id FROM ql_m06_c7 c JOIN ql_m06_region g ON g.id = c.status WHERE c.id BETWEEN 9710 AND 9759"
+   },
+   "meta": {
+    "pair": 7,
+    "direction": "muchos_a_uno",
+    "shape": 2,
+    "r": 50,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p7-m3-r75",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/be96c4e86ef5000b592b7085fb1d6913c025e5864ea03a9f580c49f28b4c68c4",
+    "parent": "ql_demo/e0584e2f01a7161a24ca7760c2d46e57573b9ccc8b86514ffa18cad5d519c408"
+   },
+   "queries": {
+    "target": "SELECT name, flag FROM ql_m06_p7 WHERE id = 1 AND flag >= 0",
+    "parent": "SELECT id, p_id, note FROM ql_m06_c7 WHERE id > 9709 AND id < 9785"
+   },
+   "meta": {
+    "pair": 7,
+    "direction": "muchos_a_uno",
+    "shape": 3,
+    "r": 75,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p7-m4-r100",
+   "role": "positivo",
+   "category": "muchos_a_uno",
+   "query_ids": {
+    "target": "ql_demo/3255b025018edc90e8f62fae750c6a55dffac9281998ee1587e14cbd63c8c53e",
+    "parent": "ql_demo/643ae92ef83bcb5de530b258a4099becdc34ee7e6adf40291a8b544de35fc8c2"
+   },
+   "queries": {
+    "target": "SELECT p.name, p.region FROM ql_m06_p7 p WHERE p.id = 1 LIMIT 1",
+    "parent": "SELECT id, p_id FROM ql_m06_c7 WHERE id IN (9710, 9711, 9712, 9713, 9714, 9715, 9716, 9717, 9718, 9719, 9720, 9721, 9722, 9723, 9724, 9725, 9726, 9727, 9728, 9729, 9730, 9731, 9732, 9733, 9734, 9735, 9736, 9737, 9738, 9739, 9740, 9741, 9742, 9743, 9744, 9745, 9746, 9747, 9748, 9749, 9750, 9751, 9752, 9753, 9754, 9755, 9756, 9757, 9758, 9759, 9760, 9761, 9762, 9763, 9764, 9765, 9766, 9767, 9768, 9769, 9770, 9771, 9772, 9773, 9774, 9775, 9776, 9777, 9778, 9779, 9780, 9781, 9782, 9783, 9784, 9785, 9786, 9787, 9788, 9789, 9790, 9791, 9792, 9793, 9794, 9795, 9796, 9797, 9798, 9799, 9800, 9801, 9802, 9803, 9804, 9805, 9806, 9807, 9808, 9809)"
+   },
+   "meta": {
+    "pair": 7,
+    "direction": "muchos_a_uno",
+    "shape": 4,
+    "r": 100,
+    "composite": false
+   }
+  },
+  {
+   "cid": "p8-u0-r2",
+   "role": "positivo",
+   "category": "uno_a_muchos (FK compuesta)",
+   "query_ids": {
+    "target": "ql_demo/212e57983b51cd6a14d2ea11f5f2cc6d541a107fc93c83a76893cd8acb80f317",
+    "parent": "ql_demo/bddae533e71acfd8d7e1e92919a9bf92d31fa52974893e9a6548075d932f7663"
+   },
+   "queries": {
+    "target": "SELECT id, amount FROM ql_m06_c8 WHERE pa = 1 AND pb = 1",
+    "parent": "SELECT a, b, name FROM ql_m06_p8 WHERE a = 18 AND b BETWEEN 76 AND 77"
+   },
+   "meta": {
+    "pair": 8,
+    "direction": "uno_a_muchos",
+    "shape": 0,
+    "r": 2,
+    "composite": true
+   }
+  },
+  {
+   "cid": "p8-u1-r3",
+   "role": "positivo",
+   "category": "uno_a_muchos (FK compuesta)",
+   "query_ids": {
+    "target": "ql_demo/17bcc80f16b2d0af2994e7c49a0ef9db70206d71aeec6fa871877adaf7b1ab63",
+    "parent": "ql_demo/dd84e1d749fa505633e7e55dd8181d9c51d11f6532e650a3e9b1aa553d313af7"
+   },
+   "queries": {
+    "target": "SELECT * FROM ql_m06_c8 WHERE pa = 1 AND pb = 1",
+    "parent": "SELECT a, b, region FROM ql_m06_p8 WHERE a = 18 AND b >= 76 ORDER BY b LIMIT 3"
+   },
+   "meta": {
+    "pair": 8,
+    "direction": "uno_a_muchos",
+    "shape": 1,
+    "r": 3,
+    "composite": true
+   }
+  },
+  {
+   "cid": "p8-u2-r4",
+   "role": "positivo",
+   "category": "uno_a_muchos (FK compuesta)",
+   "query_ids": {
+    "target": "ql_demo/c93b2a3859eb0efad845f8aff23b0c2b56cb0633fb05c9a8a4469a8e192dbdc9",
+    "parent": "ql_demo/4603b1eef1968d269437b2b03193e3bbb832a8c20fae89b458febc7852d49da2"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m06_c8 WHERE pa = 1 AND pb = 1",
+    "parent": "SELECT p.a, p.b FROM ql_m06_p8 p JOIN ql_m06_region g ON g.id = p.region WHERE p.a = 18 AND p.b BETWEEN 76 AND 79"
+   },
+   "meta": {
+    "pair": 8,
+    "direction": "uno_a_muchos",
+    "shape": 2,
+    "r": 4,
+    "composite": true
+   }
+  },
+  {
+   "cid": "p8-u3-r5",
+   "role": "positivo",
+   "category": "uno_a_muchos (FK compuesta)",
+   "query_ids": {
+    "target": "ql_demo/045be7568c5b8c4db0cf0e3351b60aeab431c84ccbcbdf547df00f85ac737a82",
+    "parent": "ql_demo/80431730d55ee6baaae80c4f570d2470e345fa0981b5dbdb7650708daacd9997"
+   },
+   "queries": {
+    "target": "SELECT id, status FROM ql_m06_c8 WHERE pa = 1 AND pb = 1 AND status = 1",
+    "parent": "SELECT a, b, flag FROM ql_m06_p8 WHERE a = 18 AND b > 75 AND b < 81"
+   },
+   "meta": {
+    "pair": 8,
+    "direction": "uno_a_muchos",
+    "shape": 3,
+    "r": 5,
+    "composite": true
+   }
+  },
+  {
+   "cid": "p8-u4-r6",
+   "role": "positivo",
+   "category": "uno_a_muchos (FK compuesta)",
+   "query_ids": {
+    "target": "ql_demo/c2a4851bf7dae23096b61f7a6597520b2049e66043bde5c9034872c753a45191",
+    "parent": "ql_demo/87f5e3ae6f68a3a05871c1732ad70fa487051d75fe148f5d08cb0bee0eb7851b"
+   },
+   "queries": {
+    "target": "SELECT id, amount, note FROM ql_m06_c8 WHERE pa = 1 AND pb = 1 ORDER BY id DESC LIMIT 3",
+    "parent": "SELECT a, b FROM ql_m06_p8 WHERE a = 18 AND b IN (76, 77, 78, 79, 80, 81)"
+   },
+   "meta": {
+    "pair": 8,
+    "direction": "uno_a_muchos",
+    "shape": 4,
+    "r": 6,
+    "composite": true
+   }
+  },
+  {
+   "cid": "p8-m0-r8",
+   "role": "positivo",
+   "category": "muchos_a_uno (FK compuesta)",
+   "query_ids": {
+    "target": "ql_demo/f876da8dc8e27b8b6c0ef2ea2fe3c04f73d7be5586d7c8bb91eb13d7c9cb9367",
+    "parent": "ql_demo/857344fb46b46d6e356168fc2cdaef3d5bf1455c1d71d7632f14f30107cb5981"
+   },
+   "queries": {
+    "target": "SELECT name FROM ql_m06_p8 WHERE a = 1 AND b = 1",
+    "parent": "SELECT id, pa, pb FROM ql_m06_c8 WHERE id BETWEEN 9710 AND 9717"
+   },
+   "meta": {
+    "pair": 8,
+    "direction": "muchos_a_uno",
+    "shape": 0,
+    "r": 8,
+    "composite": true
+   }
+  },
+  {
+   "cid": "p8-m1-r10",
+   "role": "positivo",
+   "category": "muchos_a_uno (FK compuesta)",
+   "query_ids": {
+    "target": "ql_demo/01b7cc1dbb7fc920223362c48a84785f42ea040295eb4a15a39c7854e5b92a6d",
+    "parent": "ql_demo/d35a4f31c2027e2fe550764c5c497ddcde40e8ba265176c4d04a20de69166ffd"
+   },
+   "queries": {
+    "target": "SELECT * FROM ql_m06_p8 WHERE a = 1 AND b = 1",
+    "parent": "SELECT id, pa, pb, amount FROM ql_m06_c8 WHERE id >= 9710 ORDER BY id LIMIT 10"
+   },
+   "meta": {
+    "pair": 8,
+    "direction": "muchos_a_uno",
+    "shape": 1,
+    "r": 10,
+    "composite": true
+   }
+  },
+  {
+   "cid": "p8-m2-r12",
+   "role": "positivo",
+   "category": "muchos_a_uno (FK compuesta)",
+   "query_ids": {
+    "target": "ql_demo/6e82a11b76098523460a53bbef7463f9c896094f061aee459f0b21860b1afc68",
+    "parent": "ql_demo/1caaf4a3bd5bbabd3be5343fdb1e60a5a520ce178e80ff4d26196bbc8550a6e4"
+   },
+   "queries": {
+    "target": "SELECT region, flag FROM ql_m06_p8 WHERE a = 1 AND b = 1",
+    "parent": "SELECT c.id, c.pa, c.pb FROM ql_m06_c8 c JOIN ql_m06_region g ON g.id = c.status WHERE c.id BETWEEN 9710 AND 9721"
+   },
+   "meta": {
+    "pair": 8,
+    "direction": "muchos_a_uno",
+    "shape": 2,
+    "r": 12,
+    "composite": true
+   }
+  },
+  {
+   "cid": "p8-m3-r15",
+   "role": "positivo",
+   "category": "muchos_a_uno (FK compuesta)",
+   "query_ids": {
+    "target": "ql_demo/285b39496292ff360e2854d55276d6b45ba5369a18283b6d31795701e7c85a29",
+    "parent": "ql_demo/daef823cc0e3aa7b310ed8a575182338b353f8bb262fd4010b625e952bb4b4c5"
+   },
+   "queries": {
+    "target": "SELECT name, flag FROM ql_m06_p8 WHERE a = 1 AND b = 1 AND flag >= 0",
+    "parent": "SELECT id, pa, pb, note FROM ql_m06_c8 WHERE id > 9709 AND id < 9725"
+   },
+   "meta": {
+    "pair": 8,
+    "direction": "muchos_a_uno",
+    "shape": 3,
+    "r": 15,
+    "composite": true
+   }
+  },
+  {
+   "cid": "p8-m4-r20",
+   "role": "positivo",
+   "category": "muchos_a_uno (FK compuesta)",
+   "query_ids": {
+    "target": "ql_demo/bdb0a3e6aafc9e50cc46a78fcc3701a0b472e2631406f5e01e34bb6f9c4b8c99",
+    "parent": "ql_demo/dd13f0fee5f3272e686e3d2506ca2e708b5fd27f1f140cc192714ea75a3cc486"
+   },
+   "queries": {
+    "target": "SELECT p.name, p.region FROM ql_m06_p8 p WHERE p.a = 1 AND p.b = 1 LIMIT 1",
+    "parent": "SELECT id, pa, pb FROM ql_m06_c8 WHERE id IN (9710, 9711, 9712, 9713, 9714, 9715, 9716, 9717, 9718, 9719, 9720, 9721, 9722, 9723, 9724, 9725, 9726, 9727, 9728, 9729)"
+   },
+   "meta": {
+    "pair": 8,
+    "direction": "muchos_a_uno",
+    "shape": 4,
+    "r": 20,
+    "composite": true
+   }
+  },
+  {
+   "cid": "p9-u0-r25",
+   "role": "positivo",
+   "category": "uno_a_muchos (FK compuesta)",
+   "query_ids": {
+    "target": "ql_demo/f7a5e4b2dacd413f6e41722a9ca2596c37bcff2423d0a37f1c559a093e38048b",
+    "parent": "ql_demo/e9de3c39a1cb09130a026749aa3ce3caccc87bab9e6498ce2945053ecd445efe"
+   },
+   "queries": {
+    "target": "SELECT id, amount FROM ql_m06_c9 WHERE pa = 1 AND pb = 1",
+    "parent": "SELECT a, b, name FROM ql_m06_p9 WHERE a = 18 AND b BETWEEN 76 AND 100"
+   },
+   "meta": {
+    "pair": 9,
+    "direction": "uno_a_muchos",
+    "shape": 0,
+    "r": 25,
+    "composite": true
+   }
+  },
+  {
+   "cid": "p9-u1-r30",
+   "role": "positivo",
+   "category": "uno_a_muchos (FK compuesta)",
+   "query_ids": {
+    "target": "ql_demo/f70e7cf13a34f67aceca508cfb05d06b22793f39e0cfe2d0fdb369657ee2ae2f",
+    "parent": "ql_demo/eb29a6fefd24c730532bec96dfd36b7c62144b8b85966cbf8eefb681b350edf1"
+   },
+   "queries": {
+    "target": "SELECT * FROM ql_m06_c9 WHERE pa = 1 AND pb = 1",
+    "parent": "SELECT a, b, region FROM ql_m06_p9 WHERE a = 5 AND b >= 70 ORDER BY b LIMIT 30"
+   },
+   "meta": {
+    "pair": 9,
+    "direction": "uno_a_muchos",
+    "shape": 1,
+    "r": 30,
+    "composite": true
+   }
+  },
+  {
+   "cid": "p9-u2-r40",
+   "role": "positivo",
+   "category": "uno_a_muchos (FK compuesta)",
+   "query_ids": {
+    "target": "ql_demo/181aa37ed604340f1baa8cd58aad21917c8a8ad661a6fbca9f84f94006792b7e",
+    "parent": "ql_demo/adf8237c4686c4b61f3e44fe23037be62577396898a5d056dc49bdeb1c946b27"
+   },
+   "queries": {
+    "target": "SELECT COUNT(*) FROM ql_m06_c9 WHERE pa = 1 AND pb = 1",
+    "parent": "SELECT p.a, p.b FROM ql_m06_p9 p JOIN ql_m06_region g ON g.id = p.region WHERE p.a = 18 AND p.b BETWEEN 38 AND 77"
+   },
+   "meta": {
+    "pair": 9,
+    "direction": "uno_a_muchos",
+    "shape": 2,
+    "r": 40,
+    "composite": true
+   }
+  },
+  {
+   "cid": "p9-u3-r50",
+   "role": "positivo",
+   "category": "uno_a_muchos (FK compuesta)",
+   "query_ids": {
+    "target": "ql_demo/d5a1d5f24b7ac51727444c3c29fa6b3555a6ee2705e6889d85dd588c3641a529",
+    "parent": "ql_demo/8ee902eb9b23c58c865365e602a14bc0d8dc4c62f0191b332d0bb20c9e0e5a15"
+   },
+   "queries": {
+    "target": "SELECT id, status FROM ql_m06_c9 WHERE pa = 1 AND pb = 1 AND status = 1",
+    "parent": "SELECT a, b, flag FROM ql_m06_p9 WHERE a = 18 AND b > 37 AND b < 88"
+   },
+   "meta": {
+    "pair": 9,
+    "direction": "uno_a_muchos",
+    "shape": 3,
+    "r": 50,
+    "composite": true
+   }
+  },
+  {
+   "cid": "p9-u4-r75",
+   "role": "positivo",
+   "category": "uno_a_muchos (FK compuesta)",
+   "query_ids": {
+    "target": "ql_demo/5bf2fee3f7f65d2f206405a29dc9b6a18ccdc3b35107e3da88c796ef3ac74128",
+    "parent": "ql_demo/1c88a4d19f65b42b51a662611ae23f8f21d70bba3cc0636305a1a18f8424913b"
+   },
+   "queries": {
+    "target": "SELECT id, amount, note FROM ql_m06_c9 WHERE pa = 1 AND pb = 1 ORDER BY id DESC LIMIT 3",
+    "parent": "SELECT a, b FROM ql_m06_p9 WHERE a = 18 AND b IN (19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93)"
+   },
+   "meta": {
+    "pair": 9,
+    "direction": "uno_a_muchos",
+    "shape": 4,
+    "r": 75,
+    "composite": true
+   }
+  },
+  {
+   "cid": "p9-m0-r100",
+   "role": "positivo",
+   "category": "muchos_a_uno (FK compuesta)",
+   "query_ids": {
+    "target": "ql_demo/fa50406aba5cc4eaf0b32a6d5c7a8b15b11747585a53962d1d16b6ae01c4a39a",
+    "parent": "ql_demo/2e4ec7faf8a916511c21e31d5a37167e8769cabc4cc619811e590416312f12b4"
+   },
+   "queries": {
+    "target": "SELECT name FROM ql_m06_p9 WHERE a = 1 AND b = 1",
+    "parent": "SELECT id, pa, pb FROM ql_m06_c9 WHERE id BETWEEN 9710 AND 9809"
+   },
+   "meta": {
+    "pair": 9,
+    "direction": "muchos_a_uno",
+    "shape": 0,
+    "r": 100,
+    "composite": true
+   }
+  },
+  {
+   "cid": "p9-m1-r2",
+   "role": "positivo",
+   "category": "muchos_a_uno (FK compuesta)",
+   "query_ids": {
+    "target": "ql_demo/19b7ba2e99fe37869546a9af28996ee2cd6e58f3550df2ec9a2c6ff130569e84",
+    "parent": "ql_demo/11ddc22e107731ce52019d55122200a93cce6f1efd1712472e6617f4854986d1"
+   },
+   "queries": {
+    "target": "SELECT * FROM ql_m06_p9 WHERE a = 1 AND b = 1",
+    "parent": "SELECT id, pa, pb, amount FROM ql_m06_c9 WHERE id >= 9710 ORDER BY id LIMIT 2"
+   },
+   "meta": {
+    "pair": 9,
+    "direction": "muchos_a_uno",
+    "shape": 1,
+    "r": 2,
+    "composite": true
+   }
+  },
+  {
+   "cid": "p9-m2-r3",
+   "role": "positivo",
+   "category": "muchos_a_uno (FK compuesta)",
+   "query_ids": {
+    "target": "ql_demo/10f57d63962fb06acc4ed4277250a6c2f43e9b1bcfb6017c3b1599d64a164e43",
+    "parent": "ql_demo/1ad70a9caa3cd1351948aaef21463cf02c220342b2eb547a3ca58dc97905d61f"
+   },
+   "queries": {
+    "target": "SELECT region, flag FROM ql_m06_p9 WHERE a = 1 AND b = 1",
+    "parent": "SELECT c.id, c.pa, c.pb FROM ql_m06_c9 c JOIN ql_m06_region g ON g.id = c.status WHERE c.id BETWEEN 9710 AND 9712"
+   },
+   "meta": {
+    "pair": 9,
+    "direction": "muchos_a_uno",
+    "shape": 2,
+    "r": 3,
+    "composite": true
+   }
+  },
+  {
+   "cid": "p9-m3-r4",
+   "role": "positivo",
+   "category": "muchos_a_uno (FK compuesta)",
+   "query_ids": {
+    "target": "ql_demo/91fb9053d0289154a9fc18194660b2dab7c80e122fbd107c65900c982e114562",
+    "parent": "ql_demo/5a427c559964f3c860f0636f9871191e8028af43faccffbcf8e17ccb1b52a7af"
+   },
+   "queries": {
+    "target": "SELECT name, flag FROM ql_m06_p9 WHERE a = 1 AND b = 1 AND flag >= 0",
+    "parent": "SELECT id, pa, pb, note FROM ql_m06_c9 WHERE id > 9709 AND id < 9714"
+   },
+   "meta": {
+    "pair": 9,
+    "direction": "muchos_a_uno",
+    "shape": 3,
+    "r": 4,
+    "composite": true
+   }
+  },
+  {
+   "cid": "p9-m4-r5",
+   "role": "positivo",
+   "category": "muchos_a_uno (FK compuesta)",
+   "query_ids": {
+    "target": "ql_demo/5d936a9d62f49138b0240122610e8a9176e45b3415d4cfeb71b90986aacc8cac",
+    "parent": "ql_demo/62e5dec945eb7a05d9fb9b6ff4a1511eec71bac548c9c3d3ad19ee2818471e2d"
+   },
+   "queries": {
+    "target": "SELECT p.name, p.region FROM ql_m06_p9 p WHERE p.a = 1 AND p.b = 1 LIMIT 1",
+    "parent": "SELECT id, pa, pb FROM ql_m06_c9 WHERE id IN (9710, 9711, 9712, 9713, 9714)"
+   },
+   "meta": {
+    "pair": 9,
+    "direction": "muchos_a_uno",
+    "shape": 4,
+    "r": 5,
+    "composite": true
+   }
+  },
+  {
+   "cid": "p0-cache-r4",
+   "role": "extra",
+   "category": "muchos_a_uno con cache (fuera de la regla)",
+   "query_ids": {
+    "target": "ql_demo/0e18fa519c4ffff83d21d2af3b4a08e068a993f7d6429a081b05078cc7cd5a8d",
+    "parent": "ql_demo/d8c94f731d1b541e39e67fa38fa884a6fb914a8a19d43132c0e42e760106a49e"
+   },
+   "queries": {
+    "target": "SELECT region, name FROM ql_m06_p0 WHERE id = 1",
+    "parent": "SELECT id, p_id FROM ql_m06_c0 WHERE id BETWEEN 975 AND 978 OR id BETWEEN 3975 AND 3978"
+   },
+   "meta": {
+    "pair": 0,
+    "r": 4
+   }
+  },
+  {
+   "cid": "p1-cache-r6",
+   "role": "extra",
+   "category": "muchos_a_uno con cache (fuera de la regla)",
+   "query_ids": {
+    "target": "ql_demo/22031e0b7b917831d4a56f9375d86e477003a3573b02436b3df0a32867a9a55f",
+    "parent": "ql_demo/c413f875871820810e15b22139f96a2d4373c72ea729e2e029955f87683727fe"
+   },
+   "queries": {
+    "target": "SELECT region, name FROM ql_m06_p1 WHERE id = 1",
+    "parent": "SELECT id, p_id FROM ql_m06_c1 WHERE id BETWEEN 975 AND 980 OR id BETWEEN 3975 AND 3980"
+   },
+   "meta": {
+    "pair": 1,
+    "r": 6
+   }
+  },
+  {
+   "cid": "p2-cache-r10",
+   "role": "extra",
+   "category": "muchos_a_uno con cache (fuera de la regla)",
+   "query_ids": {
+    "target": "ql_demo/1c521dfee459bcafdb3c5b54af3e60235a30632c7394be3e1b91ec67d3af0c51",
+    "parent": "ql_demo/0c7435bb68045691365d077e514a2a8c5bb5bd587bd4942db84af271a61630c3"
+   },
+   "queries": {
+    "target": "SELECT region, name FROM ql_m06_p2 WHERE id = 1",
+    "parent": "SELECT id, p_id FROM ql_m06_c2 WHERE id BETWEEN 975 AND 984 OR id BETWEEN 3975 AND 3984"
+   },
+   "meta": {
+    "pair": 2,
+    "r": 10
+   }
+  },
+  {
+   "cid": "p3-cache-r20",
+   "role": "extra",
+   "category": "muchos_a_uno con cache (fuera de la regla)",
+   "query_ids": {
+    "target": "ql_demo/f24de05e47480c5ec2e88a5549c7654566ab81640cdeefbd6cd18913b4b24f84",
+    "parent": "ql_demo/5c98b6f379235b01be4844f76a84d82443647849f4db35c57d9793fe7c535101"
+   },
+   "queries": {
+    "target": "SELECT region, name FROM ql_m06_p3 WHERE id = 1",
+    "parent": "SELECT id, p_id FROM ql_m06_c3 WHERE id BETWEEN 975 AND 994 OR id BETWEEN 3975 AND 3994"
+   },
+   "meta": {
+    "pair": 3,
+    "r": 20
+   }
+  },
+  {
+   "cid": "p4-cache-r40",
+   "role": "extra",
+   "category": "muchos_a_uno con cache (fuera de la regla)",
+   "query_ids": {
+    "target": "ql_demo/eacb59fc9a5441e29ef73015f914fa9f2e40327024ff8718162c52f3b120f827",
+    "parent": "ql_demo/ee9fcdfca3220f0d3e880674f7a468804f6db621ab1ada49db9953d9e96eb677"
+   },
+   "queries": {
+    "target": "SELECT region, name FROM ql_m06_p4 WHERE id = 1",
+    "parent": "SELECT id, p_id FROM ql_m06_c4 WHERE id BETWEEN 975 AND 1014 OR id BETWEEN 3975 AND 4014"
+   },
+   "meta": {
+    "pair": 4,
+    "r": 40
+   }
+  },
+  {
+   "cid": "p5-cache-r8",
+   "role": "extra",
+   "category": "muchos_a_uno con cache (fuera de la regla)",
+   "query_ids": {
+    "target": "ql_demo/9b20375c13837f3513f9282f135941e4a8b5cd36f0eae7b89c64d4e60f719846",
+    "parent": "ql_demo/f2cc428cfd0c5e5b5ba79b84321ee1f4015759b42b0c5706f2441415ac04b260"
+   },
+   "queries": {
+    "target": "SELECT region, name FROM ql_m06_p5 WHERE id = 1",
+    "parent": "SELECT id, p_id FROM ql_m06_c5 WHERE id BETWEEN 975 AND 982 OR id BETWEEN 3975 AND 3982"
+   },
+   "meta": {
+    "pair": 5,
+    "r": 8
+   }
+  },
+  {
+   "cid": "p6-cache-r15",
+   "role": "extra",
+   "category": "muchos_a_uno con cache (fuera de la regla)",
+   "query_ids": {
+    "target": "ql_demo/c1e71dfe52c21d9bdc8df250c60ba4944fd7babd0848d4d78bc1e5c23b95dce6",
+    "parent": "ql_demo/0bd34a3d317043b1fd4e946f5697f3b0a663f5f228f94de0d348328094c2c19b"
+   },
+   "queries": {
+    "target": "SELECT region, name FROM ql_m06_p6 WHERE id = 1",
+    "parent": "SELECT id, p_id FROM ql_m06_c6 WHERE id BETWEEN 975 AND 989 OR id BETWEEN 3975 AND 3989"
+   },
+   "meta": {
+    "pair": 6,
+    "r": 15
+   }
+  },
+  {
+   "cid": "p7-cache-r30",
+   "role": "extra",
+   "category": "muchos_a_uno con cache (fuera de la regla)",
+   "query_ids": {
+    "target": "ql_demo/139672023a1703dea7af9bcb960183d2688dc1c86d4bf6e9db2b60aebf4cd8fd",
+    "parent": "ql_demo/2c8645412a21e2af67b794577e7ef2f776198ab6feb2b7c500787923457a593b"
+   },
+   "queries": {
+    "target": "SELECT region, name FROM ql_m06_p7 WHERE id = 1",
+    "parent": "SELECT id, p_id FROM ql_m06_c7 WHERE id BETWEEN 975 AND 1004 OR id BETWEEN 3975 AND 4004"
+   },
+   "meta": {
+    "pair": 7,
+    "r": 30
+   }
+  },
+  {
+   "cid": "ctl-suelta-p0-0",
+   "role": "control",
+   "category": "consulta suelta por FK (pares con N+1)",
+   "query_ids": {
+    "target": "ql_demo/46a022b52112030f4baf1b465b5efdbed30819aa0a94a8a2a395b3685e3024b8"
+   },
+   "queries": {
+    "target": "SELECT amount, id FROM ql_m06_c0 WHERE p_id = 1"
+   },
+   "meta": {
+    "pair": 0,
+    "calls_per_round": 8
+   }
+  },
+  {
+   "cid": "ctl-suelta-p1-1",
+   "role": "control",
+   "category": "consulta suelta por FK (pares con N+1)",
+   "query_ids": {
+    "target": "ql_demo/945ae2716ecd8aae2e061a07e4fd3240280fd2d113c46a2b6fd2304e4aec87e8"
+   },
+   "queries": {
+    "target": "SELECT note, id FROM ql_m06_c1 WHERE p_id = 1"
+   },
+   "meta": {
+    "pair": 1,
+    "calls_per_round": 25
+   }
+  },
+  {
+   "cid": "ctl-suelta-p2-2",
+   "role": "control",
+   "category": "consulta suelta por FK (pares con N+1)",
+   "query_ids": {
+    "target": "ql_demo/4e1f268a8c34a560728ed7247f994ec65a7afea57d08eccf4d9ad5eabb85a394"
+   },
+   "queries": {
+    "target": "SELECT status, amount FROM ql_m06_c2 WHERE p_id = 1"
+   },
+   "meta": {
+    "pair": 2,
+    "calls_per_round": 42
+   }
+  },
+  {
+   "cid": "ctl-suelta-p3-3",
+   "role": "control",
+   "category": "consulta suelta por FK (pares con N+1)",
+   "query_ids": {
+    "target": "ql_demo/5451cb6f1c74afc94d59177a4901b004218125e4ad6195a214dcc6e25467bbea"
+   },
+   "queries": {
+    "target": "SELECT id, note, status FROM ql_m06_c3 WHERE p_id = 1"
+   },
+   "meta": {
+    "pair": 3,
+    "calls_per_round": 59
+   }
+  },
+  {
+   "cid": "ctl-suelta-p4-4",
+   "role": "control",
+   "category": "consulta suelta por FK (pares con N+1)",
+   "query_ids": {
+    "target": "ql_demo/ab33e939c7b9094a0460bde5dc0a5f2841436a66d4e70947f49aa967c6037d94"
+   },
+   "queries": {
+    "target": "SELECT amount, status, id FROM ql_m06_c4 WHERE p_id = 1"
+   },
+   "meta": {
+    "pair": 4,
+    "calls_per_round": 76
+   }
+  },
+  {
+   "cid": "ctl-suelta-p5-5",
+   "role": "control",
+   "category": "consulta suelta por FK (pares con N+1)",
+   "query_ids": {
+    "target": "ql_demo/bb5aa634dfd1dac0b62a978af11138bde32a84bb2bd4e425f3795f3a62e31748"
+   },
+   "queries": {
+    "target": "SELECT amount, id FROM ql_m06_c5 WHERE p_id = 1 AND status >= 1"
+   },
+   "meta": {
+    "pair": 5,
+    "calls_per_round": 20
+   }
+  },
+  {
+   "cid": "ctl-suelta-p6-6",
+   "role": "control",
+   "category": "consulta suelta por FK (pares con N+1)",
+   "query_ids": {
+    "target": "ql_demo/49b99d7ee2c5d8964b6829b0b2b878934d87dd239ff7c41184b135d7abaa4b38"
+   },
+   "queries": {
+    "target": "SELECT note, id FROM ql_m06_c6 WHERE p_id = 1 AND status >= 1"
+   },
+   "meta": {
+    "pair": 6,
+    "calls_per_round": 37
+   }
+  },
+  {
+   "cid": "ctl-suelta-p7-7",
+   "role": "control",
+   "category": "consulta suelta por FK (pares con N+1)",
+   "query_ids": {
+    "target": "ql_demo/84e1bcad9427b1c1a5069146fd1295a994c153d896f064dc81738805a87dc026"
+   },
+   "queries": {
+    "target": "SELECT status, amount FROM ql_m06_c7 WHERE p_id = 1 AND status >= 1"
+   },
+   "meta": {
+    "pair": 7,
+    "calls_per_round": 54
+   }
+  },
+  {
+   "cid": "ctl-suelta-p0-8",
+   "role": "control",
+   "category": "consulta suelta por FK (pares con N+1)",
+   "query_ids": {
+    "target": "ql_demo/8edfbb2c8509771b2562c9d9bd3286747c6d83dc7d0851c93c63eabb4cf4d478"
+   },
+   "queries": {
+    "target": "SELECT id, note, status FROM ql_m06_c0 WHERE p_id = 1 AND status >= 1"
+   },
+   "meta": {
+    "pair": 0,
+    "calls_per_round": 71
+   }
+  },
+  {
+   "cid": "ctl-suelta-p1-9",
+   "role": "control",
+   "category": "consulta suelta por FK (pares con N+1)",
+   "query_ids": {
+    "target": "ql_demo/02a5399b3efb3f45739c804f8991724b8a1c8eb6bfd94c0c692bd255d32dfbc1"
+   },
+   "queries": {
+    "target": "SELECT amount, status, id FROM ql_m06_c1 WHERE p_id = 1 AND status >= 1"
+   },
+   "meta": {
+    "pair": 1,
+    "calls_per_round": 15
+   }
+  },
+  {
+   "cid": "ctl-detalle-p3-0",
+   "role": "control",
+   "category": "detalle 1 + 1 (pares con N+1)",
+   "query_ids": {
+    "target": "ql_demo/0f7e03c6b35f3a6dfc43c76351d6870e3e3f67981bf0149f5a88f47e7d6eb132",
+    "parent": "ql_demo/597a199554ff8e86c9a64ef1f442ebcd197a81516470b031e3d0a8226126a2df"
+   },
+   "queries": {
+    "target": "SELECT status, id FROM ql_m06_c3 WHERE p_id = 1",
+    "parent": "SELECT region, id FROM ql_m06_p3 WHERE id = 1"
+   },
+   "meta": {
+    "pair": 3
+   }
+  },
+  {
+   "cid": "ctl-detalle-p4-1",
+   "role": "control",
+   "category": "detalle 1 + 1 (pares con N+1)",
+   "query_ids": {
+    "target": "ql_demo/108adb1272fb614060bbe4edc7b7a05249fa3da14ef3133841ceaf4e11368f2c",
+    "parent": "ql_demo/39828a8dffdfc6b7d7482b7fd41fe6fc83b1983fdbb32efaae4840c3cfe850c2"
+   },
+   "queries": {
+    "target": "SELECT id, amount, status FROM ql_m06_c4 WHERE p_id = 1",
+    "parent": "SELECT flag, name FROM ql_m06_p4 WHERE id = 1"
+   },
+   "meta": {
+    "pair": 4
+   }
+  },
+  {
+   "cid": "ctl-detalle-p5-2",
+   "role": "control",
+   "category": "detalle 1 + 1 (pares con N+1)",
+   "query_ids": {
+    "target": "ql_demo/502b3f81b7e72bf38d185e9067c882ef88e73671a912f7733120e26cda1bf037",
+    "parent": "ql_demo/e8e56c4231d569c85e8409d4bffd011514559ae9dde9a0add1154f82126e92b6"
+   },
+   "queries": {
+    "target": "SELECT note, amount FROM ql_m06_c5 WHERE p_id = 1",
+    "parent": "SELECT name, region, flag FROM ql_m06_p5 WHERE id = 1"
+   },
+   "meta": {
+    "pair": 5
+   }
+  },
+  {
+   "cid": "ctl-detalle-p6-3",
+   "role": "control",
+   "category": "detalle 1 + 1 (pares con N+1)",
+   "query_ids": {
+    "target": "ql_demo/fcb3363c5de752388ae4f50e2e6f19a6e23a47a805d026f909eabbe26694c7fa",
+    "parent": "ql_demo/9b04abea32841995221cbe3e283cd0271cf9a8766d7d78594f41e304d98a1001"
+   },
+   "queries": {
+    "target": "SELECT amount, note, id FROM ql_m06_c6 WHERE p_id = 1",
+    "parent": "SELECT id, flag FROM ql_m06_p6 WHERE id = 1"
+   },
+   "meta": {
+    "pair": 6
+   }
+  },
+  {
+   "cid": "ctl-detalle-p7-4",
+   "role": "control",
+   "category": "detalle 1 + 1 (pares con N+1)",
+   "query_ids": {
+    "target": "ql_demo/998f0d0b8f80e5893454bce0745f0498eb82be5e05840441150b4c9417892669",
+    "parent": "ql_demo/05f941779bfcde23610516fb56cfd6db46049e4795de92276f2404144e08d271"
+   },
+   "queries": {
+    "target": "SELECT status, note FROM ql_m06_c7 WHERE p_id = 1",
+    "parent": "SELECT region, name, id FROM ql_m06_p7 WHERE id = 1"
+   },
+   "meta": {
+    "pair": 7
+   }
+  },
+  {
+   "cid": "ctl-detalle-p0-5",
+   "role": "control",
+   "category": "detalle 1 + 1 (pares con N+1)",
+   "query_ids": {
+    "target": "ql_demo/3c44b41cc0689206856160f3f1dee99894ec026ff13a4778ec582a5e53ab6336",
+    "parent": "ql_demo/b78285eba9517af310e5bb7ae4f8e5b1ae49570e0df298b9f86afe05542156af"
+   },
+   "queries": {
+    "target": "SELECT status, id FROM ql_m06_c0 WHERE p_id = 1 AND amount >= 1",
+    "parent": "SELECT region, id FROM ql_m06_p0 WHERE id = 1 AND flag >= 1"
+   },
+   "meta": {
+    "pair": 0
+   }
+  },
+  {
+   "cid": "ctl-detalle-p1-6",
+   "role": "control",
+   "category": "detalle 1 + 1 (pares con N+1)",
+   "query_ids": {
+    "target": "ql_demo/68492fce14463b3410e54ba95c4b679486690aae9c77b07f10c303b561ac67d9",
+    "parent": "ql_demo/c5fb66993d32a5267174f0339571ba6054bc01988ecc9ebfe4569ac2bda2a2b3"
+   },
+   "queries": {
+    "target": "SELECT id, amount, status FROM ql_m06_c1 WHERE p_id = 1 AND amount >= 1",
+    "parent": "SELECT flag, name FROM ql_m06_p1 WHERE id = 1 AND flag >= 1"
+   },
+   "meta": {
+    "pair": 1
+   }
+  },
+  {
+   "cid": "ctl-detalle-p2-7",
+   "role": "control",
+   "category": "detalle 1 + 1 (pares con N+1)",
+   "query_ids": {
+    "target": "ql_demo/962494cd49bc8e1fa31e75977400affd8c6f5c49b36c4203afca264860cf1b25",
+    "parent": "ql_demo/5a95c3a0aae581874bb7cbd333ed6bb33cc1b6c0d394088d6846bdc33c27ab7d"
+   },
+   "queries": {
+    "target": "SELECT note, amount FROM ql_m06_c2 WHERE p_id = 1 AND amount >= 1",
+    "parent": "SELECT name, region, flag FROM ql_m06_p2 WHERE id = 1 AND flag >= 1"
+   },
+   "meta": {
+    "pair": 2
+   }
+  },
+  {
+   "cid": "ctl-detalle-p3-8",
+   "role": "control",
+   "category": "detalle 1 + 1 (pares con N+1)",
+   "query_ids": {
+    "target": "ql_demo/1e421d3e809bb8949a282afcef9b2cb3c07e5431d7f6888604952785f8152ab9",
+    "parent": "ql_demo/0d986a39310664f303f0e6155e5bc59b17fb6f758074d27cc7a98d7934f331b8"
+   },
+   "queries": {
+    "target": "SELECT amount, note, id FROM ql_m06_c3 WHERE p_id = 1 AND amount >= 1",
+    "parent": "SELECT id, flag FROM ql_m06_p3 WHERE id = 1 AND flag >= 1"
+   },
+   "meta": {
+    "pair": 3
+   }
+  },
+  {
+   "cid": "ctl-detalle-p4-9",
+   "role": "control",
+   "category": "detalle 1 + 1 (pares con N+1)",
+   "query_ids": {
+    "target": "ql_demo/0e18b6743da24faf13833d69fc3d61d2937ff70c14004e8ae8074b53e3092e37",
+    "parent": "ql_demo/ea5969d729d6eff93ff3ed489b3bffb1fdf27c411aa5bf8b3c80a0e36698a687"
+   },
+   "queries": {
+    "target": "SELECT status, note FROM ql_m06_c4 WHERE p_id = 1 AND amount >= 1",
+    "parent": "SELECT region, name, id FROM ql_m06_p4 WHERE id = 1 AND flag >= 1"
+   },
+   "meta": {
+    "pair": 4
+   }
+  },
+  {
+   "cid": "ctl-suelta-p10-0",
+   "role": "control",
+   "category": "consulta suelta por FK (pares sin N+1)",
+   "query_ids": {
+    "target": "ql_demo/dbd83d077f87b986a3269f93b316c576e887250d1121c26c4666ae462a397ef5"
+   },
+   "queries": {
+    "target": "SELECT amount, id FROM ql_m06_c10 WHERE p_id = 1"
+   },
+   "meta": {
+    "pair": 10,
+    "calls_per_round": 8
+   }
+  },
+  {
+   "cid": "ctl-suelta-p11-1",
+   "role": "control",
+   "category": "consulta suelta por FK (pares sin N+1)",
+   "query_ids": {
+    "target": "ql_demo/77f471f56fa7a7250dbe6e76aebe67f025350d9de6febfee8f1256e3cf4e242f"
+   },
+   "queries": {
+    "target": "SELECT note, id FROM ql_m06_c11 WHERE p_id = 1"
+   },
+   "meta": {
+    "pair": 11,
+    "calls_per_round": 25
+   }
+  },
+  {
+   "cid": "ctl-suelta-p10-2",
+   "role": "control",
+   "category": "consulta suelta por FK (pares sin N+1)",
+   "query_ids": {
+    "target": "ql_demo/40d2a57e3306126a453356da3af2488935c0ff8112d248cc1c6aeae0137269de"
+   },
+   "queries": {
+    "target": "SELECT status, amount FROM ql_m06_c10 WHERE p_id = 1"
+   },
+   "meta": {
+    "pair": 10,
+    "calls_per_round": 42
+   }
+  },
+  {
+   "cid": "ctl-suelta-p11-3",
+   "role": "control",
+   "category": "consulta suelta por FK (pares sin N+1)",
+   "query_ids": {
+    "target": "ql_demo/75dbca28648b0b550767a054e03097afa71be4c07aaeea303df50d52ed5ee426"
+   },
+   "queries": {
+    "target": "SELECT id, note, status FROM ql_m06_c11 WHERE p_id = 1"
+   },
+   "meta": {
+    "pair": 11,
+    "calls_per_round": 59
+   }
+  },
+  {
+   "cid": "ctl-suelta-p10-4",
+   "role": "control",
+   "category": "consulta suelta por FK (pares sin N+1)",
+   "query_ids": {
+    "target": "ql_demo/42162985fbd4fea02dda8cdcaf7b1d07068ee2fe8de5263a0c47571a25548375"
+   },
+   "queries": {
+    "target": "SELECT amount, status, id FROM ql_m06_c10 WHERE p_id = 1"
+   },
+   "meta": {
+    "pair": 10,
+    "calls_per_round": 76
+   }
+  },
+  {
+   "cid": "ctl-detalle-p11-0",
+   "role": "control",
+   "category": "detalle 1 + 1 (pares sin N+1)",
+   "query_ids": {
+    "target": "ql_demo/09847ad683fa726ba15b506990a3047183d39ca2615d8e194880aa4695fd96cc",
+    "parent": "ql_demo/1354d5b35fca40bf96715932d0fe19c667de60e1ea59850d0f6fb233fbd16ef2"
+   },
+   "queries": {
+    "target": "SELECT status, id FROM ql_m06_c11 WHERE p_id = 1",
+    "parent": "SELECT region, id FROM ql_m06_p11 WHERE id = 1"
+   },
+   "meta": {
+    "pair": 11
+   }
+  },
+  {
+   "cid": "ctl-detalle-p10-1",
+   "role": "control",
+   "category": "detalle 1 + 1 (pares sin N+1)",
+   "query_ids": {
+    "target": "ql_demo/e7a8c310068a6b9a7d5c4149f807b0463b76e7df3d013b2daf2e0d3cd9041bc1",
+    "parent": "ql_demo/1677661e8d38154c2f31e99b54040ab4807882e17537ffa78b58e4bd44a45e9e"
+   },
+   "queries": {
+    "target": "SELECT id, amount, status FROM ql_m06_c10 WHERE p_id = 1",
+    "parent": "SELECT flag, name FROM ql_m06_p10 WHERE id = 1"
+   },
+   "meta": {
+    "pair": 10
+   }
+  },
+  {
+   "cid": "ctl-detalle-p11-2",
+   "role": "control",
+   "category": "detalle 1 + 1 (pares sin N+1)",
+   "query_ids": {
+    "target": "ql_demo/55c40761459bd9e6b05ce4a62ae3a41744ff7f6f3ae732b3ebecfeb85c790565",
+    "parent": "ql_demo/cdb9838649d2816b0294bb1b9d8efa320ad064e1db9ac0cac086b3ec74fa33d8"
+   },
+   "queries": {
+    "target": "SELECT note, amount FROM ql_m06_c11 WHERE p_id = 1",
+    "parent": "SELECT name, region, flag FROM ql_m06_p11 WHERE id = 1"
+   },
+   "meta": {
+    "pair": 11
+   }
+  },
+  {
+   "cid": "ctl-detalle-p10-3",
+   "role": "control",
+   "category": "detalle 1 + 1 (pares sin N+1)",
+   "query_ids": {
+    "target": "ql_demo/0b18577d9718042913f1291b2d20249f49c1322b015fe971742136bcec1c9c83",
+    "parent": "ql_demo/540dcf33144f358789a3d2cd85c981952287280e2f6eec3006f8bc83ba487ea3"
+   },
+   "queries": {
+    "target": "SELECT amount, note, id FROM ql_m06_c10 WHERE p_id = 1",
+    "parent": "SELECT id, flag FROM ql_m06_p10 WHERE id = 1"
+   },
+   "meta": {
+    "pair": 10
+   }
+  },
+  {
+   "cid": "ctl-detalle-p11-4",
+   "role": "control",
+   "category": "detalle 1 + 1 (pares sin N+1)",
+   "query_ids": {
+    "target": "ql_demo/87d458eb69d13f3a1c64c03c6b5f6c8376c5355ef6be224e90eae00248fdacd4",
+    "parent": "ql_demo/df9adf10daf4bf3eaa997b1e3cea9bcf13076f255e33b8b8b4354bf1d2f7230e"
+   },
+   "queries": {
+    "target": "SELECT status, note FROM ql_m06_c11 WHERE p_id = 1",
+    "parent": "SELECT region, name, id FROM ql_m06_p11 WHERE id = 1"
+   },
+   "meta": {
+    "pair": 11
+   }
+  },
+  {
+   "cid": "ctl-join-p10-0",
+   "role": "control",
+   "category": "JOIN en una consulta (pares sin N+1)",
+   "query_ids": {
+    "target": "ql_demo/c4ab755ba5e48d2304006edab72e0544ad3fb6970e04eefa1538a7171d70f557"
+   },
+   "queries": {
+    "target": "SELECT c.id, c.amount FROM ql_m06_p10 p JOIN ql_m06_c10 c ON c.p_id = p.id WHERE p.id BETWEEN 1 AND 5"
+   },
+   "meta": {
+    "pair": 10,
+    "r": 5
+   }
+  },
+  {
+   "cid": "ctl-join-p11-1",
+   "role": "control",
+   "category": "JOIN en una consulta (pares sin N+1)",
+   "query_ids": {
+    "target": "ql_demo/6b4688ffb2c9622df75a08b86567af324958cc433be68c5f4acdbed098f855b9"
+   },
+   "queries": {
+    "target": "SELECT c.id, c.note FROM ql_m06_p11 p JOIN ql_m06_c11 c ON c.p_id = p.id WHERE p.id BETWEEN 1 AND 10"
+   },
+   "meta": {
+    "pair": 11,
+    "r": 10
+   }
+  },
+  {
+   "cid": "ctl-join-p10-2",
+   "role": "control",
+   "category": "JOIN en una consulta (pares sin N+1)",
+   "query_ids": {
+    "target": "ql_demo/415f609fa2744658a97e151caa5f5850d47189d1cec5cc0b250d22c80e6e0bb6"
+   },
+   "queries": {
+    "target": "SELECT p.name, c.id FROM ql_m06_p10 p JOIN ql_m06_c10 c ON c.p_id = p.id WHERE p.id BETWEEN 1 AND 20"
+   },
+   "meta": {
+    "pair": 10,
+    "r": 20
+   }
+  },
+  {
+   "cid": "ctl-join-p11-3",
+   "role": "control",
+   "category": "JOIN en una consulta (pares sin N+1)",
+   "query_ids": {
+    "target": "ql_demo/bc0cc5f7bff90fd57825416e3e74668b2dda71c711a5a7b2b6dd4fa8c6eb05e2"
+   },
+   "queries": {
+    "target": "SELECT c.status, p.id FROM ql_m06_p11 p JOIN ql_m06_c11 c ON c.p_id = p.id WHERE p.id BETWEEN 1 AND 40"
+   },
+   "meta": {
+    "pair": 11,
+    "r": 40
+   }
+  },
+  {
+   "cid": "ctl-join-p10-4",
+   "role": "control",
+   "category": "JOIN en una consulta (pares sin N+1)",
+   "query_ids": {
+    "target": "ql_demo/408af50a3c3e4555004aac0abcd2bad643dfa1e58d078596ff6252a37ebc1ca2"
+   },
+   "queries": {
+    "target": "SELECT c.amount, p.region FROM ql_m06_p10 p JOIN ql_m06_c10 c ON c.p_id = p.id WHERE p.id BETWEEN 1 AND 80"
+   },
+   "meta": {
+    "pair": 10,
+    "r": 80
+   }
+  },
+  {
+   "cid": "ctl-in-p11-0",
+   "role": "control",
+   "category": "IN (...) en lote (pares sin N+1)",
+   "query_ids": {
+    "target": "ql_demo/aa655bfa6129da61b4b1b5a4ddc787cb0b0ff6a97e40e5503a45e74ef79a2218",
+    "parent": "ql_demo/105633228216dfa387a44dfc4346dc2cb83d0f8d9c28944b4516a8030dce91d8"
+   },
+   "queries": {
+    "target": "SELECT amount, id, p_id FROM ql_m06_c11 WHERE p_id IN (1, 2, 3, 4, 5)",
+    "parent": "SELECT id FROM ql_m06_p11 WHERE id BETWEEN 1 AND 5"
+   },
+   "meta": {
+    "pair": 11,
+    "r": 5
+   }
+  },
+  {
+   "cid": "ctl-in-p10-1",
+   "role": "control",
+   "category": "IN (...) en lote (pares sin N+1)",
+   "query_ids": {
+    "target": "ql_demo/77d2d4d30321484c222367ac6e6c916ad531f7dbbe8d282a052e103a3182f333",
+    "parent": "ql_demo/e42e1d7a3a846a8aabc46a23d3b598615cc7f99c812d98c57c8fe9bc61a778f5"
+   },
+   "queries": {
+    "target": "SELECT note, id, p_id FROM ql_m06_c10 WHERE p_id IN (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)",
+    "parent": "SELECT id, name FROM ql_m06_p10 WHERE id BETWEEN 1 AND 10"
+   },
+   "meta": {
+    "pair": 10,
+    "r": 10
+   }
+  },
+  {
+   "cid": "ctl-in-p11-2",
+   "role": "control",
+   "category": "IN (...) en lote (pares sin N+1)",
+   "query_ids": {
+    "target": "ql_demo/540dc40b15b2893647fc47145791ea507eca855c8180951dc0f96124d19de72d",
+    "parent": "ql_demo/a78a43ec0a13e53ed1eca75f41523ee4f8e37b8f27586c882c4f97742c77c275"
+   },
+   "queries": {
+    "target": "SELECT status, amount, p_id FROM ql_m06_c11 WHERE p_id IN (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)",
+    "parent": "SELECT id, region FROM ql_m06_p11 WHERE id BETWEEN 1 AND 20"
+   },
+   "meta": {
+    "pair": 11,
+    "r": 20
+   }
+  },
+  {
+   "cid": "ctl-in-p10-3",
+   "role": "control",
+   "category": "IN (...) en lote (pares sin N+1)",
+   "query_ids": {
+    "target": "ql_demo/e0adc7ad43d809d4d6fc478567abfcf4a9bc7b135c5313e2bcf2b8dbea4b131e",
+    "parent": "ql_demo/32dd0b7faf7b0d2759ec28373d8a4db754a08a96d1826ed2062eb8ae7e249fe9"
+   },
+   "queries": {
+    "target": "SELECT id, note, status, p_id FROM ql_m06_c10 WHERE p_id IN (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40)",
+    "parent": "SELECT id, flag FROM ql_m06_p10 WHERE id BETWEEN 1 AND 40"
+   },
+   "meta": {
+    "pair": 10,
+    "r": 40
+   }
+  },
+  {
+   "cid": "ctl-in-p11-4",
+   "role": "control",
+   "category": "IN (...) en lote (pares sin N+1)",
+   "query_ids": {
+    "target": "ql_demo/09e11ae801f3dbefb856c753d9e620327f4267c2745e20be70c0a233cf27a6f2",
+    "parent": "ql_demo/b969405082323f4d613a1af66e3a177bb9d9a072851315e299898ad6a5b52f1b"
+   },
+   "queries": {
+    "target": "SELECT amount, status, id, p_id FROM ql_m06_c11 WHERE p_id IN (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80)",
+    "parent": "SELECT id, name, region FROM ql_m06_p11 WHERE id BETWEEN 1 AND 80"
+   },
+   "meta": {
+    "pair": 11,
+    "r": 80
+   }
+  }
+ ],
+ "collisions": {},
+ "discarded": []
+}

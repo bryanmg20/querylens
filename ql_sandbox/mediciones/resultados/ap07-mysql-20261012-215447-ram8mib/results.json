@@ -1,0 +1,6747 @@
+{
+ "meta": {
+  "run_id": "ap07-mysql-20261012-215447-ram8mib",
+  "db_id": "medicion-ap07-mysql-20261012-215447-ram8mib",
+  "engine": "mysql",
+  "measurement": "ap07",
+  "cycles": 5,
+  "interval": 60,
+  "started": "2026-10-13 02:54:48.64081+00",
+  "cycle_times": [
+   {
+    "cycle": 1,
+    "msg_id": 153,
+    "start": "2026-10-13 02:58:26.035341+00",
+    "end": "2026-10-13 02:58:37.826306+00"
+   },
+   {
+    "cycle": 2,
+    "msg_id": 154,
+    "start": "2026-10-13 02:59:25.845884+00",
+    "end": "2026-10-13 02:59:33.44316+00"
+   },
+   {
+    "cycle": 3,
+    "msg_id": 155,
+    "start": "2026-10-13 03:00:25.781391+00",
+    "end": "2026-10-13 03:00:34.905846+00"
+   },
+   {
+    "cycle": 4,
+    "msg_id": 156,
+    "start": "2026-10-13 03:01:25.796936+00",
+    "end": "2026-10-13 03:01:35.432229+00"
+   },
+   {
+    "cycle": 5,
+    "msg_id": 157,
+    "start": "2026-10-13 03:02:25.838199+00",
+    "end": "2026-10-13 03:02:35.062559+00"
+   }
+  ],
+  "temptable_max_ram": 8388608
+ },
+ "summary": {
+  "positivos": 100,
+  "detectados": 100,
+  "recall": 1.0,
+  "recall_ic95": [
+   0.963,
+   1.0
+  ],
+  "positivos_validos": 100,
+  "detectados_validos": 100,
+  "recall_validos": 1.0,
+  "recall_validos_ic95": [
+   0.963,
+   1.0
+  ],
+  "controles": 40,
+  "controles_marcados": 0,
+  "falsos_positivos": 0,
+  "tasa_fp": 0.0,
+  "tasa_fp_ic95": [
+   -0.0,
+   0.0876
+  ],
+  "extra": 0,
+  "extra_detectados": 0,
+  "cumple_90": true,
+  "por_categoria": {
+   "GROUP BY": {
+    "casos": 22,
+    "validos": 22,
+    "detectados": 22
+   },
+   "GROUP BY + ORDER BY": {
+    "casos": 5,
+    "validos": 5,
+    "detectados": 5
+   },
+   "DISTINCT": {
+    "casos": 10,
+    "validos": 10,
+    "detectados": 10
+   },
+   "COUNT(DISTINCT)": {
+    "casos": 5,
+    "validos": 5,
+    "detectados": 5
+   },
+   "ORDER BY grande": {
+    "casos": 15,
+    "validos": 15,
+    "detectados": 15
+   },
+   "ventana": {
+    "casos": 15,
+    "validos": 15,
+    "detectados": 15
+   },
+   "UNION / EXCEPT": {
+    "casos": 9,
+    "validos": 9,
+    "detectados": 9
+   },
+   "CTE / derivada": {
+    "casos": 8,
+    "validos": 8,
+    "detectados": 8
+   },
+   "subconsulta IN": {
+    "casos": 3,
+    "validos": 3,
+    "detectados": 3
+   },
+   "ROLLUP": {
+    "casos": 4,
+    "validos": 4,
+    "detectados": 4
+   },
+   "agregado ordenado": {
+    "casos": 4,
+    "validos": 4,
+    "detectados": 4
+   }
+  },
+  "controles_por_categoria": {
+   "GROUP BY chico": {
+    "casos": 11,
+    "marcados": 0,
+    "falsos_positivos": 0
+   },
+   "filtro + GROUP BY": {
+    "casos": 6,
+    "marcados": 0,
+    "falsos_positivos": 0
+   },
+   "DISTINCT chico": {
+    "casos": 6,
+    "marcados": 0,
+    "falsos_positivos": 0
+   },
+   "top-N": {
+    "casos": 6,
+    "marcados": 0,
+    "falsos_positivos": 0
+   },
+   "conteo": {
+    "casos": 6,
+    "marcados": 0,
+    "falsos_positivos": 0
+   },
+   "orden por indice": {
+    "casos": 5,
+    "marcados": 0,
+    "falsos_positivos": 0
+   }
+  },
+  "ventanas_con_spill": 400,
+  "ventanas_detectadas": 400,
+  "recall_por_ventana": 1.0,
+  "controles_que_derramaron": 0,
+  "fp_en_ventana_sin_spill": 0
+ },
+ "results": [
+  {
+   "cid": "G1-t1",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "qid": "ql_demo/9543975c4d5fab5f8949834f2bd848c00e5c951ee8ca04ed460166a5add1f723",
+   "query": "SELECT g_hi, COUNT(*) FROM ql_m07_t1 GROUP BY g_hi HAVING COUNT(*) > 4",
+   "meta": {
+    "template": "G1",
+    "table": "ql_m07_t1",
+    "rows": 150000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 601,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "G2-t4",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "qid": "ql_demo/cbbd73e06fa72188b382b7732c8fc7e9710a2a51e1a4d7604d65ed9389130e7c",
+   "query": "SELECT g_mid, SUM(amt) FROM ql_m07_t4 GROUP BY g_mid HAVING SUM(amt) > 9000",
+   "meta": {
+    "template": "G2",
+    "table": "ql_m07_t4",
+    "rows": 400000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 1493,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "G3-t0",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "qid": "ql_demo/48261023005ddfdabbe4b81098b22ff7eaea3888d7809573472b9c3245e95693",
+   "query": "SELECT s, COUNT(*) FROM ql_m07_t0 GROUP BY s HAVING COUNT(*) > 6",
+   "meta": {
+    "template": "G3",
+    "table": "ql_m07_t0",
+    "rows": 100000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 513,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "G4-t0",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "qid": "ql_demo/dcc5bd5c556bd644d160d5a0952ebbe880c8e9b3b5e78c362acbec3b670edbae",
+   "query": "SELECT g_hi, g_lo, MAX(amt) FROM ql_m07_t0 GROUP BY g_hi, g_lo HAVING MAX(amt) > 999",
+   "meta": {
+    "template": "G4",
+    "table": "ql_m07_t0",
+    "rows": 100000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 325,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "G5-t0",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "qid": "ql_demo/17e33762292306709e0683210f6a888c808d9f5f676006ee1a065934878de459",
+   "query": "SELECT d, g_mid, COUNT(*) FROM ql_m07_t0 GROUP BY d, g_mid HAVING COUNT(*) > 2",
+   "meta": {
+    "template": "G5",
+    "table": "ql_m07_t0",
+    "rows": 100000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 391,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "G7-t1",
+   "role": "positivo",
+   "category": "GROUP BY + ORDER BY",
+   "qid": "ql_demo/29d37d067ba2b661834fe59718162a227dc30f168ae6e3f3303217619800dbd4",
+   "query": "SELECT g_hi, COUNT(*) FROM ql_m07_t1 GROUP BY g_hi ORDER BY COUNT(*) DESC, g_hi LIMIT 5",
+   "meta": {
+    "template": "G7",
+    "table": "ql_m07_t1",
+    "rows": 150000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 535,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "D1-t0",
+   "role": "positivo",
+   "category": "DISTINCT",
+   "qid": "ql_demo/e2233ad76eff976feb8ec3b1dea9afe5feb41464e829ee724398c7a4414cbaf4",
+   "query": "SELECT COUNT(*) FROM (SELECT DISTINCT g_hi FROM ql_m07_t0) x",
+   "meta": {
+    "template": "D1",
+    "table": "ql_m07_t0",
+    "rows": 100000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 88,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "D2-t0",
+   "role": "positivo",
+   "category": "DISTINCT",
+   "qid": "ql_demo/f685ea0101290fd20d4b6af410916ade2920da884cfcb281fbf0e4c669fee4c2",
+   "query": "SELECT COUNT(*) FROM (SELECT DISTINCT s, g_lo FROM ql_m07_t0) x",
+   "meta": {
+    "template": "D2",
+    "table": "ql_m07_t0",
+    "rows": 100000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 525,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "D4-t0",
+   "role": "positivo",
+   "category": "COUNT(DISTINCT)",
+   "qid": "ql_demo/6758c54df45d7cc636ef4b43d3278f2e48b228bea1ce6c05dcd67f10a41867cb",
+   "query": "SELECT g_lo, COUNT(DISTINCT s) FROM ql_m07_t0 GROUP BY g_lo",
+   "meta": {
+    "template": "D4",
+    "table": "ql_m07_t0",
+    "rows": 100000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 12,
+    "calibracion_ms": 147,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "S1-t0",
+   "role": "positivo",
+   "category": "ORDER BY grande",
+   "qid": "ql_demo/052fc117a832336106cc571874213f5503148e70a64959d0c942b62df89483c8",
+   "query": "SELECT id FROM ql_m07_t0 ORDER BY g_hi, id LIMIT 1 OFFSET 50000",
+   "meta": {
+    "template": "S1",
+    "table": "ql_m07_t0",
+    "rows": 100000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 15,
+    "calibracion_ms": 64,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "S2-t0",
+   "role": "positivo",
+   "category": "ORDER BY grande",
+   "qid": "ql_demo/9a658370b939d9c4bbba2c36e9d0eed408108d526c9a13922b8b96e01dd591d5",
+   "query": "SELECT id FROM ql_m07_t0 ORDER BY s DESC, id LIMIT 1 OFFSET 50000",
+   "meta": {
+    "template": "S2",
+    "table": "ql_m07_t0",
+    "rows": 100000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 23,
+    "calibracion_ms": 98,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "S3-t0",
+   "role": "positivo",
+   "category": "ORDER BY grande",
+   "qid": "ql_demo/1c9b571642af8c561dc15e871540cd7ab60180b172df58acd46246628db6ad53",
+   "query": "SELECT id, amt FROM ql_m07_t0 ORDER BY amt, fk LIMIT 1 OFFSET 50000",
+   "meta": {
+    "template": "S3",
+    "table": "ql_m07_t0",
+    "rows": 100000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 16,
+    "calibracion_ms": 78,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "W1-t0",
+   "role": "positivo",
+   "category": "ventana",
+   "qid": "ql_demo/0b000c12ebd64d3a610756d5873e27363eac4fe5d9b25295612f6cadfa0b3f1f",
+   "query": "SELECT COUNT(*) FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY g_mid ORDER BY amt) AS rn FROM ql_m07_t0) x WHERE rn = 1",
+   "meta": {
+    "template": "W1",
+    "table": "ql_m07_t0",
+    "rows": 100000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 16,
+    "calibracion_ms": 366,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "W2-t0",
+   "role": "positivo",
+   "category": "ventana",
+   "qid": "ql_demo/007e07211fcc030fe2b46caeca3506ecee03d56b5108ea4474e942e82f59b6e2",
+   "query": "SELECT MAX(r) FROM (SELECT RANK() OVER (ORDER BY amt, id) AS r FROM ql_m07_t0) x",
+   "meta": {
+    "template": "W2",
+    "table": "ql_m07_t0",
+    "rows": 100000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 14,
+    "calibracion_ms": 122,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "W3-t0",
+   "role": "positivo",
+   "category": "ventana",
+   "qid": "ql_demo/5e4eddc834fd27b1d6b15044283f78589f07bfa7c492d5f1935cda92ddc5c96d",
+   "query": "SELECT COUNT(*) FROM (SELECT g_hi, SUM(amt) OVER (PARTITION BY g_hi) AS t FROM ql_m07_t0) x WHERE t > 1500",
+   "meta": {
+    "template": "W3",
+    "table": "ql_m07_t0",
+    "rows": 100000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 12,
+    "calibracion_ms": 225,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "U1-t1",
+   "role": "positivo",
+   "category": "UNION / EXCEPT",
+   "qid": "ql_demo/eb8499ee88fd7efe5b1cc42bd304b96e1a06c3e5c4c1c457f7786792be882f2f",
+   "query": "SELECT COUNT(*) FROM (SELECT g_hi FROM ql_m07_t1 UNION SELECT fk FROM ql_m07_t1) x",
+   "meta": {
+    "template": "U1",
+    "table": "ql_m07_t1",
+    "rows": 150000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 503,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "U2-t1",
+   "role": "positivo",
+   "category": "UNION / EXCEPT",
+   "qid": "ql_demo/e0a7b721242974b220ecd60482297105d5c25de6368a5889517aa354b2a29859",
+   "query": "SELECT COUNT(*) FROM (SELECT g_hi FROM ql_m07_t1 EXCEPT SELECT fk FROM ql_m07_t2) x",
+   "meta": {
+    "template": "U2",
+    "table": "ql_m07_t1",
+    "rows": 150000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 1258,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "C1-t0",
+   "role": "positivo",
+   "category": "CTE / derivada",
+   "qid": "ql_demo/97abb50a7d2ed349d1a8e37dd40e28b29db0b43828907dad4472707eccc0248b",
+   "query": "WITH c AS (SELECT g_hi, COUNT(*) AS n FROM ql_m07_t0 GROUP BY g_hi) SELECT COUNT(*) FROM c WHERE n > 2",
+   "meta": {
+    "template": "C1",
+    "table": "ql_m07_t0",
+    "rows": 100000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 74,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "C2-t0",
+   "role": "positivo",
+   "category": "CTE / derivada",
+   "qid": "ql_demo/a4acda87043a97d09ad02a790e87f7d3371b4314a49145903b31bfa959ee4626",
+   "query": "SELECT COUNT(*) FROM (SELECT fk, MIN(d) AS m FROM ql_m07_t0 GROUP BY fk) x WHERE m > '2027-01-01'",
+   "meta": {
+    "template": "C2",
+    "table": "ql_m07_t0",
+    "rows": 100000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 86,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "Q1-t2",
+   "role": "positivo",
+   "category": "subconsulta IN",
+   "qid": "ql_demo/d6eeb31bcf5314daf66f59e384231a06517c8fbf24e0c0f2858fd2aa3256de3e",
+   "query": "SELECT COUNT(*) FROM ql_m07_t2 WHERE g_hi IN (SELECT fk FROM ql_m07_t3 WHERE g_lo < 50)",
+   "meta": {
+    "template": "Q1",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 631,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "R1-t0",
+   "role": "positivo",
+   "category": "ROLLUP",
+   "qid": "ql_demo/8bf4f462da437a0748fbf3158d3001e0cc1406afff747a546bd2633316632385",
+   "query": "SELECT g_mid, g_lo, COUNT(*) FROM ql_m07_t0 GROUP BY g_mid, g_lo WITH ROLLUP HAVING COUNT(*) > 40",
+   "meta": {
+    "template": "R1",
+    "table": "ql_m07_t0",
+    "rows": 100000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 16,
+    "calibracion_ms": 86,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "A2-t0",
+   "role": "positivo",
+   "category": "agregado ordenado",
+   "qid": "ql_demo/919ab5c9a5dec816fcbdb893d739fe5f8100f124268141a2781ad9f9add7758f",
+   "query": "SELECT g_lo, LENGTH(GROUP_CONCAT(s ORDER BY s)) FROM ql_m07_t0 GROUP BY g_lo",
+   "meta": {
+    "template": "A2",
+    "table": "ql_m07_t0",
+    "rows": 100000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 12,
+    "calibracion_ms": 146,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "G1-t2",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "qid": "ql_demo/7463ec167a93a29169e98df6c2059271c3d59801294c392bf543a1f438c3d1b8",
+   "query": "SELECT g_hi, COUNT(*) FROM ql_m07_t2 GROUP BY g_hi HAVING COUNT(*) > 4",
+   "meta": {
+    "template": "G1",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 912,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "G2-t5",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "qid": "ql_demo/4092acff04b4f8d6ba52b9fc9fc5afe68e82292e2b58f48e497eaaeea1c6a057",
+   "query": "SELECT g_mid, SUM(amt) FROM ql_m07_t5 GROUP BY g_mid HAVING SUM(amt) > 9000",
+   "meta": {
+    "template": "G2",
+    "table": "ql_m07_t5",
+    "rows": 500000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 1979,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "G3-t1",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "qid": "ql_demo/9e7cac8face8b5c98c5d6d4dc06a7b5caf51c86ccc448a51c459b0d25faf3f66",
+   "query": "SELECT s, COUNT(*) FROM ql_m07_t1 GROUP BY s HAVING COUNT(*) > 6",
+   "meta": {
+    "template": "G3",
+    "table": "ql_m07_t1",
+    "rows": 150000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 990,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "G4-t1",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "qid": "ql_demo/6cd15fcc924f872b56e33f33bdcdf1a8258d4bb5aa144b5ebef25466ef2947d9",
+   "query": "SELECT g_hi, g_lo, MAX(amt) FROM ql_m07_t1 GROUP BY g_hi, g_lo HAVING MAX(amt) > 999",
+   "meta": {
+    "template": "G4",
+    "table": "ql_m07_t1",
+    "rows": 150000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 621,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "G5-t1",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "qid": "ql_demo/a1e5e71e79267f4c616dc42b12ed9e03c658e8c861725af206b466200c21ba11",
+   "query": "SELECT d, g_mid, COUNT(*) FROM ql_m07_t1 GROUP BY d, g_mid HAVING COUNT(*) > 2",
+   "meta": {
+    "template": "G5",
+    "table": "ql_m07_t1",
+    "rows": 150000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 545,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "G7-t2",
+   "role": "positivo",
+   "category": "GROUP BY + ORDER BY",
+   "qid": "ql_demo/1fa274f3c47842d2d8ca10cb700591a3bbba3440ecc47659f3b7342012ce73e1",
+   "query": "SELECT g_hi, COUNT(*) FROM ql_m07_t2 GROUP BY g_hi ORDER BY COUNT(*) DESC, g_hi LIMIT 5",
+   "meta": {
+    "template": "G7",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 526,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "D1-t1",
+   "role": "positivo",
+   "category": "DISTINCT",
+   "qid": "ql_demo/c94e608582206e23bdc5748da17df15bf8d54d95ebcc29d3284ad8d67a055e6d",
+   "query": "SELECT COUNT(*) FROM (SELECT DISTINCT g_hi FROM ql_m07_t1) x",
+   "meta": {
+    "template": "D1",
+    "table": "ql_m07_t1",
+    "rows": 150000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 240,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "D2-t1",
+   "role": "positivo",
+   "category": "DISTINCT",
+   "qid": "ql_demo/993e37aa8507a3f6eac932b1dc850f89168339f79a63a31a81af0801357ab4ab",
+   "query": "SELECT COUNT(*) FROM (SELECT DISTINCT s, g_lo FROM ql_m07_t1) x",
+   "meta": {
+    "template": "D2",
+    "table": "ql_m07_t1",
+    "rows": 150000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 817,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "D4-t1",
+   "role": "positivo",
+   "category": "COUNT(DISTINCT)",
+   "qid": "ql_demo/02ccf14ac0fbca19a4438639afabf7006ddc09953dedb0019cd2fbe27fc3e381",
+   "query": "SELECT g_lo, COUNT(DISTINCT s) FROM ql_m07_t1 GROUP BY g_lo",
+   "meta": {
+    "template": "D4",
+    "table": "ql_m07_t1",
+    "rows": 150000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 19,
+    "calibracion_ms": 240,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "S1-t1",
+   "role": "positivo",
+   "category": "ORDER BY grande",
+   "qid": "ql_demo/9c0a1e23a30d35437bb6953090960a373e2a60cbca2c1114aa9b831e665723cf",
+   "query": "SELECT id FROM ql_m07_t1 ORDER BY g_hi, id LIMIT 1 OFFSET 75000",
+   "meta": {
+    "template": "S1",
+    "table": "ql_m07_t1",
+    "rows": 150000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 25,
+    "calibracion_ms": 120,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "S2-t1",
+   "role": "positivo",
+   "category": "ORDER BY grande",
+   "qid": "ql_demo/5429df88c4d1c1ab71b74aeec480ffcb3f2f6253950f5db301ed0e649aa2e654",
+   "query": "SELECT id FROM ql_m07_t1 ORDER BY s DESC, id LIMIT 1 OFFSET 75000",
+   "meta": {
+    "template": "S2",
+    "table": "ql_m07_t1",
+    "rows": 150000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 33,
+    "calibracion_ms": 178,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "S3-t1",
+   "role": "positivo",
+   "category": "ORDER BY grande",
+   "qid": "ql_demo/509aee95744a0f2d098411589671e0d727afc0c03abb36375dcbd9de575d7142",
+   "query": "SELECT id, amt FROM ql_m07_t1 ORDER BY amt, fk LIMIT 1 OFFSET 75000",
+   "meta": {
+    "template": "S3",
+    "table": "ql_m07_t1",
+    "rows": 150000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 26,
+    "calibracion_ms": 150,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "W1-t1",
+   "role": "positivo",
+   "category": "ventana",
+   "qid": "ql_demo/fa0d1b8e1ce4e12f5947bb7d74efaa9bb8435a8fef60547afd79a7fa09f6eaab",
+   "query": "SELECT COUNT(*) FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY g_mid ORDER BY amt) AS rn FROM ql_m07_t1) x WHERE rn = 1",
+   "meta": {
+    "template": "W1",
+    "table": "ql_m07_t1",
+    "rows": 150000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 26,
+    "calibracion_ms": 547,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "W2-t1",
+   "role": "positivo",
+   "category": "ventana",
+   "qid": "ql_demo/86f1c4a56aa8d973b01ed69995b9f3117c9def8c4440798c2b90aa0dee9f1993",
+   "query": "SELECT MAX(r) FROM (SELECT RANK() OVER (ORDER BY amt, id) AS r FROM ql_m07_t1) x",
+   "meta": {
+    "template": "W2",
+    "table": "ql_m07_t1",
+    "rows": 150000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 24,
+    "calibracion_ms": 187,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "W3-t1",
+   "role": "positivo",
+   "category": "ventana",
+   "qid": "ql_demo/399813935fa78c92775c5d3923a467e94d058aa7dc0ba67d15b397dd8411140f",
+   "query": "SELECT COUNT(*) FROM (SELECT g_hi, SUM(amt) OVER (PARTITION BY g_hi) AS t FROM ql_m07_t1) x WHERE t > 1500",
+   "meta": {
+    "template": "W3",
+    "table": "ql_m07_t1",
+    "rows": 150000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 19,
+    "calibracion_ms": 361,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "U1-t2",
+   "role": "positivo",
+   "category": "UNION / EXCEPT",
+   "qid": "ql_demo/dd6368795a040eeea48cfbe5af46d9b581095f4f2db18e58db4234c1799decf5",
+   "query": "SELECT COUNT(*) FROM (SELECT g_hi FROM ql_m07_t2 UNION SELECT fk FROM ql_m07_t2) x",
+   "meta": {
+    "template": "U1",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 720,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "U2-t2",
+   "role": "positivo",
+   "category": "UNION / EXCEPT",
+   "qid": "ql_demo/65a9e7ce6c414c47b7e2788be8945ef79319957821ce5adf61ea548ed12faee4",
+   "query": "SELECT COUNT(*) FROM (SELECT g_hi FROM ql_m07_t2 EXCEPT SELECT fk FROM ql_m07_t3) x",
+   "meta": {
+    "template": "U2",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 2129,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "C1-t1",
+   "role": "positivo",
+   "category": "CTE / derivada",
+   "qid": "ql_demo/138cf1fe21de84d6e0f48a682cb9c7273c76b4d3bb3485e61bf54994267f2a5e",
+   "query": "WITH c AS (SELECT g_hi, COUNT(*) AS n FROM ql_m07_t1 GROUP BY g_hi) SELECT COUNT(*) FROM c WHERE n > 2",
+   "meta": {
+    "template": "C1",
+    "table": "ql_m07_t1",
+    "rows": 150000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 337,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "C2-t1",
+   "role": "positivo",
+   "category": "CTE / derivada",
+   "qid": "ql_demo/c914d8342531b690e2f779e82f1893f725658c5c4c24e285d91a2fcf52cfb04f",
+   "query": "SELECT COUNT(*) FROM (SELECT fk, MIN(d) AS m FROM ql_m07_t1 GROUP BY fk) x WHERE m > '2027-01-01'",
+   "meta": {
+    "template": "C2",
+    "table": "ql_m07_t1",
+    "rows": 150000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 312,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "Q1-t3",
+   "role": "positivo",
+   "category": "subconsulta IN",
+   "qid": "ql_demo/672256ba31c9a75d73833f801adbfe4f32059605a91eec41a6b1d89f3ffdcd41",
+   "query": "SELECT COUNT(*) FROM ql_m07_t3 WHERE g_hi IN (SELECT fk FROM ql_m07_t4 WHERE g_lo < 50)",
+   "meta": {
+    "template": "Q1",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 1039,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "R1-t1",
+   "role": "positivo",
+   "category": "ROLLUP",
+   "qid": "ql_demo/0775116acc34861596261e0eec461a29276483f69a58b080e2907654634f1255",
+   "query": "SELECT g_mid, g_lo, COUNT(*) FROM ql_m07_t1 GROUP BY g_mid, g_lo WITH ROLLUP HAVING COUNT(*) > 40",
+   "meta": {
+    "template": "R1",
+    "table": "ql_m07_t1",
+    "rows": 150000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 26,
+    "calibracion_ms": 191,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "A2-t1",
+   "role": "positivo",
+   "category": "agregado ordenado",
+   "qid": "ql_demo/2147d8116f7ec2a8239f8ccd522d3afd78ec81dbd43bfc4600acc1b2cfc71726",
+   "query": "SELECT g_lo, LENGTH(GROUP_CONCAT(s ORDER BY s)) FROM ql_m07_t1 GROUP BY g_lo",
+   "meta": {
+    "template": "A2",
+    "table": "ql_m07_t1",
+    "rows": 150000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 19,
+    "calibracion_ms": 246,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "G1-t3",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "qid": "ql_demo/206f9ce25ca64a6e52a09c2c5b500dc992e52c1016195f9c91236b75ae04969f",
+   "query": "SELECT g_hi, COUNT(*) FROM ql_m07_t3 GROUP BY g_hi HAVING COUNT(*) > 4",
+   "meta": {
+    "template": "G1",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 1649,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "G3-t2",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "qid": "ql_demo/605f4a87c114f4b1181815c53106ac54d26fc0f7dabd3d74a8a27634dab09ca0",
+   "query": "SELECT s, COUNT(*) FROM ql_m07_t2 GROUP BY s HAVING COUNT(*) > 6",
+   "meta": {
+    "template": "G3",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 1595,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "G4-t2",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "qid": "ql_demo/d56d35e27b03a7eefb05149fec0e0c9e05fbb8dde2f7ff8302c736db99b566fd",
+   "query": "SELECT g_hi, g_lo, MAX(amt) FROM ql_m07_t2 GROUP BY g_hi, g_lo HAVING MAX(amt) > 999",
+   "meta": {
+    "template": "G4",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 914,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "G5-t2",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "qid": "ql_demo/bd88e069efd863865732ffb0bb80ba6b03934307e5bf44b277ddbf9000191ca2",
+   "query": "SELECT d, g_mid, COUNT(*) FROM ql_m07_t2 GROUP BY d, g_mid HAVING COUNT(*) > 2",
+   "meta": {
+    "template": "G5",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 778,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "G7-t3",
+   "role": "positivo",
+   "category": "GROUP BY + ORDER BY",
+   "qid": "ql_demo/3455a07afcf7cff90fd83db96571beb764e5a1bc36a73b3e931c3c91e0a9a607",
+   "query": "SELECT g_hi, COUNT(*) FROM ql_m07_t3 GROUP BY g_hi ORDER BY COUNT(*) DESC, g_hi LIMIT 5",
+   "meta": {
+    "template": "G7",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 959,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "D1-t2",
+   "role": "positivo",
+   "category": "DISTINCT",
+   "qid": "ql_demo/99a51555b4d3c58c266f1ecb2b70c39a9ff554b02d91f03090e3ac0a35261574",
+   "query": "SELECT COUNT(*) FROM (SELECT DISTINCT g_hi FROM ql_m07_t2) x",
+   "meta": {
+    "template": "D1",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 356,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "D2-t2",
+   "role": "positivo",
+   "category": "DISTINCT",
+   "qid": "ql_demo/93cf357684719a423e5424f4c97b66769ae3d0e62c12d85744807d8d5e815601",
+   "query": "SELECT COUNT(*) FROM (SELECT DISTINCT s, g_lo FROM ql_m07_t2) x",
+   "meta": {
+    "template": "D2",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 1083,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "D4-t2",
+   "role": "positivo",
+   "category": "COUNT(DISTINCT)",
+   "qid": "ql_demo/aca75fa723ab945e607869387d73fce80978f1a3f2638c72b62a43328d373aa6",
+   "query": "SELECT g_lo, COUNT(DISTINCT s) FROM ql_m07_t2 GROUP BY g_lo",
+   "meta": {
+    "template": "D4",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 26,
+    "calibracion_ms": 396,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "S1-t2",
+   "role": "positivo",
+   "category": "ORDER BY grande",
+   "qid": "ql_demo/bdb41299e73e6a55fc2ecea77c80d4644845b349210203d1c673a77d0a61e64d",
+   "query": "SELECT id FROM ql_m07_t2 ORDER BY g_hi, id LIMIT 1 OFFSET 100000",
+   "meta": {
+    "template": "S1",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 33,
+    "calibracion_ms": 173,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "S2-t2",
+   "role": "positivo",
+   "category": "ORDER BY grande",
+   "qid": "ql_demo/c475c2964d0403457a0685f2ac894233f1f3ad531d3835dbbd939eb983b33227",
+   "query": "SELECT id FROM ql_m07_t2 ORDER BY s DESC, id LIMIT 1 OFFSET 100000",
+   "meta": {
+    "template": "S2",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 44,
+    "calibracion_ms": 239,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "S3-t2",
+   "role": "positivo",
+   "category": "ORDER BY grande",
+   "qid": "ql_demo/4119966ddc51290aa7162369ef8a400c35a6800b7a25c9ac392f49a1a11f6522",
+   "query": "SELECT id, amt FROM ql_m07_t2 ORDER BY amt, fk LIMIT 1 OFFSET 100000",
+   "meta": {
+    "template": "S3",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 35,
+    "calibracion_ms": 186,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "W1-t2",
+   "role": "positivo",
+   "category": "ventana",
+   "qid": "ql_demo/ff5557c91319b53460879d8f9207bde90bc2b8a9caa9ec037669dd04e7ce37e8",
+   "query": "SELECT COUNT(*) FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY g_mid ORDER BY amt) AS rn FROM ql_m07_t2) x WHERE rn = 1",
+   "meta": {
+    "template": "W1",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 35,
+    "calibracion_ms": 792,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "W2-t2",
+   "role": "positivo",
+   "category": "ventana",
+   "qid": "ql_demo/b077ed7f1b3014839cf6a411033b89cf928045cc09beb57e5c2a044a9b385f01",
+   "query": "SELECT MAX(r) FROM (SELECT RANK() OVER (ORDER BY amt, id) AS r FROM ql_m07_t2) x",
+   "meta": {
+    "template": "W2",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 31,
+    "calibracion_ms": 279,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "W3-t2",
+   "role": "positivo",
+   "category": "ventana",
+   "qid": "ql_demo/8e56997646fd9f7d83bc04283ca089630e705d6bc2e2f28af17155a423d5d43c",
+   "query": "SELECT COUNT(*) FROM (SELECT g_hi, SUM(amt) OVER (PARTITION BY g_hi) AS t FROM ql_m07_t2) x WHERE t > 1500",
+   "meta": {
+    "template": "W3",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 26,
+    "calibracion_ms": 492,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "U1-t3",
+   "role": "positivo",
+   "category": "UNION / EXCEPT",
+   "qid": "ql_demo/c1d42b0ffc4a3e2edc3fa5ab150fbd5926681e1612a524d2f2217a109ea9f763",
+   "query": "SELECT COUNT(*) FROM (SELECT g_hi FROM ql_m07_t3 UNION SELECT fk FROM ql_m07_t3) x",
+   "meta": {
+    "template": "U1",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 1255,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "U2-t3",
+   "role": "positivo",
+   "category": "UNION / EXCEPT",
+   "qid": "ql_demo/b445564d23f8d358c11d5d3e40dbeee75414f5269da71d990fdf873dad48764e",
+   "query": "SELECT COUNT(*) FROM (SELECT g_hi FROM ql_m07_t3 EXCEPT SELECT fk FROM ql_m07_t4) x",
+   "meta": {
+    "template": "U2",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 3267,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "C1-t2",
+   "role": "positivo",
+   "category": "CTE / derivada",
+   "qid": "ql_demo/7bbf621fe83791e63385cfe10b3529159dce8cd32290bc867c0d5f5274e17276",
+   "query": "WITH c AS (SELECT g_hi, COUNT(*) AS n FROM ql_m07_t2 GROUP BY g_hi) SELECT COUNT(*) FROM c WHERE n > 2",
+   "meta": {
+    "template": "C1",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 673,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "C2-t2",
+   "role": "positivo",
+   "category": "CTE / derivada",
+   "qid": "ql_demo/34938c36ba892557f703c65d22b4d8cb7b771c61e0e470bdc8fe63a581fe1f3e",
+   "query": "SELECT COUNT(*) FROM (SELECT fk, MIN(d) AS m FROM ql_m07_t2 GROUP BY fk) x WHERE m > '2027-01-01'",
+   "meta": {
+    "template": "C2",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 521,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "Q1-t4",
+   "role": "positivo",
+   "category": "subconsulta IN",
+   "qid": "ql_demo/77c16968fd7edd95440b5315f3d323c203815c04db0308a73c7cf7662bc9e079",
+   "query": "SELECT COUNT(*) FROM ql_m07_t4 WHERE g_hi IN (SELECT fk FROM ql_m07_t5 WHERE g_lo < 50)",
+   "meta": {
+    "template": "Q1",
+    "table": "ql_m07_t4",
+    "rows": 400000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 1284,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "R1-t2",
+   "role": "positivo",
+   "category": "ROLLUP",
+   "qid": "ql_demo/ce5b91c7cb563b38e9e58e1d99f5dadebc246fee3dbb7667b2f65fb430a5a6b9",
+   "query": "SELECT g_mid, g_lo, COUNT(*) FROM ql_m07_t2 GROUP BY g_mid, g_lo WITH ROLLUP HAVING COUNT(*) > 40",
+   "meta": {
+    "template": "R1",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 35,
+    "calibracion_ms": 207,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "A2-t2",
+   "role": "positivo",
+   "category": "agregado ordenado",
+   "qid": "ql_demo/ddb3bcefe59e4a76fa3de581ce49bafae82b579aec54a01b970916f3a548852c",
+   "query": "SELECT g_lo, LENGTH(GROUP_CONCAT(s ORDER BY s)) FROM ql_m07_t2 GROUP BY g_lo",
+   "meta": {
+    "template": "A2",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 26,
+    "calibracion_ms": 321,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "G1-t4",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "qid": "ql_demo/ce30975546dbb7548be266ffe3e22447e599917a77c8419f34095e4fbd28cf33",
+   "query": "SELECT g_hi, COUNT(*) FROM ql_m07_t4 GROUP BY g_hi HAVING COUNT(*) > 4",
+   "meta": {
+    "template": "G1",
+    "table": "ql_m07_t4",
+    "rows": 400000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 1955,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "G3-t3",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "qid": "ql_demo/6181c7856da2dba615dd75b22f2134819beaf58ed41ecec769a2456eb0c5e25e",
+   "query": "SELECT s, COUNT(*) FROM ql_m07_t3 GROUP BY s HAVING COUNT(*) > 6",
+   "meta": {
+    "template": "G3",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 2543,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "G4-t3",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "qid": "ql_demo/240af5cf6b1bbc6fa8ed8909ae6f24777f17a99b5a2c5112a11df987f6ad11c6",
+   "query": "SELECT g_hi, g_lo, MAX(amt) FROM ql_m07_t3 GROUP BY g_hi, g_lo HAVING MAX(amt) > 999",
+   "meta": {
+    "template": "G4",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 1328,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "G5-t3",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "qid": "ql_demo/8a812145fa6953fde83336853048b50153340baca93a84a2d26ba02f71f3d4c7",
+   "query": "SELECT d, g_mid, COUNT(*) FROM ql_m07_t3 GROUP BY d, g_mid HAVING COUNT(*) > 2",
+   "meta": {
+    "template": "G5",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 1347,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "G7-t4",
+   "role": "positivo",
+   "category": "GROUP BY + ORDER BY",
+   "qid": "ql_demo/8d50585970cb022bc86bc8c4646222e9e3e4ea0c91e6ff8313a6ae1883b3e8f7",
+   "query": "SELECT g_hi, COUNT(*) FROM ql_m07_t4 GROUP BY g_hi ORDER BY COUNT(*) DESC, g_hi LIMIT 5",
+   "meta": {
+    "template": "G7",
+    "table": "ql_m07_t4",
+    "rows": 400000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 1453,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "D1-t3",
+   "role": "positivo",
+   "category": "DISTINCT",
+   "qid": "ql_demo/791ad65b306def189830f6a577cff28de23bbafd22cc1ee5f58e50853c374a17",
+   "query": "SELECT COUNT(*) FROM (SELECT DISTINCT g_hi FROM ql_m07_t3) x",
+   "meta": {
+    "template": "D1",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 597,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "D2-t3",
+   "role": "positivo",
+   "category": "DISTINCT",
+   "qid": "ql_demo/2536378da11bffa4af4168305ee70a168064991aca22b04b24fe3c36d9a8c03a",
+   "query": "SELECT COUNT(*) FROM (SELECT DISTINCT s, g_lo FROM ql_m07_t3) x",
+   "meta": {
+    "template": "D2",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 1761,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "D4-t3",
+   "role": "positivo",
+   "category": "COUNT(DISTINCT)",
+   "qid": "ql_demo/1c804ad8d55e9bd26c51ca8dd6878646093de589e694d3441d06b9b21c6d5862",
+   "query": "SELECT g_lo, COUNT(DISTINCT s) FROM ql_m07_t3 GROUP BY g_lo",
+   "meta": {
+    "template": "D4",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 39,
+    "calibracion_ms": 505,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "S1-t3",
+   "role": "positivo",
+   "category": "ORDER BY grande",
+   "qid": "ql_demo/cb7753c31c31c55be5dc71ab8188affe2b088542d71b5102baf222c1a8e5fa6b",
+   "query": "SELECT id FROM ql_m07_t3 ORDER BY g_hi, id LIMIT 1 OFFSET 150000",
+   "meta": {
+    "template": "S1",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 49,
+    "calibracion_ms": 273,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "S2-t3",
+   "role": "positivo",
+   "category": "ORDER BY grande",
+   "qid": "ql_demo/f91106890f998cde39b712bbd9cabbdf92ed235b04c052fd9f535d6b36debab5",
+   "query": "SELECT id FROM ql_m07_t3 ORDER BY s DESC, id LIMIT 1 OFFSET 150000",
+   "meta": {
+    "template": "S2",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 67,
+    "calibracion_ms": 362,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "S3-t3",
+   "role": "positivo",
+   "category": "ORDER BY grande",
+   "qid": "ql_demo/df0e60397a6624035c808f57b6921cf434a479a27c0f62892da816a55ed3c33c",
+   "query": "SELECT id, amt FROM ql_m07_t3 ORDER BY amt, fk LIMIT 1 OFFSET 150000",
+   "meta": {
+    "template": "S3",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 52,
+    "calibracion_ms": 307,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "W1-t3",
+   "role": "positivo",
+   "category": "ventana",
+   "qid": "ql_demo/75062f2d1e0325cbd193610090e94270d21e6632ef845a92990a0f4f871aaf5e",
+   "query": "SELECT COUNT(*) FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY g_mid ORDER BY amt) AS rn FROM ql_m07_t3) x WHERE rn = 1",
+   "meta": {
+    "template": "W1",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 52,
+    "calibracion_ms": 1041,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "W2-t3",
+   "role": "positivo",
+   "category": "ventana",
+   "qid": "ql_demo/648880b3c838c48b226b644eb59a9cc740282f3877cc36acabe13ffb3567357c",
+   "query": "SELECT MAX(r) FROM (SELECT RANK() OVER (ORDER BY amt, id) AS r FROM ql_m07_t3) x",
+   "meta": {
+    "template": "W2",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 46,
+    "calibracion_ms": 371,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "W3-t3",
+   "role": "positivo",
+   "category": "ventana",
+   "qid": "ql_demo/e13f54e0fdb7a572ac14d7fec29535f85679347611b20f92ebd59dae578989ad",
+   "query": "SELECT COUNT(*) FROM (SELECT g_hi, SUM(amt) OVER (PARTITION BY g_hi) AS t FROM ql_m07_t3) x WHERE t > 1500",
+   "meta": {
+    "template": "W3",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 39,
+    "calibracion_ms": 718,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "U1-t4",
+   "role": "positivo",
+   "category": "UNION / EXCEPT",
+   "qid": "ql_demo/9d954337307ebf0745ca372320b1b85f6181c89659d126edcb36ae8fd99b0f50",
+   "query": "SELECT COUNT(*) FROM (SELECT g_hi FROM ql_m07_t4 UNION SELECT fk FROM ql_m07_t4) x",
+   "meta": {
+    "template": "U1",
+    "table": "ql_m07_t4",
+    "rows": 400000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 1689,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "U2-t4",
+   "role": "positivo",
+   "category": "UNION / EXCEPT",
+   "qid": "ql_demo/b105f3764c105a038ed2686860f79eee0f4135912392c831c698490c972b084d",
+   "query": "SELECT COUNT(*) FROM (SELECT g_hi FROM ql_m07_t4 EXCEPT SELECT fk FROM ql_m07_t5) x",
+   "meta": {
+    "template": "U2",
+    "table": "ql_m07_t4",
+    "rows": 400000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 4637,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "C1-t3",
+   "role": "positivo",
+   "category": "CTE / derivada",
+   "qid": "ql_demo/c74b7f584b80f494455b1f44fbcf039a4a4da6ed81033d5cc540a1b2751df295",
+   "query": "WITH c AS (SELECT g_hi, COUNT(*) AS n FROM ql_m07_t3 GROUP BY g_hi) SELECT COUNT(*) FROM c WHERE n > 2",
+   "meta": {
+    "template": "C1",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 1057,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "C2-t3",
+   "role": "positivo",
+   "category": "CTE / derivada",
+   "qid": "ql_demo/7684a75fd656ff86c53fb63e66dae89730fae817caef73930361d14c3af82656",
+   "query": "SELECT COUNT(*) FROM (SELECT fk, MIN(d) AS m FROM ql_m07_t3 GROUP BY fk) x WHERE m > '2027-01-01'",
+   "meta": {
+    "template": "C2",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 1008,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "R1-t3",
+   "role": "positivo",
+   "category": "ROLLUP",
+   "qid": "ql_demo/d66e7967588881e0b7f2fad69e11c41aab9bd6dbf18865403234e8685bb64f13",
+   "query": "SELECT g_mid, g_lo, COUNT(*) FROM ql_m07_t3 GROUP BY g_mid, g_lo WITH ROLLUP HAVING COUNT(*) > 40",
+   "meta": {
+    "template": "R1",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 52,
+    "calibracion_ms": 292,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "A2-t3",
+   "role": "positivo",
+   "category": "agregado ordenado",
+   "qid": "ql_demo/742d92d9c5933a49f53a0344cb3fb3ca197a202f628cfdc090bb611919064eb4",
+   "query": "SELECT g_lo, LENGTH(GROUP_CONCAT(s ORDER BY s)) FROM ql_m07_t3 GROUP BY g_lo",
+   "meta": {
+    "template": "A2",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 39,
+    "calibracion_ms": 467,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "G1-t5",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "qid": "ql_demo/e432044c6cb647c5ad8fbf81e47c8a9b3fd3216f22799cf46a756a485fd1ddd2",
+   "query": "SELECT g_hi, COUNT(*) FROM ql_m07_t5 GROUP BY g_hi HAVING COUNT(*) > 4",
+   "meta": {
+    "template": "G1",
+    "table": "ql_m07_t5",
+    "rows": 500000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 2046,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "G3-t4",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "qid": "ql_demo/c310db7720f6921fa6748ec9331e7fa8a1f2f22dfdd82490e5dbf14033530933",
+   "query": "SELECT s, COUNT(*) FROM ql_m07_t4 GROUP BY s HAVING COUNT(*) > 6",
+   "meta": {
+    "template": "G3",
+    "table": "ql_m07_t4",
+    "rows": 400000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 3636,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "G4-t4",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "qid": "ql_demo/19bfa0f0d289d4362f72cd343b2c0fa3b09e2000d16f457b5fd5e48eab22e158",
+   "query": "SELECT g_hi, g_lo, MAX(amt) FROM ql_m07_t4 GROUP BY g_hi, g_lo HAVING MAX(amt) > 999",
+   "meta": {
+    "template": "G4",
+    "table": "ql_m07_t4",
+    "rows": 400000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 1854,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "G5-t4",
+   "role": "positivo",
+   "category": "GROUP BY",
+   "qid": "ql_demo/662efbb02b486d6ca2621b037cdd8df7644638cff962cbe6a7fa7f0cde0163a4",
+   "query": "SELECT d, g_mid, COUNT(*) FROM ql_m07_t4 GROUP BY d, g_mid HAVING COUNT(*) > 2",
+   "meta": {
+    "template": "G5",
+    "table": "ql_m07_t4",
+    "rows": 400000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 1976,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "G7-t5",
+   "role": "positivo",
+   "category": "GROUP BY + ORDER BY",
+   "qid": "ql_demo/cc4116f47512c903f19d74e41fc1e6851789286e5323b6272d5a501a79f5dc0b",
+   "query": "SELECT g_hi, COUNT(*) FROM ql_m07_t5 GROUP BY g_hi ORDER BY COUNT(*) DESC, g_hi LIMIT 5",
+   "meta": {
+    "template": "G7",
+    "table": "ql_m07_t5",
+    "rows": 500000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 1814,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "D1-t4",
+   "role": "positivo",
+   "category": "DISTINCT",
+   "qid": "ql_demo/b8bc6bff4b4e9c4f3743cec2d4230ea489fc08ff7f214189e30c112665e0f66e",
+   "query": "SELECT COUNT(*) FROM (SELECT DISTINCT g_hi FROM ql_m07_t4) x",
+   "meta": {
+    "template": "D1",
+    "table": "ql_m07_t4",
+    "rows": 400000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 1001,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "D2-t4",
+   "role": "positivo",
+   "category": "DISTINCT",
+   "qid": "ql_demo/deacb9a2cfd39c03c47d58e70f2e50ff6a6d5420dee62024a0c24ea5372a9d7a",
+   "query": "SELECT COUNT(*) FROM (SELECT DISTINCT s, g_lo FROM ql_m07_t4) x",
+   "meta": {
+    "template": "D2",
+    "table": "ql_m07_t4",
+    "rows": 400000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 2548,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "D4-t4",
+   "role": "positivo",
+   "category": "COUNT(DISTINCT)",
+   "qid": "ql_demo/27ad06fcc2e5171beb87d784ac60f5097cfd33f3703eec9a5225dc06c0f89a41",
+   "query": "SELECT g_lo, COUNT(DISTINCT s) FROM ql_m07_t4 GROUP BY g_lo",
+   "meta": {
+    "template": "D4",
+    "table": "ql_m07_t4",
+    "rows": 400000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 51,
+    "calibracion_ms": 650,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "S1-t4",
+   "role": "positivo",
+   "category": "ORDER BY grande",
+   "qid": "ql_demo/205199f372257fd4a45b37393573ff8e7fd5999e5004294f46f1a82ab20a8d89",
+   "query": "SELECT id FROM ql_m07_t4 ORDER BY g_hi, id LIMIT 1 OFFSET 200000",
+   "meta": {
+    "template": "S1",
+    "table": "ql_m07_t4",
+    "rows": 400000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 65,
+    "calibracion_ms": 314,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "S2-t4",
+   "role": "positivo",
+   "category": "ORDER BY grande",
+   "qid": "ql_demo/9d3f37bcaff5b352f27c3b4e42ccd798c2eab5a070ccb33410f0054d6b9f0b44",
+   "query": "SELECT id FROM ql_m07_t4 ORDER BY s DESC, id LIMIT 1 OFFSET 200000",
+   "meta": {
+    "template": "S2",
+    "table": "ql_m07_t4",
+    "rows": 400000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 91,
+    "calibracion_ms": 462,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "S3-t4",
+   "role": "positivo",
+   "category": "ORDER BY grande",
+   "qid": "ql_demo/8074a17ada427cf2c862b8812bb190905b9005d9a369cc92f46311a072846190",
+   "query": "SELECT id, amt FROM ql_m07_t4 ORDER BY amt, fk LIMIT 1 OFFSET 200000",
+   "meta": {
+    "template": "S3",
+    "table": "ql_m07_t4",
+    "rows": 400000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 68,
+    "calibracion_ms": 370,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "W1-t4",
+   "role": "positivo",
+   "category": "ventana",
+   "qid": "ql_demo/66d9332c812a204c39e932c275ae4ee7c2a3ce49db86e36a76a0f547ef188ebc",
+   "query": "SELECT COUNT(*) FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY g_mid ORDER BY amt) AS rn FROM ql_m07_t4) x WHERE rn = 1",
+   "meta": {
+    "template": "W1",
+    "table": "ql_m07_t4",
+    "rows": 400000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 68,
+    "calibracion_ms": 1455,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "W2-t4",
+   "role": "positivo",
+   "category": "ventana",
+   "qid": "ql_demo/8f867d6a316d4ad4cace8f24bb92840d2ee8fd7eed3bcd5f26a8235444b56bdf",
+   "query": "SELECT MAX(r) FROM (SELECT RANK() OVER (ORDER BY amt, id) AS r FROM ql_m07_t4) x",
+   "meta": {
+    "template": "W2",
+    "table": "ql_m07_t4",
+    "rows": 400000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 60,
+    "calibracion_ms": 681,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "W3-t4",
+   "role": "positivo",
+   "category": "ventana",
+   "qid": "ql_demo/1eda22a70234ffbcf9ae00995a566a1b250580a6d65535aa410dcdd51dbbffdd",
+   "query": "SELECT COUNT(*) FROM (SELECT g_hi, SUM(amt) OVER (PARTITION BY g_hi) AS t FROM ql_m07_t4) x WHERE t > 1500",
+   "meta": {
+    "template": "W3",
+    "table": "ql_m07_t4",
+    "rows": 400000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 2,
+    "calibracion_merge_passes": 51,
+    "calibracion_ms": 1497,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "U1-t5",
+   "role": "positivo",
+   "category": "UNION / EXCEPT",
+   "qid": "ql_demo/70e9f882a2b15327a05887aa8c03b8892d6d56c4ed43bc98b8965703a544db1b",
+   "query": "SELECT COUNT(*) FROM (SELECT g_hi FROM ql_m07_t5 UNION SELECT fk FROM ql_m07_t5) x",
+   "meta": {
+    "template": "U1",
+    "table": "ql_m07_t5",
+    "rows": 500000,
+    "memoria": "SET SESSION sort_buffer_size = 32768",
+    "calibracion_spill": 1,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 2391,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "detected_cycle1": false,
+   "in_top_impact": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "valid": true,
+   "detected": true,
+   "detected_when_spilled": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K1-t0",
+   "role": "control",
+   "category": "GROUP BY chico",
+   "qid": "ql_demo/9efa974d111f39f3ea7138ebb833126942a72b26771082b9792e08bf2733d731",
+   "query": "SELECT g_lo, COUNT(*) FROM ql_m07_t0 GROUP BY g_lo",
+   "meta": {
+    "template": "K1",
+    "table": "ql_m07_t0",
+    "rows": 100000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 57,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K2-t0",
+   "role": "control",
+   "category": "filtro + GROUP BY",
+   "qid": "ql_demo/a5b3fed2a9558fa0fc376366d0766582833aa6f12df25d7e22009ad4b7faab1a",
+   "query": "SELECT g_lo, AVG(amt) FROM ql_m07_t0 WHERE id < 3000 GROUP BY g_lo",
+   "meta": {
+    "template": "K2",
+    "table": "ql_m07_t0",
+    "rows": 100000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 9,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K3-t0",
+   "role": "control",
+   "category": "DISTINCT chico",
+   "qid": "ql_demo/e7e15a933e72d97e3f26a1e7b3ae830577ce3b3ae1c8ce5a4660cb33e984b17e",
+   "query": "SELECT DISTINCT g_lo FROM ql_m07_t0 WHERE g_lo < 30",
+   "meta": {
+    "template": "K3",
+    "table": "ql_m07_t0",
+    "rows": 100000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 42,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K4-t0",
+   "role": "control",
+   "category": "top-N",
+   "qid": "ql_demo/f3b787741a194a1bc0f365719496beda74c7bad272a76c58d738b61ae40b64c3",
+   "query": "SELECT id FROM ql_m07_t0 WHERE id BETWEEN 1 AND 2000 ORDER BY amt LIMIT 10",
+   "meta": {
+    "template": "K4",
+    "table": "ql_m07_t0",
+    "rows": 100000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 8,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K5-t0",
+   "role": "control",
+   "category": "conteo",
+   "qid": "ql_demo/12232f64118e2c19a867d6c96997b8cea6148f66a62a1b75989cc7217ed83500",
+   "query": "SELECT COUNT(*) FROM ql_m07_t0 WHERE g_lo = 7",
+   "meta": {
+    "template": "K5",
+    "table": "ql_m07_t0",
+    "rows": 100000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 43,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K6-t0",
+   "role": "control",
+   "category": "orden por indice",
+   "qid": "ql_demo/b52a5c31d03bad76cf08f586fdcf4423deb8d153f64df12548f9c4190969f973",
+   "query": "SELECT id, amt FROM ql_m07_t0 ORDER BY id DESC LIMIT 20",
+   "meta": {
+    "template": "K6",
+    "table": "ql_m07_t0",
+    "rows": 100000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 6,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K7-t0",
+   "role": "control",
+   "category": "GROUP BY chico",
+   "qid": "ql_demo/3a9255fee569b408ab7dde3e3117da6b2401f03e9e090cf3a2efa4e67476f73e",
+   "query": "SELECT g_lo, MIN(d), MAX(d) FROM ql_m07_t0 GROUP BY g_lo",
+   "meta": {
+    "template": "K7",
+    "table": "ql_m07_t0",
+    "rows": 100000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 67,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K1-t1",
+   "role": "control",
+   "category": "GROUP BY chico",
+   "qid": "ql_demo/968ba8c9761ebfb95662d4de5f3930df8eaa2c6c407a9285f57f29b936997070",
+   "query": "SELECT g_lo, COUNT(*) FROM ql_m07_t1 GROUP BY g_lo",
+   "meta": {
+    "template": "K1",
+    "table": "ql_m07_t1",
+    "rows": 150000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 99,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K2-t1",
+   "role": "control",
+   "category": "filtro + GROUP BY",
+   "qid": "ql_demo/c3ff27fe8c44b09eff9a32289cf687f2abb2d3664f5a3ec29d9a8590786e2d79",
+   "query": "SELECT g_lo, AVG(amt) FROM ql_m07_t1 WHERE id < 3000 GROUP BY g_lo",
+   "meta": {
+    "template": "K2",
+    "table": "ql_m07_t1",
+    "rows": 150000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 8,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K3-t1",
+   "role": "control",
+   "category": "DISTINCT chico",
+   "qid": "ql_demo/0cc285e616cc7404b6e651244d2fa26dd2c7b909c36c58fed51e80711c857ada",
+   "query": "SELECT DISTINCT g_lo FROM ql_m07_t1 WHERE g_lo < 30",
+   "meta": {
+    "template": "K3",
+    "table": "ql_m07_t1",
+    "rows": 150000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 71,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K4-t1",
+   "role": "control",
+   "category": "top-N",
+   "qid": "ql_demo/6fadcf325c2cba557305eecf9cb239850b3fb33d14231e9a6988632e2af5e24a",
+   "query": "SELECT id FROM ql_m07_t1 WHERE id BETWEEN 1 AND 2000 ORDER BY amt LIMIT 10",
+   "meta": {
+    "template": "K4",
+    "table": "ql_m07_t1",
+    "rows": 150000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 7,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K5-t1",
+   "role": "control",
+   "category": "conteo",
+   "qid": "ql_demo/f2e6af5dbe87a865e6e1d7391275609a145e038bb25816d143203c945bcf88b7",
+   "query": "SELECT COUNT(*) FROM ql_m07_t1 WHERE g_lo = 7",
+   "meta": {
+    "template": "K5",
+    "table": "ql_m07_t1",
+    "rows": 150000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 70,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K6-t1",
+   "role": "control",
+   "category": "orden por indice",
+   "qid": "ql_demo/1c657858fbb57ed9e48d3ec9d60dba506d0b8ffd2620ce81c1e77f7ef8fa6eb9",
+   "query": "SELECT id, amt FROM ql_m07_t1 ORDER BY id DESC LIMIT 20",
+   "meta": {
+    "template": "K6",
+    "table": "ql_m07_t1",
+    "rows": 150000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 6,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K7-t1",
+   "role": "control",
+   "category": "GROUP BY chico",
+   "qid": "ql_demo/e4d4b432ca807961abc377d5a54b507d62f3d436ac92d9d56fcdf09494b86030",
+   "query": "SELECT g_lo, MIN(d), MAX(d) FROM ql_m07_t1 GROUP BY g_lo",
+   "meta": {
+    "template": "K7",
+    "table": "ql_m07_t1",
+    "rows": 150000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 103,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K1-t2",
+   "role": "control",
+   "category": "GROUP BY chico",
+   "qid": "ql_demo/355fd516ad349691053395dd5d51931f783159c426ac3fa0c775f1058ddf3951",
+   "query": "SELECT g_lo, COUNT(*) FROM ql_m07_t2 GROUP BY g_lo",
+   "meta": {
+    "template": "K1",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 107,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K2-t2",
+   "role": "control",
+   "category": "filtro + GROUP BY",
+   "qid": "ql_demo/e53447f2381e4e2c3218621a332ad584245ab4609ea36bfaf5d6705d43477f42",
+   "query": "SELECT g_lo, AVG(amt) FROM ql_m07_t2 WHERE id < 3000 GROUP BY g_lo",
+   "meta": {
+    "template": "K2",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 8,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K3-t2",
+   "role": "control",
+   "category": "DISTINCT chico",
+   "qid": "ql_demo/60499b4f1313d7d56ef190383f624e94c015219c65809593e1d8429bb98fdca9",
+   "query": "SELECT DISTINCT g_lo FROM ql_m07_t2 WHERE g_lo < 30",
+   "meta": {
+    "template": "K3",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 75,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K4-t2",
+   "role": "control",
+   "category": "top-N",
+   "qid": "ql_demo/c41b78d3b6d5262b9576e59caa641299cf3a56b141f5e1dd3bfaa36d5a7adfd2",
+   "query": "SELECT id FROM ql_m07_t2 WHERE id BETWEEN 1 AND 2000 ORDER BY amt LIMIT 10",
+   "meta": {
+    "template": "K4",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 6,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K5-t2",
+   "role": "control",
+   "category": "conteo",
+   "qid": "ql_demo/966da972dfa851a642f9c3bc5a3f4ba27122e4ccc6a9fe167f093c00f4389f17",
+   "query": "SELECT COUNT(*) FROM ql_m07_t2 WHERE g_lo = 7",
+   "meta": {
+    "template": "K5",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 68,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K6-t2",
+   "role": "control",
+   "category": "orden por indice",
+   "qid": "ql_demo/bbd9a01b8758e3fabf870371fa5dfe536d23e36e858900d9b885b912cdf65822",
+   "query": "SELECT id, amt FROM ql_m07_t2 ORDER BY id DESC LIMIT 20",
+   "meta": {
+    "template": "K6",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 6,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K7-t2",
+   "role": "control",
+   "category": "GROUP BY chico",
+   "qid": "ql_demo/3962acefaa7ed51ea8c30b0a9dcbd52d94abd6bcd594d676c3ddba9a74e7add6",
+   "query": "SELECT g_lo, MIN(d), MAX(d) FROM ql_m07_t2 GROUP BY g_lo",
+   "meta": {
+    "template": "K7",
+    "table": "ql_m07_t2",
+    "rows": 200000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 118,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K1-t3",
+   "role": "control",
+   "category": "GROUP BY chico",
+   "qid": "ql_demo/002b51eb2c3ea9046b05471812d15855f4b0eba7b7bccfde9a091db4b33faf19",
+   "query": "SELECT g_lo, COUNT(*) FROM ql_m07_t3 GROUP BY g_lo",
+   "meta": {
+    "template": "K1",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 131,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K2-t3",
+   "role": "control",
+   "category": "filtro + GROUP BY",
+   "qid": "ql_demo/d09003d82dfb0191b8f9ebdd6625bf779e77cd3d9a86b4dcaadeec3f1deee03e",
+   "query": "SELECT g_lo, AVG(amt) FROM ql_m07_t3 WHERE id < 3000 GROUP BY g_lo",
+   "meta": {
+    "template": "K2",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 7,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K3-t3",
+   "role": "control",
+   "category": "DISTINCT chico",
+   "qid": "ql_demo/bc3f07c6ae1d7f3cd9357537c9f1b0f4e1170cd97c0c8c9c2cc279e3e759e161",
+   "query": "SELECT DISTINCT g_lo FROM ql_m07_t3 WHERE g_lo < 30",
+   "meta": {
+    "template": "K3",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 84,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K4-t3",
+   "role": "control",
+   "category": "top-N",
+   "qid": "ql_demo/16287cc3335eef8d34b8f3992091cac2c35dc4368eb54b31359a13c244dd1450",
+   "query": "SELECT id FROM ql_m07_t3 WHERE id BETWEEN 1 AND 2000 ORDER BY amt LIMIT 10",
+   "meta": {
+    "template": "K4",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 7,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K5-t3",
+   "role": "control",
+   "category": "conteo",
+   "qid": "ql_demo/cdc15af27a64d6c02c1e30d1e97c88df2cfba6c24b6b6a9c51aa67ea6ee97de7",
+   "query": "SELECT COUNT(*) FROM ql_m07_t3 WHERE g_lo = 7",
+   "meta": {
+    "template": "K5",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 78,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K6-t3",
+   "role": "control",
+   "category": "orden por indice",
+   "qid": "ql_demo/0525aca860141d40716b11fe5d09db468dfef3087730cb3f8be10f2268f8d5ff",
+   "query": "SELECT id, amt FROM ql_m07_t3 ORDER BY id DESC LIMIT 20",
+   "meta": {
+    "template": "K6",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 5,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K7-t3",
+   "role": "control",
+   "category": "GROUP BY chico",
+   "qid": "ql_demo/3db5496ed1631308ba4b9629509f90814da51b59c4708f7710b16a3cf886d082",
+   "query": "SELECT g_lo, MIN(d), MAX(d) FROM ql_m07_t3 GROUP BY g_lo",
+   "meta": {
+    "template": "K7",
+    "table": "ql_m07_t3",
+    "rows": 300000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 152,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K1-t4",
+   "role": "control",
+   "category": "GROUP BY chico",
+   "qid": "ql_demo/9fb62e272d1493bfe652b836e883ab1e43667c2ae52928ba268f54af8aeb12b5",
+   "query": "SELECT g_lo, COUNT(*) FROM ql_m07_t4 GROUP BY g_lo",
+   "meta": {
+    "template": "K1",
+    "table": "ql_m07_t4",
+    "rows": 400000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 182,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K2-t4",
+   "role": "control",
+   "category": "filtro + GROUP BY",
+   "qid": "ql_demo/5865b89a10fb9771f83688a32a6c8f66bc507fa445cf287422fa6c05460536f8",
+   "query": "SELECT g_lo, AVG(amt) FROM ql_m07_t4 WHERE id < 3000 GROUP BY g_lo",
+   "meta": {
+    "template": "K2",
+    "table": "ql_m07_t4",
+    "rows": 400000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 8,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K3-t4",
+   "role": "control",
+   "category": "DISTINCT chico",
+   "qid": "ql_demo/43c9032a760c9522ce67d659d460c455ad013564ad6037552346c1cfbf5a43c0",
+   "query": "SELECT DISTINCT g_lo FROM ql_m07_t4 WHERE g_lo < 30",
+   "meta": {
+    "template": "K3",
+    "table": "ql_m07_t4",
+    "rows": 400000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 111,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K4-t4",
+   "role": "control",
+   "category": "top-N",
+   "qid": "ql_demo/982bec41554b0a5bfb6e0b06d6cdd90fc33223fd94d9a5e9b5ab8c12c5ba9226",
+   "query": "SELECT id FROM ql_m07_t4 WHERE id BETWEEN 1 AND 2000 ORDER BY amt LIMIT 10",
+   "meta": {
+    "template": "K4",
+    "table": "ql_m07_t4",
+    "rows": 400000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 7,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K5-t4",
+   "role": "control",
+   "category": "conteo",
+   "qid": "ql_demo/2a4e08c490522cfd4412f7fe75fe907dc3f2102406192623472a62806685b9b2",
+   "query": "SELECT COUNT(*) FROM ql_m07_t4 WHERE g_lo = 7",
+   "meta": {
+    "template": "K5",
+    "table": "ql_m07_t4",
+    "rows": 400000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 100,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K6-t4",
+   "role": "control",
+   "category": "orden por indice",
+   "qid": "ql_demo/02e1095bdb6f778d08aea4631a7aa2374538b9ee6576331aa4e359d55ef136a1",
+   "query": "SELECT id, amt FROM ql_m07_t4 ORDER BY id DESC LIMIT 20",
+   "meta": {
+    "template": "K6",
+    "table": "ql_m07_t4",
+    "rows": 400000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 6,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K7-t4",
+   "role": "control",
+   "category": "GROUP BY chico",
+   "qid": "ql_demo/24ff806cbd12dfe60ca3074cc9163e458a6fc3ce885a79c2ca1f1cba4823af41",
+   "query": "SELECT g_lo, MIN(d), MAX(d) FROM ql_m07_t4 GROUP BY g_lo",
+   "meta": {
+    "template": "K7",
+    "table": "ql_m07_t4",
+    "rows": 400000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 199,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K1-t5",
+   "role": "control",
+   "category": "GROUP BY chico",
+   "qid": "ql_demo/48a2845a416aa8a2371206c483c31c6a55ce722127b910712f5169617e245db8",
+   "query": "SELECT g_lo, COUNT(*) FROM ql_m07_t5 GROUP BY g_lo",
+   "meta": {
+    "template": "K1",
+    "table": "ql_m07_t5",
+    "rows": 500000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 202,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K2-t5",
+   "role": "control",
+   "category": "filtro + GROUP BY",
+   "qid": "ql_demo/9adc0438c27130c86af5c08b3bd896a98f0cc05e8fa6f3425d8c4235365a0022",
+   "query": "SELECT g_lo, AVG(amt) FROM ql_m07_t5 WHERE id < 3000 GROUP BY g_lo",
+   "meta": {
+    "template": "K2",
+    "table": "ql_m07_t5",
+    "rows": 500000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 8,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K3-t5",
+   "role": "control",
+   "category": "DISTINCT chico",
+   "qid": "ql_demo/1ffd3b39749a8c5d263d2ba3bff84708767a8f5cba846604196659118e7a3944",
+   "query": "SELECT DISTINCT g_lo FROM ql_m07_t5 WHERE g_lo < 30",
+   "meta": {
+    "template": "K3",
+    "table": "ql_m07_t5",
+    "rows": 500000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 136,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K4-t5",
+   "role": "control",
+   "category": "top-N",
+   "qid": "ql_demo/590361dcef4bc58115f2fa3ed13c30a774a7cf26f92c57295633aa28c603c8d7",
+   "query": "SELECT id FROM ql_m07_t5 WHERE id BETWEEN 1 AND 2000 ORDER BY amt LIMIT 10",
+   "meta": {
+    "template": "K4",
+    "table": "ql_m07_t5",
+    "rows": 500000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 6,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  },
+  {
+   "cid": "K5-t5",
+   "role": "control",
+   "category": "conteo",
+   "qid": "ql_demo/8861b7401d1b74cd7f60c7d93d015454c7ce0164304d9e81951da7e0e7d060f2",
+   "query": "SELECT COUNT(*) FROM ql_m07_t5 WHERE g_lo = 7",
+   "meta": {
+    "template": "K5",
+    "table": "ql_m07_t5",
+    "rows": 500000,
+    "memoria": "SET SESSION sort_buffer_size = DEFAULT",
+    "calibracion_spill": 0,
+    "calibracion_merge_passes": 0,
+    "calibracion_ms": 127,
+    "calibracion_error": null
+   },
+   "executed_windows": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "spilled_windows": [],
+   "detected_windows": [],
+   "detected_cycle1": false,
+   "in_top_impact": [],
+   "valid": false,
+   "detected": false,
+   "detected_when_spilled": [],
+   "false_windows": [],
+   "fp": false
+  }
+ ]
+}
