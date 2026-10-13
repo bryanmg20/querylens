@@ -4,7 +4,7 @@ import re
 
 import pytest
 
-from models.snapshot import (
+from querylens_contract.snapshot import (
     CanonicExplain,
     CanonicalPlan,
     SnapshotPayload,

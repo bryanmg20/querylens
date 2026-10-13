@@ -18,7 +18,7 @@ from collectors.postgres.queries import (
 )
 from collectors.postgres.queries import FOREIGN_KEYS_QUERY as PG_FOREIGN_KEYS_QUERY
 from collectors.postgres.queries import STATEMENTS_QUERY as PG_STATEMENTS_QUERY
-from models.snapshot import ForeignKeyRow
+from querylens_contract.snapshot import ForeignKeyRow
 
 pytestmark = pytest.mark.contract
 

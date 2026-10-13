@@ -5,7 +5,7 @@ from collectors.base import DB_Engine_Collector
 from collectors.factory import Engine_Factory
 from collectors.mysql.collector import Mysql_Collector
 from collectors.postgres.collector import Postgres_Collector
-from models.snapshot import SnapshotPayload
+from querylens_contract.snapshot import SnapshotPayload
 from orchestrator import Orchestrator
 from stages.auto_explain import AutoExplainStage
 from stages.candidates import CandidatesStage

@@ -161,7 +161,7 @@ def test_pg_every_operation_type_reaches_physical_operations(
     root_type, children, expected_type
 ):
     """Todo nodo contabilizado en LogicalShape debe llegar tambien a
-    physical_operations, que es lo que declara el Literal de models/snapshot.py."""
+    physical_operations, que es lo que declara el Literal de querylens_contract/snapshot.py."""
     stats = {"query_explain": [{"query_id": 1, "plan": _pg_plan_tree(root_type, children)}]}
     EXPLAIN_NORMALIZERS["postgres"]().normalize(stats)
     plan = stats["canonic_explains"][0]["canonical_plan"]

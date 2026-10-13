@@ -3,7 +3,7 @@ import re
 
 from sqlglot import exp
 
-from models.snapshot import MAX_STATEMENT_TEXT_CHARS
+from querylens_contract.snapshot import MAX_STATEMENT_TEXT_CHARS
 from models.stats import Stats
 
 # Nodos de sqlglot que cargan un dato real de la query. HexString/BitString/

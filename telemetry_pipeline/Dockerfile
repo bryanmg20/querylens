@@ -18,6 +18,12 @@ RUN apt-get update \
     && apt-get purge -y --auto-remove build-essential libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Contrato del snapshot (querylens_contract): viene del contexto adicional
+# "contract" de docker-compose, porque vive fuera de esta carpeta y lo comparte
+# con detection_engine.
+COPY --from=contract . /contract
+RUN pip install --no-cache-dir /contract
+
 COPY . .
 
 # Los logs del logger (rotacion 5 MB x 3) caen en /app/logs, con volumen

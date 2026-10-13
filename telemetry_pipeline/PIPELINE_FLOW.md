@@ -112,7 +112,7 @@ run_engine(dialect, connection_factory, db_id)                  main.py
   │                                          run_engine lo pisa con el
   │                                          database_identifier de la fila)
   │
-  ├─ SnapshotPayload.from_snapshot(payload)                  models/snapshot.py
+  ├─ SnapshotPayload.from_snapshot(payload)                  ../contract/querylens_contract/snapshot.py
   │     valida el dict contra los modelos pydantic (11 secciones)
   │     ValidationError → logger.error + return None (motor omitido, no aborta)
   │
@@ -236,8 +236,8 @@ Para verlo en el sandbox: `ql_sandbox/scripts/postgres/simulate_health_postgres.
 | **Registry** | `EXPLAIN_NORMALIZERS = {"postgres": ..., "mysql": ...}` mapea dialecto→normalizador; `ExplainStage` hace lookup por `source_dialect`. | `stages/explain_normalizer.py:296`, `stages/explain.py:11` |
 | **Pipeline** | `Orchestrator` encadena stages en orden fijo; cada stage implementa `execute`. Composición lineal + coordinador (director). | `orchestrator.py:8` |
 | **Template Method** | Misma firma de etapa, pero el esqueleto `CandidatesStage`/`NormalizeStage` delega hooks `preprocess_statements`, `mark_explainable` y `normalize_engine_artifacts` a la estrategia del motor. | `stages/candidates.py:7`, `stages/normalize.py:20` |
-| **Facade** | `SnapshotPayload.from_snapshot` / `to_json` ocultan validación y serialización pydantic a `main.py`. | `models/snapshot.py:157` |
-| **DTO** | Los 15 modelos pydantic son el contrato de transporte entre el pipeline y la cola; `to_json` es la representación wire. | `models/snapshot.py` |
+| **Facade** | `SnapshotPayload.from_snapshot` / `to_json` ocultan validación y serialización pydantic a `main.py`. | `../contract/querylens_contract/snapshot.py` |
+| **DTO** | Los 15 modelos pydantic son el contrato de transporte entre el pipeline y la cola; `to_json` es la representación wire. | `../contract/querylens_contract/snapshot.py` |
 | **Command (variante)** | Cada `Stage.execute(stats, conn)` es un comando autocontenido y comprobable de forma aislada. | `stages/*.py` |
 
 ## Patrones estructurales de alto nivel

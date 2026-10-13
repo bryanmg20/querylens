@@ -29,8 +29,10 @@ from pathlib import Path
 
 PIPELINE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PIPELINE))
+# querylens_contract vive en contract/ (raiz del repo), fuera de PIPELINE.
+sys.path.insert(0, str(PIPELINE.parent / "contract"))
 
-from models.snapshot import SnapshotPayload
+from querylens_contract.snapshot import SnapshotPayload
 
 GOLDEN_DIR = PIPELINE / "tests" / "golden"
 REPO_ROOT = PIPELINE.parent

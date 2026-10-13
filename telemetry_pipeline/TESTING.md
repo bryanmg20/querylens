@@ -116,7 +116,7 @@ tests/
 
 ## Cobertura de referencia
 
-- **Contrato (models/snapshot.py)**: cada snapshot de motor debe validar, los `query_id` deben llevar el tipo del motor (str en MySQL, int en Postgres), y el round-trip `from_snapshot → to_json → model_validate_json` debe preservar el payload.
+- **Contrato (contract/querylens_contract/snapshot.py)**: cada snapshot de motor debe validar, los `query_id` deben llevar el tipo del motor (str en MySQL, int en Postgres), y el round-trip `from_snapshot → to_json → model_validate_json` debe preservar el payload.
 - **Unitarios**: cada stage de selección (top 10, inestables, disk spill, dedupe, `init_ready_for_explain`), canonic de queries con sqlglot y su fallback, normalización de locks/pids/timestamps, limpieza de predicados MySQL, `EXPLAIN` con schema context, conteo de shapes de los normalizadores de plan, resolución de targets desde `registered_databases` (descifrado, mapeo de engine, filas rotas, aislamiento por target, `dispose()` de los engines y qué hace `main()` cuando no hay nada registrado), y el ciclo del daemon (cadencia desde env, espera anclada al inicio del ciclo sin ticks atrasados, backoff y log por transición).
 - **Arquitectura**: estrategias de collector sobre la base común, Factory, registry de normalizadores, firma única `execute` por stage, composición del Orchestrator, y el contrato del Facade `SnapshotPayload`.
 - **Integración**: un snapshot consumible por motor en PGMQ, sin claves transitorias en el payload, y aislamiento de motores caídos (un target que no conecta se loguea y el siguiente sigue encolando).

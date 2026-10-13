@@ -9,7 +9,7 @@ from enqueue import send_to_queue
 from health import writer as health_writer
 from health.report import HealthReport, is_recorded, mark_recorded
 from logger import get_logger
-from models.snapshot import SnapshotPayload
+from querylens_contract.snapshot import SnapshotPayload
 from orchestrator import Orchestrator
 from stages.enrich import DB_ID
 

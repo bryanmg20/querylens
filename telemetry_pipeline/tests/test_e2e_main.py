@@ -24,7 +24,7 @@ from sqlalchemy import text
 import main
 import main_sandbox as sandbox
 from config.connections import get_connection_querylens_db
-from models.snapshot import SnapshotPayload
+from querylens_contract.snapshot import SnapshotPayload
 
 pytestmark = pytest.mark.integration
 

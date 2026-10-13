@@ -14,7 +14,7 @@ from sqlalchemy.exc import ProgrammingError
 
 import main
 from config import registered
-from models.snapshot import SnapshotPayload
+from querylens_contract.snapshot import SnapshotPayload
 
 pytestmark = pytest.mark.unit
 
