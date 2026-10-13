@@ -1,0 +1,1624 @@
+{
+  "generated_at": "2026-10-12T14:17:08",
+  "elapsed_s": 104.7,
+  "result": {
+    "seed": 20261012,
+    "reps": 3,
+    "rows": [
+      {
+        "rep": 1,
+        "engine": "postgres",
+        "shape": "f1",
+        "kind": "frecuente",
+        "query_id": "-4478234655584960712",
+        "ref_literal": 0,
+        "ref_ms": 83.9,
+        "ref": [
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "full_table_scan",
+            null
+          ]
+        ],
+        "candidate": true,
+        "c_source": "auto_explain",
+        "c_match": true,
+        "c_sig": [
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "full_table_scan",
+            null
+          ]
+        ],
+        "generic_source": "generic",
+        "generic_match": false,
+        "generic_sig": [
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 1,
+        "engine": "mysql",
+        "shape": "f1",
+        "kind": "frecuente",
+        "query_id": "ql_demo/436ff93d577ebf0fbefdb94e4afa242e108acefb60a5d370475deead74b1055d",
+        "ref_literal": 0,
+        "ref_ms": 1923.7,
+        "ref": [
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "ref_tree": [
+          "-> Aggregate: count(0), max(length(ql_skew.note))  (cost=102629 rows=1) (actual time=1905..1905 rows=1 loops=1)",
+          "    -> Index lookup on ql_skew using ql_skew_status (status=0)  (cost=52816 rows=498125) (actual time=0.452..1857 rows=969939 loops=1)"
+        ],
+        "sample_text": "SELECT count(*) AS f1_cnt, max(length(note)) FROM ql_skew WHERE status = 0",
+        "candidate": true,
+        "sample_has_ref_literal": true,
+        "c_source": "sample",
+        "c_match": true,
+        "c_sig": [
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 1,
+        "engine": "postgres",
+        "shape": "f2",
+        "kind": "frecuente",
+        "query_id": "-8967515257149731770",
+        "ref_literal": 0,
+        "ref_ms": 170.4,
+        "ref": [
+          [
+            "scan",
+            "full_table_scan",
+            null
+          ]
+        ],
+        "candidate": true,
+        "c_source": "auto_explain",
+        "c_match": true,
+        "c_sig": [
+          [
+            "scan",
+            "full_table_scan",
+            null
+          ]
+        ],
+        "generic_source": "generic",
+        "generic_match": false,
+        "generic_sig": [
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 1,
+        "engine": "mysql",
+        "shape": "f2",
+        "kind": "frecuente",
+        "query_id": "ql_demo/6d5d67f16ef67d1d2578c57273b4ab8dd8173064325d4866cdb33d0a89355c8e",
+        "ref_literal": 0,
+        "ref_ms": 2061.2,
+        "ref": [
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "ref_tree": [
+          "-> Filter: (ql_skew.note like 'n%')  (cost=8538 rows=55342) (actual time=0.742..1922 rows=194120 loops=1)",
+          "    -> Index lookup on ql_skew using ql_skew_status (status=0)  (cost=8538 rows=498125) (actual time=0.739..1870 rows=969939 loops=1)"
+        ],
+        "sample_text": "SELECT id AS f2_id FROM ql_skew WHERE status = 0 AND note LIKE 'n%'",
+        "candidate": true,
+        "sample_has_ref_literal": true,
+        "c_source": "sample",
+        "c_match": true,
+        "c_sig": [
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 1,
+        "engine": "postgres",
+        "shape": "f3",
+        "kind": "frecuente",
+        "query_id": "-7437370554530300852",
+        "ref_literal": 0,
+        "ref_ms": 60.6,
+        "ref": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "full_table_scan",
+            null
+          ]
+        ],
+        "candidate": true,
+        "c_source": "auto_explain",
+        "c_match": true,
+        "c_sig": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "full_table_scan",
+            null
+          ]
+        ],
+        "generic_source": "generic",
+        "generic_match": false,
+        "generic_sig": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 1,
+        "engine": "mysql",
+        "shape": "f3",
+        "kind": "frecuente",
+        "query_id": "ql_demo/25101bb11ff73269a7bc85496d8bd220c86c219e3d327dbef2a874783956445a",
+        "ref_literal": 0,
+        "ref_ms": 2144.7,
+        "ref": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "ref_tree": [
+          "-> Limit: 10 row(s)  (cost=52816 rows=10) (actual time=2081..2081 rows=10 loops=1)",
+          "    -> Sort: ql_skew.note DESC, limit input to 10 row(s) per chunk  (cost=52816 rows=498125) (actual time=2081..2081 rows=10 loops=1)",
+          "        -> Index lookup on ql_skew using ql_skew_status (status=0)  (cost=52816 rows=498125) (actual time=0.569..1909 rows=969939 loops=1)"
+        ],
+        "sample_text": "SELECT note AS f3_note FROM ql_skew WHERE status = 0 ORDER BY note DESC LIMIT 10",
+        "candidate": true,
+        "sample_has_ref_literal": true,
+        "c_source": "sample",
+        "c_match": true,
+        "c_sig": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 1,
+        "engine": "postgres",
+        "shape": "r1",
+        "kind": "rara",
+        "query_id": "5800110395483784752",
+        "ref_literal": 163,
+        "ref_ms": 1.9,
+        "ref": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "candidate": true,
+        "c_source": "generic",
+        "c_match": true,
+        "c_sig": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "generic_source": "generic",
+        "generic_match": true,
+        "generic_sig": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 1,
+        "engine": "mysql",
+        "shape": "r1",
+        "kind": "rara",
+        "query_id": "ql_demo/6985bb3e108981e7f30df2d2540f93b3f11ca31a08caf8914649cdae901d888d",
+        "ref_literal": 267,
+        "ref_ms": 6.5,
+        "ref": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "ref_tree": [
+          "-> Index lookup on ql_skew using ql_skew_status (status=267)  (cost=34.3 rows=98) (actual time=0.078..0.393 rows=98 loops=1)"
+        ],
+        "sample_text": "SELECT id AS r1_id, note FROM ql_skew WHERE status = 79 ORDER BY id",
+        "candidate": true,
+        "sample_has_ref_literal": false,
+        "c_source": "sample",
+        "c_match": true,
+        "c_sig": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 1,
+        "engine": "postgres",
+        "shape": "r2",
+        "kind": "rara",
+        "query_id": "-9016752000062996855",
+        "ref_literal": 245,
+        "ref_ms": 1.8,
+        "ref": [
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "candidate": true,
+        "c_source": "generic",
+        "c_match": true,
+        "c_sig": [
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "generic_source": "generic",
+        "generic_match": true,
+        "generic_sig": [
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 1,
+        "engine": "mysql",
+        "shape": "r2",
+        "kind": "rara",
+        "query_id": "ql_demo/68b6afdb125f3ed8305b6db7503a5262813130f0bedf4247b4b7cf7c4f34dad4",
+        "ref_literal": 87,
+        "ref_ms": 1.4,
+        "ref": [
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "ref_tree": [
+          "-> Aggregate: count(0)  (cost=32 rows=1) (actual time=0.0837..0.0838 rows=1 loops=1)",
+          "    -> Filter: ((ql_skew.`status` = 87) and (ql_skew.id > 1000))  (cost=21.7 rows=103) (actual time=0.0418..0.0746 rows=103 loops=1)",
+          "        -> Covering index range scan on ql_skew using ql_skew_status over (status = 87 AND 1000 < id)  (cost=21.7 rows=103) (actual time=0.0395..0.0565 rows=103 loops=1)"
+        ],
+        "sample_text": "SELECT count(*) AS r2_cnt FROM ql_skew WHERE status = 87 AND id > 1000",
+        "candidate": true,
+        "sample_has_ref_literal": true,
+        "c_source": "sample",
+        "c_match": true,
+        "c_sig": [
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 1,
+        "engine": "postgres",
+        "shape": "r3",
+        "kind": "rara",
+        "query_id": "-8889573447757504136",
+        "ref_literal": 59,
+        "ref_ms": 2.6,
+        "ref": [
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "candidate": true,
+        "c_source": "generic",
+        "c_match": true,
+        "c_sig": [
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "generic_source": "generic",
+        "generic_match": true,
+        "generic_sig": [
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 1,
+        "engine": "mysql",
+        "shape": "r3",
+        "kind": "rara",
+        "query_id": "ql_demo/a4645a80a8259743bbf57c9327ff41804f2268a730e650b2c8310782cbb80208",
+        "ref_literal": 237,
+        "ref_ms": 2.0,
+        "ref": [
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "ref_tree": [
+          "-> Aggregate: max(ql_skew.note)  (cost=118 rows=1) (actual time=0.843..0.843 rows=1 loops=1)",
+          "    -> Index range scan on ql_skew using ql_skew_status over (status = 237) OR (status = 297), with index condition: ((ql_skew.`status` = 237) or (ql_skew.`status` = 297))  (cost=96.4 rows=213) (actual time=0.0787..0.82 rows=213 loops=1)"
+        ],
+        "sample_text": "SELECT max(note) AS r3_max FROM ql_skew WHERE status = 237 OR status = 297",
+        "candidate": true,
+        "sample_has_ref_literal": true,
+        "c_source": "sample",
+        "c_match": true,
+        "c_sig": [
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 2,
+        "engine": "postgres",
+        "shape": "f1",
+        "kind": "frecuente",
+        "query_id": "-4478234655584960712",
+        "ref_literal": 0,
+        "ref_ms": 68.9,
+        "ref": [
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "full_table_scan",
+            null
+          ]
+        ],
+        "candidate": true,
+        "c_source": "auto_explain",
+        "c_match": true,
+        "c_sig": [
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "full_table_scan",
+            null
+          ]
+        ],
+        "generic_source": "generic",
+        "generic_match": false,
+        "generic_sig": [
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 2,
+        "engine": "mysql",
+        "shape": "f1",
+        "kind": "frecuente",
+        "query_id": "ql_demo/436ff93d577ebf0fbefdb94e4afa242e108acefb60a5d370475deead74b1055d",
+        "ref_literal": 0,
+        "ref_ms": 1980.4,
+        "ref": [
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "ref_tree": [
+          "-> Aggregate: count(0), max(length(ql_skew.note))  (cost=102629 rows=1) (actual time=1949..1949 rows=1 loops=1)",
+          "    -> Index lookup on ql_skew using ql_skew_status (status=0)  (cost=52816 rows=498125) (actual time=0.459..1901 rows=969939 loops=1)"
+        ],
+        "sample_text": "SELECT count(*) AS f1_cnt, max(length(note)) FROM ql_skew WHERE status = 0",
+        "candidate": true,
+        "sample_has_ref_literal": true,
+        "c_source": "sample",
+        "c_match": true,
+        "c_sig": [
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 2,
+        "engine": "postgres",
+        "shape": "f2",
+        "kind": "frecuente",
+        "query_id": "-8967515257149731770",
+        "ref_literal": 0,
+        "ref_ms": 184.3,
+        "ref": [
+          [
+            "scan",
+            "full_table_scan",
+            null
+          ]
+        ],
+        "candidate": true,
+        "c_source": "auto_explain",
+        "c_match": true,
+        "c_sig": [
+          [
+            "scan",
+            "full_table_scan",
+            null
+          ]
+        ],
+        "generic_source": "generic",
+        "generic_match": false,
+        "generic_sig": [
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 2,
+        "engine": "mysql",
+        "shape": "f2",
+        "kind": "frecuente",
+        "query_id": "ql_demo/6d5d67f16ef67d1d2578c57273b4ab8dd8173064325d4866cdb33d0a89355c8e",
+        "ref_literal": 0,
+        "ref_ms": 2132.0,
+        "ref": [
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "ref_tree": [
+          "-> Filter: (ql_skew.note like 'n%')  (cost=8538 rows=55342) (actual time=0.467..1951 rows=194120 loops=1)",
+          "    -> Index lookup on ql_skew using ql_skew_status (status=0)  (cost=8538 rows=498125) (actual time=0.464..1898 rows=969939 loops=1)"
+        ],
+        "sample_text": "SELECT id AS f2_id FROM ql_skew WHERE status = 0 AND note LIKE 'n%'",
+        "candidate": true,
+        "sample_has_ref_literal": true,
+        "c_source": "sample",
+        "c_match": true,
+        "c_sig": [
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 2,
+        "engine": "postgres",
+        "shape": "f3",
+        "kind": "frecuente",
+        "query_id": "-7437370554530300852",
+        "ref_literal": 0,
+        "ref_ms": 60.0,
+        "ref": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "full_table_scan",
+            null
+          ]
+        ],
+        "candidate": true,
+        "c_source": "auto_explain",
+        "c_match": true,
+        "c_sig": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "full_table_scan",
+            null
+          ]
+        ],
+        "generic_source": "generic",
+        "generic_match": false,
+        "generic_sig": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 2,
+        "engine": "mysql",
+        "shape": "f3",
+        "kind": "frecuente",
+        "query_id": "ql_demo/25101bb11ff73269a7bc85496d8bd220c86c219e3d327dbef2a874783956445a",
+        "ref_literal": 0,
+        "ref_ms": 2174.4,
+        "ref": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "ref_tree": [
+          "-> Limit: 10 row(s)  (cost=52816 rows=10) (actual time=2263..2263 rows=10 loops=1)",
+          "    -> Sort: ql_skew.note DESC, limit input to 10 row(s) per chunk  (cost=52816 rows=498125) (actual time=2263..2263 rows=10 loops=1)",
+          "        -> Index lookup on ql_skew using ql_skew_status (status=0)  (cost=52816 rows=498125) (actual time=0.467..2084 rows=969939 loops=1)"
+        ],
+        "sample_text": "SELECT note AS f3_note FROM ql_skew WHERE status = 0 ORDER BY note DESC LIMIT 10",
+        "candidate": true,
+        "sample_has_ref_literal": true,
+        "c_source": "sample",
+        "c_match": true,
+        "c_sig": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 2,
+        "engine": "postgres",
+        "shape": "r1",
+        "kind": "rara",
+        "query_id": "5800110395483784752",
+        "ref_literal": 207,
+        "ref_ms": 1.7,
+        "ref": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "candidate": true,
+        "c_source": "generic",
+        "c_match": true,
+        "c_sig": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "generic_source": "generic",
+        "generic_match": true,
+        "generic_sig": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 2,
+        "engine": "mysql",
+        "shape": "r1",
+        "kind": "rara",
+        "query_id": "ql_demo/6985bb3e108981e7f30df2d2540f93b3f11ca31a08caf8914649cdae901d888d",
+        "ref_literal": 213,
+        "ref_ms": 2.1,
+        "ref": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "ref_tree": [
+          "-> Index lookup on ql_skew using ql_skew_status (status=213)  (cost=36.4 rows=104) (actual time=0.108..0.518 rows=104 loops=1)"
+        ],
+        "sample_text": "SELECT id AS r1_id, note FROM ql_skew WHERE status = 213 ORDER BY id",
+        "candidate": true,
+        "sample_has_ref_literal": true,
+        "c_source": "sample",
+        "c_match": true,
+        "c_sig": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 2,
+        "engine": "postgres",
+        "shape": "r2",
+        "kind": "rara",
+        "query_id": "-9016752000062996855",
+        "ref_literal": 243,
+        "ref_ms": 2.3,
+        "ref": [
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "candidate": true,
+        "c_source": "generic",
+        "c_match": true,
+        "c_sig": [
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "generic_source": "generic",
+        "generic_match": true,
+        "generic_sig": [
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 2,
+        "engine": "mysql",
+        "shape": "r2",
+        "kind": "rara",
+        "query_id": "ql_demo/68b6afdb125f3ed8305b6db7503a5262813130f0bedf4247b4b7cf7c4f34dad4",
+        "ref_literal": 243,
+        "ref_ms": 7.1,
+        "ref": [
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "ref_tree": [
+          "-> Aggregate: count(0)  (cost=25.4 rows=1) (actual time=0.0444..0.0445 rows=1 loops=1)",
+          "    -> Filter: ((ql_skew.`status` = 243) and (ql_skew.id > 1000))  (cost=17.3 rows=81) (actual time=0.0264..0.0399 rows=81 loops=1)",
+          "        -> Covering index range scan on ql_skew using ql_skew_status over (status = 243 AND 1000 < id)  (cost=17.3 rows=81) (actual time=0.0246..0.032 rows=81 loops=1)"
+        ],
+        "sample_text": "SELECT count(*) AS r2_cnt FROM ql_skew WHERE status = 243 AND id > 1000",
+        "candidate": true,
+        "sample_has_ref_literal": true,
+        "c_source": "sample",
+        "c_match": true,
+        "c_sig": [
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 2,
+        "engine": "postgres",
+        "shape": "r3",
+        "kind": "rara",
+        "query_id": "-8889573447757504136",
+        "ref_literal": 42,
+        "ref_ms": 2.9,
+        "ref": [
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "candidate": true,
+        "c_source": "generic",
+        "c_match": true,
+        "c_sig": [
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "generic_source": "generic",
+        "generic_match": true,
+        "generic_sig": [
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 2,
+        "engine": "mysql",
+        "shape": "r3",
+        "kind": "rara",
+        "query_id": "ql_demo/a4645a80a8259743bbf57c9327ff41804f2268a730e650b2c8310782cbb80208",
+        "ref_literal": 42,
+        "ref_ms": 3.2,
+        "ref": [
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "ref_tree": [
+          "-> Aggregate: max(ql_skew.note)  (cost=102 rows=1) (actual time=0.726..0.726 rows=1 loops=1)",
+          "    -> Index range scan on ql_skew using ql_skew_status over (status = 42) OR (status = 147), with index condition: ((ql_skew.`status` = 42) or (ql_skew.`status` = 147))  (cost=83.8 rows=185) (actual time=0.0728..0.707 rows=185 loops=1)"
+        ],
+        "sample_text": "SELECT max(note) AS r3_max FROM ql_skew WHERE status = 42 OR status = 147",
+        "candidate": true,
+        "sample_has_ref_literal": true,
+        "c_source": "sample",
+        "c_match": true,
+        "c_sig": [
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 3,
+        "engine": "postgres",
+        "shape": "f1",
+        "kind": "frecuente",
+        "query_id": "-4478234655584960712",
+        "ref_literal": 0,
+        "ref_ms": 70.6,
+        "ref": [
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "full_table_scan",
+            null
+          ]
+        ],
+        "candidate": true,
+        "c_source": "auto_explain",
+        "c_match": true,
+        "c_sig": [
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "full_table_scan",
+            null
+          ]
+        ],
+        "generic_source": "generic",
+        "generic_match": false,
+        "generic_sig": [
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 3,
+        "engine": "mysql",
+        "shape": "f1",
+        "kind": "frecuente",
+        "query_id": "ql_demo/436ff93d577ebf0fbefdb94e4afa242e108acefb60a5d370475deead74b1055d",
+        "ref_literal": 0,
+        "ref_ms": 1919.9,
+        "ref": [
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "ref_tree": [
+          "-> Aggregate: count(0), max(length(ql_skew.note))  (cost=102629 rows=1) (actual time=1964..1964 rows=1 loops=1)",
+          "    -> Index lookup on ql_skew using ql_skew_status (status=0)  (cost=52816 rows=498125) (actual time=0.499..1915 rows=969939 loops=1)"
+        ],
+        "sample_text": "SELECT count(*) AS f1_cnt, max(length(note)) FROM ql_skew WHERE status = 0",
+        "candidate": true,
+        "sample_has_ref_literal": true,
+        "c_source": "sample",
+        "c_match": true,
+        "c_sig": [
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 3,
+        "engine": "postgres",
+        "shape": "f2",
+        "kind": "frecuente",
+        "query_id": "-8967515257149731770",
+        "ref_literal": 0,
+        "ref_ms": 160.8,
+        "ref": [
+          [
+            "scan",
+            "full_table_scan",
+            null
+          ]
+        ],
+        "candidate": true,
+        "c_source": "auto_explain",
+        "c_match": true,
+        "c_sig": [
+          [
+            "scan",
+            "full_table_scan",
+            null
+          ]
+        ],
+        "generic_source": "generic",
+        "generic_match": false,
+        "generic_sig": [
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 3,
+        "engine": "mysql",
+        "shape": "f2",
+        "kind": "frecuente",
+        "query_id": "ql_demo/6d5d67f16ef67d1d2578c57273b4ab8dd8173064325d4866cdb33d0a89355c8e",
+        "ref_literal": 0,
+        "ref_ms": 2025.6,
+        "ref": [
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "ref_tree": [
+          "-> Filter: (ql_skew.note like 'n%')  (cost=8538 rows=55342) (actual time=0.909..2029 rows=194120 loops=1)",
+          "    -> Index lookup on ql_skew using ql_skew_status (status=0)  (cost=8538 rows=498125) (actual time=0.903..1974 rows=969939 loops=1)"
+        ],
+        "sample_text": "SELECT id AS f2_id FROM ql_skew WHERE status = 0 AND note LIKE 'n%'",
+        "candidate": true,
+        "sample_has_ref_literal": true,
+        "c_source": "sample",
+        "c_match": true,
+        "c_sig": [
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 3,
+        "engine": "postgres",
+        "shape": "f3",
+        "kind": "frecuente",
+        "query_id": "-7437370554530300852",
+        "ref_literal": 0,
+        "ref_ms": 59.9,
+        "ref": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "full_table_scan",
+            null
+          ]
+        ],
+        "candidate": true,
+        "c_source": "auto_explain",
+        "c_match": true,
+        "c_sig": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "full_table_scan",
+            null
+          ]
+        ],
+        "generic_source": "generic",
+        "generic_match": false,
+        "generic_sig": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 3,
+        "engine": "mysql",
+        "shape": "f3",
+        "kind": "frecuente",
+        "query_id": "ql_demo/25101bb11ff73269a7bc85496d8bd220c86c219e3d327dbef2a874783956445a",
+        "ref_literal": 0,
+        "ref_ms": 2126.7,
+        "ref": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "ref_tree": [
+          "-> Limit: 10 row(s)  (cost=52816 rows=10) (actual time=2047..2047 rows=10 loops=1)",
+          "    -> Sort: ql_skew.note DESC, limit input to 10 row(s) per chunk  (cost=52816 rows=498125) (actual time=2047..2047 rows=10 loops=1)",
+          "        -> Index lookup on ql_skew using ql_skew_status (status=0)  (cost=52816 rows=498125) (actual time=0.484..1873 rows=969939 loops=1)"
+        ],
+        "sample_text": "SELECT note AS f3_note FROM ql_skew WHERE status = 0 ORDER BY note DESC LIMIT 10",
+        "candidate": true,
+        "sample_has_ref_literal": true,
+        "c_source": "sample",
+        "c_match": true,
+        "c_sig": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 3,
+        "engine": "postgres",
+        "shape": "r1",
+        "kind": "rara",
+        "query_id": "5800110395483784752",
+        "ref_literal": 108,
+        "ref_ms": 2.3,
+        "ref": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "candidate": true,
+        "c_source": "generic",
+        "c_match": true,
+        "c_sig": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "generic_source": "generic",
+        "generic_match": true,
+        "generic_sig": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 3,
+        "engine": "mysql",
+        "shape": "r1",
+        "kind": "rara",
+        "query_id": "ql_demo/6985bb3e108981e7f30df2d2540f93b3f11ca31a08caf8914649cdae901d888d",
+        "ref_literal": 81,
+        "ref_ms": 5.8,
+        "ref": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "ref_tree": [
+          "-> Index lookup on ql_skew using ql_skew_status (status=81)  (cost=35.4 rows=101) (actual time=0.104..0.429 rows=101 loops=1)"
+        ],
+        "sample_text": "SELECT id AS r1_id, note FROM ql_skew WHERE status = 108 ORDER BY id",
+        "candidate": true,
+        "sample_has_ref_literal": false,
+        "c_source": "sample",
+        "c_match": true,
+        "c_sig": [
+          [
+            "sort",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 3,
+        "engine": "postgres",
+        "shape": "r2",
+        "kind": "rara",
+        "query_id": "-9016752000062996855",
+        "ref_literal": 152,
+        "ref_ms": 1.9,
+        "ref": [
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "candidate": true,
+        "c_source": "generic",
+        "c_match": true,
+        "c_sig": [
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "generic_source": "generic",
+        "generic_match": true,
+        "generic_sig": [
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 3,
+        "engine": "mysql",
+        "shape": "r2",
+        "kind": "rara",
+        "query_id": "ql_demo/68b6afdb125f3ed8305b6db7503a5262813130f0bedf4247b4b7cf7c4f34dad4",
+        "ref_literal": 191,
+        "ref_ms": 1.5,
+        "ref": [
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "ref_tree": [
+          "-> Aggregate: count(0)  (cost=35.9 rows=1) (actual time=0.053..0.0531 rows=1 loops=1)",
+          "    -> Filter: ((ql_skew.`status` = 191) and (ql_skew.id > 1000))  (cost=24.3 rows=116) (actual time=0.0283..0.0473 rows=116 loops=1)",
+          "        -> Covering index range scan on ql_skew using ql_skew_status over (status = 191 AND 1000 < id)  (cost=24.3 rows=116) (actual time=0.0262..0.0361 rows=116 loops=1)"
+        ],
+        "sample_text": "SELECT count(*) AS r2_cnt FROM ql_skew WHERE status = 191 AND id > 1000",
+        "candidate": true,
+        "sample_has_ref_literal": true,
+        "c_source": "sample",
+        "c_match": true,
+        "c_sig": [
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 3,
+        "engine": "postgres",
+        "shape": "r3",
+        "kind": "rara",
+        "query_id": "-8889573447757504136",
+        "ref_literal": 136,
+        "ref_ms": 2.3,
+        "ref": [
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "candidate": true,
+        "c_source": "generic",
+        "c_match": true,
+        "c_sig": [
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "generic_source": "generic",
+        "generic_match": true,
+        "generic_sig": [
+          [
+            "aggregate",
+            null,
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            null
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ],
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      },
+      {
+        "rep": 3,
+        "engine": "mysql",
+        "shape": "r3",
+        "kind": "rara",
+        "query_id": "ql_demo/a4645a80a8259743bbf57c9327ff41804f2268a730e650b2c8310782cbb80208",
+        "ref_literal": 48,
+        "ref_ms": 2.5,
+        "ref": [
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ],
+        "ref_tree": [
+          "-> Aggregate: max(ql_skew.note)  (cost=109 rows=1) (actual time=0.758..0.758 rows=1 loops=1)",
+          "    -> Index range scan on ql_skew using ql_skew_status over (status = 48) OR (status = 133), with index condition: ((ql_skew.`status` = 48) or (ql_skew.`status` = 133))  (cost=89.2 rows=197) (actual time=0.085..0.739 rows=197 loops=1)"
+        ],
+        "sample_text": "SELECT max(note) AS r3_max FROM ql_skew WHERE status = 48 OR status = 133",
+        "candidate": true,
+        "sample_has_ref_literal": true,
+        "c_source": "sample",
+        "c_match": true,
+        "c_sig": [
+          [
+            "scan",
+            "index_lookup",
+            "ql_skew_status"
+          ]
+        ]
+      }
+    ]
+  }
+}

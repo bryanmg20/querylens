@@ -75,11 +75,17 @@ _PIPELINE_PREFIXES = (
     "set names",
     "use ",
     "select schema",
-    "select ?",
     "set `autocommit`",
     "rollback",
     "explain format = json",
 )
+
+
+def _is_pipeline(text):
+    # 'select ?' solo es huella como digest completo (ping del driver); con
+    # FROM detras es un chequeo de existencia de la aplicacion.
+    text = text.strip().lower()
+    return text == "select ?" or text.startswith(_PIPELINE_PREFIXES)
 
 
 @pytest.mark.parametrize(
@@ -118,9 +124,7 @@ def test_goldens_have_application_workload(snapshot_fixture, request):
 
     app_queries = [
         c for c in candidates
-        if not str(c.get("query_text") or "").strip().lower().startswith(
-            _PIPELINE_PREFIXES
-        )
+        if not _is_pipeline(str(c.get("query_text") or ""))
     ]
     assert len(app_queries) >= 5, (
         f"solo {len(app_queries)} de {len(candidates)} candidatos son de"

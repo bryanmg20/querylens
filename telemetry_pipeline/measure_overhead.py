@@ -25,7 +25,10 @@ sys.path.insert(0, str(PIPELINE))
 
 from sqlalchemy import text  # noqa: E402
 
-from ci.regenerate_goldens import PIPELINE_FINGERPRINT  # noqa: E402
+from ci.regenerate_goldens import (  # noqa: E402
+    PIPELINE_FINGERPRINT,
+    PIPELINE_FINGERPRINT_EXACT,
+)
 from config.connections import (  # noqa: E402
     get_connection_mysql,
     get_connection_postgres,
@@ -325,6 +328,9 @@ def mysql_snapshot(engine):
     for i, prefix in enumerate(PIPELINE_FINGERPRINT):
         likes.append(f"lower(digest_text) LIKE :p{i}")
         params[f"p{i}"] = prefix + "%"
+    for i, exact in enumerate(PIPELINE_FINGERPRINT_EXACT):
+        likes.append(f"lower(digest_text) = :e{i}")
+        params[f"e{i}"] = exact
     w = " OR ".join(likes)
     with engine.connect() as c:
         return c.execute(text(

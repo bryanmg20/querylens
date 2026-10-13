@@ -106,7 +106,11 @@ WHERE s.DIGEST_TEXT IS NOT NULL
   AND s.DIGEST_TEXT NOT LIKE 'USE %'
   AND s.DIGEST_TEXT NOT LIKE 'ROLLBACK%'
   AND s.DIGEST_TEXT NOT LIKE 'SELECT SCHEMA%'
-  AND s.DIGEST_TEXT NOT LIKE 'SELECT ?%'
+  -- Igualdad y no prefijo: el ping del driver (SELECT 1) normaliza a 'SELECT ?'
+  -- exacto. Filtrar por el prefijo 'SELECT ?' tambien descartaba los chequeos de
+  -- existencia de la aplicacion (SELECT 1 FROM t WHERE ... LIMIT 1), que el
+  -- digest deja como 'SELECT ? FROM ...'.
+  AND s.DIGEST_TEXT <> 'SELECT ?'
   AND s.DIGEST_TEXT NOT LIKE 'EXPLAIN FORMAT = JSON%'
   -- BEGIN/COMMIT son sentencias de control, no telemetria: nunca llegan a ser
   -- candidatos a explicar, asi que excluirlas no_costa un candidato. Se

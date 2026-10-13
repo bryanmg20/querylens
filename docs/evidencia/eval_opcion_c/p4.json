@@ -1,0 +1,138 @@
+{
+  "generated_at": "2026-10-12T14:17:42",
+  "elapsed_s": 3.5,
+  "result": {
+    "rows": [
+      {
+        "engine": "postgres",
+        "group": "ambigua_lenta",
+        "query_id": "-7197918488300486832",
+        "mean_ms": 382.5,
+        "candidate": true,
+        "c": "auto_explain",
+        "generic": null
+      },
+      {
+        "engine": "postgres",
+        "group": "ambigua_lenta",
+        "query_id": "-4315258779686859566",
+        "mean_ms": 412.2,
+        "candidate": true,
+        "c": "auto_explain",
+        "generic": null
+      },
+      {
+        "engine": "postgres",
+        "group": "ambigua_lenta",
+        "query_id": "4724823048823421423",
+        "mean_ms": 52.5,
+        "candidate": true,
+        "c": "auto_explain",
+        "generic": null
+      },
+      {
+        "engine": "postgres",
+        "group": "ambigua_lenta",
+        "query_id": "7091003641682342739",
+        "mean_ms": 53.9,
+        "candidate": true,
+        "c": "auto_explain",
+        "generic": null
+      },
+      {
+        "engine": "postgres",
+        "group": "ambigua_rapida",
+        "query_id": "2056750108613291649",
+        "mean_ms": 0.0,
+        "candidate": true,
+        "c": null,
+        "generic": null
+      },
+      {
+        "engine": "postgres",
+        "group": "ambigua_rapida",
+        "query_id": "-9089336273786794445",
+        "mean_ms": 0.0,
+        "candidate": true,
+        "c": null,
+        "generic": null
+      },
+      {
+        "engine": "mysql",
+        "group": "texto_largo",
+        "query_id": "ql_demo/d20fb12ece33399e7ac3dc96bf3b1c49eab23ddc36d8c94b3fced3544a28f03f",
+        "sql_bytes": 1927,
+        "sample_bytes": 1024,
+        "candidate": true,
+        "c": null
+      },
+      {
+        "engine": "mysql",
+        "group": "texto_largo",
+        "query_id": "ql_demo/64219e331d68baf1a3792a902d68f8aae67d9d4137e7806652d8f9e142812565",
+        "sql_bytes": 1927,
+        "sample_bytes": 1024,
+        "candidate": true,
+        "c": null
+      },
+      {
+        "engine": "mysql",
+        "group": "texto_largo",
+        "query_id": "ql_demo/599be50692fa85c30efba772ed00261ca398bd55770c9d5fa8ebbafafa453ccf",
+        "sql_bytes": 1927,
+        "sample_bytes": 1024,
+        "candidate": true,
+        "c": null
+      },
+      {
+        "engine": "mysql",
+        "group": "texto_largo",
+        "query_id": "ql_demo/143dd4b98da850113d17bbdf0964efc8f2bf999b157d784aeb906c4bc7bae310",
+        "sql_bytes": 1927,
+        "sample_bytes": 1024,
+        "candidate": true,
+        "c": null
+      },
+      {
+        "engine": "mysql",
+        "group": "texto_corto",
+        "query_id": "ql_demo/6af1ab41d2b52b789481ec87a61f6c9de47100439a4c1219b405917ae1aecf85",
+        "sql_bytes": 160,
+        "sample_bytes": 160,
+        "candidate": true,
+        "c": "sample"
+      },
+      {
+        "engine": "mysql",
+        "group": "texto_corto",
+        "query_id": "ql_demo/32dab194ea08b4c8aabd139f1c143a870c2587618d2158a583a3252e049a444f",
+        "sql_bytes": 160,
+        "sample_bytes": 160,
+        "candidate": true,
+        "c": "sample"
+      },
+      {
+        "engine": "mysql",
+        "group": "texto_corto",
+        "query_id": "ql_demo/1cd836ebd6866981cf70b3f2dac7f2dd478286dc9bdfa1c7ff82740548aee3f5",
+        "sql_bytes": 160,
+        "sample_bytes": 160,
+        "candidate": true,
+        "c": "sample"
+      },
+      {
+        "engine": "mysql",
+        "group": "texto_corto",
+        "query_id": "ql_demo/6086f3c66d0c32dd506de1f44a45619a6004da8e24583365ad2adaf087829c70",
+        "sql_bytes": 160,
+        "sample_bytes": 160,
+        "candidate": true,
+        "c": "sample"
+      }
+    ],
+    "health": {
+      "postgres_c": null,
+      "mysql": null
+    }
+  }
+}

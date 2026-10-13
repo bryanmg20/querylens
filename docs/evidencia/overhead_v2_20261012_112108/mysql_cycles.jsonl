@@ -1,0 +1,56 @@
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 5743152041963, "t1_ns": 5743802678641, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 5753170418878, "t1_ns": 5753315640267, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 5763176560475, "t1_ns": 5763337429617, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 5773180304938, "t1_ns": 5773328897789, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 5835750765583, "t1_ns": 5835908807839, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 5845762968648, "t1_ns": 5845903073124, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 5855776367558, "t1_ns": 5855926526574, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 5865784129997, "t1_ns": 5865932774040, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 5882057564893, "t1_ns": 5882203133083, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 5892076426519, "t1_ns": 5892241948359, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 5902096507193, "t1_ns": 5902282811419, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 5912110640610, "t1_ns": 5912251283360, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 5974627944391, "t1_ns": 5974763542632, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 5984628961572, "t1_ns": 5984790634720, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 5994642771435, "t1_ns": 5994798676584, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 6004651155462, "t1_ns": 6004796238017, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 6113504289682, "t1_ns": 6113642975493, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 6123512013579, "t1_ns": 6123660648308, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 6133518123778, "t1_ns": 6133674699175, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 6143523560010, "t1_ns": 6143929109438, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 6206129871231, "t1_ns": 6206272119787, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 6216136172219, "t1_ns": 6216296634352, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 6226136956172, "t1_ns": 6226290893802, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 6236151776168, "t1_ns": 6236309529071, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 6298716117317, "t1_ns": 6298859249446, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 6308730910515, "t1_ns": 6308867283256, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 6318740908689, "t1_ns": 6318886401112, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 6328751571372, "t1_ns": 6328905246305, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 6345081576583, "t1_ns": 6345241086011, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 6355085684728, "t1_ns": 6355272884861, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 6365090906627, "t1_ns": 6365244687461, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 6375106126695, "t1_ns": 6375251560973, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 6437693062067, "t1_ns": 6437891769418, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 6447695758677, "t1_ns": 6447859617220, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 6457702962690, "t1_ns": 6457855508638, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 6467720438112, "t1_ns": 6467897446212, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 6530303579196, "t1_ns": 6530457640510, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 6540305318730, "t1_ns": 6540451146385, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 6550323575373, "t1_ns": 6550468224519, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 6560326257460, "t1_ns": 6560463546915, "ok": true, "error": null, "candidates": 10, "auto_explain_plans": 0}
+{"kind": "cycle", "mode": "burn", "t0_ns": 6669264033697, "t1_ns": 6672395133967, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 6679264000356, "t1_ns": 6682182318556, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 6689276795200, "t1_ns": 6692489339533, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 6699287340884, "t1_ns": 6702783654504, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 6715559802710, "t1_ns": 6718777331409, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 6725572651790, "t1_ns": 6728501018030, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 6735588116048, "t1_ns": 6738764411072, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 6745603680363, "t1_ns": 6748641641701, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 6808170791451, "t1_ns": 6811280374412, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 6818174523914, "t1_ns": 6821817370902, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 6828183389893, "t1_ns": 6831594799315, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 6838195862665, "t1_ns": 6841262198363, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 6947040902348, "t1_ns": 6949879487114, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 6957043463110, "t1_ns": 6960241764356, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 6967044889640, "t1_ns": 6970946083976, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 6977059034413, "t1_ns": 6980189955164, "ok": true, "error": null}
