@@ -3,7 +3,7 @@
 - **Estado:** aceptada.
 - **Fecha:** 12 de octubre de 2026.
 - **Evaluación completa:** Segundo Informe, secciones 9.1 a 9.4 (Tabla 10).
-- **Evidencia:** `telemetry_pipeline/logs/eval_opcion_c/` y las corridas `telemetry_pipeline/logs/overhead_v2_20261012_123930` (PostgreSQL) y `overhead_v2_20261012_112108` (MySQL).
+- **Evidencia:** `docs/evidencia/eval_opcion_c/` (script: `telemetry_pipeline/ci/eval_opcion_c.py`) y las corridas `docs/evidencia/overhead_v2_20261012_123930` (PostgreSQL) y `docs/evidencia/overhead_v2_20261012_112108` (MySQL).
 
 ## Contexto
 

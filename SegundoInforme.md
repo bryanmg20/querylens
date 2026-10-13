@@ -559,7 +559,7 @@ Para diagnosticar una consulta lenta, QUERYLENS necesita su **plan de ejecución
 
 ### 9.1 Resultado de las pruebas
 
-Las Pruebas 1 y 2 se realizaron sobre la versión del sistema que incluía las Opciones A y B. La Opción B ya no forma parte del banco ni del código; sus cifras se conservan como evidencia de esa iteración. La columna C de la Prueba 1 y las Pruebas 3 a 5 se midieron el 12 de octubre de 2026 sobre el mismo banco (PostgreSQL 17.11 y MySQL 8.0.46), ejecutando el recolector real de QUERYLENS. El script y los resultados quedan en `telemetry_pipeline/logs/eval_opcion_c/`.
+Las Pruebas 1 y 2 se realizaron sobre la versión del sistema que incluía las Opciones A y B. La Opción B ya no forma parte del banco ni del código; sus cifras se conservan como evidencia de esa iteración. La columna C de la Prueba 1 y las Pruebas 3 a 5 se midieron el 12 de octubre de 2026 sobre el mismo banco (PostgreSQL 17.11 y MySQL 8.0.46), ejecutando el recolector real de QUERYLENS. El script queda en `telemetry_pipeline/ci/eval_opcion_c.py` y los resultados en `docs/evidencia/eval_opcion_c/`.
 
 #### Prueba 1 — Comparación directa
 
@@ -695,7 +695,7 @@ La medición de sobrecosto incluye un brazo de **instrumentación** que mide cu�
 | PostgreSQL | `auto_explain.log_min_duration` = 50 ms frente a apagado | +0,81 % [−0,47; +1,94] | +0,42 % [−2,24; +2,15] |
 | MySQL | Consumidores `statements_digest` y `events_statements_current` | +0,07 % [−1,14; +0,86] | −0,50 % [−2,34; +1,32] |
 
-En ambos motores el intervalo incluye el 0 y queda por debajo del 2,2 %, así que en este banco el costo de la instrumentación no se distingue del ruido. En PostgreSQL, auto_explain escribió unos 13,5 KB/s de registro con esa carga. El control positivo del arnés detectó un costo conocido (+59 % en p95), lo que confirma que la medición es capaz de verlo. Hay una salvedad: en la corrida de PostgreSQL, el brazo A/A (carga contra carga) dio un intervalo de [−5,25; +1,76] %, apenas fuera de ±5 %. El host tiene ruido, aunque el intervalo de la instrumentación es mucho más estrecho que ese margen. Las corridas quedan en `telemetry_pipeline/logs/overhead_v2_20261012_123930` (PostgreSQL) y `overhead_v2_20261012_112108` (MySQL).
+En ambos motores el intervalo incluye el 0 y queda por debajo del 2,2 %, así que en este banco el costo de la instrumentación no se distingue del ruido. En PostgreSQL, auto_explain escribió unos 13,5 KB/s de registro con esa carga. El control positivo del arnés detectó un costo conocido (+59 % en p95), lo que confirma que la medición es capaz de verlo. Hay una salvedad: en la corrida de PostgreSQL, el brazo A/A (carga contra carga) dio un intervalo de [−5,25; +1,76] %, apenas fuera de ±5 %. El host tiene ruido, aunque el intervalo de la instrumentación es mucho más estrecho que ese margen. Las corridas quedan en `docs/evidencia/overhead_v2_20261012_123930` (PostgreSQL) y `docs/evidencia/overhead_v2_20261012_112108` (MySQL).
 
 ### 9.2 Comparación por criterios
 
