@@ -68,7 +68,10 @@ def test_mysql_autofiltrado_cubre_toda_la_huella_del_pipeline():
     divergieron, COMMIT aparecio en statements y el test de integracion lo
     cazo. Este test es el que evita que vuelvan a separarse en silencio.
     """
-    from ci.regenerate_goldens import PIPELINE_FINGERPRINT
+    from ci.regenerate_goldens import (
+        PIPELINE_FINGERPRINT,
+        PIPELINE_FINGERPRINT_EXACT,
+    )
 
     # Los backticks se normalizan en los dos lados: el digest trae
     # 'SET `AUTOCOMMIT`' y tanto el filtro como la huella pueden escribirse con o
@@ -83,6 +86,25 @@ def test_mysql_autofiltrado_cubre_toda_la_huella_del_pipeline():
             f"la huella {huella!r} no tiene filtro en STATEMENTS_QUERY: "
             "ampliar el filtro o el fingerprint, pero no dejarlos distintos"
         )
+    for huella in PIPELINE_FINGERPRINT_EXACT:
+        exacto = huella.upper().replace("`", "")
+        assert f"<> '{exacto}'" in normalizado, (
+            f"la huella exacta {huella!r} no tiene filtro de igualdad en "
+            "STATEMENTS_QUERY"
+        )
+
+
+def test_mysql_autofiltrado_no_descarta_chequeos_de_existencia():
+    """SELECT 1 FROM t WHERE c = ? LIMIT 1 normaliza a 'SELECT ? FROM ...'.
+
+    Un filtro por prefijo 'SELECT ?%' lo descartaba antes del snapshot y los
+    detectores nunca lo veian. El ping del driver se excluye por igualdad.
+    """
+    from ci.regenerate_goldens import is_pipeline_fingerprint
+
+    assert "NOT LIKE 'SELECT ?" not in STATEMENTS_QUERY.upper()
+    assert not is_pipeline_fingerprint("SELECT ? FROM `t` WHERE `c` = ? LIMIT ?")
+    assert is_pipeline_fingerprint("SELECT ?")
 
 
 def test_mysql_statement_id_is_qualified_by_schema():

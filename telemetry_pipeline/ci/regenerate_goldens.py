@@ -51,13 +51,24 @@ PIPELINE_FINGERPRINT = (
     "set names",
     "use ",
     "select schema",
-    "select ?",
     "set `autocommit`",
     "rollback",
     "explain format = json",
     "begin",
     "commit",
 )
+
+# Huella que solo cuenta como tal si es el digest completo, no un prefijo:
+# 'select ?' es el ping del driver, pero 'select ? from t ...' es un chequeo de
+# existencia de la aplicacion y tiene que llegar al snapshot.
+PIPELINE_FINGERPRINT_EXACT = (
+    "select ?",
+)
+
+
+def is_pipeline_fingerprint(text):
+    text = text.strip().lower()
+    return text in PIPELINE_FINGERPRINT_EXACT or text.startswith(PIPELINE_FINGERPRINT)
 
 
 def run(cmd, check=True):
@@ -96,8 +107,7 @@ def pipeline_share(stats):
         return 1.0
     fingerprint = 0
     for stmt in statements:
-        text = str(stmt.get("query_text") or "").strip().lower()
-        if any(text.startswith(prefix) for prefix in PIPELINE_FINGERPRINT):
+        if is_pipeline_fingerprint(str(stmt.get("query_text") or "")):
             fingerprint += 1
     return fingerprint / len(statements)
 

@@ -207,12 +207,11 @@ def test_mysql_statements_exclude_internals(my):
         assert "INFORMATION_SCHEMA" not in digest, digest
     # Lo que el propio collector emite contra el motor. Si esto aparece, el
     # filtro de la query esta incompleto y hay que ampliarlo, no el test.
-    from ci.regenerate_goldens import PIPELINE_FINGERPRINT
+    from ci.regenerate_goldens import is_pipeline_fingerprint
 
-    # El fingerprint esta en minusculas y los digests llegan en mayusculas:
-    # comparar sin normalizar daria False siempre y el test pasaria en vacio.
-    fingerprint = tuple(f.upper() for f in PIPELINE_FINGERPRINT)
-    propias = [d for d in digests if d.startswith(fingerprint)]
+    # is_pipeline_fingerprint normaliza a minusculas: los digests llegan en
+    # mayusculas y comparar sin normalizar haria pasar el test en vacio.
+    propias = [d for d in digests if is_pipeline_fingerprint(d)]
     assert not propias, (
         f"el pipeline se cuela en statements: {propias}. "
         "ampliar el filtro de collectors/mysql/queries.py"
