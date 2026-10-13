@@ -35,6 +35,9 @@ class Statement:
     max_time_ms: float | None = None
     coeff_of_variation: float | None = None
     disk_spill_indicator: int | None = None
+    # MySQL: SUM_SORT_MERGE_PASSES (ordenamientos que fueron a disco). Postgres:
+    # None, porque temp_blks_written (disk_spill_indicator) ya los incluye
+    sort_merge_passes: int | None = None
     # desde cuando el motor acumula los contadores de esta query (stats_since
     # en Postgres, FIRST_SEEN en MySQL); llega como texto, con o sin zona horaria
     counters_epoch: str | None = None
@@ -165,6 +168,9 @@ class CandidateStatement:
     max_time_ms: float | None = None
     coeff_of_variation: float | None = None
     disk_spill_indicator: int | None = None
+    # MySQL: SUM_SORT_MERGE_PASSES (ordenamientos que fueron a disco). Postgres:
+    # None, porque temp_blks_written (disk_spill_indicator) ya los incluye
+    sort_merge_passes: int | None = None
     # mismo valor que en su statement: el candidato es una copia de esa fila
     counters_epoch: str | None = None
     real_query_found: bool | None = None
@@ -231,6 +237,7 @@ class StatementHistory:
     total_time_ms: float
     # None si la fila es anterior a que se guardara este contador
     disk_spill_indicator: int | None = None
+    sort_merge_passes: int | None = None
     rows_returned: int | None = None
     counters_epoch: datetime | None = None
     # latencia media de las ultimas ventanas validas y su hora, de la mas vieja a la mas nueva

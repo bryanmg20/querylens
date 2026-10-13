@@ -20,6 +20,9 @@ CREATE TABLE IF NOT EXISTS public.statement_samples (
     -- ultimo disk_spill_indicator acumulado (bloques en Postgres, tablas
     -- temporales en disco en MySQL), para que AP-07 mire solo la ventana
     disk_spill_indicator BIGINT,
+    -- ultimo SUM_SORT_MERGE_PASSES acumulado (solo MySQL: ordenamientos que
+    -- fueron a disco); NULL en Postgres, donde temp_blks_written ya los incluye
+    sort_merge_passes BIGINT,
     -- ultimas filas devueltas acumuladas, para que AP-08 compare la estimacion
     -- del EXPLAIN con las filas por ejecucion de la ventana
     rows_returned BIGINT,
@@ -30,6 +33,10 @@ CREATE TABLE IF NOT EXISTS public.statement_samples (
     window_ends_at TIMESTAMPTZ[] NOT NULL DEFAULT '{}',
     PRIMARY KEY (db_id, query_id)
 );
+
+-- Tablas creadas antes de agregar la columna: el DDL corre en cada arranque
+-- del detection_engine (storage.ensure_statement_samples_table)
+ALTER TABLE public.statement_samples ADD COLUMN IF NOT EXISTS sort_merge_passes BIGINT;
 
 CREATE INDEX IF NOT EXISTS statement_samples_captured_at_idx
     ON public.statement_samples (captured_at);

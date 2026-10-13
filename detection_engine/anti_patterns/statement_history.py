@@ -36,6 +36,7 @@ class _Aggregated:
     calls: int
     total_ms: float
     disk_spill: int | None
+    sort_merge_passes: int | None
     rows: int | None
 
 
@@ -67,11 +68,13 @@ def _aggregate_statements(snapshot: Snapshot) -> dict[str, _Aggregated]:
         if statement.execution_count is None or statement.total_time_ms is None:
             continue
         key = str(statement.query_id)
-        entry = aggregated.setdefault(key, _Aggregated(statement, 0, 0.0, None, None))
+        entry = aggregated.setdefault(key, _Aggregated(statement, 0, 0.0, None, None, None))
         entry.calls += statement.execution_count
         entry.total_ms += statement.total_time_ms
         if statement.disk_spill_indicator is not None:
             entry.disk_spill = (entry.disk_spill or 0) + statement.disk_spill_indicator
+        if statement.sort_merge_passes is not None:
+            entry.sort_merge_passes = (entry.sort_merge_passes or 0) + statement.sort_merge_passes
         if statement.rows_returned is not None:
             entry.rows = (entry.rows or 0) + statement.rows_returned
     return aggregated
@@ -138,6 +141,7 @@ def evaluate_statements(
             execution_count=entry.calls,
             total_time_ms=entry.total_ms,
             disk_spill_indicator=entry.disk_spill,
+            sort_merge_passes=entry.sort_merge_passes,
             rows_returned=entry.rows,
             counters_epoch=epoch,
             window_means_ms=window_means,
