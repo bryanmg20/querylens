@@ -1,10 +1,11 @@
 import re
+from datetime import datetime, timezone
 
 import sqlglot
 from sqlglot import exp
 from querylens_contract import SnapshotPayload
 
-from models import Hallazgo
+from models import Hallazgo, StatementHistory
 from logger import get_logger
 
 from .table_aliases import resolve_table_aliases
@@ -16,6 +17,9 @@ logger = get_logger(__name__)
 # copiadas de la version ANTERIOR de AP-02. Pendiente: AP-02 ahora se limita a
 # SELECT simples con selectividad real de la ventana (avoidable_full_scan.py);
 # decidir si AP-04 adopta la misma base.
+#   0. la query se ejecuto desde el snapshot anterior (sin minimo de
+#      ejecuciones): top_impact_queries ordena por tiempo acumulado y el
+#      pipeline le saca EXPLAIN a todos, aunque ya no corran
 #   1. el plan tiene un full_table_scan
 #   2. sobre una tabla con >= DEFAULT_MIN_LIVE_ROWS filas vivas
 #   3. estimated_rows / live_rows <= DEFAULT_MAX_SELECTIVITY (sin estimacion, pasa)
@@ -43,7 +47,7 @@ DEFAULT_MAX_SELECTIVITY = 0.1  # mismo valor que AP-02
 
 # Misma limpieza que non_sargable_predicate.py; se duplica a proposito hasta
 # confirmar este detector por separado.
-_SUBPLAN_RE = re.compile(r"\((?:hashed\s+)?(?:SubPlan|InitPlan)\s+\d+\)")
+_SUBPLAN_RE = re.compile(r"\((?:hashed\s+)?(?:SubPlan|InitPlan)\s+\d+\)(?:\.col\d+)?")
 _INTERNAL_MARKER_RE = re.compile(r"<[a-zA-Z_]+>\((?:[^<>()]|\([^<>()]*\))*\)")
 _MAX_MARKER_PASSES = 10
 
@@ -195,6 +199,53 @@ def _lookup_by_table(mapping: dict, schema_name: str | None, table_name: str):
     return None, len(candidates) > 1
 
 
+# Misma logica de ventana que non_sargable_predicate.py; se duplica a proposito
+# hasta confirmar este detector por separado.
+def _parse_instant(value) -> datetime | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        parsed = value
+    else:
+        try:
+            parsed = datetime.fromisoformat(str(value))
+        except ValueError:
+            return None
+    return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
+
+
+def _current_calls(snapshot: SnapshotPayload) -> dict[str, tuple[int, str | None]]:
+    # (ejecuciones, counters_epoch) por query, sumando filas repetidas igual que
+    # la fila guardada en statement_samples
+    calls_by_query: dict[str, tuple[int, str | None]] = {}
+    for statement in snapshot.statements:
+        if statement.query_id is None or statement.execution_count is None:
+            continue
+        key = str(statement.query_id)
+        calls, epoch = calls_by_query.get(key, (0, statement.counters_epoch))
+        calls_by_query[key] = (calls + statement.execution_count, epoch)
+    return calls_by_query
+
+
+def _executed_since_previous_snapshot(
+    calls: int,
+    epoch: datetime | None,
+    previous: StatementHistory | None,
+) -> bool:
+    # La query corrio entre el snapshot anterior y este? Sin fila anterior se
+    # responde que si: es la primera vez que se la ve, no una repeticion.
+    if previous is None:
+        return True
+    # contadores reiniciados: todas sus ejecuciones son posteriores al reinicio
+    if epoch is not None and previous.counters_epoch is not None and epoch != previous.counters_epoch:
+        return calls > 0
+    delta_calls = calls - previous.execution_count
+    if delta_calls < 0:
+        # reinicio sin epoch (snapshot viejo): mismo criterio
+        return calls > 0
+    return delta_calls > 0
+
+
 def _suggested_index(table_name: str, equality: list[str], range_: list[str]) -> str:
     columns = ", ".join(equality + range_)
     return f"CREATE INDEX ON {table_name} ({columns})"
@@ -205,7 +256,11 @@ def detect_missing_indexes(
     snapshot: SnapshotPayload,
     min_live_rows: int = DEFAULT_MIN_LIVE_ROWS,
     max_selectivity: float = DEFAULT_MAX_SELECTIVITY,
+    history: dict[str, StatementHistory] | None = None,
 ) -> list[Hallazgo]:
+    # Solo lee `history`: la fila nueva la guarda main.py despues de todos los detectores
+    history = history or {}
+    calls_by_query = _current_calls(snapshot)
     findings = []
     explains_by_query_id = {
         explain.query_id: explain
@@ -237,6 +292,15 @@ def detect_missing_indexes(
         if explain is None:
             continue
 
+        # condicion 0
+        query_id = str(candidate.query_id)
+        calls, epoch_raw = calls_by_query.get(
+            query_id, (candidate.execution_count or 0, candidate.counters_epoch)
+        )
+        epoch = _parse_instant(candidate.counters_epoch or epoch_raw)
+        if not _executed_since_previous_snapshot(calls, epoch, history.get(query_id)):
+            continue
+
         alias_map = resolve_table_aliases(candidate.canonic_query)
         operations = explain.canonical_plan.physical_operations
         for operation in operations:
@@ -245,7 +309,8 @@ def detect_missing_indexes(
                 continue
 
             relation = operation.relation
-            real_table = alias_map.get(relation, relation)
+            # table_name: tabla real en Postgres (relation puede ser ql_pt_orders_1); None en MySQL
+            real_table = operation.table_name or alias_map.get(relation, relation)
             if not real_table:
                 continue
 
@@ -265,9 +330,17 @@ def detect_missing_indexes(
             if not predicate:
                 continue
 
-            def _belongs_to_table(column: exp.Column) -> bool:
-                # sin calificar es de la tabla del scan; calificada, por alias o nombre
-                return not column.table or alias_map.get(column.table, column.table) == real_table
+            def _belongs_to_table(column: exp.Column, relation=relation, real_table=real_table) -> bool:
+                # sin calificar es de la tabla del scan; calificada, por su alias.
+                # Descarta las condiciones de join que MySQL pone en el scan de la tabla interna
+                if not column.table or column.table == relation:
+                    return True
+                # el scan tiene un alias de la query: otro calificador es otra
+                # lectura, aunque sea de la misma tabla (self join)
+                if relation in alias_map:
+                    return False
+                # alias que no esta en la query (ej. ql_pt_orders_1 de Postgres): por tabla real
+                return alias_map.get(column.table, column.table) == real_table
 
             equality, range_ = _filtered_columns(predicate, _belongs_to_table)
             if not equality and not range_:

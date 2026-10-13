@@ -13,8 +13,10 @@ from .table_aliases import resolve_table_aliases
 logger = get_logger(__name__)
 
 
-# Referencias internas de Postgres a subplanes, no son SQL valido
-_SUBPLAN_RE = re.compile(r"\((?:hashed\s+)?(?:SubPlan|InitPlan)\s+\d+\)")
+# Referencias a subplanes, no son SQL valido: (SubPlan N) de Postgres y de
+# MySQL (el pipeline reemplaza ahi la subconsulta copiada por esa etiqueta) y
+# (InitPlan N).colM de Postgres 17
+_SUBPLAN_RE = re.compile(r"\((?:hashed\s+)?(?:SubPlan|InitPlan)\s+\d+\)(?:\.col\d+)?")
 
 # Marcadores internos de MySQL (<in_optimizer>, <cache>, etc.), tampoco SQL
 # valido; se reemplaza el marcador completo por NULL, en loop por si vienen anidados
@@ -48,6 +50,11 @@ _NON_NUMERIC_TYPES = {
     "timestamp without time zone", "timestamp with time zone",
     "year",
 }
+
+# Postgres escribe `(columna)::text` para comparar una columna varchar en casi
+# cualquier condicion: es su propia coercion a text y no impide usar el indice.
+# Un char(n) -> text si cuenta: ahi el cast cambia el valor (quita los blancos)
+_VARCHAR_TYPES = {"character varying", "varchar"}
 
 _SUBTIPO_MENSAJES = {
     "function_on_column": (
@@ -105,35 +112,64 @@ def _is_cast_on_column(side: exp.Expression) -> bool:
     return isinstance(side, exp.Cast) and _has_column(side.this)
 
 
-def _bare_column_and_literal(comparison: exp.Expression) -> tuple[str, exp.Literal] | None:
-    # Si es `columna OP literal` sin funcion/aritmetica/cast, devuelve (columna, literal).
-    left, right = _unwrap_paren(comparison.this), _unwrap_paren(comparison.expression)
-    if isinstance(left, exp.Column) and isinstance(right, exp.Literal):
-        return left.name, right
-    if isinstance(right, exp.Column) and isinstance(left, exp.Literal):
-        return right.name, left
+def _is_varchar_text_cast(side: exp.Expression, data_type: str | None) -> bool:
+    # `(columna)::text` sobre una columna varchar: no es una conversion que
+    # impida el indice (ver _VARCHAR_TYPES). Con tipo desconocido se reporta.
+    return (
+        isinstance(side, exp.Cast)
+        and side.to.is_type(exp.DataType.Type.TEXT)
+        and isinstance(_unwrap_paren(side.this), exp.Column)
+        and bool(data_type)
+        and data_type.strip().lower() in _VARCHAR_TYPES
+    )
+
+
+def _value_is_string(node: exp.Expression | None) -> bool | None:
+    # True si el valor es texto, False si es numero, None si no es un valor.
+    # MySQL redacta los numeros como $n (sqlglot: Parameter) y los textos como
+    # '$n' (Literal de texto); un literal sin redactar tambien se reconoce.
+    if node is None:
+        return None
+    node = _unwrap_paren(node)
+    if isinstance(node, exp.Neg):
+        node = _unwrap_paren(node.this)
+    if isinstance(node, exp.Literal):
+        return node.is_string
+    if isinstance(node, exp.Parameter):
+        return False
     return None
 
 
-def _bare_column_and_literals_in(node: exp.In) -> tuple[str, list[exp.Literal]] | None:
-    # Version de _bare_column_and_literal para `columna IN (lit1, lit2, ...)`.
+def _bare_column_and_values(comparison: exp.Expression) -> tuple[exp.Column, list[bool]] | None:
+    # Si es `columna OP valor` sin funcion/aritmetica/cast, devuelve (columna,
+    # [el valor es texto]).
+    left, right = _unwrap_paren(comparison.this), _unwrap_paren(comparison.expression)
+    if isinstance(left, exp.Column) and _value_is_string(right) is not None:
+        return left, [_value_is_string(right)]
+    if isinstance(right, exp.Column) and _value_is_string(left) is not None:
+        return right, [_value_is_string(left)]
+    return None
+
+
+def _bare_column_and_values_in(node: exp.In) -> tuple[exp.Column, list[bool]] | None:
+    # Version de _bare_column_and_values para `columna IN (v1, v2, ...)`.
     target = _unwrap_paren(node.this)
     if not isinstance(target, exp.Column):
         return None
-    literals = [item for item in node.expressions if isinstance(item, exp.Literal)]
-    return (target.name, literals) if literals else None
+    kinds = [kind for kind in map(_value_is_string, node.expressions) if kind is not None]
+    return (target, kinds) if kinds else None
 
 
-def _bare_column_and_literals_between(node: exp.Between) -> tuple[str, list[exp.Literal]] | None:
-    # Version de _bare_column_and_literal para `columna BETWEEN lit1 AND lit2`.
+def _bare_column_and_values_between(node: exp.Between) -> tuple[exp.Column, list[bool]] | None:
+    # Version de _bare_column_and_values para `columna BETWEEN v1 AND v2`.
     target = _unwrap_paren(node.this)
     if not isinstance(target, exp.Column):
         return None
-    literals = [
-        bound for bound in (node.args.get("low"), node.args.get("high"))
-        if isinstance(bound, exp.Literal)
+    kinds = [
+        kind for kind in map(_value_is_string, (node.args.get("low"), node.args.get("high")))
+        if kind is not None
     ]
-    return (target.name, literals) if literals else None
+    return (target, kinds) if kinds else None
 
 
 def _index_lead_column(index_ref: str | None, dialect: str = "postgres") -> tuple[str | None, bool]:
@@ -309,10 +345,17 @@ def _detect_predicate_subtypes(
     schema_name: str | None,
     column_types: dict[tuple[str | None, str, str], str],
     dialect: str = "postgres",
+    engine: str = "postgres",
+    belongs_to_table=None,
 ) -> list[tuple[str, str | None]]:
     # Detecta las 3 formas de predicado no sargable en el AST del predicado real del plan.
     # El LIKE con comodin inicial ('%abc') no se detecta: no esta en la regla del
     # informe y el pipeline redacta el patron a $n, asi que no se ve el '%'.
+    # `engine` es el motor del plan ("postgres" o "mysql"), no el dialecto con
+    # el que se parsea. `belongs_to_table(columna)` dice si una columna es de la
+    # tabla del scan: las de otra tabla (condicion de join que MySQL pone en el
+    # scan de la tabla interna, o que Postgres pone en el Index Cond de un join
+    # parametrizado) no se atribuyen a esta tabla. Sin funcion, todas cuentan.
     try:
         tree = sqlglot.parse_one(_strip_engine_internal_markers(predicate), read=dialect)
     except Exception as e:
@@ -332,71 +375,57 @@ def _detect_predicate_subtypes(
         if pair not in found:
             found.append(pair)
 
+    def _belongs(column: exp.Column) -> bool:
+        return belongs_to_table is None or belongs_to_table(column)
+
+    def _type_of(column: exp.Column) -> str | None:
+        return _column_type_for(column_types, schema_name, real_table, column.name)
+
+    def _check_side(side: exp.Expression) -> None:
+        # Un lado de la condicion: funcion, aritmetica o cast sobre una columna de esta tabla
+        column = side.find(exp.Column)
+        if column is None or not _belongs(column):
+            return
+        if _is_function_on_column(side):
+            _add("function_on_column", column.name)
+        if _is_arithmetic_on_column(side):
+            _add("arithmetic_on_column", column.name)
+        if _is_cast_on_column(side):
+            if engine == "mysql" and side.to.is_type(exp.DataType.Type.DATE):
+                # MySQL muestra DATE(col) como CAST(col AS DATE): es la funcion
+                # que escribio el usuario, igual que date(col) en Postgres
+                _add("function_on_column", column.name)
+            elif not _is_varchar_text_cast(side, _type_of(column)):
+                _add("implicit_cast", column.name)
+
+    def _check_bare(bare: tuple[exp.Column, list[bool]] | None) -> None:
+        # Caso MySQL: la conversion no deja rastro en el plan, se infiere
+        # cruzando el tipo real de la columna contra el valor. Solo MySQL
+        # redacta con tipo ($n numero, '$n' texto); en Postgres todo valor
+        # llega como $n y se tomaria como numero.
+        if engine != "mysql" or real_table is None or bare is None:
+            return
+        column, kinds = bare
+        if not _belongs(column):
+            return
+        if _is_non_numeric_type(_type_of(column)) and any(not is_string for is_string in kinds):
+            _add("implicit_cast", column.name)
+
     # comparaciones binarias: =, <>, >, >=, <, <=, LIKE, ILIKE
     for comparison in tree.find_all(_COMPARISON_TYPES):
-        left, right = _unwrap_paren(comparison.this), _unwrap_paren(comparison.expression)
-
-        for side in (left, right):
-            column_in_side = side.find(exp.Column)
-            column_name = column_in_side.name if column_in_side is not None else None
-            if _is_function_on_column(side):
-                _add("function_on_column", column_name)
-            if _is_arithmetic_on_column(side):
-                _add("arithmetic_on_column", column_name)
-            if _is_cast_on_column(side):
-                _add("implicit_cast", column_name)
-
-        if not any(subtipo == "implicit_cast" for subtipo, _ in found) and real_table is not None:
-            # caso MySQL: la conversion no deja rastro en el AST, se infiere
-            # cruzando el tipo real de la columna contra el literal
-            bare = _bare_column_and_literal(comparison)
-            if bare is not None:
-                column_name, literal = bare
-                is_non_numeric = _is_non_numeric_type(_column_type_for(column_types, schema_name, real_table, column_name))
-                if is_non_numeric and not literal.is_string:
-                    _add("implicit_cast", column_name)
+        _check_side(_unwrap_paren(comparison.this))
+        _check_side(_unwrap_paren(comparison.expression))
+        _check_bare(_bare_column_and_values(comparison))
 
     # exp.In/exp.Between no entran en _COMPARISON_TYPES (su forma no es
     # this/expression), se revisan aparte
     for in_node in tree.find_all(exp.In):
-        target = _unwrap_paren(in_node.this)
-        target_column = target.find(exp.Column)
-        target_column_name = target_column.name if target_column is not None else None
-
-        if _is_function_on_column(target):
-            _add("function_on_column", target_column_name)
-        if _is_arithmetic_on_column(target):
-            _add("arithmetic_on_column", target_column_name)
-        if _is_cast_on_column(target):
-            _add("implicit_cast", target_column_name)
-
-        if not any(subtipo == "implicit_cast" for subtipo, _ in found) and real_table is not None:
-            bare_in = _bare_column_and_literals_in(in_node)
-            if bare_in is not None:
-                column_name, literals = bare_in
-                is_non_numeric = _is_non_numeric_type(_column_type_for(column_types, schema_name, real_table, column_name))
-                if is_non_numeric and any(not literal.is_string for literal in literals):
-                    _add("implicit_cast", column_name)
+        _check_side(_unwrap_paren(in_node.this))
+        _check_bare(_bare_column_and_values_in(in_node))
 
     for between_node in tree.find_all(exp.Between):
-        target = _unwrap_paren(between_node.this)
-        target_column = target.find(exp.Column)
-        target_column_name = target_column.name if target_column is not None else None
-
-        if _is_function_on_column(target):
-            _add("function_on_column", target_column_name)
-        if _is_arithmetic_on_column(target):
-            _add("arithmetic_on_column", target_column_name)
-        if _is_cast_on_column(target):
-            _add("implicit_cast", target_column_name)
-
-        if not any(subtipo == "implicit_cast" for subtipo, _ in found) and real_table is not None:
-            bare_between = _bare_column_and_literals_between(between_node)
-            if bare_between is not None:
-                column_name, literals = bare_between
-                is_non_numeric = _is_non_numeric_type(_column_type_for(column_types, schema_name, real_table, column_name))
-                if is_non_numeric and any(not literal.is_string for literal in literals):
-                    _add("implicit_cast", column_name)
+        _check_side(_unwrap_paren(between_node.this))
+        _check_bare(_bare_column_and_values_between(between_node))
 
     return found
 
@@ -504,23 +533,23 @@ def detect_non_sargable_predicates(
         return explicacion, recomendacion
 
     for candidate in snapshot.top_impact_queries:
+        # Solo si la query corrio desde el snapshot anterior: top_impact_queries
+        # ordena por tiempo ACUMULADO, asi que una query que ya no se ejecuta
+        # puede seguir ahi minutos u horas y se volveria a reportar en cada
+        # snapshot. Vale tambien con plan: el pipeline le saca EXPLAIN a todos
+        # los candidatos, se hayan ejecutado o no en el ciclo.
+        query_id = str(candidate.query_id)
+        calls, epoch_raw = calls_by_query.get(
+            query_id, (candidate.execution_count or 0, candidate.counters_epoch)
+        )
+        epoch = _parse_instant(candidate.counters_epoch or epoch_raw)
+        if not _executed_since_previous_snapshot(calls, epoch, history.get(query_id)):
+            continue
+
         explain = explains_by_query_id.get(candidate.query_id)
 
         if explain is None:
-            # sin EXPLAIN: respaldo por texto, solo 2 subtipos. Solo si la query
-            # corrio desde el snapshot anterior: top_impact_queries ordena por
-            # tiempo ACUMULADO, asi que una query que ya no se ejecuta puede
-            # seguir ahi minutos u horas, y su texto (que no cambia) se volveria
-            # a reportar en cada snapshot. Con plan no hace falta este chequeo:
-            # solo hay EXPLAIN si la query estaba corriendo.
-            query_id = str(candidate.query_id)
-            calls, epoch_raw = calls_by_query.get(
-                query_id, (candidate.execution_count or 0, candidate.counters_epoch)
-            )
-            epoch = _parse_instant(candidate.counters_epoch or epoch_raw)
-            if not _executed_since_previous_snapshot(calls, epoch, history.get(query_id)):
-                continue
-
+            # sin EXPLAIN: respaldo por texto, solo 2 subtipos
             tables = sorted(set(resolve_table_aliases(candidate.canonic_query).values()))
             for subtipo, real_table, column_name, fragmento in _detect_structural_issues_in_query(
                 candidate.canonic_query
@@ -563,6 +592,8 @@ def detect_non_sargable_predicates(
         # con EXPLAIN: predicado real del plan, los 3 subtipos
         alias_map = resolve_table_aliases(candidate.canonic_query)
         operations = explain.canonical_plan.physical_operations
+        # Postgres entrega queryid como entero y MySQL el DIGEST como texto (igual que AP-07)
+        engine = "mysql" if isinstance(candidate.query_id, str) else "postgres"
 
         for operation in operations:
             if operation.type != "scan":
@@ -573,8 +604,25 @@ def detect_non_sargable_predicates(
                 continue
 
             relation = operation.relation
-            real_table = alias_map.get(relation, relation)
-            subtipos = _detect_predicate_subtypes(predicate, real_table, candidate.schema_name, column_types)
+            # table_name es la tabla real en Postgres (relation puede ser un
+            # nombre generado, ej. ql_pt_orders_1); en MySQL llega en None
+            real_table = operation.table_name or alias_map.get(relation, relation)
+
+            def _belongs_to_table(column: exp.Column, relation=relation, real_table=real_table) -> bool:
+                # sin calificar es de la tabla del scan; calificada, por su alias
+                if not column.table or column.table == relation:
+                    return True
+                # el scan tiene un alias de la query: otro calificador es otra
+                # lectura, aunque sea de la misma tabla (self join)
+                if relation in alias_map:
+                    return False
+                # alias que no esta en la query (ej. ql_pt_orders_1 de Postgres): por tabla real
+                return alias_map.get(column.table, column.table) == real_table
+
+            subtipos = _detect_predicate_subtypes(
+                predicate, real_table, candidate.schema_name, column_types,
+                engine=engine, belongs_to_table=_belongs_to_table,
+            )
 
             for subtipo, column_name in subtipos:
                 index_exists = _index_exists_for_column(

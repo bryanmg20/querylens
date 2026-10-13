@@ -30,18 +30,23 @@ def canonic(sql):
         return sql
 
 
-def analyze(sql, scans):
+def analyze(sql, scans, engine):
     alias_map = resolve_table_aliases(canonic(sql))
     rows = []
     for op in scans:
         rel = op.get("relation")
-        real = alias_map.get(rel, rel)
+        # mismo criterio que los detectores (doc 008, D8)
+        real = op.get("table_name") or alias_map.get(rel, rel)
         pred = op.get("predicate")
-        ap03 = _detect_predicate_subtypes(pred, real, None, TYPES) if pred else []
 
-        def belongs(col, real=real):
-            return not col.table or alias_map.get(col.table, col.table) == real
+        def belongs(col, rel=rel, real=real):
+            if not col.table or col.table == rel:
+                return True
+            if rel in alias_map:
+                return False
+            return alias_map.get(col.table, col.table) == real
 
+        ap03 = _detect_predicate_subtypes(pred, real, None, TYPES, engine=engine, belongs_to_table=belongs) if pred else []
         ap04 = _filtered_columns(pred, belongs) if pred else ([], [])
         ap05 = sorted(_predicate_columns(pred)) if pred else []
         rows.append({"rel": rel, "real": real, "acc": op.get("access_method"), "est": op.get("estimated_rows"),
@@ -84,7 +89,7 @@ def main():
             if "error" in data:
                 print(f"  [{source}] ERROR: {data['error']}")
                 continue
-            for row in analyze(case["sql"], data["scans"]):
+            for row in analyze(case["sql"], data["scans"], "mysql" if source == "mysql" else "postgres"):
                 print(f"  [{source:<10}] {str(row['rel']):<9} {str(row['acc']):<16} est={str(row['est']):<7} pred={row['pred']}")
                 print(f"  {'':<12} AP-03={row['ap03']}  AP-04 igualdad/rango={row['ap04']}  AP-05={row['ap05']}")
             for note in lost_conditions(source, data.get("raw")):

@@ -53,6 +53,7 @@ def detect_all(
             current_snapshot,
             min_live_rows,
             max_selectivity,
+            history,
         ),
         "non_sargable_predicate": lambda current_snapshot: detect_non_sargable_predicates(
             current_snapshot,
