@@ -39,6 +39,7 @@ class DatabaseRegisteredResponse(BaseModel):
     port: int
     database_name: str
     is_active: bool
+    monitoring_enabled: bool
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -49,3 +50,12 @@ class DatabaseSessionResponse(DatabaseRegisteredResponse):
 
     access_token: str
     token_type: str = "bearer"
+
+
+class MonitoringUpdateRequest(BaseModel):
+    enabled: bool
+
+
+class MonitoringResponse(BaseModel):
+    database_identifier: str
+    monitoring_enabled: bool

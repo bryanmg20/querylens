@@ -150,6 +150,13 @@ SELECT
     CONCAT(COALESCE(s.CURRENT_SCHEMA, ''), '/', s.DIGEST) AS query_id,
     s.CURRENT_SCHEMA                AS database_name,
     trx.trx_started                 AS transaction_start_time,
+    # Mismo vocabulario que pg_stat_activity.state: una sesion en Sleep con
+    # transaccion abierta es la que retiene bloqueos sin hacer nada (CT-05).
+    CASE
+        WHEN t.processlist_command = 'Sleep' THEN 'idle in transaction'
+        ELSE 'active'
+    END                             AS session_state,
+    trx.trx_wait_started            AS wait_start_time,
     (
         SELECT GROUP_CONCAT(t2.processlist_id)
         FROM performance_schema.data_lock_waits dlw
@@ -164,7 +171,16 @@ LEFT JOIN information_schema.innodb_trx trx
        ON trx.trx_mysql_thread_id = t.processlist_id
 WHERE t.processlist_user IS NOT NULL
   AND t.processlist_user != (SELECT SUBSTRING_INDEX(CURRENT_USER(), '@', 1))
-  AND t.processlist_command != 'Sleep';
+  # Sleep con transaccion abierta se conserva: es la raiz tipica de una
+  # cascada de bloqueo y sin su fila no hay transaction_start_time.
+  AND (t.processlist_command != 'Sleep' OR trx.trx_id IS NOT NULL);
+"""
+
+
+# Reloj del servidor, no del pipeline: la sesion esta fijada a +00:00
+# (init_command), igual que trx_started y trx_wait_started.
+CAPTURE_TIMESTAMP_QUERY = """
+SELECT NOW(6) AS captured_at
 """
 
 

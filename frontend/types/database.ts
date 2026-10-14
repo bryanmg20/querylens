@@ -40,6 +40,7 @@ export interface DatabaseRegisteredResponse {
   port: number;
   database_name: string;
   is_active: boolean;
+  monitoring_enabled: boolean;
   created_at: string;
 }
 
@@ -96,6 +97,7 @@ export interface DiagnosticsResponse {
   connection_name: string;
   engine: string;
   is_active: boolean;
+  monitoring_enabled: boolean;
   diagnostics: Finding[];
   health: Health;
   server_time: string;
@@ -110,4 +112,9 @@ export interface RegisterDatabaseResult {
 
 export interface ApiErrorResponse {
   detail?: string | { msg: string }[];
+}
+
+export interface MonitoringResponse {
+  database_identifier: string;
+  monitoring_enabled: boolean;
 }

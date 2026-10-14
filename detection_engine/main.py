@@ -10,6 +10,7 @@ from sqlalchemy.engine import Engine
 from models import Hallazgo
 from anti_patterns.statement_history import STALE_AFTER, next_statement_histories
 from anti_patterns.engine import detect_all
+from deadlocks import run_contention
 from querylens_connection import get_connection_querylens_db
 from storage import (
     ensure_hallazgos_table,
@@ -67,6 +68,8 @@ def process_job(engine: Engine, job: dict) -> list[Hallazgo]:
 
     # Corre las reglas y los reporta en logs y stdout
     findings = detect_all(snapshot, history=history, captured_at=captured_at)
+    # contencion (CT-05) con su propio estado; sus hallazgos se guardan con los demas
+    findings += run_contention(engine, snapshot, fallback_captured_at=captured_at)
 
     logger.info(
         "Job %s recibido | db_id=%s | enqueued_at=%s",

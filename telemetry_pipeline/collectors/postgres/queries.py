@@ -79,9 +79,25 @@ SELECT
     query_id              AS query_id,
     datname               AS database_name,
     xact_start AS transaction_start_time,
+    state                 AS session_state,
+    -- waitstart (PG 14+) puede llegar NULL unos instantes despues de empezar la
+    -- espera aunque granted ya sea false; min() por si espera mas de un lock.
+    (
+        SELECT min(l.waitstart)
+        FROM pg_locks l
+        WHERE l.pid = pg_stat_activity.pid AND NOT l.granted
+    )                     AS wait_start_time,
     pg_blocking_pids(pid) AS blocking_pids  
 FROM pg_stat_activity
 WHERE usesysid != (SELECT oid FROM pg_roles WHERE rolname = session_user);
+"""
+
+
+# Reloj del servidor, no del pipeline: transaction_start_time y wait_start_time
+# vienen de este mismo reloj y la antiguedad se calcula restandolos. now() no
+# sirve: es el inicio de la transaccion de lectura del propio colector.
+CAPTURE_TIMESTAMP_QUERY = """
+SELECT clock_timestamp() AS captured_at
 """
 
 

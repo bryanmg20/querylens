@@ -5,10 +5,13 @@ from datetime import datetime, timedelta, timezone
 
 import jwt
 from cryptography.fernet import Fernet, InvalidToken
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.config import settings
 
 _fernet = Fernet(settings.auth_encryption_key.encode())
+_bearer = HTTPBearer(auto_error=False)
 
 
 def encrypt_secret(plain_text: str) -> str:
@@ -66,3 +69,33 @@ def create_access_token(database_identifier: str) -> str:
         "exp": now + timedelta(minutes=settings.jwt_expire_minutes),
     }
     return jwt.encode(claims, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
+
+
+def get_database_identifier(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
+) -> str:
+    """Verifica el access token y devuelve su database_identifier (`sub`).
+
+    Es el mismo token que este servicio emite en create_access_token: el
+    usuario solo puede actuar sobre la base de datos con la que inició sesión.
+    """
+
+    unauthorized = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Token inválido o expirado",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    if credentials is None:
+        raise unauthorized
+
+    try:
+        claims = jwt.decode(
+            credentials.credentials,
+            settings.jwt_secret_key,
+            algorithms=[settings.jwt_algorithm],
+            options={"require": ["sub", "exp"]},
+        )
+    except jwt.PyJWTError:
+        raise unauthorized
+
+    return claims["sub"]

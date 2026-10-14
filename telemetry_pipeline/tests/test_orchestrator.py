@@ -73,15 +73,9 @@ _ROWS_BY_SQL = {
             "live_rows": 10000,
         }
     ],
-    "pg_locks": [
-        {
-            "process_id": 42,
-            "table_name": "sbtest1",
-            "lock_mode": "AccessShareLock",
-            "is_granted": True,
-        }
-    ],
-    "pg_stat_activity": [
+    # Antes de pg_locks: la query de active_queries tambien lee pg_locks
+    # (waitstart) y la de locks hace JOIN con pg_stat_activity.
+    "pg_blocking_pids": [
         {
             "process_id": 42,
             "query_text": "SELECT c FROM sbtest1 WHERE id = 7",
@@ -90,7 +84,16 @@ _ROWS_BY_SQL = {
             "blocking_pids": "",
         }
     ],
+    "pg_locks": [
+        {
+            "process_id": 42,
+            "table_name": "sbtest1",
+            "lock_mode": "AccessShareLock",
+            "is_granted": True,
+        }
+    ],
     "pg_postmaster_start_time": [{"server_start_time": "2026-01-01 09:00:00.000000"}],
+    "clock_timestamp()": [{"captured_at": "2026-01-01 12:00:30.000000"}],
     "information_schema.columns": [
         {
             "schema_name": "public",
@@ -208,6 +211,7 @@ def test_run_pipeline_populates_every_collected_section():
         "locks",
         "active_queries",
         "server_start_timestamp",
+        "capture_timestamp",
         "columns",
         "foreign_keys",
     ):

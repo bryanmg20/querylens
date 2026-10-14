@@ -19,7 +19,7 @@ dos puntos de entrada, una sola maquina de ejecucion:
   main.py (integracion)                     main_sandbox.py (sandbox, tests y CI)
     load_registered_targets()                 ENGINES = (("postgres", get_connection_postgres),
       SELECT ... FROM registered_databases               ("mysql", get_connection_mysql))
-      WHERE is_active                       dos targets fijos resueltos con
+      WHERE is_active AND monitoring_enabled dos targets fijos resueltos con
       Fernet(AUTH_ENCRYPTION_KEY) → Target    MONITOR_PG_* / MONITOR_MY_*
       sin tabla / sin filas / sin clave       (la tabla no existe en CI y no
       → None: no se extrae nada               hay filas registradas alli)
@@ -130,7 +130,7 @@ Degradación por sección y privacidad (Q3/Q4):
 
 ## Targets de conexión (registered_databases)
 
-Las credenciales no están más atadas a dos pares de variables de entorno. El front y el auth service registran cada base del cliente en `registered_databases` (DDL en `querylens_database/registered_databases.sql`, montado por `docker-compose.yml`) con host, puerto, usuario y password cifrados con Fernet. `config/registered.py` hace el `SELECT ... WHERE is_active`, descifra con `AUTH_ENCRYPTION_KEY` y devuelve un `Target` por fila.
+Las credenciales no están más atadas a dos pares de variables de entorno. El front y el auth service registran cada base del cliente en `registered_databases` (DDL en `querylens_database/registered_databases.sql`, montado por `docker-compose.yml`) con host, puerto, usuario y password cifrados con Fernet. `config/registered.py` hace el `SELECT ... WHERE is_active AND monitoring_enabled`, descifra con `AUTH_ENCRYPTION_KEY` y devuelve un `Target` por fila.
 
 | Punto | Decisión |
 |-------|----------|
@@ -169,7 +169,7 @@ Despliegue: `telemetry_pipeline/Dockerfile` (python:3.11-slim, compila `psycopg2
 Un ciclo es, completo:
 
 ```
-load_registered_targets()        SELECT ... WHERE is_active   (1 conexión a la cola)
+load_registered_targets()        SELECT ... WHERE is_active AND monitoring_enabled   (1 conexión a la cola)
   → si devuelve None/[]: log de transición y no extrae nada, re-consulta al siguiente ciclo
   → si hay targets:    run_targets()                          (1 vuelta por fila: extrae,
                                                                valida, encola, dispose)

@@ -21,6 +21,11 @@ CREATE TABLE IF NOT EXISTS registered_databases (
     -- Indica si la base de datos esta activa (TRUE) o no (FALSE). Es el
     -- registro de seguimiento de su estado.
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    -- Voluntad del usuario: FALSE cuando pauso el monitoreo desde la pagina de
+    -- diagnosticos. A diferencia de is_active (que lo actualiza solo el chequeo
+    -- de disponibilidad), esta columna solo la cambia el usuario; el pipeline
+    -- extrae unicamente las bases con is_active Y monitoring_enabled.
+    monitoring_enabled BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

@@ -56,13 +56,15 @@ def normalize_statement_epochs(stats: Stats):
                     )
 
 
+ACTIVE_QUERY_TIMESTAMP_FIELDS = ("transaction_start_time", "wait_start_time")
+
+
 def normalize_active_query_timestamps(stats: Stats):
     for stmt in stats.get("active_queries") or []:
-        ts = stmt.get("transaction_start_time")
-        if ts is None:
-            continue
-        if isinstance(ts, datetime):
-            stmt["transaction_start_time"] = _to_naive_utc(ts).isoformat(sep=" ", timespec="microseconds")
+        for field in ACTIVE_QUERY_TIMESTAMP_FIELDS:
+            ts = stmt.get(field)
+            if isinstance(ts, datetime):
+                stmt[field] = _to_naive_utc(ts).isoformat(sep=" ", timespec="microseconds")
 
 def normalize_blocking_pids(stats: Stats):
     for query in stats.get("active_queries") or []:

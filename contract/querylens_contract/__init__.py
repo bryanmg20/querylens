@@ -6,6 +6,7 @@ detection_engine valida con los mismos al leer la cola.
 from .snapshot import (
     ActiveQueryRow,
     CanonicExplain,
+    CaptureTimestampRow,
     CanonicalPlan,
     ColumnRow,
     Estimates,
@@ -24,6 +25,7 @@ from .snapshot import (
 __all__ = [
     "ActiveQueryRow",
     "CanonicExplain",
+    "CaptureTimestampRow",
     "CanonicalPlan",
     "ColumnRow",
     "Estimates",
