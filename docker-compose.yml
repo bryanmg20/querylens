@@ -14,6 +14,9 @@ services:
       - ./querylens_database/registered_databases.sql:/docker-entrypoint-initdb.d/02_registered_databases.sql
       # Salud del pipeline (lo escribe el servicio pipeline, lo lee la API).
       - ./querylens_database/pipeline_health.sql:/docker-entrypoint-initdb.d/03_pipeline_health.sql
+      # Estado del modulo de contencion (CT-05). El detection_engine tambien la
+      # crea al arrancar, para volumenes que ya existian antes de este archivo.
+      - ./querylens_database/contention_state.sql:/docker-entrypoint-initdb.d/04_contention_state.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${QUERYLENS_USER} -d ${QUERYLENS_DB}"]
       interval: 5s
