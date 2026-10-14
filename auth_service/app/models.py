@@ -32,6 +32,11 @@ class RegisteredDatabase(Base):
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default=true()
     )
+    # Voluntad del usuario (pausar/reanudar el monitoreo). Independiente de
+    # is_active, que lo mantiene el chequeo de disponibilidad.
+    monitoring_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=true()
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
