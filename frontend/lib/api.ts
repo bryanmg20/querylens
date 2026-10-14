@@ -3,6 +3,7 @@ import type {
   ConnectionFormValues,
   DatabaseSessionResponse,
   DiagnosticsResponse,
+  MonitoringResponse,
   RegisterDatabaseResult,
   TestConnectionResponse,
 } from "@/types/database";
@@ -86,6 +87,29 @@ export class ApiError extends Error {
 export async function fetchDiagnostics(accessToken: string): Promise<DiagnosticsResponse> {
   const response = await fetch(`${API_REST_URL}/diagnostics`, {
     headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!response.ok) {
+    throw new ApiError(await parseErrorMessage(response), response.status);
+  }
+
+  return response.json();
+}
+
+// Pausa (enabled=false) o reanuda (enabled=true) el monitoreo de la base de
+// datos de la sesión. Lo atiende el Auth Service, que es quien escribe en
+// registered_databases; el token identifica la base.
+export async function setMonitoring(
+  accessToken: string,
+  enabled: boolean
+): Promise<MonitoringResponse> {
+  const response = await fetch(`${AUTH_SERVICE_URL}/databases/monitoring`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ enabled }),
   });
 
   if (!response.ok) {
