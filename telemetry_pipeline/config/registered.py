@@ -3,7 +3,8 @@
 El front y el auth service registran las bases del cliente en
 ``registered_databases`` (querylens_database/registered_databases.sql) con
 host, puerto, usuario y password cifrados con Fernet; solo las filas con
-``is_active`` son candidatas. Este modulo hace ese select con la conexion de
+``is_active`` (la base responde) y ``monitoring_enabled`` (el usuario no pauso el
+monitoreo) son candidatas. Este modulo hace ese select con la conexion de
 la cola (ql_user es dueño de la tabla), descifra con AUTH_ENCRYPTION_KEY y
 devuelve un Target por fila, para que main() ejecute el pipeline contra cada
 una.
@@ -57,7 +58,7 @@ SELECT_ACTIVE = """
     SELECT database_identifier, engine, host, port, db_user,
            encrypted_password, database_name
     FROM registered_databases
-    WHERE is_active
+    WHERE is_active AND monitoring_enabled
 """
 
 # El auth service solo admite Literal["postgresql", "mysql"]; el pipeline
