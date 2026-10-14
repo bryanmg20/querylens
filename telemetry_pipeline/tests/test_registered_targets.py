@@ -150,9 +150,9 @@ def test_sin_filas_activas_devuelve_none(fernet, monkeypatch):
 
 
 def test_consulta_solo_filas_activas():
-    """El filtro is_active lo aplica el SQL, no el codigo: si alguien lo
-    quita de SELECT_ACTIVE, esta prueba lo atrapa."""
-    assert "WHERE is_active" in registered.SELECT_ACTIVE
+    """Los filtros is_active y monitoring_enabled los aplica el SQL, no el
+    codigo: si alguien los quita de SELECT_ACTIVE, esta prueba lo atrapa."""
+    assert "WHERE is_active AND monitoring_enabled" in registered.SELECT_ACTIVE
     assert "registered_databases" in registered.SELECT_ACTIVE
 
 

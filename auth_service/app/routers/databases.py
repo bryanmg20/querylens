@@ -9,6 +9,8 @@ from app.schemas import (
     DatabaseCreateRequest,
     DatabaseRegisteredResponse,
     DatabaseSessionResponse,
+    MonitoringResponse,
+    MonitoringUpdateRequest,
     TestConnectionRequest,
     TestConnectionResponse,
 )
@@ -18,6 +20,7 @@ from app.security import (
     decrypt_secret,
     encrypt_secret,
     generate_database_identifier,
+    get_database_identifier,
 )
 
 router = APIRouter(prefix="/databases", tags=["databases"])
@@ -40,15 +43,18 @@ def _to_response(record: RegisteredDatabase) -> DatabaseRegisteredResponse:
         port=int(decrypt_secret(record.port)),
         database_name=record.database_name,
         is_active=record.is_active,
+        monitoring_enabled=record.monitoring_enabled,
         created_at=record.created_at,
     )
 
 
 def _start_session(db: Session, record: RegisteredDatabase) -> DatabaseSessionResponse:
-    # Iniciar sesión marca la base de datos como disponible. Se queda así
-    # aunque el usuario cierre la página: el monitoreo continúa.
-    if not record.is_active:
+    # Iniciar sesión marca la base de datos como disponible y vuelve a habilitar
+    # el monitoreo si el usuario lo había pausado. Se queda así aunque cierre la
+    # página: el monitoreo continúa.
+    if not record.is_active or not record.monitoring_enabled:
         record.is_active = True
+        record.monitoring_enabled = True
         db.commit()
         db.refresh(record)
     return DatabaseSessionResponse(
@@ -132,4 +138,33 @@ def register_database(
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         detail="No fue posible generar un identificador único para la base de datos",
+    )
+
+
+@router.patch("/monitoring", response_model=MonitoringResponse)
+def set_monitoring(
+    payload: MonitoringUpdateRequest,
+    database_identifier: str = Depends(get_database_identifier),
+    db: Session = Depends(get_db),
+) -> MonitoringResponse:
+    """Pausa (enabled=false) o reanuda (enabled=true) el monitoreo de la base
+    de datos del token. Solo cambia monitoring_enabled: la disponibilidad
+    (is_active) sigue siendo responsabilidad del chequeo automático."""
+
+    record = (
+        db.query(RegisteredDatabase)
+        .filter(RegisteredDatabase.database_identifier == database_identifier)
+        .first()
+    )
+    if record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="La base de datos del token ya no está registrada",
+        )
+
+    record.monitoring_enabled = payload.enabled
+    db.commit()
+    return MonitoringResponse(
+        database_identifier=record.database_identifier,
+        monitoring_enabled=record.monitoring_enabled,
     )

@@ -59,6 +59,8 @@ class DiagnosticsResponse(BaseModel):
     connection_name: str
     engine: str
     is_active: bool
+    # False cuando el usuario pauso el monitoreo desde la pagina de diagnosticos.
+    monitoring_enabled: bool
     # Hallazgos más recientes del detection_engine, del más nuevo al más viejo.
     diagnostics: list[Finding]
     health: Health

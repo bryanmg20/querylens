@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import FindingsPanel from "@/components/FindingsPanel";
 import HealthPanel from "@/components/HealthPanel";
+import MonitoringControl from "@/components/MonitoringControl";
 import StatusSummary from "@/components/StatusSummary";
-import { ApiError, fetchDiagnostics } from "@/lib/api";
+import { ApiError, fetchDiagnostics, setMonitoring } from "@/lib/api";
 import { clearAccessToken, getAccessToken } from "@/lib/session";
 import type { DiagnosticsResponse } from "@/types/database";
 
@@ -16,6 +17,8 @@ export default function DiagnosticsPage() {
   const router = useRouter();
   const [data, setData] = useState<DiagnosticsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [monitoringBusy, setMonitoringBusy] = useState(false);
+  const [monitoringError, setMonitoringError] = useState<string | null>(null);
 
   useEffect(() => {
     const token = getAccessToken();
@@ -53,6 +56,35 @@ export default function DiagnosticsPage() {
     };
   }, [router]);
 
+  async function handleMonitoringChange(enabled: boolean) {
+    const token = getAccessToken();
+    if (!token) {
+      router.replace("/");
+      return;
+    }
+
+    setMonitoringBusy(true);
+    setMonitoringError(null);
+    try {
+      const result = await setMonitoring(token, enabled);
+      // Se refleja de inmediato; el siguiente polling confirma el estado.
+      setData((current) =>
+        current ? { ...current, monitoring_enabled: result.monitoring_enabled } : current
+      );
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        clearAccessToken();
+        router.replace("/");
+        return;
+      }
+      setMonitoringError(
+        err instanceof Error ? err.message : "No fue posible cambiar el estado del monitoreo"
+      );
+    } finally {
+      setMonitoringBusy(false);
+    }
+  }
+
   return (
     <main className="min-h-screen px-4 py-10 sm:py-16">
       <div className="mx-auto w-full max-w-4xl space-y-8">
@@ -73,6 +105,12 @@ export default function DiagnosticsPage() {
         {data && (
           <>
             <StatusSummary data={data} />
+            <MonitoringControl
+              enabled={data.monitoring_enabled}
+              busy={monitoringBusy}
+              error={monitoringError}
+              onChange={handleMonitoringChange}
+            />
             <HealthPanel issues={data.health.issues} serverTime={data.server_time} />
             <FindingsPanel findings={data.diagnostics} waiting={data.health.last_run == null} />
           </>
