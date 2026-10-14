@@ -69,7 +69,7 @@ def test_rows_are_converted_to_plain_dicts():
 
 
 def test_failing_query_yields_none_and_rolls_back():
-    stage, conn = _stage(_FakeConn(fail_on=["FROM pg_locks"]))
+    stage, conn = _stage(_FakeConn(fail_on=["c.oid = l.relation"]))
     stats = stage.execute({}, conn)
     assert stats["locks"] is None
     assert conn.rollback_calls == 1
@@ -78,7 +78,7 @@ def test_failing_query_yields_none_and_rolls_back():
 def test_one_failing_query_does_not_stop_the_others():
     stage, conn = _stage(_FakeConn(
         rows_for={"pg_stat_user_tables": [{"table_name": "sbtest1"}]},
-        fail_on=["FROM pg_locks"],
+        fail_on=["c.oid = l.relation"],
     ))
     stats = stage.execute({}, conn)
     assert stats["locks"] is None

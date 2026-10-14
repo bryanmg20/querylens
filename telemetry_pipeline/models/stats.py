@@ -9,6 +9,7 @@ class Stats(TypedDict, total=False):
     locks: list[dict] | None
     active_queries: list[dict] | None
     server_start_timestamp: list[dict] | None
+    capture_timestamp: list[dict] | None
     columns: list[dict] | None
     foreign_keys: list[dict] | None
     schema_resolver: list[dict] | None

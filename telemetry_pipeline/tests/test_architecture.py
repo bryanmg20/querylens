@@ -34,7 +34,7 @@ class TestCollectorsStrategy:
         assert collector.queries.keys() >= {
             "indexes", "tables", "statements", "locks",
             "active_queries", "server_start_timestamp", "columns",
-            "foreign_keys",
+            "foreign_keys", "capture_timestamp",
         }
         assert callable(collector.preprocess_statements)
         assert callable(collector.normalize_engine_artifacts)
