@@ -109,6 +109,11 @@ class ActiveQueryRow(BaseModel):
     query_id: QueryId
     canonic_query: str | None = None
     transaction_start_time: Annotated[str | None, BeforeValidator(_to_iso)] = None
+    # Vocabulario de pg_stat_activity.state ('active', 'idle in transaction', ...);
+    # MySQL se traduce a ese mismo vocabulario en su query.
+    session_state: str | None = None
+    # Cuando empezo a esperar el lock que no le conceden; None si no espera.
+    wait_start_time: Annotated[str | None, BeforeValidator(_to_iso)] = None
     blocking_pids: Annotated[list[int], BeforeValidator(_to_int_list)] = Field(
         default_factory=list
     )
@@ -155,6 +160,12 @@ class ForeignKeyRow(BaseModel):
 
 class ServerStartRow(BaseModel):
     server_start_time: Annotated[str | None, BeforeValidator(_to_iso)] = None
+
+
+class CaptureTimestampRow(BaseModel):
+    """Hora del servidor al tomar el snapshot. Es la referencia para calcular
+    antiguedades (transaction_start_time, wait_start_time) con el mismo reloj."""
+    captured_at: Annotated[str | None, BeforeValidator(_to_iso)] = None
 
 
 class LogicalShape(BaseModel):
@@ -216,6 +227,8 @@ class SnapshotPayload(BaseModel):
     # sin el default dejarian de validar. Sin el campo en el modelo,
     # extra='ignore' descartaria la clave en silencio.
     foreign_keys: ListOrNone[ForeignKeyRow] = []
+    # Mismo motivo que foreign_keys: default [] para que los goldens previos validen.
+    capture_timestamp: ListOrNone[CaptureTimestampRow] = []
     canonic_explains: ListOrNone[CanonicExplain] = []
 
     @field_validator("statements", mode="after")

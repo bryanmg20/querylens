@@ -8,6 +8,7 @@ from collectors.mysql.queries import (
 from collectors.mysql.queries import (
     LOCKS_QUERY as MYSQL_LOCKS_QUERY,
 )
+from collectors.mysql.queries import CAPTURE_TIMESTAMP_QUERY as MYSQL_CAPTURE_TIMESTAMP_QUERY
 from collectors.mysql.queries import FOREIGN_KEYS_QUERY as MYSQL_FOREIGN_KEYS_QUERY
 from collectors.mysql.queries import STATEMENTS_QUERY
 from collectors.postgres.queries import (
@@ -16,9 +17,10 @@ from collectors.postgres.queries import (
 from collectors.postgres.queries import (
     LOCKS_QUERY as PG_LOCKS_QUERY,
 )
+from collectors.postgres.queries import CAPTURE_TIMESTAMP_QUERY as PG_CAPTURE_TIMESTAMP_QUERY
 from collectors.postgres.queries import FOREIGN_KEYS_QUERY as PG_FOREIGN_KEYS_QUERY
 from collectors.postgres.queries import STATEMENTS_QUERY as PG_STATEMENTS_QUERY
-from querylens_contract.snapshot import ForeignKeyRow
+from querylens_contract.snapshot import ActiveQueryRow, CaptureTimestampRow, ForeignKeyRow
 
 pytestmark = pytest.mark.contract
 
@@ -262,3 +264,44 @@ def test_mysql_foreign_keys_query_is_self_filtered():
     la query de FKs no necesita entrada propia en el filtro."""
     assert "information_schema" in MYSQL_FOREIGN_KEYS_QUERY
     assert "NOT LIKE '%information_schema%'" in STATEMENTS_QUERY
+
+
+def _sql_without_any_comments(query):
+    return re.sub(r"(--|#)[^\n]*", "", query)
+
+
+@pytest.mark.parametrize("query", [PG_ACTIVE_QUERIES_QUERY, MYSQL_ACTIVE_QUERIES_QUERY])
+def test_active_queries_emit_contention_fields(query):
+    """CT-05 necesita el estado de la sesion y desde cuando espera el lock;
+    sin el alias la columna llega al modelo como None en silencio."""
+    sql = _sql_without_any_comments(query)
+    for field in ("session_state", "wait_start_time", "transaction_start_time", "blocking_pids"):
+        assert field in ActiveQueryRow.model_fields
+        assert re.search(rf"\bAS\s+{field}\b", sql), field
+
+
+def test_mysql_active_queries_keep_idle_sessions_with_open_transaction():
+    """La raiz de una cascada de bloqueo suele estar en Sleep con la transaccion
+    abierta. Descartar todo Sleep dejaba su pid en blocking_pids sin fila, y sin
+    transaction_start_time no hay antiguedad que medir."""
+    sql = _sql_without_any_comments(MYSQL_ACTIVE_QUERIES_QUERY)
+    assert "t.processlist_command != 'Sleep' OR trx.trx_id IS NOT NULL" in sql
+    assert "'idle in transaction'" in sql
+
+
+def test_pg_wait_start_time_reads_ungranted_locks():
+    sql = _sql_without_any_comments(PG_ACTIVE_QUERIES_QUERY)
+    assert "waitstart" in sql
+    assert "NOT l.granted" in sql
+
+
+def test_capture_timestamp_uses_server_clock():
+    """captured_at se resta contra fechas del servidor; tiene que salir del
+    mismo reloj. En Postgres now() es el inicio de la transaccion del colector,
+    por eso clock_timestamp()."""
+    expected = set(CaptureTimestampRow.model_fields)
+    assert _select_aliases(PG_CAPTURE_TIMESTAMP_QUERY) == expected
+    assert _select_aliases(MYSQL_CAPTURE_TIMESTAMP_QUERY) == expected
+    assert "clock_timestamp()" in PG_CAPTURE_TIMESTAMP_QUERY
+    assert "now()" not in PG_CAPTURE_TIMESTAMP_QUERY
+    assert "NOW(6)" in MYSQL_CAPTURE_TIMESTAMP_QUERY

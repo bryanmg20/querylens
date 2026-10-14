@@ -5,6 +5,7 @@ from .queries import (
     STATEMENTS_QUERY,
     LOCKS_QUERY,
     ACTIVE_QUERIES_QUERY,
+    CAPTURE_TIMESTAMP_QUERY,
 SERVER_START_QUERY,
     COLUMNS_QUERY,
     FOREIGN_KEYS_QUERY
@@ -22,6 +23,7 @@ class Mysql_Collector(DB_Engine_Collector):
                         "indexes": INDEXES_QUERY,
                         "tables": TABLES_QUERY,
                         "statements": STATEMENTS_QUERY,
+                        "capture_timestamp": CAPTURE_TIMESTAMP_QUERY,
                         "locks": LOCKS_QUERY,
                         "active_queries": ACTIVE_QUERIES_QUERY,
                         "server_start_timestamp": SERVER_START_QUERY,

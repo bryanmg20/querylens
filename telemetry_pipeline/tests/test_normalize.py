@@ -34,6 +34,19 @@ def test_normalize_active_query_timestamps_converts_non_utc_to_utc():
     assert stats["active_queries"][0]["transaction_start_time"] == "2026-01-01 12:00:00.000000"
 
 
+def test_normalize_active_query_timestamps_wait_start_time():
+    """wait_start_time (pg_locks.waitstart) llega como timestamptz igual que
+    transaction_start_time; se resta contra captured_at, asi que necesita el
+    mismo formato UTC sin offset."""
+    tz_bogota = timezone(timedelta(hours=-5))
+    stats = {"active_queries": [{
+        "transaction_start_time": None,
+        "wait_start_time": datetime(2026, 1, 1, 7, 0, 5, tzinfo=tz_bogota),
+    }]}
+    normalize_active_query_timestamps(stats)
+    assert stats["active_queries"][0]["wait_start_time"] == "2026-01-01 12:00:05.000000"
+
+
 def test_normalize_statement_epochs_drop_tz():
     stats = {
         "statements": [{"query_id": 1, "counters_epoch": datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)}],

@@ -41,7 +41,7 @@ def _pg_exc(pgcode, cls=ProgrammingError, message="boom"):
 
 
 def test_collect_failure_lands_in_report_by_section():
-    conn = _FakeConn(overrides={"pg_locks": _pg_exc("42501")})
+    conn = _FakeConn(overrides={"c.oid = l.relation": _pg_exc("42501")})
     conn.rollback = lambda: None
     report = HealthReport()
     stage = CollectStage(Postgres_Collector(engine=None), report)
