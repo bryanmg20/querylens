@@ -1,0 +1,1329 @@
+{
+  "db_id": "querylens-db-01-mysql",
+  "locks": [],
+  "tables": [
+    {
+      "idx_scans": 750042,
+      "live_rows": 5000,
+      "seq_scans": 1385126,
+      "table_name": "ql_pt_customers",
+      "schema_name": "ql_demo"
+    },
+    {
+      "idx_scans": 88930556,
+      "live_rows": 995628,
+      "seq_scans": 399399052,
+      "table_name": "ql_pt_orders",
+      "schema_name": "ql_demo"
+    },
+    {
+      "idx_scans": 0,
+      "live_rows": 9936,
+      "seq_scans": null,
+      "table_name": "sbtest1",
+      "schema_name": "ql_demo"
+    },
+    {
+      "idx_scans": 0,
+      "live_rows": 9936,
+      "seq_scans": null,
+      "table_name": "sbtest10",
+      "schema_name": "ql_demo"
+    },
+    {
+      "idx_scans": 0,
+      "live_rows": 9936,
+      "seq_scans": null,
+      "table_name": "sbtest2",
+      "schema_name": "ql_demo"
+    },
+    {
+      "idx_scans": 0,
+      "live_rows": 9680,
+      "seq_scans": null,
+      "table_name": "sbtest3",
+      "schema_name": "ql_demo"
+    },
+    {
+      "idx_scans": 0,
+      "live_rows": 9937,
+      "seq_scans": null,
+      "table_name": "sbtest4",
+      "schema_name": "ql_demo"
+    },
+    {
+      "idx_scans": 0,
+      "live_rows": 9936,
+      "seq_scans": null,
+      "table_name": "sbtest5",
+      "schema_name": "ql_demo"
+    },
+    {
+      "idx_scans": 0,
+      "live_rows": 9937,
+      "seq_scans": null,
+      "table_name": "sbtest6",
+      "schema_name": "ql_demo"
+    },
+    {
+      "idx_scans": 0,
+      "live_rows": 9938,
+      "seq_scans": null,
+      "table_name": "sbtest7",
+      "schema_name": "ql_demo"
+    },
+    {
+      "idx_scans": 0,
+      "live_rows": 9680,
+      "seq_scans": null,
+      "table_name": "sbtest8",
+      "schema_name": "ql_demo"
+    },
+    {
+      "idx_scans": 0,
+      "live_rows": 9936,
+      "seq_scans": null,
+      "table_name": "sbtest9",
+      "schema_name": "ql_demo"
+    }
+  ],
+  "columns": [
+    {
+      "data_type": "varchar",
+      "table_name": "ql_pt_customers",
+      "column_name": "email",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "int",
+      "table_name": "ql_pt_customers",
+      "column_name": "id",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "varchar",
+      "table_name": "ql_pt_customers",
+      "column_name": "name",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "int",
+      "table_name": "ql_pt_customers",
+      "column_name": "region",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "char",
+      "table_name": "ql_pt_orders",
+      "column_name": "code",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "datetime",
+      "table_name": "ql_pt_orders",
+      "column_name": "created_at",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "int",
+      "table_name": "ql_pt_orders",
+      "column_name": "customer_id",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "int",
+      "table_name": "ql_pt_orders",
+      "column_name": "id",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "text",
+      "table_name": "ql_pt_orders",
+      "column_name": "note",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "varchar",
+      "table_name": "ql_pt_orders",
+      "column_name": "status",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "decimal",
+      "table_name": "ql_pt_orders",
+      "column_name": "total",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "char",
+      "table_name": "sbtest1",
+      "column_name": "c",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "int",
+      "table_name": "sbtest1",
+      "column_name": "id",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "int",
+      "table_name": "sbtest1",
+      "column_name": "k",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "char",
+      "table_name": "sbtest1",
+      "column_name": "pad",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "char",
+      "table_name": "sbtest10",
+      "column_name": "c",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "int",
+      "table_name": "sbtest10",
+      "column_name": "id",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "int",
+      "table_name": "sbtest10",
+      "column_name": "k",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "char",
+      "table_name": "sbtest10",
+      "column_name": "pad",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "char",
+      "table_name": "sbtest2",
+      "column_name": "c",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "int",
+      "table_name": "sbtest2",
+      "column_name": "id",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "int",
+      "table_name": "sbtest2",
+      "column_name": "k",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "char",
+      "table_name": "sbtest2",
+      "column_name": "pad",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "char",
+      "table_name": "sbtest3",
+      "column_name": "c",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "int",
+      "table_name": "sbtest3",
+      "column_name": "id",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "int",
+      "table_name": "sbtest3",
+      "column_name": "k",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "char",
+      "table_name": "sbtest3",
+      "column_name": "pad",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "char",
+      "table_name": "sbtest4",
+      "column_name": "c",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "int",
+      "table_name": "sbtest4",
+      "column_name": "id",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "int",
+      "table_name": "sbtest4",
+      "column_name": "k",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "char",
+      "table_name": "sbtest4",
+      "column_name": "pad",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "char",
+      "table_name": "sbtest5",
+      "column_name": "c",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "int",
+      "table_name": "sbtest5",
+      "column_name": "id",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "int",
+      "table_name": "sbtest5",
+      "column_name": "k",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "char",
+      "table_name": "sbtest5",
+      "column_name": "pad",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "char",
+      "table_name": "sbtest6",
+      "column_name": "c",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "int",
+      "table_name": "sbtest6",
+      "column_name": "id",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "int",
+      "table_name": "sbtest6",
+      "column_name": "k",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "char",
+      "table_name": "sbtest6",
+      "column_name": "pad",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "char",
+      "table_name": "sbtest7",
+      "column_name": "c",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "int",
+      "table_name": "sbtest7",
+      "column_name": "id",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "int",
+      "table_name": "sbtest7",
+      "column_name": "k",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "char",
+      "table_name": "sbtest7",
+      "column_name": "pad",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "char",
+      "table_name": "sbtest8",
+      "column_name": "c",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "int",
+      "table_name": "sbtest8",
+      "column_name": "id",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "int",
+      "table_name": "sbtest8",
+      "column_name": "k",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "char",
+      "table_name": "sbtest8",
+      "column_name": "pad",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "char",
+      "table_name": "sbtest9",
+      "column_name": "c",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "int",
+      "table_name": "sbtest9",
+      "column_name": "id",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "int",
+      "table_name": "sbtest9",
+      "column_name": "k",
+      "schema_name": "ql_demo"
+    },
+    {
+      "data_type": "char",
+      "table_name": "sbtest9",
+      "column_name": "pad",
+      "schema_name": "ql_demo"
+    }
+  ],
+  "indexes": [
+    {
+      "index_ref": "CREATE UNIQUE INDEX PRIMARY ON ql_demo.ql_pt_customers USING btree (id)",
+      "index_name": "PRIMARY",
+      "table_name": "ql_pt_customers",
+      "index_scans": 420000,
+      "schema_name": "ql_demo",
+      "last_index_scan": null,
+      "index_size_bytes": 196608
+    },
+    {
+      "index_ref": "CREATE INDEX ql_pt_customers_email ON ql_demo.ql_pt_customers USING btree (email)",
+      "index_name": "ql_pt_customers_email",
+      "table_name": "ql_pt_customers",
+      "index_scans": 330042,
+      "schema_name": "ql_demo",
+      "last_index_scan": null,
+      "index_size_bytes": 196608
+    },
+    {
+      "index_ref": "CREATE UNIQUE INDEX PRIMARY ON ql_demo.ql_pt_orders USING btree (id)",
+      "index_name": "PRIMARY",
+      "table_name": "ql_pt_orders",
+      "index_scans": 41966,
+      "schema_name": "ql_demo",
+      "last_index_scan": null,
+      "index_size_bytes": 62554112
+    },
+    {
+      "index_ref": "CREATE INDEX ql_pt_fk ON ql_demo.ql_pt_orders USING btree (customer_id)",
+      "index_name": "ql_pt_fk",
+      "table_name": "ql_pt_orders",
+      "index_scans": 17745200,
+      "schema_name": "ql_demo",
+      "last_index_scan": null,
+      "index_size_bytes": 62554112
+    },
+    {
+      "index_ref": "CREATE INDEX ql_pt_orders_created ON ql_demo.ql_pt_orders USING btree (created_at)",
+      "index_name": "ql_pt_orders_created",
+      "table_name": "ql_pt_orders",
+      "index_scans": 24043310,
+      "schema_name": "ql_demo",
+      "last_index_scan": null,
+      "index_size_bytes": 62554112
+    },
+    {
+      "index_ref": "CREATE INDEX ql_pt_orders_status ON ql_demo.ql_pt_orders USING btree (status)",
+      "index_name": "ql_pt_orders_status",
+      "table_name": "ql_pt_orders",
+      "index_scans": 47100080,
+      "schema_name": "ql_demo",
+      "last_index_scan": null,
+      "index_size_bytes": 62554112
+    },
+    {
+      "index_ref": "CREATE INDEX k_1 ON ql_demo.sbtest1 USING btree (k)",
+      "index_name": "k_1",
+      "table_name": "sbtest1",
+      "index_scans": null,
+      "schema_name": "ql_demo",
+      "last_index_scan": null,
+      "index_size_bytes": 212992
+    },
+    {
+      "index_ref": "CREATE UNIQUE INDEX PRIMARY ON ql_demo.sbtest1 USING btree (id)",
+      "index_name": "PRIMARY",
+      "table_name": "sbtest1",
+      "index_scans": null,
+      "schema_name": "ql_demo",
+      "last_index_scan": null,
+      "index_size_bytes": 212992
+    },
+    {
+      "index_ref": "CREATE INDEX k_10 ON ql_demo.sbtest10 USING btree (k)",
+      "index_name": "k_10",
+      "table_name": "sbtest10",
+      "index_scans": null,
+      "schema_name": "ql_demo",
+      "last_index_scan": null,
+      "index_size_bytes": 212992
+    },
+    {
+      "index_ref": "CREATE UNIQUE INDEX PRIMARY ON ql_demo.sbtest10 USING btree (id)",
+      "index_name": "PRIMARY",
+      "table_name": "sbtest10",
+      "index_scans": null,
+      "schema_name": "ql_demo",
+      "last_index_scan": null,
+      "index_size_bytes": 212992
+    },
+    {
+      "index_ref": "CREATE INDEX k_2 ON ql_demo.sbtest2 USING btree (k)",
+      "index_name": "k_2",
+      "table_name": "sbtest2",
+      "index_scans": null,
+      "schema_name": "ql_demo",
+      "last_index_scan": null,
+      "index_size_bytes": 196608
+    },
+    {
+      "index_ref": "CREATE UNIQUE INDEX PRIMARY ON ql_demo.sbtest2 USING btree (id)",
+      "index_name": "PRIMARY",
+      "table_name": "sbtest2",
+      "index_scans": null,
+      "schema_name": "ql_demo",
+      "last_index_scan": null,
+      "index_size_bytes": 196608
+    },
+    {
+      "index_ref": "CREATE INDEX k_3 ON ql_demo.sbtest3 USING btree (k)",
+      "index_name": "k_3",
+      "table_name": "sbtest3",
+      "index_scans": null,
+      "schema_name": "ql_demo",
+      "last_index_scan": null,
+      "index_size_bytes": 212992
+    },
+    {
+      "index_ref": "CREATE UNIQUE INDEX PRIMARY ON ql_demo.sbtest3 USING btree (id)",
+      "index_name": "PRIMARY",
+      "table_name": "sbtest3",
+      "index_scans": null,
+      "schema_name": "ql_demo",
+      "last_index_scan": null,
+      "index_size_bytes": 212992
+    },
+    {
+      "index_ref": "CREATE INDEX k_4 ON ql_demo.sbtest4 USING btree (k)",
+      "index_name": "k_4",
+      "table_name": "sbtest4",
+      "index_scans": null,
+      "schema_name": "ql_demo",
+      "last_index_scan": null,
+      "index_size_bytes": 229376
+    },
+    {
+      "index_ref": "CREATE UNIQUE INDEX PRIMARY ON ql_demo.sbtest4 USING btree (id)",
+      "index_name": "PRIMARY",
+      "table_name": "sbtest4",
+      "index_scans": null,
+      "schema_name": "ql_demo",
+      "last_index_scan": null,
+      "index_size_bytes": 229376
+    },
+    {
+      "index_ref": "CREATE INDEX k_5 ON ql_demo.sbtest5 USING btree (k)",
+      "index_name": "k_5",
+      "table_name": "sbtest5",
+      "index_scans": null,
+      "schema_name": "ql_demo",
+      "last_index_scan": null,
+      "index_size_bytes": 212992
+    },
+    {
+      "index_ref": "CREATE UNIQUE INDEX PRIMARY ON ql_demo.sbtest5 USING btree (id)",
+      "index_name": "PRIMARY",
+      "table_name": "sbtest5",
+      "index_scans": null,
+      "schema_name": "ql_demo",
+      "last_index_scan": null,
+      "index_size_bytes": 212992
+    },
+    {
+      "index_ref": "CREATE INDEX k_6 ON ql_demo.sbtest6 USING btree (k)",
+      "index_name": "k_6",
+      "table_name": "sbtest6",
+      "index_scans": null,
+      "schema_name": "ql_demo",
+      "last_index_scan": null,
+      "index_size_bytes": 212992
+    },
+    {
+      "index_ref": "CREATE UNIQUE INDEX PRIMARY ON ql_demo.sbtest6 USING btree (id)",
+      "index_name": "PRIMARY",
+      "table_name": "sbtest6",
+      "index_scans": null,
+      "schema_name": "ql_demo",
+      "last_index_scan": null,
+      "index_size_bytes": 212992
+    },
+    {
+      "index_ref": "CREATE INDEX k_7 ON ql_demo.sbtest7 USING btree (k)",
+      "index_name": "k_7",
+      "table_name": "sbtest7",
+      "index_scans": null,
+      "schema_name": "ql_demo",
+      "last_index_scan": null,
+      "index_size_bytes": 196608
+    },
+    {
+      "index_ref": "CREATE UNIQUE INDEX PRIMARY ON ql_demo.sbtest7 USING btree (id)",
+      "index_name": "PRIMARY",
+      "table_name": "sbtest7",
+      "index_scans": null,
+      "schema_name": "ql_demo",
+      "last_index_scan": null,
+      "index_size_bytes": 196608
+    },
+    {
+      "index_ref": "CREATE INDEX k_8 ON ql_demo.sbtest8 USING btree (k)",
+      "index_name": "k_8",
+      "table_name": "sbtest8",
+      "index_scans": null,
+      "schema_name": "ql_demo",
+      "last_index_scan": null,
+      "index_size_bytes": 212992
+    },
+    {
+      "index_ref": "CREATE UNIQUE INDEX PRIMARY ON ql_demo.sbtest8 USING btree (id)",
+      "index_name": "PRIMARY",
+      "table_name": "sbtest8",
+      "index_scans": null,
+      "schema_name": "ql_demo",
+      "last_index_scan": null,
+      "index_size_bytes": 212992
+    },
+    {
+      "index_ref": "CREATE INDEX k_9 ON ql_demo.sbtest9 USING btree (k)",
+      "index_name": "k_9",
+      "table_name": "sbtest9",
+      "index_scans": null,
+      "schema_name": "ql_demo",
+      "last_index_scan": null,
+      "index_size_bytes": 212992
+    },
+    {
+      "index_ref": "CREATE UNIQUE INDEX PRIMARY ON ql_demo.sbtest9 USING btree (id)",
+      "index_name": "PRIMARY",
+      "table_name": "sbtest9",
+      "index_scans": null,
+      "schema_name": "ql_demo",
+      "last_index_scan": null,
+      "index_size_bytes": 212992
+    }
+  ],
+  "statements": [
+    {
+      "query_id": "ql_demo/87d98d0d6761fbf08dbe8d82eaa5dbe0016bde6ef5df19667130a81d36a4a835",
+      "query_text": "SELECT STATUS , COUNT ( * ) FROM `ql_pt_orders` WHERE `total` > ? GROUP BY STATUS HAVING COUNT ( * ) > ?",
+      "max_time_ms": 5548.0944,
+      "min_time_ms": 2832.5822,
+      "schema_name": "ql_demo",
+      "mean_time_ms": 3826.2659,
+      "canonic_query": "SELECT STATUS, COUNT(*) FROM ql_pt_orders WHERE total > $1 GROUP BY STATUS HAVING COUNT(*) > $2",
+      "database_name": "ql_demo",
+      "rows_returned": 30,
+      "total_time_ms": 38262.6591,
+      "counters_epoch": "2026-10-14 00:22:25.957614",
+      "stddev_time_ms": 544.489980019123,
+      "execution_count": 10,
+      "avg_rows_per_call": 3.0,
+      "query_sample_text": "SELECT status, COUNT(*) FROM ql_pt_orders WHERE total > 50 GROUP BY status HAVING COUNT(*) > 10",
+      "sort_merge_passes": 0,
+      "coeff_of_variation": 0.14230322571651985,
+      "disk_spill_indicator": 0
+    },
+    {
+      "query_id": "ql_demo/7d2bb516418a42df54c0faa1b9bfeca26914d61ea5713aa9db090dc5c4b04f2a",
+      "query_text": "SELECT `id` FROM `ql_pt_orders` WHERE COALESCE ( `note` , ? ) = ?",
+      "max_time_ms": 1328.4044,
+      "min_time_ms": 563.7873,
+      "schema_name": "ql_demo",
+      "mean_time_ms": 769.0808,
+      "canonic_query": "SELECT id FROM ql_pt_orders WHERE COALESCE(note, $1) = $2",
+      "database_name": "ql_demo",
+      "rows_returned": 1000000,
+      "total_time_ms": 7690.8085,
+      "counters_epoch": "2026-10-14 00:22:27.801258",
+      "stddev_time_ms": 176.8736525084954,
+      "execution_count": 10,
+      "avg_rows_per_call": 100000.0,
+      "query_sample_text": "SELECT id FROM ql_pt_orders WHERE COALESCE(note, '') = ''",
+      "sort_merge_passes": 0,
+      "coeff_of_variation": 0.22998058527594945,
+      "disk_spill_indicator": 0
+    },
+    {
+      "query_id": "ql_demo/aef407ebbf74a7a49203d4a0cd481b8d00269e8f9dec2ef5c69da0fe2e1a3709",
+      "query_text": "SELECT `id` FROM `ql_pt_orders` WHERE NOT ( STATUS = ? )",
+      "max_time_ms": 900.04,
+      "min_time_ms": 393.6064,
+      "schema_name": "ql_demo",
+      "mean_time_ms": 544.2922,
+      "canonic_query": "SELECT id FROM ql_pt_orders WHERE NOT (STATUS = $1)",
+      "database_name": "ql_demo",
+      "rows_returned": 7920000,
+      "total_time_ms": 4354.3373,
+      "counters_epoch": "2026-10-14 00:22:29.236232",
+      "stddev_time_ms": 125.77584088609782,
+      "execution_count": 8,
+      "avg_rows_per_call": 990000.0,
+      "query_sample_text": "SELECT id FROM ql_pt_orders WHERE NOT (status = 'raro')",
+      "sort_merge_passes": 0,
+      "coeff_of_variation": 0.23108146853123715,
+      "disk_spill_indicator": 0
+    },
+    {
+      "query_id": "ql_demo/ea5073435d4575adb10e2b00459f00069e33d364fa045c400afb32c6b3320890",
+      "query_text": "SELECT `id` FROM `ql_pt_orders` WHERE CASE WHEN STATUS = ? THEN ? ELSE ? END = ?",
+      "max_time_ms": 681.6242,
+      "min_time_ms": 230.7713,
+      "schema_name": "ql_demo",
+      "mean_time_ms": 398.5774,
+      "canonic_query": "SELECT id FROM ql_pt_orders WHERE CASE WHEN STATUS = $1 THEN $2 ELSE $3 END = $4",
+      "database_name": "ql_demo",
+      "rows_returned": 100000,
+      "total_time_ms": 3985.774,
+      "counters_epoch": "2026-10-14 00:22:26.470326",
+      "stddev_time_ms": 89.5072572422147,
+      "execution_count": 10,
+      "avg_rows_per_call": 10000.0,
+      "query_sample_text": "SELECT id FROM ql_pt_orders WHERE CASE WHEN status = 'raro' THEN 1 ELSE 0 END = 1",
+      "sort_merge_passes": 0,
+      "coeff_of_variation": 0.2245668149830239,
+      "disk_spill_indicator": 0
+    },
+    {
+      "query_id": "ql_demo/d6848ba2c164e5871b49bb708d04e306615711d50b8bfba9cc068f5735989eba",
+      "query_text": "SELECT `id` FROM `ql_pt_orders` WHERE `total` > - ?",
+      "max_time_ms": 759.3289,
+      "min_time_ms": 331.2046,
+      "schema_name": "ql_demo",
+      "mean_time_ms": 460.1711,
+      "canonic_query": "SELECT id FROM ql_pt_orders WHERE total > -$1",
+      "database_name": "ql_demo",
+      "rows_returned": 8000000,
+      "total_time_ms": 3681.3692,
+      "counters_epoch": "2026-10-14 00:22:30.135696",
+      "stddev_time_ms": 105.76825451242445,
+      "execution_count": 8,
+      "avg_rows_per_call": 1000000.0,
+      "query_sample_text": "SELECT id FROM ql_pt_orders WHERE total > -5.5",
+      "sort_merge_passes": 0,
+      "coeff_of_variation": 0.22984549553942968,
+      "disk_spill_indicator": 0
+    },
+    {
+      "query_id": "ql_demo/9a99ca7a403abf34d5683b44377d8867dec021b6e551b0925fc6b913c3cce5d0",
+      "query_text": "SELECT `id` FROM `ql_pt_orders` WHERE `total` > `id`",
+      "max_time_ms": 517.9858,
+      "min_time_ms": 232.0365,
+      "schema_name": "ql_demo",
+      "mean_time_ms": 317.3516,
+      "canonic_query": "SELECT id FROM ql_pt_orders WHERE total > id",
+      "database_name": "ql_demo",
+      "rows_returned": 0,
+      "total_time_ms": 2538.8129,
+      "counters_epoch": "2026-10-14 00:22:28.338997",
+      "stddev_time_ms": 70.93490167896901,
+      "execution_count": 8,
+      "avg_rows_per_call": 0.0,
+      "query_sample_text": "SELECT id FROM ql_pt_orders WHERE total > id",
+      "sort_merge_passes": 0,
+      "coeff_of_variation": 0.223521487457347,
+      "disk_spill_indicator": 0
+    },
+    {
+      "query_id": "ql_demo/c988430f3049193e868d01968500b5ca81c6f83b8a36ea9f4daf56c197010ff3",
+      "query_text": "SELECT `id` FROM `ql_pt_orders` WHERE `total` > ? ORDER BY `created_at` DESC LIMIT ?",
+      "max_time_ms": 2.3177,
+      "min_time_ms": 0.3192,
+      "schema_name": "ql_demo",
+      "mean_time_ms": 0.687,
+      "canonic_query": "SELECT id FROM ql_pt_orders WHERE total > $1 ORDER BY created_at DESC NULLS LAST LIMIT $2",
+      "database_name": "ql_demo",
+      "rows_returned": 100,
+      "total_time_ms": 6.8697,
+      "counters_epoch": "2026-10-14 00:22:25.958824",
+      "stddev_time_ms": 0.5156726180436575,
+      "execution_count": 10,
+      "avg_rows_per_call": 10.0,
+      "query_sample_text": "SELECT id FROM ql_pt_orders WHERE total > 50 ORDER BY created_at DESC LIMIT 10",
+      "sort_merge_passes": 0,
+      "coeff_of_variation": 0.7506151645468085,
+      "disk_spill_indicator": 0
+    },
+    {
+      "query_id": "ql_demo/d140dda00d03e8a8261ca1d0500c28103af822007929cdd6e36aad2f8d9acf7a",
+      "query_text": "SELECT `id` FROM `ql_pt_orders` WHERE `id` IN (...)",
+      "max_time_ms": 0.5137,
+      "min_time_ms": 0.1713,
+      "schema_name": "ql_demo",
+      "mean_time_ms": 0.3579,
+      "canonic_query": "SELECT id FROM ql_pt_orders WHERE id IN ($1)",
+      "database_name": "ql_demo",
+      "rows_returned": 8,
+      "total_time_ms": 2.8631,
+      "counters_epoch": "2026-10-14 00:22:29.376039",
+      "stddev_time_ms": 0.05508361825443207,
+      "execution_count": 8,
+      "avg_rows_per_call": 1.0,
+      "query_sample_text": "SELECT id FROM ql_pt_orders WHERE id IN (5)",
+      "sort_merge_passes": 0,
+      "coeff_of_variation": 0.1539078464778767,
+      "disk_spill_indicator": 0
+    },
+    {
+      "query_id": "/26af0be5346b73addaab12413e754e1d119f0269b0e223e6af0364e660405cbc",
+      "query_text": "SET SESSION `max_execution_time` = ? , `time_zone` = ?",
+      "max_time_ms": 0.1585,
+      "min_time_ms": 0.1585,
+      "schema_name": null,
+      "mean_time_ms": 0.1585,
+      "canonic_query": "SET SESSION max_execution_time = $1, time_zone = $2",
+      "database_name": null,
+      "rows_returned": 0,
+      "total_time_ms": 0.1585,
+      "counters_epoch": "2026-10-14 00:22:51.648688",
+      "stddev_time_ms": null,
+      "execution_count": 1,
+      "avg_rows_per_call": 0.0,
+      "query_sample_text": "SET SESSION max_execution_time=30000, time_zone='+00:00'",
+      "sort_merge_passes": 0,
+      "coeff_of_variation": null,
+      "disk_spill_indicator": 0
+    }
+  ],
+  "foreign_keys": [
+    {
+      "position": 1,
+      "table_name": "ql_pt_orders",
+      "column_name": "customer_id",
+      "schema_name": "ql_demo",
+      "constraint_name": "ql_pt_fk",
+      "referenced_table_name": "ql_pt_customers",
+      "referenced_column_name": "id",
+      "referenced_schema_name": "ql_demo"
+    }
+  ],
+  "active_queries": [
+    {
+      "query_id": null,
+      "process_id": 5,
+      "blocking_pids": [],
+      "canonic_query": "Not available",
+      "database_name": null,
+      "transaction_start_time": null
+    },
+    {
+      "query_id": "ql_demo/9a99ca7a403abf34d5683b44377d8867dec021b6e551b0925fc6b913c3cce5d0",
+      "process_id": 3911,
+      "blocking_pids": [],
+      "canonic_query": "SELECT id FROM ql_pt_orders WHERE total > id",
+      "database_name": "ql_demo",
+      "transaction_start_time": "2026-10-14 00:22:51"
+    },
+    {
+      "query_id": "ql_demo/9a99ca7a403abf34d5683b44377d8867dec021b6e551b0925fc6b913c3cce5d0",
+      "process_id": 3912,
+      "blocking_pids": [],
+      "canonic_query": "SELECT id FROM ql_pt_orders WHERE total > id",
+      "database_name": "ql_demo",
+      "transaction_start_time": "2026-10-14 00:22:51"
+    }
+  ],
+  "canonic_explains": [
+    {
+      "query_id": "ql_demo/87d98d0d6761fbf08dbe8d82eaa5dbe0016bde6ef5df19667130a81d36a4a835",
+      "canonical_plan": {
+        "estimates": {
+          "total_cost": 100692.3,
+          "output_rows": 331842.0
+        },
+        "logical_shape": {
+          "joins": 0,
+          "scans": 1,
+          "sorts": 0,
+          "distinct": 0,
+          "aggregates": 1,
+          "subqueries": 0
+        },
+        "physical_operations": [
+          {
+            "type": "aggregate",
+            "relation": null,
+            "predicate": null,
+            "index_name": null,
+            "table_name": null,
+            "access_method": null,
+            "estimated_rows": null
+          },
+          {
+            "type": "scan",
+            "relation": "ql_pt_orders",
+            "predicate": "(ql_pt_orders.total > $1)",
+            "index_name": "ql_pt_orders_status",
+            "table_name": null,
+            "access_method": "full_index_scan",
+            "estimated_rows": 331842.81
+          }
+        ]
+      },
+      "explain_source": "sample"
+    },
+    {
+      "query_id": "ql_demo/7d2bb516418a42df54c0faa1b9bfeca26914d61ea5713aa9db090dc5c4b04f2a",
+      "canonical_plan": {
+        "estimates": {
+          "total_cost": 100692.3,
+          "output_rows": 995628.0
+        },
+        "logical_shape": {
+          "joins": 0,
+          "scans": 1,
+          "sorts": 0,
+          "distinct": 0,
+          "aggregates": 0,
+          "subqueries": 0
+        },
+        "physical_operations": [
+          {
+            "type": "scan",
+            "relation": "ql_pt_orders",
+            "predicate": "(COALESCE(ql_pt_orders.note, '$1') = '$2')",
+            "index_name": null,
+            "table_name": null,
+            "access_method": "full_table_scan",
+            "estimated_rows": 995628.0
+          }
+        ]
+      },
+      "explain_source": "sample"
+    },
+    {
+      "query_id": "ql_demo/aef407ebbf74a7a49203d4a0cd481b8d00269e8f9dec2ef5c69da0fe2e1a3709",
+      "canonical_plan": {
+        "estimates": {
+          "total_cost": 100873.3,
+          "output_rows": 497815.0
+        },
+        "logical_shape": {
+          "joins": 0,
+          "scans": 1,
+          "sorts": 0,
+          "distinct": 0,
+          "aggregates": 0,
+          "subqueries": 0
+        },
+        "physical_operations": [
+          {
+            "type": "scan",
+            "relation": "ql_pt_orders",
+            "predicate": "(ql_pt_orders.status <> '$1')",
+            "index_name": "ql_pt_orders_status",
+            "table_name": null,
+            "access_method": "index_lookup",
+            "estimated_rows": 497815.0
+          }
+        ]
+      },
+      "explain_source": "sample"
+    },
+    {
+      "query_id": "ql_demo/ea5073435d4575adb10e2b00459f00069e33d364fa045c400afb32c6b3320890",
+      "canonical_plan": {
+        "estimates": {
+          "total_cost": 100692.3,
+          "output_rows": 995628.0
+        },
+        "logical_shape": {
+          "joins": 0,
+          "scans": 1,
+          "sorts": 0,
+          "distinct": 0,
+          "aggregates": 0,
+          "subqueries": 0
+        },
+        "physical_operations": [
+          {
+            "type": "scan",
+            "relation": "ql_pt_orders",
+            "predicate": "((CASE WHEN (ql_pt_orders.status = '$1') THEN $2 ELSE $3 END) = $4)",
+            "index_name": "ql_pt_orders_status",
+            "table_name": null,
+            "access_method": "full_index_scan",
+            "estimated_rows": 995628.0
+          }
+        ]
+      },
+      "explain_source": "sample"
+    },
+    {
+      "query_id": "ql_demo/d6848ba2c164e5871b49bb708d04e306615711d50b8bfba9cc068f5735989eba",
+      "canonical_plan": {
+        "estimates": {
+          "total_cost": 100692.3,
+          "output_rows": 331842.0
+        },
+        "logical_shape": {
+          "joins": 0,
+          "scans": 1,
+          "sorts": 0,
+          "distinct": 0,
+          "aggregates": 0,
+          "subqueries": 0
+        },
+        "physical_operations": [
+          {
+            "type": "scan",
+            "relation": "ql_pt_orders",
+            "predicate": "(ql_pt_orders.total > -$1)",
+            "index_name": null,
+            "table_name": null,
+            "access_method": "full_table_scan",
+            "estimated_rows": 331842.81
+          }
+        ]
+      },
+      "explain_source": "sample"
+    },
+    {
+      "query_id": "ql_demo/9a99ca7a403abf34d5683b44377d8867dec021b6e551b0925fc6b913c3cce5d0",
+      "canonical_plan": {
+        "estimates": {
+          "total_cost": 100692.3,
+          "output_rows": 331842.0
+        },
+        "logical_shape": {
+          "joins": 0,
+          "scans": 1,
+          "sorts": 0,
+          "distinct": 0,
+          "aggregates": 0,
+          "subqueries": 0
+        },
+        "physical_operations": [
+          {
+            "type": "scan",
+            "relation": "ql_pt_orders",
+            "predicate": "(ql_pt_orders.total > ql_pt_orders.id)",
+            "index_name": null,
+            "table_name": null,
+            "access_method": "full_table_scan",
+            "estimated_rows": 331842.81
+          }
+        ]
+      },
+      "explain_source": "sample"
+    },
+    {
+      "query_id": "ql_demo/c988430f3049193e868d01968500b5ca81c6f83b8a36ea9f4daf56c197010ff3",
+      "canonical_plan": {
+        "estimates": {
+          "total_cost": 100692.3,
+          "output_rows": 331842.0
+        },
+        "logical_shape": {
+          "joins": 0,
+          "scans": 1,
+          "sorts": 1,
+          "distinct": 0,
+          "aggregates": 0,
+          "subqueries": 0
+        },
+        "physical_operations": [
+          {
+            "type": "sort",
+            "relation": null,
+            "predicate": null,
+            "index_name": null,
+            "table_name": null,
+            "access_method": null,
+            "estimated_rows": null
+          },
+          {
+            "type": "scan",
+            "relation": "ql_pt_orders",
+            "predicate": "(ql_pt_orders.total > $1)",
+            "index_name": "ql_pt_orders_created",
+            "table_name": null,
+            "access_method": "full_index_scan",
+            "estimated_rows": 3.33
+          }
+        ]
+      },
+      "explain_source": "sample"
+    },
+    {
+      "query_id": "ql_demo/d140dda00d03e8a8261ca1d0500c28103af822007929cdd6e36aad2f8d9acf7a",
+      "canonical_plan": {
+        "estimates": {
+          "total_cost": 1.0,
+          "output_rows": 1.0
+        },
+        "logical_shape": {
+          "joins": 0,
+          "scans": 1,
+          "sorts": 0,
+          "distinct": 0,
+          "aggregates": 0,
+          "subqueries": 0
+        },
+        "physical_operations": [
+          {
+            "type": "scan",
+            "relation": "ql_pt_orders",
+            "predicate": null,
+            "index_name": "PRIMARY",
+            "table_name": null,
+            "access_method": "index_lookup",
+            "estimated_rows": 1.0
+          }
+        ]
+      },
+      "explain_source": "sample"
+    }
+  ],
+  "top_impact_queries": [
+    {
+      "query_id": "ql_demo/87d98d0d6761fbf08dbe8d82eaa5dbe0016bde6ef5df19667130a81d36a4a835",
+      "query_text": "SELECT STATUS , COUNT ( * ) FROM `ql_pt_orders` WHERE `total` > ? GROUP BY STATUS HAVING COUNT ( * ) > ?",
+      "max_time_ms": 5548.0944,
+      "min_time_ms": 2832.5822,
+      "schema_name": "ql_demo",
+      "selected_by": [
+        "time_high_impact"
+      ],
+      "mean_time_ms": 3826.2659,
+      "canonic_query": "SELECT STATUS, COUNT(*) FROM ql_pt_orders WHERE total > $1 GROUP BY STATUS HAVING COUNT(*) > $2",
+      "database_name": "ql_demo",
+      "rows_returned": 30,
+      "total_time_ms": 38262.6591,
+      "counters_epoch": "2026-10-14 00:22:25.957614",
+      "stddev_time_ms": 544.489980019123,
+      "execution_count": 10,
+      "avg_rows_per_call": 3.0,
+      "query_sample_text": "SELECT status, COUNT(*) FROM ql_pt_orders WHERE total > 50 GROUP BY status HAVING COUNT(*) > 10",
+      "ready_for_explain": true,
+      "sort_merge_passes": 0,
+      "coeff_of_variation": 0.14230322571651985,
+      "disk_spill_indicator": 0
+    },
+    {
+      "query_id": "ql_demo/7d2bb516418a42df54c0faa1b9bfeca26914d61ea5713aa9db090dc5c4b04f2a",
+      "query_text": "SELECT `id` FROM `ql_pt_orders` WHERE COALESCE ( `note` , ? ) = ?",
+      "max_time_ms": 1328.4044,
+      "min_time_ms": 563.7873,
+      "schema_name": "ql_demo",
+      "selected_by": [
+        "time_high_impact"
+      ],
+      "mean_time_ms": 769.0808,
+      "canonic_query": "SELECT id FROM ql_pt_orders WHERE COALESCE(note, $1) = $2",
+      "database_name": "ql_demo",
+      "rows_returned": 1000000,
+      "total_time_ms": 7690.8085,
+      "counters_epoch": "2026-10-14 00:22:27.801258",
+      "stddev_time_ms": 176.8736525084954,
+      "execution_count": 10,
+      "avg_rows_per_call": 100000.0,
+      "query_sample_text": "SELECT id FROM ql_pt_orders WHERE COALESCE(note, '') = ''",
+      "ready_for_explain": true,
+      "sort_merge_passes": 0,
+      "coeff_of_variation": 0.22998058527594945,
+      "disk_spill_indicator": 0
+    },
+    {
+      "query_id": "ql_demo/aef407ebbf74a7a49203d4a0cd481b8d00269e8f9dec2ef5c69da0fe2e1a3709",
+      "query_text": "SELECT `id` FROM `ql_pt_orders` WHERE NOT ( STATUS = ? )",
+      "max_time_ms": 900.04,
+      "min_time_ms": 393.6064,
+      "schema_name": "ql_demo",
+      "selected_by": [
+        "time_high_impact"
+      ],
+      "mean_time_ms": 544.2922,
+      "canonic_query": "SELECT id FROM ql_pt_orders WHERE NOT (STATUS = $1)",
+      "database_name": "ql_demo",
+      "rows_returned": 7920000,
+      "total_time_ms": 4354.3373,
+      "counters_epoch": "2026-10-14 00:22:29.236232",
+      "stddev_time_ms": 125.77584088609782,
+      "execution_count": 8,
+      "avg_rows_per_call": 990000.0,
+      "query_sample_text": "SELECT id FROM ql_pt_orders WHERE NOT (status = 'raro')",
+      "ready_for_explain": true,
+      "sort_merge_passes": 0,
+      "coeff_of_variation": 0.23108146853123715,
+      "disk_spill_indicator": 0
+    },
+    {
+      "query_id": "ql_demo/ea5073435d4575adb10e2b00459f00069e33d364fa045c400afb32c6b3320890",
+      "query_text": "SELECT `id` FROM `ql_pt_orders` WHERE CASE WHEN STATUS = ? THEN ? ELSE ? END = ?",
+      "max_time_ms": 681.6242,
+      "min_time_ms": 230.7713,
+      "schema_name": "ql_demo",
+      "selected_by": [
+        "time_high_impact"
+      ],
+      "mean_time_ms": 398.5774,
+      "canonic_query": "SELECT id FROM ql_pt_orders WHERE CASE WHEN STATUS = $1 THEN $2 ELSE $3 END = $4",
+      "database_name": "ql_demo",
+      "rows_returned": 100000,
+      "total_time_ms": 3985.774,
+      "counters_epoch": "2026-10-14 00:22:26.470326",
+      "stddev_time_ms": 89.5072572422147,
+      "execution_count": 10,
+      "avg_rows_per_call": 10000.0,
+      "query_sample_text": "SELECT id FROM ql_pt_orders WHERE CASE WHEN status = 'raro' THEN 1 ELSE 0 END = 1",
+      "ready_for_explain": true,
+      "sort_merge_passes": 0,
+      "coeff_of_variation": 0.2245668149830239,
+      "disk_spill_indicator": 0
+    },
+    {
+      "query_id": "ql_demo/d6848ba2c164e5871b49bb708d04e306615711d50b8bfba9cc068f5735989eba",
+      "query_text": "SELECT `id` FROM `ql_pt_orders` WHERE `total` > - ?",
+      "max_time_ms": 759.3289,
+      "min_time_ms": 331.2046,
+      "schema_name": "ql_demo",
+      "selected_by": [
+        "time_high_impact"
+      ],
+      "mean_time_ms": 460.1711,
+      "canonic_query": "SELECT id FROM ql_pt_orders WHERE total > -$1",
+      "database_name": "ql_demo",
+      "rows_returned": 8000000,
+      "total_time_ms": 3681.3692,
+      "counters_epoch": "2026-10-14 00:22:30.135696",
+      "stddev_time_ms": 105.76825451242445,
+      "execution_count": 8,
+      "avg_rows_per_call": 1000000.0,
+      "query_sample_text": "SELECT id FROM ql_pt_orders WHERE total > -5.5",
+      "ready_for_explain": true,
+      "sort_merge_passes": 0,
+      "coeff_of_variation": 0.22984549553942968,
+      "disk_spill_indicator": 0
+    },
+    {
+      "query_id": "ql_demo/9a99ca7a403abf34d5683b44377d8867dec021b6e551b0925fc6b913c3cce5d0",
+      "query_text": "SELECT `id` FROM `ql_pt_orders` WHERE `total` > `id`",
+      "max_time_ms": 517.9858,
+      "min_time_ms": 232.0365,
+      "schema_name": "ql_demo",
+      "selected_by": [
+        "time_high_impact"
+      ],
+      "mean_time_ms": 317.3516,
+      "canonic_query": "SELECT id FROM ql_pt_orders WHERE total > id",
+      "database_name": "ql_demo",
+      "rows_returned": 0,
+      "total_time_ms": 2538.8129,
+      "counters_epoch": "2026-10-14 00:22:28.338997",
+      "stddev_time_ms": 70.93490167896901,
+      "execution_count": 8,
+      "avg_rows_per_call": 0.0,
+      "query_sample_text": "SELECT id FROM ql_pt_orders WHERE total > id",
+      "ready_for_explain": true,
+      "sort_merge_passes": 0,
+      "coeff_of_variation": 0.223521487457347,
+      "disk_spill_indicator": 0
+    },
+    {
+      "query_id": "ql_demo/c988430f3049193e868d01968500b5ca81c6f83b8a36ea9f4daf56c197010ff3",
+      "query_text": "SELECT `id` FROM `ql_pt_orders` WHERE `total` > ? ORDER BY `created_at` DESC LIMIT ?",
+      "max_time_ms": 2.3177,
+      "min_time_ms": 0.3192,
+      "schema_name": "ql_demo",
+      "selected_by": [
+        "time_high_impact"
+      ],
+      "mean_time_ms": 0.687,
+      "canonic_query": "SELECT id FROM ql_pt_orders WHERE total > $1 ORDER BY created_at DESC NULLS LAST LIMIT $2",
+      "database_name": "ql_demo",
+      "rows_returned": 100,
+      "total_time_ms": 6.8697,
+      "counters_epoch": "2026-10-14 00:22:25.958824",
+      "stddev_time_ms": 0.5156726180436575,
+      "execution_count": 10,
+      "avg_rows_per_call": 10.0,
+      "query_sample_text": "SELECT id FROM ql_pt_orders WHERE total > 50 ORDER BY created_at DESC LIMIT 10",
+      "ready_for_explain": true,
+      "sort_merge_passes": 0,
+      "coeff_of_variation": 0.7506151645468085,
+      "disk_spill_indicator": 0
+    },
+    {
+      "query_id": "ql_demo/d140dda00d03e8a8261ca1d0500c28103af822007929cdd6e36aad2f8d9acf7a",
+      "query_text": "SELECT `id` FROM `ql_pt_orders` WHERE `id` IN (...)",
+      "max_time_ms": 0.5137,
+      "min_time_ms": 0.1713,
+      "schema_name": "ql_demo",
+      "selected_by": [
+        "time_high_impact"
+      ],
+      "mean_time_ms": 0.3579,
+      "canonic_query": "SELECT id FROM ql_pt_orders WHERE id IN ($1)",
+      "database_name": "ql_demo",
+      "rows_returned": 8,
+      "total_time_ms": 2.8631,
+      "counters_epoch": "2026-10-14 00:22:29.376039",
+      "stddev_time_ms": 0.05508361825443207,
+      "execution_count": 8,
+      "avg_rows_per_call": 1.0,
+      "query_sample_text": "SELECT id FROM ql_pt_orders WHERE id IN (5)",
+      "ready_for_explain": true,
+      "sort_merge_passes": 0,
+      "coeff_of_variation": 0.1539078464778767,
+      "disk_spill_indicator": 0
+    }
+  ],
+  "server_start_timestamp": [
+    {
+      "server_start_time": "2026-10-13 18:01:30"
+    }
+  ],
+  "non_explainable_candidates": [
+    {
+      "query_id": "/26af0be5346b73addaab12413e754e1d119f0269b0e223e6af0364e660405cbc",
+      "query_text": "SET SESSION `max_execution_time` = ? , `time_zone` = ?",
+      "max_time_ms": 0.1585,
+      "min_time_ms": 0.1585,
+      "schema_name": null,
+      "selected_by": [
+        "time_high_impact"
+      ],
+      "mean_time_ms": 0.1585,
+      "database_name": null,
+      "rows_returned": 0,
+      "total_time_ms": 0.1585,
+      "counters_epoch": "2026-10-14 00:22:51.648688",
+      "stddev_time_ms": null,
+      "execution_count": 1,
+      "avg_rows_per_call": 0.0,
+      "query_sample_text": "SET SESSION max_execution_time=30000, time_zone='+00:00'",
+      "sort_merge_passes": 0,
+      "coeff_of_variation": null,
+      "disk_spill_indicator": 0
+    }
+  ]
+}
