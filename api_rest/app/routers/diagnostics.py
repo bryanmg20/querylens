@@ -84,7 +84,7 @@ def get_diagnostics(
     row = (
         db.execute(
             text(
-                "SELECT connection_name, engine, is_active "
+                "SELECT connection_name, engine, is_active, monitoring_enabled "
                 "FROM registered_databases WHERE database_identifier = :identifier"
             ),
             {"identifier": database_identifier},
@@ -104,6 +104,7 @@ def get_diagnostics(
         connection_name=row["connection_name"],
         engine=row["engine"],
         is_active=row["is_active"],
+        monitoring_enabled=row["monitoring_enabled"],
         diagnostics=fetch_latest_findings(db, database_identifier),
         health=fetch_health(db, database_identifier, since=now - timedelta(hours=since_hours)),
         server_time=now,
