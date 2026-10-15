@@ -33,69 +33,56 @@ PG_QUERY_ID = 123
 MYSQL_QUERY_ID = "ql_demo/abc"
 
 
-def _subtypes(predicate, table="ql_pt_orders", engine="postgres", belongs=None):
-    return _detect_predicate_subtypes(
-        predicate, table, None, TYPES, engine=engine, belongs_to_table=belongs,
-    )
+def _subtypes(predicate):
+    return _detect_predicate_subtypes(predicate)
 
 
-# D1: (varchar)::text de Postgres no es una conversion que impida el indice
+# Conversiones: una sola regla en los dos motores, un cast sobre la columna.
+# El pipeline las deja iguales (telemetry_pipeline/stages/type_conversions.py,
+# probado en tests/test_type_conversions.py): escribe la implicita de MySQL y
+# quita el (col)::text que Postgres pone en las columnas varchar.
 
-def test_d1_varchar_to_text_is_not_implicit_cast():
-    assert _subtypes("((status)::text = $1)") == []
-    assert _subtypes("((status)::text = ANY ($1))") == []
-    assert _subtypes("((status)::text ~~ $1)") == []
-
-
-def test_d1_char_to_text_is_still_implicit_cast():
+def test_cast_on_column_is_implicit_cast_in_both_engines():
+    # Postgres: int contra decimal; MySQL: char contra numero (lo escribe el pipeline)
+    assert _subtypes("((customer_id)::numeric = $1)") == [("implicit_cast", "customer_id")]
+    assert _subtypes("(CAST(o.code AS DOUBLE PRECISION) = $1)") == [("implicit_cast", "code")]
+    assert _subtypes("(CAST(o.code AS DOUBLE PRECISION) IN ($1, '$2'))") == [("implicit_cast", "code")]
+    # char(n) -> text de Postgres: el pipeline lo deja porque si cambia el valor
     assert _subtypes("((code)::text = $1)") == [("implicit_cast", "code")]
 
 
-def test_d1_unknown_type_is_assumed_varchar():
-    # igual que AP-04 indice ausente: sin tipo se asume varchar, para que los dos
-    # detectores no se contradigan sobre el mismo predicado
-    assert _subtypes("((status)::text = $1)", table=None) == []
+def test_bare_column_has_no_conversion_in_both_engines():
+    # sin cast no hay conversion, sin importar el motor ni el tipo del valor
+    assert _subtypes("(status = $1)") == []
+    assert _subtypes("(o.tel = $1)") == []
+    assert _subtypes("(o.tel = '$1')") == []
 
 
-def test_d1_other_casts_are_still_reported():
-    assert _subtypes("((status)::numeric = $1)") == [("implicit_cast", "status")]
+def test_column_against_column_is_not_evaluated():
+    # caso 29: Postgres escribe la conversion de una de las columnas y MySQL no;
+    # con dos columnas de la misma fila ningun indice sirve, haya cast o no
+    assert _subtypes("(total > (id)::numeric)") == []
+    assert _subtypes("(ql_pt_orders.total > ql_pt_orders.id)") == []
+    assert _subtypes("(lower(note) = lower(status))") == []
+    # con un valor del otro lado si cuenta
+    assert _subtypes("((total + id) > $1)") == [("arithmetic_on_column", "total")]
 
 
-# D2: MySQL redacta los numeros como $n y los textos como '$n'
-
-def test_d2_mysql_text_column_against_number():
-    assert _subtypes("(o.tel = $1)", engine="mysql") == [("implicit_cast", "tel")]
-    assert _subtypes("(o.tel = -$1)", engine="mysql") == [("implicit_cast", "tel")]
-    assert _subtypes("(o.tel IN ($1, '$2'))", engine="mysql") == [("implicit_cast", "tel")]
-    assert _subtypes("(o.created_at BETWEEN $1 AND $2)", engine="mysql") == [("implicit_cast", "created_at")]
+def test_cast_on_value_is_not_a_conversion():
+    assert _subtypes("(created_at >= CAST('$1' AS TIMESTAMPTZ))") == []
 
 
-def test_d2_mysql_text_column_against_text_is_fine():
-    assert _subtypes("(o.tel = '$1')", engine="mysql") == []
-    assert _subtypes("(o.customer_id = $1)", engine="mysql") == []
+def test_date_function_in_both_engines():
+    # el pipeline escribe DATE(col) para el CAST(col AS DATE) de MySQL
+    assert _subtypes("(date(created_at) = $1)") == [("function_on_column", "created_at")]
+    assert _subtypes("(DATE(o.created_at) = '$1')") == [("function_on_column", "created_at")]
 
 
-def test_d2_postgres_parameter_is_not_inferred():
-    # en Postgres todo valor llega como $n, sin tipo
-    assert _subtypes("(note = $1)") == []
-
-
-# D4: condiciones de join atribuidas a la tabla del scan
+# D4: condiciones de join atribuidas a la tabla del scan (AP-04; AP-03 solo
+# evalua SELECT simples)
 
 def _belongs_to(alias):
     return lambda column: not column.table or column.table == alias
-
-
-def test_d4_join_condition_only_counts_own_columns():
-    # caso 39 (MySQL, scan de c)
-    found = _subtypes("(LOWER(c.email) = LOWER(o.note))", table="ql_pt_customers",
-                      engine="mysql", belongs=_belongs_to("c"))
-    assert found == [("function_on_column", "email")]
-
-
-def test_d4_parameterized_index_cond_from_other_table():
-    # caso 36 (Postgres, Index Cond del scan de b con la columna de a)
-    assert _subtypes("(id = (a.id + $1))", belongs=_belongs_to("b")) == []
 
 
 def test_d4_missing_index_ignores_other_table():
@@ -111,21 +98,17 @@ def test_d5_initplan_column_reference_is_cleaned():
     assert _predicate_columns("(customer_id = (InitPlan 2).col1)") == {"customer_id"}
 
 
-# D9: MySQL muestra DATE(col) como CAST(col AS DATE)
-
-def test_d9_mysql_cast_as_date_is_function():
-    assert _subtypes("(CAST(o.created_at AS DATE) = '$1')", engine="mysql") == [
-        ("function_on_column", "created_at")
-    ]
-
-
-def test_d9_postgres_cast_as_date_unchanged():
-    assert _subtypes("((created_at)::date = $1)") == [("implicit_cast", "created_at")]
-
-
 # Detectores completos: D3 (ejecuciones en la ventana) y D8 (table_name)
 
-def _snapshot(query_id, canonic_query, operations, execution_count=50, rows_returned=50):
+def _index(column, name=None):
+    name = name or f"idx_{column}"
+    return {
+        "schema_name": "public", "table_name": "ql_pt_orders", "index_name": name, "index_scans": 0,
+        "index_ref": f"CREATE INDEX {name} ON public.ql_pt_orders USING btree ({column})",
+    }
+
+
+def _snapshot(query_id, canonic_query, operations, execution_count=50, rows_returned=50, indexes=()):
     statement = {
         "query_id": query_id,
         "query_text": canonic_query,
@@ -146,7 +129,7 @@ def _snapshot(query_id, canonic_query, operations, execution_count=50, rows_retu
         "indexes": [{
             "schema_name": "public", "table_name": "ql_pt_orders", "index_name": "ql_pt_orders_pkey",
             "index_scans": 10, "index_ref": "CREATE UNIQUE INDEX ql_pt_orders_pkey ON public.ql_pt_orders USING btree (id)",
-        }],
+        }, *indexes],
         "tables": [{"schema_name": "public", "table_name": "ql_pt_orders", "live_rows": 100_000}],
         "columns": [
             {"schema_name": "public", "table_name": "ql_pt_orders", "column_name": column, "data_type": data_type}
@@ -180,7 +163,8 @@ FULL_SCAN_NOTE = [{
 
 
 def test_d3_non_sargable_skips_query_without_executions_even_with_plan():
-    snapshot = _snapshot(PG_QUERY_ID, "SELECT id FROM ql_pt_orders WHERE LOWER(note) = $1", FULL_SCAN_NOTE)
+    snapshot = _snapshot(PG_QUERY_ID, "SELECT id FROM ql_pt_orders WHERE LOWER(note) = $1", FULL_SCAN_NOTE,
+                         indexes=[_index("note")])
     assert detect_non_sargable_predicates(snapshot, _history(PG_QUERY_ID, 50)) == []
     assert len(detect_non_sargable_predicates(snapshot, _history(PG_QUERY_ID, 40))) == 1
 
@@ -247,9 +231,9 @@ def test_ap04_like_is_not_counted():
     for predicate in ("(note ~~ $1)", "(ql_pt_orders.note LIKE '$1')", "(note ~~ '$1%'::text)"):
         assert _filtered_columns(predicate, belongs) == ([], [], []), predicate
     # con otra condicion en el AND, esa si se evalua
-    assert _filtered_columns("((ql_pt_orders.note LIKE '$1') AND (ql_pt_orders.total = $2))", belongs) == (
-        ["total"], [], []
-    )
+    assert _filtered_columns(
+        "((ql_pt_orders.note LIKE '$1') AND (ql_pt_orders.total = $2))", belongs, _types(total="decimal"),
+    ) == (["total"], [], [])
 
 
 # AP-04 indice ausente: conversion de tipo sobre la columna
@@ -258,50 +242,45 @@ def _types(**types):
     return lambda name: types.get(name)
 
 
-def test_ap04_mysql_text_column_against_number_is_discarded():
-    # caso 15: code es char y se compara con un numero -> el indice no serviria
+def test_ap04_cast_on_column_is_discarded_in_both_engines():
     belongs = _belongs_to("ql_pt_orders")
-    assert _filtered_columns("(ql_pt_orders.code = $1)", belongs, _types(code="char"), "mysql") == ([], [], [])
-    assert _filtered_columns("(ql_pt_orders.code IN ($1, '$2'))", belongs, _types(code="varchar"), "mysql") == (
-        [], [], []
-    )
-    # con texto no hay conversion
-    assert _filtered_columns("(ql_pt_orders.code = '$1')", belongs, _types(code="char"), "mysql") == (
-        ["code"], [], []
-    )
-    # columna numerica contra numero: tampoco
-    assert _filtered_columns("(ql_pt_orders.total = $1)", belongs, _types(total="decimal"), "mysql") == (
-        ["total"], [], []
-    )
-
-
-def test_ap04_mysql_unknown_type_counts_but_unverified():
-    belongs = _belongs_to("ql_pt_orders")
-    assert _filtered_columns("(ql_pt_orders.code = $1)", belongs, _types(), "mysql") == (["code"], [], ["code"])
-
-
-def test_ap04_postgres_text_cast_depends_on_column_type():
-    belongs = _belongs_to("ql_pt_orders")
-    predicate = "((code)::text = $1)"
-    assert _filtered_columns(predicate, belongs, _types(code="character varying")) == (["code"], [], [])
-    assert _filtered_columns(predicate, belongs, _types(code="character")) == ([], [], [])
-    assert _filtered_columns(predicate, belongs, _types()) == (["code"], [], ["code"])
-    # otros casts (int -> numeric) se descartan siempre
+    # MySQL caso 15 (el pipeline escribe la conversion) y Postgres int -> numeric
+    assert _filtered_columns(
+        "(CAST(ql_pt_orders.code AS DOUBLE PRECISION) = $1)", belongs, _types(code="char"),
+    ) == ([], [], [])
     assert _filtered_columns("((customer_id)::numeric = $1)", belongs, _types(customer_id="integer")) == (
         [], [], []
     )
+    assert _filtered_columns("((code)::text = $1)", belongs, _types(code="character")) == ([], [], [])
+
+
+def test_ap04_bare_column_counts_in_both_engines():
+    belongs = _belongs_to("ql_pt_orders")
+    assert _filtered_columns("(ql_pt_orders.code = '$1')", belongs, _types(code="char")) == (["code"], [], [])
+    assert _filtered_columns("(status = $1)", belongs, _types(status="character varying")) == (
+        ["status"], [], []
+    )
+
+
+def test_ap04_unknown_type_counts_but_unverified():
+    # sin tipo el pipeline no puede escribir la conversion: igual en los dos motores
+    belongs = _belongs_to("ql_pt_orders")
+    assert _filtered_columns("(ql_pt_orders.code = $1)", belongs, _types()) == (["code"], [], ["code"])
+    assert _filtered_columns("(code = $1)", belongs, _types()) == (["code"], [], ["code"])
 
 
 def test_ap04_is_null_counts_as_equality():
     # caso 08: el indice resuelve IS NULL en los dos motores
     belongs = _belongs_to("ql_pt_orders")
     assert _filtered_columns("(note IS NULL)", belongs) == (["note"], [], [])
-    # MySQL sin tipo: IS NULL no tiene valor que pueda provocar una conversion
-    assert _filtered_columns("(ql_pt_orders.note IS NULL)", belongs, _types(), "mysql") == (["note"], [], [])
+    # sin valor no hay conversion posible: no queda sin verificar
+    assert _filtered_columns("(ql_pt_orders.note IS NULL)", belongs, _types()) == (["note"], [], [])
     # IS NOT NULL (y el NOT ... IS NULL que agrega MySQL) no cuentan
     assert _filtered_columns("(note IS NOT NULL)", belongs) == ([], [], [])
     assert _filtered_columns("(NOT ql_pt_orders.note IS NULL)", belongs) == ([], [], [])
-    assert _filtered_columns("((note IS NULL) AND (total > $1))", belongs) == (["note"], ["total"], [])
+    assert _filtered_columns("((note IS NULL) AND (total > $1))", belongs, _types(total="numeric")) == (
+        ["note"], ["total"], []
+    )
 
 
 def test_ap04_finding_marks_unverified_conversion():
@@ -316,8 +295,9 @@ def test_ap04_finding_marks_unverified_conversion():
     finding, = _missing(MYSQL_QUERY_ID, "SELECT id FROM ql_pt_orders WHERE note = $1", operation)
     assert finding.evidencia["conversion_verificada"] is True
 
-    # MySQL: tel es varchar y se compara con un numero -> sin hallazgo
-    operation = {**MYSQL_FULL_SCAN, "estimated_rows": 10, "predicate": "(ql_pt_orders.tel = $1)"}
+    # tel es varchar y se compara con un numero: el pipeline escribe el cast -> sin hallazgo
+    operation = {**MYSQL_FULL_SCAN, "estimated_rows": 10,
+                 "predicate": "(CAST(ql_pt_orders.tel AS DOUBLE PRECISION) = $1)"}
     assert _missing(MYSQL_QUERY_ID, "SELECT id FROM ql_pt_orders WHERE tel = $1", operation) == []
 
 
@@ -347,8 +327,9 @@ def test_d8_table_name_resolves_renamed_relation():
     assert [f.table_name for f in missing] == ["ql_pt_orders"]
 
     sargable_ops = [{**operations[0], "predicate": "(lower(note) = $1)"}]
-    snapshot = _snapshot(PG_QUERY_ID, "SELECT id FROM ql_pt_orders WHERE LOWER(note) = $1", sargable_ops)
-    assert [f.table_name for f in detect_non_sargable_predicates(snapshot)] == ["ql_pt_orders"]
+    snapshot = _snapshot(PG_QUERY_ID, "SELECT id FROM ql_pt_orders WHERE LOWER(note) = $1", sargable_ops,
+                         indexes=[_index("note")])
+    assert [f.table_name for f in detect_non_sargable_predicates(snapshot, _history(PG_QUERY_ID, 30, 30), NOW)] == ["ql_pt_orders"]
 
     _, tables_with_traffic = _collect_query_traffic(snapshot)
     assert tables_with_traffic == {("public", "ql_pt_orders")}
@@ -379,9 +360,9 @@ def _full_index_scan_snapshot(canonic_query, estimated_rows=99835):
     operations = [{
         "type": "scan", "access_method": "full_index_scan", "relation": "ql_pt_orders",
         "table_name": None, "estimated_rows": estimated_rows, "index_name": "idx_created_at",
-        "predicate": "(CAST(ql_pt_orders.created_at AS DATE) = '$1')",
+        "predicate": "(DATE(ql_pt_orders.created_at) = '$1')",
     }]
-    return _snapshot(MYSQL_QUERY_ID, canonic_query, operations)
+    return _snapshot(MYSQL_QUERY_ID, canonic_query, operations, indexes=[_index("created_at", "idx_created_at")])
 
 
 def _ap02(snapshot):
@@ -404,19 +385,87 @@ def test_d6_full_index_scan_with_limit_is_not_evaluated():
     assert _ap02(snapshot) == []
 
 
-def test_d6_other_detectors_still_ignore_full_index_scan():
+def test_d6_non_sargable_full_index_scan_is_medium():
+    # AP-03 predicado no sargable: full_index_scan cuenta como escaneo completo
+    # (base de AP-02), con severidad media frente al full_table_scan
     snapshot = _full_index_scan_snapshot("SELECT id FROM ql_pt_orders WHERE CAST(created_at AS DATE) = $1")
-    assert detect_missing_indexes(snapshot) == []
-    assert [f.severidad for f in detect_non_sargable_predicates(snapshot)] == ["medium"]
+    findings = detect_non_sargable_predicates(snapshot, _history(MYSQL_QUERY_ID, 30, 30), NOW)
+    assert [f.severidad for f in findings] == ["medium"]
 
 
-def test_d2_mysql_end_to_end():
+def test_mysql_conversion_end_to_end():
+    # predicado como lo deja el pipeline para o.tel (varchar) = numero
     operations = [{
         "type": "scan", "access_method": "full_table_scan", "relation": "o",
-        "table_name": None, "estimated_rows": 10000, "predicate": "(o.tel = $1)",
+        "table_name": None, "estimated_rows": 10000, "predicate": "(CAST(o.tel AS DOUBLE PRECISION) = $1)",
     }]
-    snapshot = _snapshot(MYSQL_QUERY_ID, "SELECT id FROM ql_pt_orders AS o WHERE o.tel = $1", operations)
-    findings = detect_non_sargable_predicates(snapshot)
+    snapshot = _snapshot(MYSQL_QUERY_ID, "SELECT id FROM ql_pt_orders AS o WHERE o.tel = $1", operations,
+                         indexes=[_index("tel")])
+    findings = detect_non_sargable_predicates(snapshot, _history(MYSQL_QUERY_ID, 30, 30), NOW)
     assert [(f.evidencia["subtipo"], f.evidencia["column"], f.table_name) for f in findings] == [
         ("implicit_cast", "tel", "ql_pt_orders")
     ]
+
+
+# AP-03 predicado no sargable con la base de AP-02 escaneo completo evitable
+
+def _non_sargable(query_id, canonic_query, operation, previous_calls=30, previous_rows=30, **snapshot_kwargs):
+    # ventana: 20 ejecuciones y 20 filas devueltas (1 fila por ejecucion); note
+    # tiene indice salvo que se pase otra lista
+    snapshot_kwargs.setdefault("indexes", [_index("note")])
+    snapshot = _snapshot(query_id, canonic_query, [operation], **snapshot_kwargs)
+    return detect_non_sargable_predicates(snapshot, _history(query_id, previous_calls, previous_rows), NOW)
+
+
+LOWER_NOTE = "SELECT id FROM ql_pt_orders WHERE LOWER(note) = $1"
+
+
+def test_ap03_simple_select_full_scan_is_reported():
+    finding, = _non_sargable(PG_QUERY_ID, LOWER_NOTE, FULL_SCAN_NOTE[0])
+    assert (finding.evidencia["subtipo"], finding.evidencia["column"], finding.severidad) == (
+        "function_on_column", "note", "high"
+    )
+    assert (finding.evidencia["window_calls"], finding.evidencia["selectivity"]) == (20, 1e-05)
+    assert finding.evidencia["unused_indexes"] == ["idx_note"]
+
+
+def test_ap03_requires_existing_index():
+    # sin indice en la columna el escaneo completo es inevitable con o sin
+    # LOWER(); ese caso es de AP-02 escaneo completo evitable
+    assert _non_sargable(PG_QUERY_ID, LOWER_NOTE, FULL_SCAN_NOTE[0], indexes=[]) == []
+    # un indice compuesto que no empieza por la columna tampoco cuenta
+    composite = _index("status, note", "idx_status_note")
+    assert _non_sargable(PG_QUERY_ID, LOWER_NOTE, FULL_SCAN_NOTE[0], indexes=[composite]) == []
+
+
+def test_ap03_only_simple_selects():
+    operation = {**FULL_SCAN_NOTE[0], "relation": "o"}
+    for query in (
+        "SELECT id FROM ql_pt_orders WHERE LOWER(note) = $1 LIMIT 10",
+        "SELECT COUNT(*) FROM ql_pt_orders WHERE LOWER(note) = $1",
+        "SELECT o.id FROM ql_pt_orders AS o JOIN ql_pt_customers AS c ON c.id = o.customer_id "
+        "WHERE LOWER(o.note) = $1",
+    ):
+        assert _non_sargable(PG_QUERY_ID, query, operation) == [], query
+
+
+def test_ap03_requires_full_scan():
+    operation = {**FULL_SCAN_NOTE[0], "access_method": "index_lookup", "index_name": "idx_note"}
+    assert _non_sargable(PG_QUERY_ID, LOWER_NOTE, operation) == []
+
+
+def test_ap03_requires_min_window_calls():
+    assert _non_sargable(PG_QUERY_ID, LOWER_NOTE, FULL_SCAN_NOTE[0], previous_calls=45, previous_rows=45) == []
+
+
+def test_ap03_skips_when_real_selectivity_is_high():
+    # 20 ejecuciones que devuelven 20.000 filas cada una (20 % de la tabla)
+    assert _non_sargable(
+        PG_QUERY_ID, LOWER_NOTE, FULL_SCAN_NOTE[0], rows_returned=400_000 + 30,
+    ) == []
+
+
+def test_ap03_without_plan_is_not_evaluated():
+    snapshot = _snapshot(PG_QUERY_ID, LOWER_NOTE, FULL_SCAN_NOTE)
+    snapshot.canonic_explains = []
+    assert detect_non_sargable_predicates(snapshot, _history(PG_QUERY_ID, 30, 30), NOW) == []

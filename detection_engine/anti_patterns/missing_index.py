@@ -30,11 +30,17 @@ logger = get_logger(__name__)
 # caso de AP-04), usa constantes (10 % para =, 11,11 % para BETWEEN, 33 % para
 # >). En un SELECT simple cada fila devuelta paso el filtro, por eso la real si.
 # Condiciones propias de AP-04 (numeradas como antes para no perder la referencia):
-#   6. el predicado del scan compara una columna pelada de esa tabla contra un
-#      valor, por igualdad (=, IN, IS NULL) o rango (<, <=, >, >=, BETWEEN), en
-#      una condicion unida por AND en el nivel superior. IS NOT NULL no cuenta:
-#      suele devolver casi toda la tabla y un indice no ayuda
-#   7. ninguna de esas columnas es la primera columna de un indice de la tabla
+#   6. el predicado del scan compara columnas peladas de esa tabla contra un
+#      valor, por igualdad (=, IN, IS NULL) o rango (<, <=, >, >=, BETWEEN).
+#      IS NOT NULL no cuenta: suele devolver casi toda la tabla
+#   7. con esas columnas indexadas (primera columna de un indice nuevo) el
+#      motor podria usar un indice, y hoy no puede: un AND usa indice si
+#      alguna de sus partes puede; un OR solo si todas sus ramas pueden
+#      (medido en los dos motores, ql_sandbox/explain_or). En un AND basta
+#      una columna (se sugiere un indice compuesto); en un OR, cada rama sin
+#      indice necesita el suyo. Si otra rama del OR tiene la columna envuelta,
+#      indexar no alcanza (es terreno de AP-03 y ninguno alcanza solo; queda
+#      para AP-02)
 #
 # Criterios de casos borde:
 #   - condiciones de join (c = otra.c): no cuentan, el otro lado no es un valor
@@ -43,15 +49,14 @@ logger = get_logger(__name__)
 #   - indice parcial cuya primera columna es la filtrada: cuenta como existente
 #   - indice de expresion: no cubre la columna base, no cuenta
 #   - conversion de tipo sobre la columna: no cuenta, el indice no se podria
-#     usar (el problema es el tipo del valor, terreno de AP-03):
-#       * Postgres la escribe en el plan: un cast que no sea a text descarta la
-#         columna; (col)::text solo cuenta si la columna es varchar (es la
-#         coercion de Postgres, el indice se usa), no si es char(n) u otro tipo
-#       * MySQL no la escribe: se deduce con el tipo de la columna y el valor
-#         redactado ($n numero, '$n' texto). Texto/fecha contra numero descarta
+#     usar (el problema es el tipo del valor, terreno de AP-03). Es un cast
+#     sobre la columna en los dos motores: el pipeline escribe la conversion
+#     implicita de MySQL y quita el (col)::text de las varchar de Postgres
+#     (telemetry_pipeline/stages/type_conversions.py).
 #     Si no se puede comprobar (plan generico de Postgres, que no conoce el
-#     valor, o tipo de columna desconocido) la columna cuenta igual y el
-#     hallazgo sale con conversion_verificada = False
+#     valor, o tipo de columna desconocido, con el que el pipeline no puede
+#     escribir la conversion) la columna cuenta igual y el hallazgo sale con
+#     conversion_verificada = False
 #   - full_index_scan: aparece cuando un indice contiene la columna filtrada
 #     pero no empieza por ella (ej. indice (status, total) con WHERE total = ?);
 #     un indice que empiece por esa columna si acotaria la busqueda
@@ -91,20 +96,6 @@ _MAX_MARKER_PASSES = 10
 
 _RANGE_TYPES = (exp.GT, exp.GTE, exp.LT, exp.LTE)
 
-# Mismas listas que non_sargable_predicate.py (AP-03), duplicadas a proposito.
-# Tipos cuya comparacion contra un numero sin comillas obliga a MySQL a
-# convertir la columna (no el valor)
-_NON_NUMERIC_TYPES = {
-    "character varying", "varchar", "character", "char", "text",
-    "tinytext", "mediumtext", "longtext", "enum", "set", "uuid",
-    "date", "time", "datetime", "timestamp",
-    "timestamp without time zone", "timestamp with time zone",
-    "year",
-}
-# Postgres escribe (columna)::text para comparar una columna varchar: es su
-# propia coercion y no impide usar el indice. Con char(n) si lo impide.
-_VARCHAR_TYPES = {"character varying", "varchar"}
-
 
 def _strip_engine_internal_markers(predicate: str) -> str:
     # Reemplaza por NULL las anotaciones internas del motor que no son SQL valido.
@@ -124,23 +115,11 @@ def _unwrap_paren(node: exp.Expression) -> exp.Expression:
     return node
 
 
-def _top_level_conjuncts(node: exp.Expression) -> list[exp.Expression]:
-    # Condiciones unidas por AND en el nivel superior. Una rama de OR queda
-    # como una sola condicion y no se descompone: un indice sobre una sola de
-    # sus columnas no resuelve el OR.
-    node = _unwrap_paren(node)
-    if isinstance(node, exp.And):
-        return _top_level_conjuncts(node.this) + _top_level_conjuncts(node.expression)
-    return [node]
-
-
 def _bare_column(side: exp.Expression) -> exp.Column | None:
-    # La columna si el lado es una columna sin transformar. Postgres muestra
-    # las columnas varchar como `(name)::text` en el Filter: es su propia
-    # coercion a text, que no impide usar el indice, asi que se toma como pelada.
+    # La columna si el lado es una columna sin transformar. Un cast sobre la
+    # columna es una conversion (el pipeline deja las de los dos motores igual)
+    # y el indice no se usaria.
     side = _unwrap_paren(side)
-    if isinstance(side, exp.Cast) and side.to.is_type(exp.DataType.Type.TEXT):
-        side = _unwrap_paren(side.this)
     return side if isinstance(side, exp.Column) and side.name else None
 
 
@@ -150,93 +129,152 @@ def _is_value(side: exp.Expression | None) -> bool:
     return side is not None and side.find(exp.Column) is None
 
 
-def _value_is_string(node: exp.Expression | None) -> bool | None:
-    # True si el valor es texto, False si es numero, None si no se sabe. MySQL
-    # redacta los numeros como $n (sqlglot: Parameter) y los textos como '$n'.
-    if node is None:
-        return None
+def _leaf(node: exp.Expression, belongs_to_table, lead_columns: set[str]) -> tuple:
+    # Una condicion: ("leaf", estado, columna, "igualdad" | "rango", valores).
+    # Estados:
+    #   OK      columna pelada de esta tabla que encabeza un indice: el motor
+    #           ya puede usarlo
+    #   FIX     columna pelada de esta tabla sin indice que la encabece: un
+    #           indice nuevo lo habilita (es lo que reporta AP-04)
+    #   OTRA    nada que un indice simple resuelva: columna envuelta o con
+    #           conversion (terreno de AP-03), LIKE, <>, IS NOT NULL, NOT,
+    #           columna contra columna, condiciones de otra tabla
+    # col IS NULL cuenta como igualdad: el indice guarda los NULL y los busca.
+    # IS NOT NULL no: suele devolver casi toda la tabla.
+    side, kind, values = None, None, []
+    if isinstance(node, (exp.EQ, *_RANGE_TYPES)):
+        kind = "igualdad" if isinstance(node, exp.EQ) else "rango"
+        left, right = node.this, node.expression
+        if _bare_column(left) is not None and _is_value(right):
+            side, values = left, [right]
+        elif _bare_column(right) is not None and _is_value(left):
+            side, values = right, [left]
+    elif isinstance(node, exp.In):
+        if node.expressions and all(_is_value(item) for item in node.expressions):
+            side, kind, values = node.this, "igualdad", node.expressions
+    elif isinstance(node, exp.Between):
+        low, high = node.args.get("low"), node.args.get("high")
+        if _is_value(low) and _is_value(high):
+            side, kind, values = node.this, "rango", [low, high]
+    elif (
+        isinstance(node, exp.Is)
+        and not node.args.get("negate")
+        and isinstance(_unwrap_paren(node.expression), exp.Null)
+    ):
+        side, kind = node.this, "igualdad"
+    # LIKE no cuenta: el patron llega redactado (ver limitaciones arriba)
+    column = _bare_column(side) if side is not None else None
+    if column is None or not belongs_to_table(column):
+        return ("leaf", "OTRA", None, None, [])
+    state = "OK" if column.name in lead_columns else "FIX"
+    return ("leaf", state, column.name, kind, values)
+
+
+def _condition_tree(node: exp.Expression, belongs_to_table, lead_columns: set[str]) -> tuple:
+    # ("and" | "or", [hijos]) aplanado, o una hoja
     node = _unwrap_paren(node)
-    if isinstance(node, exp.Neg):
-        node = _unwrap_paren(node.this)
-    if isinstance(node, exp.Literal):
-        return node.is_string
-    if isinstance(node, exp.Parameter):
-        return False
-    return None
+    for kind, node_type in (("and", exp.And), ("or", exp.Or)):
+        if isinstance(node, node_type):
+            children = []
+            for child in (node.this, node.expression):
+                sub = _condition_tree(child, belongs_to_table, lead_columns)
+                children += sub[1] if sub[0] == kind else [sub]
+            return (kind, children)
+    return _leaf(node, belongs_to_table, lead_columns)
+
+
+def _usable(tree: tuple, with_fix: bool) -> bool:
+    # El motor puede usar un indice para esta parte? Un AND si alguna parte
+    # puede; un OR solo si todas sus ramas pueden (BitmapOr / index_merge).
+    # Medido en los dos motores: ql_sandbox/explain_or (4.152 combinaciones).
+    if tree[0] == "leaf":
+        return tree[1] == "OK" or (with_fix and tree[1] == "FIX")
+    results = [_usable(child, with_fix) for child in tree[1]]
+    return any(results) if tree[0] == "and" else all(results)
+
+
+def _has_or(tree: tuple) -> bool:
+    return tree[0] == "or" or (tree[0] == "and" and any(_has_or(child) for child in tree[1]))
+
+
+def _fix_leaves(tree: tuple, in_or: bool = False) -> list[tuple[tuple, bool]]:
+    # (hoja FIX, esta dentro de un OR) que necesitan un indice para que esta
+    # parte use uno; se llama solo si hoy no puede y con los indices si. En un
+    # OR, las de todas las ramas que hoy no pueden; en un AND, las de las
+    # partes que se pueden arreglar, prefiriendo las que no tienen OR (un
+    # indice alcanza).
+    if tree[0] == "leaf":
+        return [(tree, in_or)]
+    if tree[0] == "or":
+        return [pair for child in tree[1] if not _usable(child, False) for pair in _fix_leaves(child, True)]
+    fixable = [child for child in tree[1] if _usable(child, True)]
+    chosen = [child for child in fixable if not _has_or(child)] or fixable
+    return [pair for child in chosen for pair in _fix_leaves(child, in_or)]
+
+
+@dataclass
+class _IndexFix:
+    equality: list[str]
+    range_: list[str]
+    # columnas sin tipo conocido: no se pudo descartar una conversion
+    unverified: list[str]
+    # True si hay que indexar ramas de un OR: un indice por rama, no uno compuesto
+    per_branch: bool
+
+
+def _index_fix(
+    predicate: str,
+    belongs_to_table,
+    column_type_of=None,
+    lead_columns: set[str] | None = None,
+    dialect: str = "postgres",
+) -> _IndexFix | None:
+    # Columnas a indexar para que el motor deje de recorrer la tabla, o None si
+    # el predicado ya puede usar un indice o si indexar columnas peladas no
+    # alcanza (por ejemplo, otra rama del OR con la columna envuelta).
+    try:
+        tree = sqlglot.parse_one(_strip_engine_internal_markers(predicate), read=dialect)
+    except Exception as e:
+        logger.warning(
+            "_index_fix | no se pudo parsear predicate | error=%s | predicate=%.200s",
+            e, predicate,
+        )
+        return None
+    conditions = _condition_tree(tree, belongs_to_table, lead_columns or set())
+    if _usable(conditions, False) or not _usable(conditions, True):
+        return None
+
+    equality: list[str] = []
+    range_: list[str] = []
+    unverified: list[str] = []
+    per_branch = False
+    for (_, _, column, kind, values), in_or in _fix_leaves(conditions):
+        per_branch = per_branch or in_or
+        target = equality if kind == "igualdad" else range_
+        if column not in target:
+            target.append(column)
+        # sin valores (IS NULL) no hay conversion posible que verificar; sin
+        # tipo, el pipeline no pudo escribir la conversion si la hubiera
+        data_type = column_type_of(column) if column_type_of else None
+        if not data_type and values and column not in unverified:
+            unverified.append(column)
+    # una columna que aparece en los dos queda solo como igualdad
+    range_ = [column for column in range_ if column not in equality]
+    return _IndexFix(equality, range_, unverified, per_branch)
 
 
 def _filtered_columns(
     predicate: str,
     belongs_to_table,
     column_type_of=None,
-    engine: str = "postgres",
     dialect: str = "postgres",
 ) -> tuple[list[str], list[str], list[str]]:
-    # (columnas de igualdad, columnas de rango, columnas sin verificar) del
-    # predicado real del scan, en orden de aparicion y sin repetir. Una columna
-    # que aparece en los dos queda solo como igualdad. `column_type_of(nombre)`
-    # da el tipo de una columna de la tabla del scan (None si no se sabe);
-    # `engine` es el motor del plan ("postgres" o "mysql"). Las columnas con
-    # conversion de tipo se descartan; "sin verificar" son las que cuentan pero
-    # cuya conversion no se pudo descartar porque falta su tipo.
-    try:
-        tree = sqlglot.parse_one(_strip_engine_internal_markers(predicate), read=dialect)
-    except Exception as e:
-        logger.warning(
-            "_filtered_columns | no se pudo parsear predicate | error=%s | predicate=%.200s",
-            e, predicate,
-        )
+    # (igualdad, rango, sin verificar) de las columnas a indexar si la tabla no
+    # tuviera ningun indice
+    fix = _index_fix(predicate, belongs_to_table, column_type_of, set(), dialect)
+    if fix is None:
         return [], [], []
-
-    equality: list[str] = []
-    range_: list[str] = []
-    unverified: list[str] = []
-
-    def _add(target: list[str], side: exp.Expression, values: list[exp.Expression]) -> None:
-        column = _bare_column(side)
-        if column is None or not belongs_to_table(column):
-            return
-        data_type = column_type_of(column.name) if column_type_of else None
-        data_type = data_type.strip().lower() if data_type else None
-        side = _unwrap_paren(side)
-        if isinstance(side, exp.Cast):
-            # Postgres: (col)::text, unico cast que _bare_column deja pasar
-            if data_type is not None and data_type not in _VARCHAR_TYPES:
-                return
-        elif engine == "mysql" and data_type in _NON_NUMERIC_TYPES:
-            if any(_value_is_string(value) is False for value in values):
-                return
-        # sin valores (IS NULL) no hay conversion posible que verificar
-        if data_type is None and (isinstance(side, exp.Cast) or (engine == "mysql" and values)):
-            if column.name not in unverified:
-                unverified.append(column.name)
-        if column.name not in target:
-            target.append(column.name)
-
-    for condition in _top_level_conjuncts(tree):
-        if isinstance(condition, (exp.EQ, *_RANGE_TYPES)):
-            target = equality if isinstance(condition, exp.EQ) else range_
-            left, right = condition.this, condition.expression
-            if _bare_column(left) is not None and _is_value(right):
-                _add(target, left, [right])
-            elif _bare_column(right) is not None and _is_value(left):
-                _add(target, right, [left])
-        elif isinstance(condition, exp.In):
-            if all(_is_value(item) for item in condition.expressions) and condition.expressions:
-                _add(equality, condition.this, condition.expressions)
-        elif isinstance(condition, exp.Between):
-            low, high = condition.args.get("low"), condition.args.get("high")
-            if _is_value(low) and _is_value(high):
-                _add(range_, condition.this, [low, high])
-        elif isinstance(condition, exp.Is) and not condition.args.get("negate"):
-            # col IS NULL: el indice guarda los NULL y los busca como una igualdad
-            if isinstance(_unwrap_paren(condition.expression), exp.Null):
-                _add(equality, condition.this, [])
-        # LIKE no cuenta: el patron llega redactado (ver limitaciones arriba)
-
-    range_ = [column for column in range_ if column not in equality]
-    unverified = [column for column in unverified if column in equality or column in range_]
-    return equality, range_, unverified
+    return fix.equality, fix.range_, fix.unverified
 
 
 def _index_lead_column(index_ref: str | None, dialect: str = "postgres") -> str | None:
@@ -410,8 +448,11 @@ def _column_type_for(
     return candidates[0] if len(candidates) == 1 else None
 
 
-def _suggested_index(table_name: str, equality: list[str], range_: list[str]) -> str:
-    columns = ", ".join(equality + range_)
+def _suggested_index(table_name: str, fix: "_IndexFix") -> str:
+    if fix.per_branch:
+        # en un OR cada rama necesita su propio indice
+        return "; ".join(f"CREATE INDEX ON {table_name} ({column})" for column in fix.equality + fix.range_)
+    columns = ", ".join(fix.equality + fix.range_)
     return f"CREATE INDEX ON {table_name} ({columns})"
 
 
@@ -491,8 +532,6 @@ def detect_missing_indexes(
 
         alias_map = resolve_table_aliases(candidate.canonic_query)
         operations = explain.canonical_plan.physical_operations
-        # Postgres entrega queryid como entero y MySQL el DIGEST como texto (igual que AP-07)
-        engine = "mysql" if isinstance(candidate.query_id, str) else "postgres"
         for operation in operations:
             # condicion 3 (AP-02): escaneo completo sobre la tabla del SELECT. Un
             # plan bitmap de Postgres da dos scans de la tabla, pero son index_lookup
@@ -535,11 +574,15 @@ def detect_missing_indexes(
             def _type_of(column_name: str, real_table=real_table) -> str | None:
                 return _column_type_for(column_types, candidate.schema_name, real_table, column_name)
 
-            equality, range_, unverified = _filtered_columns(
-                predicate, _belongs_to_table, _type_of, engine,
-            )
-            if not equality and not range_:
+            # condiciones 6 y 7: columnas peladas sin indice que, indexadas,
+            # dejan que el motor use un indice
+            lead_columns, ambiguous = _lookup_by_table(lead_columns_by_table, candidate.schema_name, real_table)
+            if ambiguous:
+                continue  # no se sabe de cual tabla son los indices
+            fix = _index_fix(predicate, _belongs_to_table, _type_of, lead_columns or set())
+            if fix is None:
                 continue
+            equality, range_, unverified = fix.equality, fix.range_, fix.unverified
 
             # Si se pudo descartar una conversion de tipo sobre las columnas. El
             # plan generico de Postgres no conoce el valor, asi que no muestra
@@ -550,16 +593,8 @@ def detect_missing_indexes(
             if unverified:
                 unverified_reasons.append("tipo_de_columna_desconocido")
 
-            # condicion 7: ninguna es primera columna de un indice de la tabla
-            lead_columns, ambiguous = _lookup_by_table(lead_columns_by_table, candidate.schema_name, real_table)
-            if ambiguous:
-                continue  # no se sabe de cual tabla son los indices
-            lead_columns = lead_columns or set()
-            if any(column in lead_columns for column in equality + range_):
-                continue
-
             existing_indexes, _ = _lookup_by_table(index_names_by_table, candidate.schema_name, real_table)
-            suggested = _suggested_index(real_table, equality, range_)
+            suggested = _suggested_index(real_table, fix)
             findings.append(
                 Hallazgo(
                     antipatron="missing_index",
@@ -578,6 +613,8 @@ def detect_missing_indexes(
                         "range_columns": range_,
                         "existing_indexes": sorted(existing_indexes or []),
                         "suggested_index": suggested,
+                        # True si las columnas son ramas de un OR: un indice por rama
+                        "indice_por_rama": fix.per_branch,
                         "live_rows": live_rows,
                         "rows_per_call": round(rows_per_call, 2),
                         "selectivity": selectivity,
@@ -600,8 +637,15 @@ def detect_missing_indexes(
                         f"La consulta recorre completa la tabla {table_name} ({live_rows:,} filas vivas) "
                         f"y en la ultima ventana devolvio en promedio {rows_per_call:,.0f} filas por "
                         f"ejecucion ({selectivity:.2%} de la tabla) en {window.calls} ejecuciones. "
-                        "Ninguna de las columnas por las que filtra es la primera columna de un "
-                        "indice de esa tabla: el motor no tiene un indice con el que acotar la busqueda."
+                        + (
+                            f"Filtra con un OR y las ramas sobre {', '.join(equality + range_)} no tienen "
+                            "un indice que empiece por esa columna: el motor solo usa indices en un OR si "
+                            "todas las ramas pueden, asi que recorre la tabla."
+                            if fix.per_branch else
+                            f"Compara {', '.join(equality + range_)} directamente contra un valor, pero "
+                            "ningun indice de la tabla empieza por esa columna, y ninguna otra condicion "
+                            "del filtro puede usar un indice: el motor no tiene con que acotar la busqueda."
+                        )
                         + (
                             " No se pudo descartar que la consulta convierta el tipo de la columna "
                             "(plan sin los valores reales o tipo de columna desconocido): si el valor "
@@ -610,8 +654,13 @@ def detect_missing_indexes(
                         )
                     ),
                     recomendacion=(
-                        f"Evaluar un indice con las columnas de igualdad primero y luego las de rango: "
-                        f"{suggested}. Considerar el costo extra en escrituras antes de crearlo."
+                        (
+                            f"Evaluar un indice por cada rama del OR que no lo tiene: {suggested}. "
+                            if fix.per_branch else
+                            f"Evaluar un indice con las columnas de igualdad primero y luego las de rango: "
+                            f"{suggested}. "
+                        )
+                        + "Considerar el costo extra en escrituras antes de crearlo."
                     ),
                     query_id=candidate.query_id,
                     table_name=real_table,

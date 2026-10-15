@@ -1,5 +1,6 @@
 import re
-from datetime import datetime, timezone
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 
 import sqlglot
 from sqlglot import exp
@@ -11,6 +12,54 @@ from logger import get_logger
 from .table_aliases import resolve_table_aliases
 
 logger = get_logger(__name__)
+
+
+# Regla AP-03 (predicado no sargable). Condiciones de escaneo completo
+# identicas a las de AP-02 (escaneo completo evitable, avoidable_full_scan.py),
+# copiadas aca porque los detectores son independientes:
+#   1. la consulta es un SELECT simple (ver _simple_select_table)
+#   2. >= DEFAULT_MIN_WINDOW_CALLS ejecuciones en la ventana (delta desde el
+#      snapshot anterior)
+#   3. el plan recorre completa la tabla del SELECT (full_table_scan) o un
+#      indice entero sin usarlo para filtrar (full_index_scan)
+#   4. la tabla tiene >= DEFAULT_MIN_LIVE_ROWS filas vivas
+#   5. selectividad REAL de la ventana <= DEFAULT_MAX_SELECTIVITY:
+#      (filas devueltas / ejecuciones de la ventana) / live_rows
+# Condiciones propias de AP-03:
+#   6. el predicado de ese scan tiene una columna de la tabla envuelta en una
+#      funcion, una operacion aritmetica o una conversion de tipo, comparada
+#      contra un valor con un operador que un indice puede buscar (=, <, <=,
+#      >, >=, IN, BETWEEN, IS NULL)
+#   7. esa columna es la primera columna de un indice existente: el predicado
+#      lo desaprovecha. Sin indice el escaneo completo es inevitable con o sin
+#      la funcion, y ese caso ya lo reporta AP-02. Un indice parcial cuenta
+#      (se avisa en la explicacion); uno de expresion no cubre la columna base.
+#      Si no se puede saber (tabla ambigua entre schemas) no se reporta.
+#   8. reescribir las columnas de 6-7 deja que el motor use un indice: un AND
+#      usa indice si alguna de sus partes puede; un OR solo si todas sus ramas
+#      pueden (medido en los dos motores, ql_sandbox/explain_or). No se reporta
+#      si el predicado ya puede usar un indice, ni si otra rama del OR no
+#      tiene indice (ese arreglo es de AP-04 y ninguno de los dos alcanza solo;
+#      queda para AP-02).
+#
+# Limitaciones declaradas (las mismas de AP-02):
+#   - consultas que no son SELECT simples no se evaluan (joins, subconsultas,
+#     UNION, agregados, LIMIT): falso negativo por diseno
+#   - sin plan la consulta no se evalua
+#   - el promedio de la ventana esconde la minoria selectiva con datos sesgados
+
+DEFAULT_MIN_LIVE_ROWS = 10_000  # mismo valor que AP-02
+DEFAULT_MAX_SELECTIVITY = 0.1  # mismo valor que AP-02
+DEFAULT_MIN_WINDOW_CALLS = 10  # mismo valor que AP-02
+
+# Igual que AP-02: full_index_scan en un SELECT simple pasa por todas las filas
+# (sin LIMIT, MIN/MAX ni EXISTS nada corta la lectura antes)
+_FULL_SCAN_METHODS = ("full_table_scan", "full_index_scan")
+
+# Igual que AP-02: una query sin fila guardada cuyo counters_epoch esta a menos
+# de esto de la hora del snapshot empezo a contar dentro de la ventana. Asume
+# snapshots cada 60 s (ventana del informe).
+_NEW_QUERY_WINDOW = timedelta(seconds=60)
 
 
 # Referencias a subplanes, no son SQL valido: (SubPlan N) de Postgres y de
@@ -38,23 +87,7 @@ def _strip_engine_internal_markers(predicate: str) -> str:
     return cleaned
 
 
-_COMPARISON_TYPES = (exp.EQ, exp.NEQ, exp.GT, exp.GTE, exp.LT, exp.LTE, exp.Like, exp.ILike)
 _ARITHMETIC_TYPES = (exp.Add, exp.Sub, exp.Mul, exp.Div, exp.Mod, exp.DPipe)
-
-# Tipos cuya comparacion contra un literal numerico sin comillas fuerza a
-# convertir la columna (no el literal) en la mayoria de los motores
-_NON_NUMERIC_TYPES = {
-    "character varying", "varchar", "character", "char", "text",
-    "tinytext", "mediumtext", "longtext", "enum", "set", "uuid",
-    "date", "time", "datetime", "timestamp",
-    "timestamp without time zone", "timestamp with time zone",
-    "year",
-}
-
-# Postgres escribe `(columna)::text` para comparar una columna varchar en casi
-# cualquier condicion: es su propia coercion a text y no impide usar el indice.
-# Un char(n) -> text si cuenta: ahi el cast cambia el valor (quita los blancos)
-_VARCHAR_TYPES = {"character varying", "varchar"}
 
 _SUBTIPO_MENSAJES = {
     "function_on_column": (
@@ -79,10 +112,6 @@ _SUBTIPO_MENSAJES = {
         "revisar si la columna deberia tener el tipo correcto desde el modelo de datos.",
     ),
 }
-
-
-def _is_non_numeric_type(data_type: str | None) -> bool:
-    return bool(data_type) and data_type.strip().lower() in _NON_NUMERIC_TYPES
 
 
 def _has_column(node: exp.Expression) -> bool:
@@ -110,67 +139,6 @@ def _is_arithmetic_on_column(side: exp.Expression) -> bool:
 def _is_cast_on_column(side: exp.Expression) -> bool:
     # side.this es lo de ADENTRO del cast: un cast sobre un literal (this=Literal) no cuenta
     return isinstance(side, exp.Cast) and _has_column(side.this)
-
-
-def _is_varchar_text_cast(side: exp.Expression, data_type: str | None) -> bool:
-    # `(columna)::text` sobre una columna varchar: no es una conversion que
-    # impida el indice (ver _VARCHAR_TYPES). Con tipo desconocido se asume
-    # varchar (lo comun), igual que AP-04: si no, los dos detectores darian
-    # diagnosticos contradictorios sobre el mismo predicado.
-    return (
-        isinstance(side, exp.Cast)
-        and side.to.is_type(exp.DataType.Type.TEXT)
-        and isinstance(_unwrap_paren(side.this), exp.Column)
-        and (not data_type or data_type.strip().lower() in _VARCHAR_TYPES)
-    )
-
-
-def _value_is_string(node: exp.Expression | None) -> bool | None:
-    # True si el valor es texto, False si es numero, None si no es un valor.
-    # MySQL redacta los numeros como $n (sqlglot: Parameter) y los textos como
-    # '$n' (Literal de texto); un literal sin redactar tambien se reconoce.
-    if node is None:
-        return None
-    node = _unwrap_paren(node)
-    if isinstance(node, exp.Neg):
-        node = _unwrap_paren(node.this)
-    if isinstance(node, exp.Literal):
-        return node.is_string
-    if isinstance(node, exp.Parameter):
-        return False
-    return None
-
-
-def _bare_column_and_values(comparison: exp.Expression) -> tuple[exp.Column, list[bool]] | None:
-    # Si es `columna OP valor` sin funcion/aritmetica/cast, devuelve (columna,
-    # [el valor es texto]).
-    left, right = _unwrap_paren(comparison.this), _unwrap_paren(comparison.expression)
-    if isinstance(left, exp.Column) and _value_is_string(right) is not None:
-        return left, [_value_is_string(right)]
-    if isinstance(right, exp.Column) and _value_is_string(left) is not None:
-        return right, [_value_is_string(left)]
-    return None
-
-
-def _bare_column_and_values_in(node: exp.In) -> tuple[exp.Column, list[bool]] | None:
-    # Version de _bare_column_and_values para `columna IN (v1, v2, ...)`.
-    target = _unwrap_paren(node.this)
-    if not isinstance(target, exp.Column):
-        return None
-    kinds = [kind for kind in map(_value_is_string, node.expressions) if kind is not None]
-    return (target, kinds) if kinds else None
-
-
-def _bare_column_and_values_between(node: exp.Between) -> tuple[exp.Column, list[bool]] | None:
-    # Version de _bare_column_and_values para `columna BETWEEN v1 AND v2`.
-    target = _unwrap_paren(node.this)
-    if not isinstance(target, exp.Column):
-        return None
-    kinds = [
-        kind for kind in map(_value_is_string, (node.args.get("low"), node.args.get("high")))
-        if kind is not None
-    ]
-    return (target, kinds) if kinds else None
 
 
 def _index_lead_column(index_ref: str | None, dialect: str = "postgres") -> tuple[str | None, bool]:
@@ -203,12 +171,8 @@ def _index_lead_column(index_ref: str | None, dialect: str = "postgres") -> tupl
     return lead_column, is_partial
 
 
-def _lookup_by_table(
-    mapping: dict[tuple[str | None, str], set[str]],
-    schema_name: str | None,
-    table_name: str,
-) -> tuple[set[str] | None, bool]:
-    # (columnas del match, es_ambiguo). Intenta la clave exacta con schema; si
+def _lookup_by_table(mapping: dict, schema_name: str | None, table_name: str):
+    # (valor del match, es_ambiguo). Intenta la clave exacta con schema; si
     # no hay, el fallback solo considera candidatos donde falta el dato de
     # schema de algun lado (None) -- nunca dos schemas conocidos y distintos,
     # ahi no hay ambiguedad, hay certeza de que son tablas distintas.
@@ -222,22 +186,6 @@ def _lookup_by_table(
     if len(candidates) == 1:
         return candidates[0], False
     return None, len(candidates) > 1
-
-
-def _index_exists_for_column(
-    real_table: str | None,
-    column_name: str | None,
-    schema_name: str | None,
-    leading_columns_by_table: dict[tuple[str | None, str], set[str]],
-) -> bool | None:
-    # True/False si se pudo determinar, None si falta tabla/columna o el nombre
-    # de tabla es ambiguo entre schemas y no se puede saber cual es.
-    if not real_table or not column_name:
-        return None
-    columns, ambiguous = _lookup_by_table(leading_columns_by_table, schema_name, real_table)
-    if ambiguous:
-        return None
-    return column_name in (columns or set())
 
 
 def _only_partial_index_for_column(
@@ -260,103 +208,128 @@ def _only_partial_index_for_column(
     return column_name not in (full_columns or set())
 
 
-def _detect_structural_issues_in_query(
-    canonic_query: str | None,
-    dialect: str = "postgres",
-) -> list[tuple[str, str | None, str | None, str]]:
-    # Respaldo sin EXPLAIN: busca function/arithmetic_on_column en el WHERE y
-    # en cada JOIN...ON. No detecta implicit_cast (necesita el literal real, que
-    # canonic_query reemplaza por $1/?).
-    if not canonic_query:
-        return []
-
-    try:
-        tree = sqlglot.parse_one(canonic_query, read=dialect)
-    except Exception as e:
-        logger.warning(
-            "_detect_structural_issues_in_query | no se pudo parsear canonic_query | error=%s | texto=%.200s",
-            e, canonic_query,
-        )
-        return []
-
-    # WHERE y cada ON de JOIN son igual de sargables/no sargables
-    where = tree.find(exp.Where)
-    join_conditions = [
-        join.args["on"] for join in tree.find_all(exp.Join) if join.args.get("on") is not None
-    ]
-    roots = ([where.this] if where is not None else []) + join_conditions
-    if not roots:
-        return []
-
-    alias_map = resolve_table_aliases(canonic_query, dialect)
-    found: list[tuple[str, str | None, str | None, str]] = []
-
-    for root in roots:
-        for comparison in root.find_all(_COMPARISON_TYPES):
-            left, right = _unwrap_paren(comparison.this), _unwrap_paren(comparison.expression)
-            subtipo = None
-            column_node = None
-
-            for side in (left, right):
-                if _is_function_on_column(side):
-                    subtipo = "function_on_column"
-                    column_node = side.find(exp.Column)
-                    break
-                if _is_arithmetic_on_column(side):
-                    subtipo = "arithmetic_on_column"
-                    column_node = side.find(exp.Column)
-                    break
-
-            if subtipo is None:
-                continue
-
-            column_name = column_node.name if column_node is not None else None
-            real_table = (
-                alias_map.get(column_node.table)
-                if column_node is not None and column_node.table
-                else None
-            )
-            found.append((subtipo, real_table, column_name, comparison.sql(dialect="postgres")))
-
-    return found
+_INDEXABLE_COMPARISONS = (exp.EQ, exp.GT, exp.GTE, exp.LT, exp.LTE)
 
 
-def _column_type_for(
-    column_types: dict[tuple[str | None, str, str], str],
-    schema_name: str | None,
-    table_name: str | None,
-    column_name: str | None,
-) -> str | None:
-    # Mismo criterio que _lookup_by_table (ver ahi el detalle del fallback).
-    if not table_name or not column_name:
-        return None
-    data_type = column_types.get((schema_name, table_name, column_name))
-    if data_type is not None:
-        return data_type
-    candidates = [
-        dt for (sn, tn, cn), dt in column_types.items()
-        if tn == table_name and cn == column_name and (sn is None or schema_name is None)
-    ]
-    return candidates[0] if len(candidates) == 1 else None
+def _is_value(node: exp.Expression | None) -> bool:
+    # Un valor: literal, parametro, cast de literal, ANY(..). Lo que referencia
+    # otra columna no lo es: columna contra columna (total > id) compara dos
+    # valores de la misma fila y ningun indice sirve, con o sin cast.
+    return node is not None and node.find(exp.Column) is None
+
+
+def _wrapped_subtype(side: exp.Expression) -> str | None:
+    if _is_function_on_column(side):
+        return "function_on_column"
+    if _is_arithmetic_on_column(side):
+        return "arithmetic_on_column"
+    if _is_cast_on_column(side):
+        return "implicit_cast"
+    return None
+
+
+def _leaf(node: exp.Expression, lead_columns: set[str] | None) -> tuple:
+    # Una condicion: ("leaf", estado, subtipo, columna). Estados:
+    #   OK      columna pelada que encabeza un indice: el motor ya puede usarlo
+    #   FIX     columna envuelta que encabeza un indice: reescribirla lo
+    #           habilita (es lo que reporta AP-03)
+    #   OTRA    nada que un indice resuelva (sin indice, LIKE, <>, IS NOT
+    #           NULL, NOT, columna contra columna...)
+    # Solo cuentan los operadores que un indice puede buscar: =, <, <=, >, >=,
+    # IN, BETWEEN e IS NULL. lead_columns None: todas las columnas encabezan un
+    # indice.
+    side = None
+    if isinstance(node, _INDEXABLE_COMPARISONS):
+        left, right = _unwrap_paren(node.this), _unwrap_paren(node.expression)
+        side = left if _is_value(right) else right if _is_value(left) else None
+    elif isinstance(node, exp.In):
+        if node.expressions and all(_is_value(item) for item in node.expressions):
+            side = _unwrap_paren(node.this)
+    elif isinstance(node, exp.Between):
+        if _is_value(node.args.get("low")) and _is_value(node.args.get("high")):
+            side = _unwrap_paren(node.this)
+    elif (
+        isinstance(node, exp.Is)
+        and not node.args.get("negate")
+        and isinstance(_unwrap_paren(node.expression), exp.Null)
+    ):
+        side = _unwrap_paren(node.this)
+    column = side.find(exp.Column) if side is not None else None
+    if column is None or (lead_columns is not None and column.name not in lead_columns):
+        return ("leaf", "OTRA", None, None)
+    if isinstance(side, exp.Column):
+        return ("leaf", "OK", None, column.name)
+    subtype = _wrapped_subtype(side)
+    return ("leaf", "FIX", subtype, column.name) if subtype else ("leaf", "OTRA", None, None)
+
+
+def _condition_tree(node: exp.Expression, lead_columns: set[str] | None) -> tuple:
+    # ("and" | "or", [hijos]) aplanado, o una hoja
+    node = _unwrap_paren(node)
+    for kind, node_type in (("and", exp.And), ("or", exp.Or)):
+        if isinstance(node, node_type):
+            children = []
+            for child in (node.this, node.expression):
+                sub = _condition_tree(child, lead_columns)
+                children += sub[1] if sub[0] == kind else [sub]
+            return (kind, children)
+    return _leaf(node, lead_columns)
+
+
+def _usable(tree: tuple, with_fix: bool) -> bool:
+    # El motor puede usar un indice para esta parte? Un AND si alguna parte
+    # puede; un OR solo si todas sus ramas pueden (BitmapOr / index_merge).
+    # Medido en los dos motores: ql_sandbox/explain_or (4.152 combinaciones).
+    if tree[0] == "leaf":
+        return tree[1] == "OK" or (with_fix and tree[1] == "FIX")
+    results = [_usable(child, with_fix) for child in tree[1]]
+    return any(results) if tree[0] == "and" else all(results)
+
+
+def _has_or(tree: tuple) -> bool:
+    return tree[0] == "or" or (tree[0] == "and" and any(_has_or(child) for child in tree[1]))
+
+
+def _fix_leaves(tree: tuple, in_or: bool = False) -> list[tuple[tuple, bool]]:
+    # (hoja FIX, esta dentro de un OR) que hay que arreglar para que esta parte
+    # use un indice; se llama solo si hoy no puede y con el arreglo si. En un
+    # OR, las de todas las ramas que hoy no pueden; en un AND, las de las
+    # partes que se pueden arreglar, prefiriendo las que no tienen OR (un solo
+    # arreglo alcanza).
+    if tree[0] == "leaf":
+        return [(tree, in_or)]
+    if tree[0] == "or":
+        return [pair for child in tree[1] if not _usable(child, False) for pair in _fix_leaves(child, True)]
+    fixable = [child for child in tree[1] if _usable(child, True)]
+    chosen = [child for child in fixable if not _has_or(child)] or fixable
+    return [pair for child in chosen for pair in _fix_leaves(child, in_or)]
 
 
 def _detect_predicate_subtypes(
     predicate: str,
-    real_table: str | None,
-    schema_name: str | None,
-    column_types: dict[tuple[str | None, str, str], str],
+    lead_columns: set[str] | None = None,
     dialect: str = "postgres",
-    engine: str = "postgres",
-    belongs_to_table=None,
 ) -> list[tuple[str, str | None]]:
-    # Detecta las 3 formas de predicado no sargable en el AST del predicado real del plan.
-    # El LIKE con comodin inicial ('%abc') no se detecta: no esta en la regla del
-    # informe y el pipeline redacta el patron a $n, asi que no se ve el '%'.
-    # `engine` es el motor del plan ("postgres" o "mysql"), no el dialecto con
-    # el que se parsea. `belongs_to_table(columna)` dice si una columna es de la
-    # tabla del scan: las de otra tabla (condicion de join que MySQL pone en el
-    # scan de la tabla interna, o que Postgres pone en el Index Cond de un join
-    # parametrizado) no se atribuyen a esta tabla. Sin funcion, todas cuentan.
+    # (subtipo, columna) de las columnas envueltas que, reescritas, dejan que el
+    # motor use un indice existente. Nada si el predicado ya puede usar uno o
+    # si reescribirlas no alcanza (por ejemplo, otra rama del OR sin indice).
+    # Misma regla en los dos motores: una conversion es un cast sobre la
+    # columna (el pipeline escribe la implicita de MySQL y quita el (col)::text
+    # de las varchar de Postgres, stages/type_conversions.py). LIKE no cuenta:
+    # el patron llega redactado y no se sabe si empieza con comodin.
+    found: list[tuple[str, str | None]] = []
+    for subtype, column, _ in _non_sargable_fixes(predicate, lead_columns, dialect):
+        if (subtype, column) not in found:
+            found.append((subtype, column))
+    return found
+
+
+def _non_sargable_fixes(
+    predicate: str,
+    lead_columns: set[str] | None = None,
+    dialect: str = "postgres",
+) -> list[tuple[str, str, bool]]:
+    # (subtipo, columna, dentro de un OR) de cada columna a reescribir
     try:
         tree = sqlglot.parse_one(_strip_engine_internal_markers(predicate), read=dialect)
     except Exception as e:
@@ -368,71 +341,24 @@ def _detect_predicate_subtypes(
             e, predicate,
         )
         return []
-
-    found: list[tuple[str, str | None]] = []
-
-    def _add(subtipo: str, column_name: str | None) -> None:
-        pair = (subtipo, column_name)
-        if pair not in found:
-            found.append(pair)
-
-    def _belongs(column: exp.Column) -> bool:
-        return belongs_to_table is None or belongs_to_table(column)
-
-    def _type_of(column: exp.Column) -> str | None:
-        return _column_type_for(column_types, schema_name, real_table, column.name)
-
-    def _check_side(side: exp.Expression) -> None:
-        # Un lado de la condicion: funcion, aritmetica o cast sobre una columna de esta tabla
-        column = side.find(exp.Column)
-        if column is None or not _belongs(column):
-            return
-        if _is_function_on_column(side):
-            _add("function_on_column", column.name)
-        if _is_arithmetic_on_column(side):
-            _add("arithmetic_on_column", column.name)
-        if _is_cast_on_column(side):
-            if engine == "mysql" and side.to.is_type(exp.DataType.Type.DATE):
-                # MySQL muestra DATE(col) como CAST(col AS DATE): es la funcion
-                # que escribio el usuario, igual que date(col) en Postgres
-                _add("function_on_column", column.name)
-            elif not _is_varchar_text_cast(side, _type_of(column)):
-                _add("implicit_cast", column.name)
-
-    def _check_bare(bare: tuple[exp.Column, list[bool]] | None) -> None:
-        # Caso MySQL: la conversion no deja rastro en el plan, se infiere
-        # cruzando el tipo real de la columna contra el valor. Solo MySQL
-        # redacta con tipo ($n numero, '$n' texto); en Postgres todo valor
-        # llega como $n y se tomaria como numero.
-        if engine != "mysql" or real_table is None or bare is None:
-            return
-        column, kinds = bare
-        if not _belongs(column):
-            return
-        if _is_non_numeric_type(_type_of(column)) and any(not is_string for is_string in kinds):
-            _add("implicit_cast", column.name)
-
-    # comparaciones binarias: =, <>, >, >=, <, <=, LIKE, ILIKE
-    for comparison in tree.find_all(_COMPARISON_TYPES):
-        _check_side(_unwrap_paren(comparison.this))
-        _check_side(_unwrap_paren(comparison.expression))
-        _check_bare(_bare_column_and_values(comparison))
-
-    # exp.In/exp.Between no entran en _COMPARISON_TYPES (su forma no es
-    # this/expression), se revisan aparte
-    for in_node in tree.find_all(exp.In):
-        _check_side(_unwrap_paren(in_node.this))
-        _check_bare(_bare_column_and_values_in(in_node))
-
-    for between_node in tree.find_all(exp.Between):
-        _check_side(_unwrap_paren(between_node.this))
-        _check_bare(_bare_column_and_values_between(between_node))
-
-    return found
+    conditions = _condition_tree(tree, lead_columns)
+    if _usable(conditions, False) or not _usable(conditions, True):
+        return []
+    return [(leaf[2], leaf[3], in_or) for leaf, in_or in _fix_leaves(conditions)]
 
 
-# Misma conversion que statement_history.parse_instant; se duplica a proposito
-# hasta confirmar este detector por separado, como el resto de la logica de ventana.
+# Base de escaneo completo: misma logica que avoidable_full_scan.py (AP-02); se
+# duplica a proposito porque los detectores son independientes y hasta
+# confirmar este detector por separado.
+
+@dataclass
+class _RowsWindow:
+    calls: int
+    rows: int
+    # True si la query aparecio en esta ventana y se uso su acumulado completo
+    new_query: bool = False
+
+
 def _parse_instant(value) -> datetime | None:
     if value is None:
         return None
@@ -446,49 +372,112 @@ def _parse_instant(value) -> datetime | None:
     return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
 
 
-def _current_calls(snapshot: SnapshotPayload) -> dict[str, tuple[int, str | None]]:
-    # (ejecuciones, counters_epoch) por query, sumando filas repetidas igual que
-    # la fila guardada en statement_samples
-    calls_by_query: dict[str, tuple[int, str | None]] = {}
+def _current_counters(snapshot: SnapshotPayload) -> dict[str, tuple[int, int | None, str | None]]:
+    # (ejecuciones, filas devueltas, counters_epoch) por query, sumando las filas
+    # repetidas igual que la fila guardada en statement_samples
+    counters: dict[str, tuple[int, int | None, str | None]] = {}
     for statement in snapshot.statements:
         if statement.query_id is None or statement.execution_count is None:
             continue
         key = str(statement.query_id)
-        calls, epoch = calls_by_query.get(key, (0, statement.counters_epoch))
-        calls_by_query[key] = (calls + statement.execution_count, epoch)
-    return calls_by_query
+        calls, rows, epoch = counters.get(key, (0, None, statement.counters_epoch))
+        if statement.rows_returned is not None:
+            rows = (rows or 0) + statement.rows_returned
+        counters[key] = (calls + statement.execution_count, rows, epoch)
+    return counters
 
 
-def _executed_since_previous_snapshot(
+def _rows_window(
     calls: int,
+    rows: int | None,
     epoch: datetime | None,
     previous: StatementHistory | None,
-) -> bool:
-    # La query corrio entre el snapshot anterior y este? Sin fila anterior se
-    # responde que si: es la primera vez que se la ve, no una repeticion.
+    previous_snapshot_at: datetime | None,
+    captured_at: datetime,
+) -> _RowsWindow | None:
+    # Ejecuciones y filas devueltas entre el snapshot anterior y este. None si
+    # no se puede medir o si la query no se ejecuto en la ventana.
+    if rows is None:
+        return None
+
     if previous is None:
-        return True
-    # contadores reiniciados: todas sus ejecuciones son posteriores al reinicio
+        # sin fila anterior: solo se mide si la query empezo a contar dentro de
+        # esta ventana (o despues del snapshot anterior); si no, se evalua en el
+        # proximo snapshot, cuando ya hay contra que restar
+        if epoch is None or calls <= 0:
+            return None
+        started_in_window = captured_at - epoch <= _NEW_QUERY_WINDOW
+        started_after_previous = previous_snapshot_at is not None and epoch > previous_snapshot_at
+        if started_in_window or started_after_previous:
+            return _RowsWindow(calls=calls, rows=rows, new_query=True)
+        return None
+    # fila guardada antes de que existiera esta columna: aun no hay con que restar
+    if previous.rows_returned is None:
+        return None
+    # contadores reiniciados (reinicio, reset de estadisticas, entrada desalojada)
     if epoch is not None and previous.counters_epoch is not None and epoch != previous.counters_epoch:
-        return calls > 0
+        return None
     delta_calls = calls - previous.execution_count
-    if delta_calls < 0:
-        # reinicio sin epoch (snapshot viejo): mismo criterio
-        return calls > 0
-    return delta_calls > 0
+    delta_rows = rows - previous.rows_returned
+    if delta_calls <= 0 or delta_rows < 0:
+        return None
+    return _RowsWindow(calls=delta_calls, rows=delta_rows)
+
+
+def _simple_select_table(canonic_query: str | None) -> str | None:
+    # Nombre de la unica tabla si la consulta es un SELECT simple, o None si no
+    # lo es. SELECT simple: una sola sentencia SELECT (sin UNION ni WITH), una
+    # sola tabla en el FROM, sin JOIN, sin subconsultas en ninguna parte, sin
+    # LIMIT/OFFSET/FETCH, sin GROUP BY/HAVING/DISTINCT y sin agregados.
+    # Las funciones de ventana se aceptan: no cambian la cantidad de filas.
+    # canonic_query siempre viene en dialecto postgres.
+    if not canonic_query:
+        return None
+    try:
+        select = sqlglot.parse_one(canonic_query, read="postgres")
+    except Exception as e:
+        logger.warning(
+            "non_sargable_predicate | no se pudo parsear canonic_query | error=%s | texto=%.200s",
+            e, canonic_query,
+        )
+        return None
+
+    if not isinstance(select, exp.Select):
+        return None
+    # cualquier otro SELECT adentro es una subconsulta (WHERE, SELECT, FROM)
+    if any(node is not select for node in select.find_all(exp.Select)):
+        return None
+    if select.find(exp.With, exp.Join, exp.Limit, exp.Offset, exp.Fetch, exp.Group, exp.Having, exp.Distinct):
+        return None
+    for aggregate in select.find_all(exp.AggFunc):
+        if aggregate.find_ancestor(exp.Window) is None:
+            return None
+
+    tables = list(select.find_all(exp.Table))
+    if len(tables) != 1 or not tables[0].name:
+        return None
+    return tables[0].name
 
 
 def detect_non_sargable_predicates(
     snapshot: SnapshotPayload,
     history: dict[str, StatementHistory] | None = None,
+    captured_at: datetime | None = None,
+    min_live_rows: int = DEFAULT_MIN_LIVE_ROWS,
+    max_selectivity: float = DEFAULT_MAX_SELECTIVITY,
+    min_window_calls: int = DEFAULT_MIN_WINDOW_CALLS,
 ) -> list[Hallazgo]:
-    # Detecta predicados no sargables en top_impact_queries y cruza cada
+    # Detecta SELECT simples que recorren completa una tabla grande para
+    # devolver pocas filas porque el predicado envuelve la columna, y cruza cada
     # hallazgo contra snapshot.indexes para avisar si ya existe un indice que
     # el predicado esta neutralizando, o si la columna aun no tiene ninguno.
     # Solo lee `history`: la fila nueva la guarda main.py despues de todos los detectores.
-    findings = []
     history = history or {}
-    calls_by_query = _current_calls(snapshot)
+    captured_at = captured_at or datetime.now(timezone.utc)
+    # el snapshot anterior mas reciente de esta base, para reconocer queries nuevas
+    previous_snapshot_at = max((row.captured_at for row in history.values()), default=None)
+    counters = _current_counters(snapshot)
+    findings = []
 
     explains_by_query_id = {
         explain.query_id: explain
@@ -496,13 +485,14 @@ def detect_non_sargable_predicates(
         if explain.query_id is not None
     }
     # claves con schema para no confundir tablas homonimas de schemas distintos
-    column_types: dict[tuple[str | None, str, str], str] = {
-        (column.schema_name, column.table_name, column.column_name): column.data_type
-        for column in snapshot.columns
-        if column.table_name and column.column_name
-    }
+    live_rows_by_table: dict[tuple[str | None, str], int] = {}
+    for table in snapshot.tables:
+        if table.table_name and table.live_rows is not None:
+            live_rows_by_table[(table.schema_name, table.table_name)] = table.live_rows
     leading_columns_by_table: dict[tuple[str | None, str], set[str]] = {}
     full_leading_columns_by_table: dict[tuple[str | None, str], set[str]] = {}
+    # tabla -> primera columna -> nombres de los indices que empiezan por ella
+    index_names_by_table: dict[tuple[str | None, str], dict[str, list[str]]] = {}
     for index in snapshot.indexes:
         lead_column, is_partial = _index_lead_column(index.index_ref)
         if not index.table_name or not lead_column:
@@ -511,21 +501,15 @@ def detect_non_sargable_predicates(
         leading_columns_by_table.setdefault(key, set()).add(lead_column)
         if not is_partial:
             full_leading_columns_by_table.setdefault(key, set()).add(lead_column)
+        if index.index_name:
+            index_names_by_table.setdefault(key, {}).setdefault(lead_column, []).append(index.index_name)
 
-    def _explicacion_con_indice(subtipo: str, index_exists: bool | None, only_partial: bool) -> tuple[str, str]:
-        # avisa si la columna ya tiene indice (se neutraliza) o aun no tiene ninguno.
-        # index_exists solo reconoce indices sobre columnas peladas, no de expresion,
-        # asi que el aviso de "no existe" queda con esa salvedad en vez de afirmarlo.
+    def _explicacion_con_indice(subtipo: str, indexes: list[str], only_partial: bool) -> tuple[str, str]:
+        # nombra el indice que el predicado desaprovecha y avisa si es solo parcial
         explicacion, recomendacion = _SUBTIPO_MENSAJES[subtipo]
-        if index_exists is False:
-            explicacion += (
-                " No se detecto un indice sobre la columna simple que la cubra como "
-                "columna principal (esta deteccion no reconoce indices de expresion: si "
-                "ya existe uno equivalente a este predicado, revisar eso antes que nada). "
-                "Conviene corregir el predicado antes de crear un indice nuevo, para no "
-                "terminar con uno igual de inutilizable."
-            )
-        elif index_exists and only_partial:
+        if indexes:
+            explicacion += f" Indice desaprovechado: {', '.join(indexes)}."
+        if only_partial:
             explicacion += (
                 " El unico indice que cubre esta columna como principal es parcial (tiene "
                 "un WHERE): confirmar que esta consulta cae dentro de esa condicion antes "
@@ -534,106 +518,84 @@ def detect_non_sargable_predicates(
         return explicacion, recomendacion
 
     for candidate in snapshot.top_impact_queries:
-        # Solo si la query corrio desde el snapshot anterior: top_impact_queries
-        # ordena por tiempo ACUMULADO, asi que una query que ya no se ejecuta
-        # puede seguir ahi minutos u horas y se volveria a reportar en cada
-        # snapshot. Vale tambien con plan: el pipeline le saca EXPLAIN a todos
-        # los candidatos, se hayan ejecutado o no en el ciclo.
+        if candidate.query_id is None:
+            continue
+        # sin plan la consulta no se evalua
+        explain = explains_by_query_id.get(candidate.query_id)
+        if explain is None:
+            continue
+
+        # condicion 1 (AP-02)
+        table_name = _simple_select_table(candidate.canonic_query)
+        if table_name is None:
+            continue
+
+        # condicion 2 (AP-02)
         query_id = str(candidate.query_id)
-        calls, epoch_raw = calls_by_query.get(
-            query_id, (candidate.execution_count or 0, candidate.counters_epoch)
+        # contadores desde statements (suma de filas repetidas); si el candidato
+        # no aparece ahi, se usan los suyos
+        calls, rows, epoch_raw = counters.get(
+            query_id,
+            (candidate.execution_count or 0, candidate.rows_returned, candidate.counters_epoch),
         )
         epoch = _parse_instant(candidate.counters_epoch or epoch_raw)
-        if not _executed_since_previous_snapshot(calls, epoch, history.get(query_id)):
+        window = _rows_window(calls, rows, epoch, history.get(query_id), previous_snapshot_at, captured_at)
+        if window is None or window.calls < min_window_calls:
             continue
 
-        explain = explains_by_query_id.get(candidate.query_id)
-
-        if explain is None:
-            # sin EXPLAIN: respaldo por texto, solo 2 subtipos
-            tables = sorted(set(resolve_table_aliases(candidate.canonic_query).values()))
-            for subtipo, real_table, column_name, fragmento in _detect_structural_issues_in_query(
-                candidate.canonic_query
-            ):
-                index_exists = _index_exists_for_column(
-                    real_table, column_name, candidate.schema_name, leading_columns_by_table
-                )
-                only_partial = _only_partial_index_for_column(
-                    real_table, column_name, candidate.schema_name,
-                    leading_columns_by_table, full_leading_columns_by_table,
-                )
-                explicacion, recomendacion = _explicacion_con_indice(subtipo, index_exists, only_partial)
-                findings.append(
-                    Hallazgo(
-                        antipatron="non_sargable_predicate",
-                        severidad="medium",  # sin plan no sabemos si hay full table scan
-                        evidencia={
-                            "query_id": candidate.query_id,
-                            "query_text": candidate.query_text,
-                            "canonic_query": candidate.canonic_query,
-                            "schema_name": candidate.schema_name,
-                            "tables": tables,
-                            "subtipo": subtipo,
-                            "predicate": fragmento,
-                            "relation": real_table,
-                            "column": column_name,
-                            "index_exists": index_exists,
-                            "access_method": None,
-                            "estimated_rows": None,
-                            "fuente": "query_text",
-                        },
-                        explicacion=explicacion,
-                        recomendacion=recomendacion,
-                        query_id=candidate.query_id,
-                        table_name=real_table,
-                    )
-                )
-            continue
-
-        # con EXPLAIN: predicado real del plan, los 3 subtipos
         alias_map = resolve_table_aliases(candidate.canonic_query)
         operations = explain.canonical_plan.physical_operations
-        # Postgres entrega queryid como entero y MySQL el DIGEST como texto (igual que AP-07)
-        engine = "mysql" if isinstance(candidate.query_id, str) else "postgres"
 
         for operation in operations:
-            if operation.type != "scan":
+            # condicion 3 (AP-02): escaneo completo sobre la tabla del SELECT
+            if operation.type != "scan" or operation.access_method not in _FULL_SCAN_METHODS:
                 continue
-
-            predicate = operation.predicate
-            if not predicate:
-                continue
-
             relation = operation.relation
             # table_name es la tabla real en Postgres (relation puede ser un
             # nombre generado, ej. ql_pt_orders_1); en MySQL llega en None
             real_table = operation.table_name or alias_map.get(relation, relation)
+            if real_table != table_name:
+                continue
 
-            def _belongs_to_table(column: exp.Column, relation=relation, real_table=real_table) -> bool:
-                # sin calificar es de la tabla del scan; calificada, por su alias
-                if not column.table or column.table == relation:
-                    return True
-                # el scan tiene un alias de la query: otro calificador es otra
-                # lectura, aunque sea de la misma tabla (self join)
-                if relation in alias_map:
-                    return False
-                # alias que no esta en la query (ej. ql_pt_orders_1 de Postgres): por tabla real
-                return alias_map.get(column.table, column.table) == real_table
+            # condicion 4 (AP-02)
+            live_rows, ambiguous = _lookup_by_table(live_rows_by_table, candidate.schema_name, real_table)
+            if ambiguous or live_rows is None or live_rows < min_live_rows:
+                continue
 
-            subtipos = _detect_predicate_subtypes(
-                predicate, real_table, candidate.schema_name, column_types,
-                engine=engine, belongs_to_table=_belongs_to_table,
-            )
+            # condicion 5 (AP-02): selectividad real de la ventana
+            rows_per_call = window.rows / window.calls
+            selectivity = rows_per_call / live_rows
+            if selectivity > max_selectivity:
+                continue
 
-            for subtipo, column_name in subtipos:
-                index_exists = _index_exists_for_column(
-                    real_table, column_name, candidate.schema_name, leading_columns_by_table
-                )
+            # condiciones 6 y 7: columnas envueltas que encabezan un indice y
+            # cuya reescritura deja usarlo. En un SELECT simple todas las
+            # columnas son de la tabla del scan.
+            predicate = operation.predicate
+            if not predicate:
+                continue
+            lead_columns, ambiguous = _lookup_by_table(leading_columns_by_table, candidate.schema_name, real_table)
+            if ambiguous:
+                continue  # no se sabe de cual tabla son los indices
+            fixes = _non_sargable_fixes(predicate, lead_columns or set())
+
+            reported = set()
+            for subtipo, column_name, in_or in fixes:
+                if (subtipo, column_name) in reported:
+                    continue
+                reported.add((subtipo, column_name))
                 only_partial = _only_partial_index_for_column(
                     real_table, column_name, candidate.schema_name,
                     leading_columns_by_table, full_leading_columns_by_table,
                 )
-                explicacion, recomendacion = _explicacion_con_indice(subtipo, index_exists, only_partial)
+                names_by_column, _ = _lookup_by_table(index_names_by_table, candidate.schema_name, real_table)
+                indexes = sorted((names_by_column or {}).get(column_name, []))
+                explicacion, recomendacion = _explicacion_con_indice(subtipo, indexes, only_partial)
+                if in_or:
+                    explicacion += (
+                        " La condicion esta en una rama de un OR: el motor solo usa indices en un "
+                        "OR si todas sus ramas pueden usarlos, y las demas ramas ya pueden."
+                    )
                 findings.append(
                     Hallazgo(
                         antipatron="non_sargable_predicate",
@@ -643,15 +605,26 @@ def detect_non_sargable_predicates(
                             "query_text": candidate.query_text,
                             "canonic_query": candidate.canonic_query,
                             "schema_name": candidate.schema_name,
-                            "tables": sorted(set(alias_map.values())),
+                            "tables": [table_name],
                             "subtipo": subtipo,
                             "predicate": predicate,
                             "relation": relation,
                             "column": column_name,
-                            "index_exists": index_exists,
+                            # indices que empiezan por la columna y el predicado desaprovecha
+                            "unused_indexes": indexes,
+                            "only_partial_index": only_partial,
+                            "dentro_de_or": in_or,
                             "access_method": operation.access_method,
+                            "index_name": operation.index_name,
+                            "live_rows": live_rows,
+                            "rows_per_call": round(rows_per_call, 2),
+                            "selectivity": selectivity,
+                            # solo informativo: la regla usa las filas reales
                             "estimated_rows": operation.estimated_rows,
-                            "fuente": "plan",
+                            "window_calls": window.calls,
+                            "window_rows": window.rows,
+                            "query_new_in_window": window.new_query,
+                            "explain_source": explain.explain_source,
                         },
                         explicacion=explicacion,
                         recomendacion=recomendacion,
