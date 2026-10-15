@@ -5,7 +5,7 @@ from sqlglot import exp
 
 from querylens_contract.snapshot import _to_naive_utc
 from models.stats import Stats
-from stages import canonicalizers
+from stages import canonicalizers, type_conversions
 
 def _to_number(value):
     if value is None:
@@ -28,6 +28,8 @@ class NormalizeStage:
         normalize_statement_epochs(stats)
         stats = self.collector.normalize_engine_artifacts(stats)
         canonicalizers.normalize_querytext_active(stats, self.collector.source_dialect)
+        # con los predicados ya redactados en los dos motores
+        type_conversions.make_type_conversions_explicit(stats, self.collector.source_dialect)
         return stats
 
 
@@ -94,9 +96,14 @@ def clean_mysql_explain_predicate_dynamic(pred_text):
     if not pred_text:
         return None
 
+    # Punto 12 del 007: marcadores internos del optimizador (<if>, <cache>,
+    # <in_optimizer>...) a SQL comun, en los dos caminos.
+    pred_text = _strip_mysql_markers(
+        pred_text.replace('<cache>', '').replace('</cache>', '')
+    )
+
     try:
-        preprocessed = pred_text.replace('<cache>', '').replace('</cache>', '')
-        ast = sqlglot.parse_one(preprocessed, read='mysql')
+        ast = sqlglot.parse_one(pred_text, read='mysql')
         for column in list(ast.find_all(exp.Column)):
             if column.db:
                 column.set('db', None)
@@ -109,6 +116,23 @@ def clean_mysql_explain_predicate_dynamic(pred_text):
         # propio scan en el plan. Antes que los literales, para que los de
         # adentro no consuman numeros de $n.
         subplans = _replace_subqueries(ast)
+        # Punto 11 del 007: MySQL muestra DATE(col) como CAST(col AS DATE).
+        # Va la forma de Postgres, date(col). Un CAST('..' AS DATE) sobre un
+        # literal no es una funcion sobre columna y se deja.
+        for cast in list(ast.find_all(exp.Cast)):
+            if cast.to.this == exp.DataType.Type.DATE and not isinstance(
+                cast.this.unnest(), canonicalizers.DATA_LITERAL_NODES
+            ):
+                cast.replace(exp.Anonymous(this="date", expressions=[cast.this]))
+        # Punto 12 del 007: el signo es parte del valor (-5.5 es un solo
+        # literal, como en Postgres: '-5.5'::numeric) y el intervalo entero
+        # es un valor (Postgres: now() - '1 day'::interval).
+        for neg in list(ast.find_all(exp.Neg)):
+            value = neg.this.unnest()
+            if isinstance(value, exp.Literal) and not value.is_string:
+                neg.replace(value)
+        for interval in list(ast.find_all(exp.Interval)):
+            interval.replace(exp.Placeholder())
         # N-1: el plan de MySQL se armo con la query real, asi que los
         # predicados traen literales de datos (numeros, strings). La cola PGMQ
         # no los puede conservar: se reemplazan por placeholders $n, igual que
@@ -153,14 +177,112 @@ def clean_mysql_explain_predicate_dynamic(pred_text):
         def replace_literal(match):
             counter["n"] += 1
             # Mismo criterio que el camino sqlglot: texto/hex/bit como '$n'.
+            # El intervalo y el numero con signo son un solo valor numerico.
             literal = match.group(0)
-            if literal[0].isdigit() and literal[:2].lower() not in ("0x", "0b"):
+            if literal[0] in "-iI" or (
+                literal[0].isdigit() and literal[:2].lower() not in ("0x", "0b")
+            ):
                 return f"${counter['n']}"
             return f"'${counter['n']}'"
 
         cleaned = _LITERAL_RE.sub(replace_literal, cleaned)
         cleaned = re.sub(r'\s+', ' ', cleaned).strip()
         return cleaned
+
+
+# Marcadores que MySQL deja en attached_condition: <cache>(x), <if>(..)...
+_MYSQL_MARKER_RE = re.compile(r"<(\w+)>\(")
+
+
+def _strip_mysql_markers(pred_text):
+    """Reescribe los marcadores <nombre>(args) del optimizador de MySQL:
+    <if>(found_match(t), cond, true) -> cond (la condicion de un outer join),
+    <is_not_null_test>(x) -> (x IS NOT NULL), <not>(x) -> NOT (x),
+    <exists>(q) -> EXISTS(q), <in_optimizer>(x, <exists>(q)) -> x IN (q) y
+    <in_optimizer>(x, x in (q)) -> x in (q). Los demas (<cache>, <nop>...)
+    solo envuelven y pierden la etiqueta. Van de derecha a izquierda: los
+    argumentos del ultimo marcador ya no tienen marcadores adentro."""
+    while True:
+        matches = list(_MYSQL_MARKER_RE.finditer(pred_text))
+        if not matches:
+            return pred_text
+        match = matches[-1]
+        end = _closing_paren(pred_text, match.end() - 1)
+        if end is None:
+            return pred_text
+        name = match.group(1).lower()
+        args = _split_args(pred_text[match.end():end])
+        if name == "if" and len(args) == 3:
+            if args[2].lower() == "true":
+                replacement = _parenthesize(args[1])
+            else:
+                replacement = f"(CASE WHEN {args[0]} THEN {args[1]} ELSE {args[2]} END)"
+        elif name == "is_not_null_test" and len(args) == 1:
+            replacement = f"({args[0]} IS NOT NULL)"
+        elif name == "not" and len(args) == 1:
+            replacement = f"(NOT {_parenthesize(args[0])})"
+        elif name == "exists" and len(args) == 1:
+            replacement = f"EXISTS({args[0]})"
+        elif name == "in_optimizer" and len(args) == 2:
+            inner = args[1]
+            if inner.upper().startswith("EXISTS("):
+                replacement = f"({args[0]} IN ({inner[len('EXISTS('):-1]}))"
+            else:
+                replacement = _parenthesize(inner)
+        else:
+            replacement = _parenthesize(", ".join(args))
+        pred_text = pred_text[:match.start()] + replacement + pred_text[end + 1:]
+
+
+def _parenthesize(text):
+    """Entre parentesis, salvo que ya lo este entero."""
+    if text.startswith("(") and _closing_paren(text, 0) == len(text) - 1:
+        return text
+    return f"({text})"
+
+
+def _closing_paren(text, start):
+    """Posicion del parentesis que cierra el de `start`, saltando strings."""
+    depth = 0
+    quote = None
+    for i in range(start, len(text)):
+        char = text[i]
+        if quote:
+            if char == quote:
+                quote = None
+        elif char in "'\"`":
+            quote = char
+        elif char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+            if depth == 0:
+                return i
+    return None
+
+
+def _split_args(text):
+    """Parte los argumentos por las comas del primer nivel."""
+    args, current = [], ""
+    depth = 0
+    quote = None
+    for char in text:
+        if quote:
+            if char == quote:
+                quote = None
+        elif char in "'\"`":
+            quote = char
+        elif char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+        elif char == "," and depth == 0:
+            args.append(current.strip())
+            current = ""
+            continue
+        current += char
+    args.append(current.strip())
+    return args
 
 
 def _replace_subqueries(ast):
@@ -237,6 +359,11 @@ _PG_PLAN_TOKEN_RE = re.compile(
 
 # Hex/bit primero: 0xDEAD o X'0A' deben caer enteros en un solo $n, no dejar el
 # prefijo (X$1) ni partirse en digitos sueltos.
+# El intervalo va antes que el string para que INTERVAL '1' DAY caiga entero.
+# El signo es parte del numero solo despues de un operador, una coma o un
+# parentesis (a - 3 es una resta).
 _LITERAL_RE = re.compile(
-    r"\b[xXbB]'[^']*'|'(?:''|[^'])*'|\b0[xXbB][0-9a-fA-F]+\b|\b\d+(?:\.\d+)?\b"
+    r"(?i:\binterval\s+(?:'(?:''|[^'])*'|-?\d+(?:\.\d+)?)\s+[a-z_]+\b)"
+    r"|\b[xXbB]'[^']*'|'(?:''|[^'])*'|\b0[xXbB][0-9a-fA-F]+\b"
+    r"|(?:(?<=[(,=<>])-|(?<=[(,=<>] )-)?\b\d+(?:\.\d+)?\b"
 )

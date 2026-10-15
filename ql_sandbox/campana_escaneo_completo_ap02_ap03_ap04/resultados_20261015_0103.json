@@ -1,0 +1,670 @@
+[
+ {
+  "motor": "postgres",
+  "alias": "q01",
+  "descripcion": "igualdad sin indice",
+  "sql": "SELECT id AS q01 FROM ql_cmp WHERE c = {R}",
+  "esperado": {
+   "avoidable_full_scan": true,
+   "missing_index": [
+    [
+     "c"
+    ],
+    [],
+    false
+   ]
+  },
+  "obtenido": {
+   "avoidable_full_scan": true,
+   "missing_index": [
+    [
+     [
+      "c"
+     ],
+     [],
+     false
+    ]
+   ]
+  },
+  "hallazgos": 14,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q02",
+  "descripcion": "rango sin indice",
+  "sql": "SELECT id AS q02 FROM ql_cmp WHERE c BETWEEN {R} AND {R} + 5",
+  "esperado": {
+   "avoidable_full_scan": true,
+   "missing_index": [
+    [],
+    [
+     "c"
+    ],
+    false
+   ]
+  },
+  "obtenido": {
+   "avoidable_full_scan": true,
+   "missing_index": [
+    [
+     [],
+     [
+      "c"
+     ],
+     false
+    ]
+   ]
+  },
+  "hallazgos": 12,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q03",
+  "descripcion": "IN sin indice",
+  "sql": "SELECT id AS q03 FROM ql_cmp WHERE c IN ({R}, {R2}, {R3})",
+  "esperado": {
+   "avoidable_full_scan": true,
+   "missing_index": [
+    [
+     "c"
+    ],
+    [],
+    false
+   ]
+  },
+  "obtenido": {
+   "avoidable_full_scan": true,
+   "missing_index": [
+    [
+     [
+      "c"
+     ],
+     [],
+     false
+    ]
+   ]
+  },
+  "hallazgos": 14,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q04",
+  "descripcion": "IS NULL sin indice",
+  "sql": "SELECT id AS q04 FROM ql_cmp WHERE z IS NULL",
+  "esperado": {
+   "avoidable_full_scan": true,
+   "missing_index": [
+    [
+     "z"
+    ],
+    [],
+    false
+   ]
+  },
+  "obtenido": {
+   "avoidable_full_scan": true,
+   "missing_index": [
+    [
+     [
+      "z"
+     ],
+     [],
+     false
+    ]
+   ]
+  },
+  "hallazgos": 14,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q05",
+  "descripcion": "AND de dos igualdades sin indice",
+  "sql": "SELECT id AS q05 FROM ql_cmp WHERE c = {R} AND c2 = {R2}",
+  "esperado": {
+   "avoidable_full_scan": true,
+   "missing_index": [
+    [
+     "c",
+     "c2"
+    ],
+    [],
+    false
+   ]
+  },
+  "obtenido": {
+   "avoidable_full_scan": true,
+   "missing_index": [
+    [
+     [
+      "c",
+      "c2"
+     ],
+     [],
+     false
+    ]
+   ]
+  },
+  "hallazgos": 14,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q06",
+  "descripcion": "AND igualdad + rango sin indice",
+  "sql": "SELECT id AS q06 FROM ql_cmp WHERE c = {R} AND c2 > {R2}",
+  "esperado": {
+   "avoidable_full_scan": true,
+   "missing_index": [
+    [
+     "c"
+    ],
+    [
+     "c2"
+    ],
+    false
+   ]
+  },
+  "obtenido": {
+   "avoidable_full_scan": true,
+   "missing_index": [
+    [
+     [
+      "c"
+     ],
+     [
+      "c2"
+     ],
+     false
+    ]
+   ]
+  },
+  "hallazgos": 14,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q07",
+  "descripcion": "OR sin ningun indice",
+  "sql": "SELECT id AS q07 FROM ql_cmp WHERE c = {R} OR c2 = {R2}",
+  "esperado": {
+   "avoidable_full_scan": true,
+   "missing_index": [
+    [
+     "c",
+     "c2"
+    ],
+    [],
+    true
+   ]
+  },
+  "obtenido": {
+   "avoidable_full_scan": true,
+   "missing_index": [
+    [
+     [
+      "c",
+      "c2"
+     ],
+     [],
+     true
+    ]
+   ]
+  },
+  "hallazgos": 14,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q08",
+  "descripcion": "OR con una rama indexada",
+  "sql": "SELECT id AS q08 FROM ql_cmp WHERE k = {R} OR c = {R2}",
+  "esperado": {
+   "avoidable_full_scan": true,
+   "missing_index": [
+    [
+     "c"
+    ],
+    [],
+    true
+   ]
+  },
+  "obtenido": {
+   "avoidable_full_scan": true,
+   "missing_index": [
+    [
+     [
+      "c"
+     ],
+     [],
+     true
+    ]
+   ]
+  },
+  "hallazgos": 12,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q09",
+  "descripcion": "OR igualdad + rango sin indice",
+  "sql": "SELECT id AS q09 FROM ql_cmp WHERE c = {R} OR c2 BETWEEN {R2} AND {R2} + 3",
+  "esperado": {
+   "avoidable_full_scan": true,
+   "missing_index": [
+    [
+     "c"
+    ],
+    [
+     "c2"
+    ],
+    true
+   ]
+  },
+  "obtenido": {
+   "avoidable_full_scan": true,
+   "missing_index": [
+    [
+     [
+      "c"
+     ],
+     [
+      "c2"
+     ],
+     true
+    ]
+   ]
+  },
+  "hallazgos": 10,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q10",
+  "descripcion": "aritmetica sobre columna indexada (informe)",
+  "sql": "SELECT id AS q10 FROM ql_cmp WHERE k + 0 = {R}",
+  "esperado": {
+   "avoidable_full_scan": true,
+   "non_sargable_predicate": [
+    [
+     "arithmetic_on_column",
+     "k"
+    ]
+   ]
+  },
+  "obtenido": {
+   "avoidable_full_scan": true,
+   "non_sargable_predicate": [
+    [
+     "arithmetic_on_column",
+     "k"
+    ]
+   ]
+  },
+  "hallazgos": 12,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q11",
+  "descripcion": "LOWER sobre columna indexada",
+  "sql": "SELECT id AS q11 FROM ql_cmp WHERE LOWER(s) = {S}",
+  "esperado": {
+   "avoidable_full_scan": true,
+   "non_sargable_predicate": [
+    [
+     "function_on_column",
+     "s"
+    ]
+   ]
+  },
+  "obtenido": {
+   "avoidable_full_scan": true,
+   "non_sargable_predicate": [
+    [
+     "function_on_column",
+     "s"
+    ]
+   ]
+  },
+  "hallazgos": 14,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q12",
+  "descripcion": "DATE sobre columna indexada",
+  "sql": "SELECT id AS q12 FROM ql_cmp WHERE DATE(t) = {D}",
+  "esperado": {
+   "avoidable_full_scan": true,
+   "non_sargable_predicate": [
+    [
+     "function_on_column",
+     "t"
+    ]
+   ]
+  },
+  "obtenido": {
+   "avoidable_full_scan": true,
+   "non_sargable_predicate": [
+    [
+     "function_on_column",
+     "t"
+    ]
+   ]
+  },
+  "hallazgos": 14,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q13",
+  "descripcion": "conversion de char a numero",
+  "sql": "SELECT id AS q13 FROM ql_cmp WHERE CAST(code AS INT) = {N}",
+  "esperado": {
+   "avoidable_full_scan": true,
+   "non_sargable_predicate": [
+    [
+     "implicit_cast",
+     "code"
+    ]
+   ]
+  },
+  "obtenido": {
+   "avoidable_full_scan": true,
+   "non_sargable_predicate": [
+    [
+     "implicit_cast",
+     "code"
+    ]
+   ]
+  },
+  "hallazgos": 14,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q14",
+  "descripcion": "OR con la otra rama indexada",
+  "sql": "SELECT id AS q14 FROM ql_cmp WHERE k + 0 = {R} OR r = {R2}",
+  "esperado": {
+   "avoidable_full_scan": true,
+   "non_sargable_predicate": [
+    [
+     "arithmetic_on_column",
+     "k"
+    ]
+   ]
+  },
+  "obtenido": {
+   "avoidable_full_scan": true,
+   "non_sargable_predicate": [
+    [
+     "arithmetic_on_column",
+     "k"
+    ]
+   ]
+  },
+  "hallazgos": 14,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q15",
+  "descripcion": "OR de dos columnas envueltas indexadas",
+  "sql": "SELECT id AS q15 FROM ql_cmp WHERE k + 0 = {R} OR LOWER(s) = {S}",
+  "esperado": {
+   "avoidable_full_scan": true,
+   "non_sargable_predicate": [
+    [
+     "arithmetic_on_column",
+     "k"
+    ],
+    [
+     "function_on_column",
+     "s"
+    ]
+   ]
+  },
+  "obtenido": {
+   "avoidable_full_scan": true,
+   "non_sargable_predicate": [
+    [
+     "arithmetic_on_column",
+     "k"
+    ],
+    [
+     "function_on_column",
+     "s"
+    ]
+   ]
+  },
+  "hallazgos": 21,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q16",
+  "descripcion": "entero contra decimal",
+  "sql": "SELECT id AS q16 FROM ql_cmp WHERE k = {R}.5",
+  "esperado": {
+   "avoidable_full_scan": true,
+   "non_sargable_predicate": [
+    [
+     "implicit_cast",
+     "k"
+    ]
+   ]
+  },
+  "obtenido": {
+   "avoidable_full_scan": true,
+   "non_sargable_predicate": [
+    [
+     "implicit_cast",
+     "k"
+    ]
+   ]
+  },
+  "hallazgos": 14,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q17",
+  "descripcion": "AND: columna sin indice y columna envuelta",
+  "sql": "SELECT id AS q17 FROM ql_cmp WHERE c = {R} AND LOWER(s) = {S}",
+  "esperado": {
+   "avoidable_full_scan": true,
+   "non_sargable_predicate": [
+    [
+     "function_on_column",
+     "s"
+    ]
+   ],
+   "missing_index": [
+    [
+     "c"
+    ],
+    [],
+    false
+   ]
+  },
+  "obtenido": {
+   "avoidable_full_scan": true,
+   "non_sargable_predicate": [
+    [
+     "function_on_column",
+     "s"
+    ]
+   ],
+   "missing_index": [
+    [
+     [
+      "c"
+     ],
+     [],
+     false
+    ]
+   ]
+  },
+  "hallazgos": 21,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q18",
+  "descripcion": "OR mixto: rama sin indice y rama envuelta",
+  "sql": "SELECT id AS q18 FROM ql_cmp WHERE c = {R} OR LOWER(s) = {S}",
+  "esperado": {
+   "avoidable_full_scan": true
+  },
+  "obtenido": {
+   "avoidable_full_scan": true
+  },
+  "hallazgos": 7,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q19",
+  "descripcion": "funcion sobre columna sin indice",
+  "sql": "SELECT id AS q19 FROM ql_cmp WHERE LOWER(s2) = {S2}",
+  "esperado": {
+   "avoidable_full_scan": true
+  },
+  "obtenido": {
+   "avoidable_full_scan": true
+  },
+  "hallazgos": 7,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q20",
+  "descripcion": "LIKE con comodin inicial",
+  "sql": "SELECT id AS q20 FROM ql_cmp WHERE s2 LIKE {LIKE}",
+  "esperado": {
+   "avoidable_full_scan": true
+  },
+  "obtenido": {
+   "avoidable_full_scan": true
+  },
+  "hallazgos": 7,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q21",
+  "descripcion": "columna contra columna",
+  "sql": "SELECT id AS q21 FROM ql_cmp WHERE c > c2 + 99000",
+  "esperado": {
+   "avoidable_full_scan": true
+  },
+  "obtenido": {
+   "avoidable_full_scan": true
+  },
+  "hallazgos": 8,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q22",
+  "descripcion": "busqueda por indice",
+  "sql": "SELECT id AS q22 FROM ql_cmp WHERE k = {R}",
+  "esperado": {},
+  "obtenido": {},
+  "hallazgos": 0,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q23",
+  "descripcion": "OR con las dos ramas indexadas",
+  "sql": "SELECT id AS q23 FROM ql_cmp WHERE k = {R} OR r = {R2}",
+  "esperado": {},
+  "obtenido": {},
+  "hallazgos": 0,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q24",
+  "descripcion": "AND con una parte indexada",
+  "sql": "SELECT id AS q24 FROM ql_cmp WHERE c = {R} AND k = {R2}",
+  "esperado": {},
+  "obtenido": {},
+  "hallazgos": 0,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q25",
+  "descripcion": "selectividad alta (25 %)",
+  "sql": "SELECT id AS q25 FROM ql_cmp WHERE g = {G}",
+  "esperado": {},
+  "obtenido": {},
+  "hallazgos": 0,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q26",
+  "descripcion": "JOIN (no es SELECT simple)",
+  "sql": "SELECT q.id AS q26 FROM ql_cmp AS q JOIN ql_cmp_dim AS d ON d.id = q.g WHERE q.c = {R}",
+  "esperado": {},
+  "obtenido": {},
+  "hallazgos": 0,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q27",
+  "descripcion": "agregado (no es SELECT simple)",
+  "sql": "SELECT COUNT(*) AS q27 FROM ql_cmp WHERE c = {R}",
+  "esperado": {},
+  "obtenido": {},
+  "hallazgos": 0,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q28",
+  "descripcion": "LIMIT (no es SELECT simple)",
+  "sql": "SELECT id AS q28 FROM ql_cmp WHERE c = {R} LIMIT 5",
+  "esperado": {},
+  "obtenido": {},
+  "hallazgos": 0,
+  "problemas": [],
+  "estado": "OK"
+ }
+]
