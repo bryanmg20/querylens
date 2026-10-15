@@ -15,16 +15,17 @@ from .non_sargable_predicate import detect_non_sargable_predicates
 from .unused_index import DEFAULT_MIN_STATS_WINDOW, detect_unused_indexes
 
 
-# Reglas que corren cuando no se pide una puntual. Por ahora solo las que no
-# usan canonic_explains: la forma de los EXPLAIN esta cambiando en el pipeline.
-# Quedan afuera hasta que se estabilice: avoidable_full_scan (AP-02),
-# non_sargable_predicate (AP-03), missing_index (AP-04), unused_index (AP-05,
-# usa el plan como evidencia de uso de un indice) y cardinality_misestimate (AP-08).
-# Se pueden seguir corriendo por nombre con `rule`.
+# Reglas que corren cuando no se pide una puntual. Quedan afuera hasta revisarlas
+# contra el plan canonico: unused_index (AP-05, usa el plan como evidencia de uso
+# de un indice) y cardinality_misestimate (AP-08). Se pueden seguir corriendo por
+# nombre con `rule`.
 ACTIVE_RULES = (
     "disk_spill",  # AP-07
     "baseline_degradation",  # AP-01
     "n_plus_one",  # AP-06
+    "avoidable_full_scan",  # AP-02
+    "non_sargable_predicate",  # AP-03
+    "missing_index",  # AP-04
 )
 
 
@@ -56,9 +57,13 @@ def detect_all(
             min_live_rows,
             max_selectivity,
         ),
+        # misma base de escaneo completo que AP-02
         "non_sargable_predicate": lambda current_snapshot: detect_non_sargable_predicates(
             current_snapshot,
             history,
+            captured_at,
+            min_live_rows,
+            max_selectivity,
         ),
         "unused_index": lambda current_snapshot: detect_unused_indexes(
             current_snapshot,
