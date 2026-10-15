@@ -243,3 +243,60 @@ def test_clean_mysql_predicate_labels_subqueries_like_postgres(predicate, expect
     tabla de afuera y LOWER(c.name) parecia de "o". Va la etiqueta de Postgres;
     los literales de adentro no consumen numeros de $n."""
     assert clean_mysql_explain_predicate_dynamic(predicate) == expected
+
+
+@pytest.mark.parametrize(
+    "predicate, expected",
+    [
+        (
+            "(cast(`db`.`o`.`created_at` as date) = '2026-01-02')",
+            "(DATE(o.created_at) = '$1')",
+        ),
+        (
+            "(`db`.`o`.`created_at` >= cast('2026-01-02' as date))",
+            "(o.created_at >= CAST('$1' AS DATE))",
+        ),
+    ],
+)
+def test_clean_mysql_predicate_cast_as_date_is_date_function(predicate, expected):
+    """Punto 11 del 007: MySQL muestra DATE(col) como CAST(col AS DATE) y
+    Postgres como date(col). Sobre un literal no es funcion de columna y
+    queda como cast."""
+    assert clean_mysql_explain_predicate_dynamic(predicate) == expected
+
+
+@pytest.mark.parametrize(
+    "predicate, expected",
+    [
+        ("(`db`.`o`.`total` > -5.50)", "(o.total > $1)"),
+        ("(`db`.`o`.`total` > (`db`.`o`.`x` - 3))", "(o.total > (o.x - $1))"),
+        (
+            "(`db`.`o`.`created_at` > <cache>((now() - interval 1 day)))",
+            "(o.created_at > ((NOW() - $1)))",
+        ),
+        ("<if>(found_match(o), (`db`.`o`.`id` is null), true)", "(o.id IS NULL)"),
+        ("<is_not_null_test>(`db`.`o`.`x`)", "(NOT o.x IS NULL)"),
+        (
+            "<in_optimizer>(`db`.`o`.`k`,<exists>(select 1 from `db`.`c` "
+            "where (`db`.`c`.`id` = <cache>(`db`.`o`.`k`))))",
+            "(o.k IN (SubPlan 1))",
+        ),
+    ],
+)
+def test_clean_mysql_predicate_loose_formats(predicate, expected):
+    """Punto 12 del 007: el signo va dentro del valor (Postgres:
+    '-5.5'::numeric), el intervalo es un valor (now() - '1 day'::interval) y
+    no quedan marcadores <...>(...) del optimizador."""
+    assert clean_mysql_explain_predicate_dynamic(predicate) == expected
+
+
+@pytest.mark.parametrize(
+    "predicate, expected",
+    [
+        ("x > -5 AND ((", "x > $1 AND (("),
+        ("x - 3 > 2 AND ((", "x - $1 > $2 AND (("),
+        ("x > now() - interval 1 day AND ((", "x > now() - $1 AND (("),
+    ],
+)
+def test_clean_mysql_predicate_loose_formats_on_fallback_path(predicate, expected):
+    assert clean_mysql_explain_predicate_dynamic(predicate) == expected
