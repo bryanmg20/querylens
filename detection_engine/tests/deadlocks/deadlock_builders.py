@@ -15,6 +15,8 @@ PG_DETECTED = "2026-10-22 00:46:01.669000"
 
 UPDATE_PLUS = "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2"
 UPDATE_MINUS = "UPDATE ql_ct01_cuentas SET saldo = saldo - $1 WHERE id = $2"
+INSERT_RESERVA = "INSERT INTO ql_ct03_reservas VALUES ($1, $2)"
+UPDATE_PEDIDOS = "UPDATE ql_ct04_pedidos SET estado = $1 WHERE cliente = $2"
 
 # Modo de InnoDB -> vocabulario comun, como lo traduce el parser
 # (telemetry_pipeline/stages/deadlock_reports.innodb_canonical)
@@ -90,6 +92,59 @@ def mysql_ct02(detected_at=DETECTED, **overrides):
     }
 
 
+def mysql_ct03(detected_at=DETECTED, heap=3, hold="X,GAP", **overrides):
+    """Las dos bloquean con FOR UPDATE una clave inexistente del hueco (10, 20)
+    y despues la insertan: hueco y espera sobre la fila 20 (heap 3), como el
+    fixture. heap=1, hold="X" es el hueco del final del indice (supremum)."""
+    def lock(mode):
+        return record_lock(heap, mode, table="ql_ct03_reservas")
+    first = mysql_trx(422, [lock(hold)], lock("X,GAP,INSERT_INTENTION"), [423], undo=0, query=INSERT_RESERVA)
+    second = mysql_trx(
+        423, [lock(hold)], lock("X,GAP,INSERT_INTENTION"), [422], victim=True, undo=0, query=INSERT_RESERVA,
+    )
+    first.update(overrides.get("first", {}))
+    second.update(overrides.get("second", {}))
+    return {
+        "detected_at": detected_at,
+        "source": "innodb_status",
+        "database_name": "ql_demo",
+        "complete": True,
+        "transactions": [first, second],
+    }
+
+
+def mysql_ct04(detected_at=DETECTED, **overrides):
+    """UPDATE ... WHERE cliente = ? sin indice: la sesion 448 recorrio la tabla
+    y bloqueo las filas 1 a 149 (150 bloqueos, 3 modificadas) y espera la 150
+    (heap 151), que tiene la 447; la 447 espera la fila 1 (heap 2), como el
+    fixture."""
+    def lock(heap, mode="X"):
+        return record_lock(heap, mode, table="ql_ct04_pedidos")
+    scanner = mysql_trx(448, [lock(2)], lock(151), [447], rows_locked=150, undo=3, query=UPDATE_PEDIDOS)
+    other = mysql_trx(
+        447, [lock(151, "X,REC_NOT_GAP")], lock(2), [448], victim=True, rows_locked=2, undo=1, query=UPDATE_PEDIDOS,
+    )
+    scanner.update(overrides.get("scanner", {}))
+    other.update(overrides.get("other", {}))
+    return {
+        "detected_at": detected_at,
+        "source": "innodb_status",
+        "database_name": "ql_demo",
+        "complete": True,
+        "transactions": [scanner, other],
+    }
+
+
+def index_row(columns, name="PRIMARY", table="ql_ct04_pedidos", schema="ql_demo"):
+    """Una fila de snapshot.indexes con el index_ref que arma el colector de MySQL."""
+    return {
+        "schema_name": schema,
+        "table_name": table,
+        "index_name": name,
+        "index_ref": f"CREATE INDEX {name} ON {schema}.{table} USING btree ({columns})",
+    }
+
+
 def pg_report(rows=(None, None), detected_at=PG_DETECTED):
     """Como lo deja el stage: la fila se pide en X (es un UPDATE) y no se sabe
     que mantiene cada proceso (holds None). rows son las etiquetas de fila
@@ -139,13 +194,13 @@ def scrambled(raw, source="otro_motor"):
     return raw
 
 
-def snapshot(*reports):
+def snapshot(*reports, indexes=()):
     return SnapshotPayload.model_validate({
         "db_id": "db-1",
         "statements": [],
         "locks": [],
         "active_queries": [],
-        "indexes": [],
+        "indexes": list(indexes),
         "tables": [],
         "columns": [],
         "server_start_timestamp": [],

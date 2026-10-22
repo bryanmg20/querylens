@@ -1,4 +1,4 @@
-"""Lo comun de los abrazos mortales (CT-01, CT-02 y los sin clasificar).
+"""Lo comun de los abrazos mortales (CT-01 a CT-04 y los sin clasificar).
 
 El ciclo sale del informe que el motor escribe al revertir la victima
 (snapshot.deadlocks): el abrazo dura lo que tarda el motor en detectarlo y no
@@ -17,6 +17,11 @@ from anti_patterns.statement_history import parse_instant
 
 # Un hueco o una insercion en un hueco no es un bloqueo de la fila: CT-03.
 GAP_SCOPES = {"gap", "insert_intention"}
+
+# Lo que frena una insercion en un hueco: el hueco solo o la fila con el hueco
+# anterior (next-key). Al final del indice InnoDB bloquea el supremum como
+# next-key, sin "gap before rec".
+GAP_HOLD_SCOPES = {"gap", "row+gap"}
 
 # CT-04 (Tabla 3): un UPDATE/DELETE sin indice utilizable mantiene >= 10 veces
 # mas bloqueos de fila que filas modificadas. Su ciclo se parece a CT-01 o
@@ -80,12 +85,20 @@ def holders(report: DeadlockReport, trx: DeadlockTransaction) -> list[DeadlockTr
     return [by_pid[pid] for pid in trx.blocked_by if pid in by_pid]
 
 
+def lock_ratio(trx: DeadlockTransaction) -> float | None:
+    """Filas bloqueadas por fila modificada, o None si el motor no lo informa."""
+    if trx.rows_locked is None:
+        return None
+    return trx.rows_locked / max(trx.undo_log_entries or 0, 1)
+
+
+def is_amplified(trx: DeadlockTransaction) -> bool:
+    ratio = lock_ratio(trx)
+    return ratio is not None and ratio >= _LOCK_AMPLIFICATION_RATIO
+
+
 def amplified(report: DeadlockReport) -> bool:
-    return any(
-        trx.rows_locked is not None
-        and trx.rows_locked >= _LOCK_AMPLIFICATION_RATIO * max(trx.undo_log_entries or 0, 1)
-        for trx in report.transactions
-    )
+    return any(is_amplified(trx) for trx in report.transactions)
 
 
 def signature_parts(report: DeadlockReport) -> list[tuple[str, str, str, str]]:

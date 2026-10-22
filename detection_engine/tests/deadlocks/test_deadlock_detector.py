@@ -6,8 +6,11 @@ from deadlock_builders import (
     DETECTED,
     PG_DETECTED,
     T0,
+    index_row,
     mysql_ct01,
     mysql_ct02,
+    mysql_ct03,
+    mysql_ct04,
     pg_ct01,
     pg_ct02,
     pg_report,
@@ -17,12 +20,20 @@ from deadlock_builders import (
     snapshot,
 )
 
-from deadlocks import ct01_inconsistent_order, ct02_mode_conversion, unclassified_deadlock
+from deadlocks import (
+    ct01_inconsistent_order,
+    ct02_mode_conversion,
+    ct03_range_contention,
+    ct04_lock_amplification,
+    unclassified_deadlock,
+)
 from deadlocks.deadlock_detector import classify, detect_deadlocks
 from deadlocks.state import DEADLOCK_SEEN_RETENTION, ContentionState, DeadlockMemory
 
 CT01 = ct01_inconsistent_order.ANTIPATRON
 CT02 = ct02_mode_conversion.ANTIPATRON
+CT03 = ct03_range_contention.ANTIPATRON
+CT04 = ct04_lock_amplification.ANTIPATRON
 UNCLASSIFIED = unclassified_deadlock.ANTIPATRON
 
 
@@ -34,15 +45,22 @@ def test_each_fixture_gets_its_pattern():
     assert classify(report(pg_ct01())) == CT01
     assert classify(report(pg_ct02())) == CT02
     assert classify(report(pg_report())) == UNCLASSIFIED
+    assert classify(report(mysql_ct03())) == CT03
+    assert classify(report(mysql_ct04()), snapshot(indexes=[index_row("id")]).indexes) == CT04
 
 
-def test_gap_deadlocks_get_no_pattern_yet():
-    # CT-03: con el detalle completo no es un abrazo "sin clasificar"
+def test_gap_deadlocks_are_ct03():
     raw = mysql_ct01(
         first={"holds": [record_lock(2, "X,GAP")], "waits_for": record_lock(3, "X,GAP,INSERT_INTENTION")},
         second={"holds": [record_lock(3, "X,GAP")], "waits_for": record_lock(2, "X,GAP,INSERT_INTENTION")},
     )
-    assert classify(report(raw)) is None
+    assert classify(report(raw)) == CT03
+
+
+def test_amplification_with_a_usable_index_gets_no_pattern():
+    # la tabla tiene indice por cliente: los bloqueos de mas vienen de otra cosa
+    indexes = snapshot(indexes=[index_row("id"), index_row("cliente", name="ix_cliente")]).indexes
+    assert classify(report(mysql_ct04()), indexes) is None
 
 
 def test_one_unknown_row_makes_the_report_unclassified():
@@ -57,7 +75,7 @@ def test_known_holds_without_targets_are_unclassified():
 
 
 def test_classification_does_not_depend_on_the_engine():
-    for raw in (mysql_ct01(), mysql_ct02(), pg_ct01(), pg_ct02(), pg_report()):
+    for raw in (mysql_ct01(), mysql_ct02(), mysql_ct03(), mysql_ct04(), pg_ct01(), pg_ct02(), pg_report()):
         assert classify(report(scrambled(raw))) == classify(report(raw))
 
 
@@ -123,11 +141,10 @@ def test_both_patterns_in_one_snapshot():
 
 def test_incomplete_and_unmatched_reports_are_remembered_without_finding():
     incomplete = {"detected_at": "2026-10-22 00:59:20.100000", "source": "mysql_error_log", "complete": False}
-    gap = mysql_ct01(
-        first={"holds": [record_lock(2, "X,GAP")], "waits_for": record_lock(3, "X,GAP,INSERT_INTENTION")},
-        second={"holds": [record_lock(3, "X,GAP")], "waits_for": record_lock(2, "X,GAP,INSERT_INTENTION")},
-    )
-    findings, memory = detect_deadlocks(snapshot(gap, incomplete), T0, DeadlockMemory())
+    # ampliacion de bloqueos con un indice que la sentencia podia usar: ningun patron
+    unmatched = mysql_ct04()
+    indexes = [index_row("id"), index_row("cliente", name="ix_cliente")]
+    findings, memory = detect_deadlocks(snapshot(unmatched, incomplete, indexes=indexes), T0, DeadlockMemory())
     assert findings == []
     assert memory.seen == {DETECTED: "", "2026-10-22 00:59:20.100000": ""}
     assert memory.signatures == {}

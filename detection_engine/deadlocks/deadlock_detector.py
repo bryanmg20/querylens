@@ -1,10 +1,10 @@
-"""Clasifica cada abrazo mortal de snapshot.deadlocks: CT-01, CT-02 o sin
+"""Clasifica cada abrazo mortal de snapshot.deadlocks: CT-01 a CT-04 o sin
 clasificar. Cada informe sale en a lo sumo un patron.
 
 Cada abrazo se informa una vez: el mismo informe llega en varios snapshots
 (DeadlocksStage trae una ventana) y la memoria de contencion los descarta.
-Los que no son de ningun patron (por ejemplo los de hueco, CT-03) se recuerdan
-sin hallazgo.
+Los que no son de ningun patron (por ejemplo una ampliacion de bloqueos con
+un indice que la sentencia podria usar) se recuerdan sin hallazgo.
 """
 from datetime import datetime
 
@@ -13,25 +13,35 @@ from querylens_contract import SnapshotPayload
 from logger import get_logger
 from models import Hallazgo
 
-from . import ct01_inconsistent_order, ct02_mode_conversion, unclassified_deadlock
+from . import (
+    ct01_inconsistent_order,
+    ct02_mode_conversion,
+    ct03_range_contention,
+    ct04_lock_amplification,
+    unclassified_deadlock,
+)
 from .cycles import deadlock_signature
 from .state import DeadlockMemory
 
 logger = get_logger(__name__)
 
 # (regla, modulo con ANTIPATRON y finding), en orden: las reglas se excluyen
-# entre si, el orden solo fija cual se prueba primero
+# entre si, el orden solo fija cual se prueba primero. Cada regla recibe el
+# informe y los indices del snapshot; solo CT-04 los lee.
 _PATTERNS = [
-    (ct01_inconsistent_order.is_inconsistent_order, ct01_inconsistent_order),
-    (ct02_mode_conversion.is_mode_conversion, ct02_mode_conversion),
-    (unclassified_deadlock.is_unclassified, unclassified_deadlock),
+    (lambda report, _: ct01_inconsistent_order.is_inconsistent_order(report), ct01_inconsistent_order),
+    (lambda report, _: ct02_mode_conversion.is_mode_conversion(report), ct02_mode_conversion),
+    (lambda report, _: ct03_range_contention.is_range_contention(report), ct03_range_contention),
+    (ct04_lock_amplification.is_lock_amplification, ct04_lock_amplification),
+    (lambda report, _: unclassified_deadlock.is_unclassified(report), unclassified_deadlock),
 ]
 
 
-def classify(report) -> str | None:
-    """ANTIPATRON del patron del informe, o None si no es de ninguno."""
+def classify(report, indexes=()) -> str | None:
+    """ANTIPATRON del patron del informe, o None si no es de ninguno.
+    indexes son los de snapshot.indexes."""
     for rule, pattern in _PATTERNS:
-        if rule(report):
+        if rule(report, indexes):
             return pattern.ANTIPATRON
     return None
 
@@ -57,11 +67,11 @@ def detect_deadlocks(
             seen[report.detected_at] = ""
             without_detail += 1
             continue
-        antipatron = classify(report)
+        antipatron = classify(report, snapshot.indexes)
         if antipatron is None:
             seen[report.detected_at] = ""
             logger.info(
-                "  contencion | db_id=%s | abrazo de %s sin patron (ni CT-01 ni CT-02)",
+                "  contencion | db_id=%s | abrazo de %s sin patron (ni CT-01 a CT-04 ni sin clasificar)",
                 snapshot.db_id, report.detected_at,
             )
             continue
