@@ -60,7 +60,9 @@ def make_type_conversions_explicit(stats: Stats, dialect: str) -> Stats:
             relation = operation.get("relation")
             table = operation.get("table_name") or aliases.get(relation, relation)
 
-            def type_of(qualifier, column_name, relation=relation, table=table):
+            def type_of(
+                qualifier, column_name, relation=relation, table=table, aliases=aliases, schema_name=schema_name,
+            ):
                 # sin calificar o con el alias del scan es de su tabla
                 if not qualifier or qualifier == relation:
                     owner = table
