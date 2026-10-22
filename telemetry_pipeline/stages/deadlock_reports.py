@@ -6,7 +6,8 @@ Salen dicts con la forma de querylens_contract.DeadlockReport.
 Privacidad: los dos informes traen las sentencias con sus literales, y el de
 InnoDB ademas vuelca en hexadecimal el contenido de cada registro bloqueado.
 De las sentencias solo sale canonic_query; de los registros, su direccion
-fisica (space:page:heap). Nada mas del texto crudo llega al snapshot.
+fisica (space:page:heap); de los advisory locks de Postgres, un token en
+lugar de sus claves. Nada mas del texto crudo llega al snapshot.
 
 Postgres (mensaje "deadlock detected" del log, state_code 40P01):
     detail  Process 790 waits for ShareLock on transaction 67257; blocked by process 797.
@@ -122,9 +123,17 @@ def parse_postgres_deadlock(record: dict) -> dict:
     context_table = _pg_context_table(record.get("context"))
     # (columna, literal) -> token, compartido por todo el informe
     tokens: dict[tuple[str, str], str] = {}
+    # claves de advisory lock -> token, igual
+    advisory: dict[str, str] = {}
     for pid, wait in waits.items():
         canonic = canonicalize_query(statements.get(pid), "postgres") if pid in statements else None
         lock = _pg_lock(wait["lock_mode"], wait["target"], canonic)
+        if lock["lock_type"] == "advisory":
+            # Las claves las elige la aplicacion (suelen ser ids): sale un
+            # token, el mismo para la misma clave, asi el cruce se sigue viendo
+            token = advisory.setdefault(wait["target"], f"a{len(advisory) + 1}")
+            lock["resources"] = [f"advisory lock {token}"]
+            lock["targets"] = [f"advisory lock {token}"]
         if lock.get("table_name") is None and lock.get("relation_oid") is None:
             # Postgres espera la fila sobre el transactionid de quien la tiene:
             # la tabla sale del CONTEXT (solo la victima) o de su sentencia

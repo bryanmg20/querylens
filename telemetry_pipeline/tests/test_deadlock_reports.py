@@ -400,6 +400,26 @@ def test_postgres_tuple_and_relation_waits_keep_the_oid_for_the_stage():
     assert other["waits_for"]["targets"] == ["relation 16390"]
 
 
+def test_postgres_advisory_lock_keys_become_tokens():
+    # pg_advisory_xact_lock(424242) y (777777): las claves son ids de la aplicacion
+    record = {
+        "timestamp": "2026-10-22 00:46:01.669 UTC", "pid": 10, "dbname": "ql_demo",
+        "detail": (
+            "Process 10 waits for ExclusiveLock on advisory lock [16384,0,424242,1]; blocked by process 11.\n"
+            "Process 11 waits for ExclusiveLock on advisory lock [16384,0,777777,1]; blocked by process 10.\n"
+            "Process 10: SELECT pg_advisory_xact_lock(777777);\n"
+            "Process 11: SELECT pg_advisory_xact_lock(424242);"
+        ),
+    }
+    report = parse_postgres_deadlock(record)
+    victim, other = report["transactions"]
+    assert victim["waits_for"]["targets"] == victim["waits_for"]["resources"] == ["advisory lock a1"]
+    assert other["waits_for"]["targets"] == ["advisory lock a2"]
+    assert (victim["waits_for"]["mode"], victim["waits_for"]["scope"]) == ("X", "other")
+    dumped = json.dumps(report)
+    assert "424242" not in dumped and "777777" not in dumped
+
+
 def test_postgres_multiline_statement_is_canonicalized_whole():
     record = {
         "timestamp": "t", "pid": 10, "dbname": "d",
