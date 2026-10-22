@@ -31,8 +31,9 @@ from querylens_contract import DeadlockReport, DeadlockTransaction, IndexRow
 # Misma lectura de columnas e indices que AP-04: el hallazgo recomienda el
 # mismo indice que daria AP-04 si la sentencia fuera un SELECT
 from anti_patterns.missing_index import (
-    _filtered_columns,
+    _index_fix,
     _index_lead_column,
+    _IndexFix,
     _lookup_by_table,
     _suggested_index,
 )
@@ -58,8 +59,16 @@ class _Statement:
     kind: str  # "UPDATE" o "DELETE"
     schema_name: str | None
     table_name: str
-    equality: list[str]
-    range_: list[str]
+    # columnas a indexar como las calcula AP-04 (en un OR, un indice por rama)
+    fix: _IndexFix
+
+    @property
+    def equality(self) -> list[str]:
+        return self.fix.equality
+
+    @property
+    def range_(self) -> list[str]:
+        return self.fix.range_
 
 
 def is_lock_amplification(report: DeadlockReport, indexes: list[IndexRow]) -> bool:
@@ -81,7 +90,7 @@ def is_lock_amplification(report: DeadlockReport, indexes: list[IndexRow]) -> bo
 def finding(report: DeadlockReport, signature: str, recurrence: dict, captured_at) -> Hallazgo:
     trx, statement = _amplifier(report)
     table = cycles.qualified(statement.schema_name, statement.table_name)
-    suggested = _suggested_index(statement.table_name, statement.equality, statement.range_)
+    suggested = _suggested_index(statement.table_name, statement.fix)
     evidence = cycles.evidence(report, signature, recurrence, captured_at, _RISK, [])
     evidence["amplification"] = {
         "process_id": trx.process_id,
@@ -147,15 +156,15 @@ def _statement(trx: DeadlockTransaction) -> _Statement | None:
     def _belongs_to_table(column: exp.Column) -> bool:
         return not column.table or column.table in names
 
-    equality, range_, _ = _filtered_columns(where.this.sql(dialect="postgres"), _belongs_to_table)
-    if not equality and not range_:
+    # sin indices supuestos: si alguno los cubre lo decide is_lock_amplification
+    fix = _index_fix(where.this.sql(dialect="postgres"), _belongs_to_table, lead_columns=set())
+    if fix is None or (not fix.equality and not fix.range_):
         return None
     return _Statement(
         kind="UPDATE" if isinstance(tree, exp.Update) else "DELETE",
         schema_name=table.db or _schema_of(trx, table.name),
         table_name=table.name,
-        equality=equality,
-        range_=range_,
+        fix=fix,
     )
 
 
