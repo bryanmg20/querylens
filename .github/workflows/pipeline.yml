@@ -73,9 +73,13 @@ jobs:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
 
+    # Imagenes oficiales desde mirror.gcr.io (espejo de Docker Hub de Google,
+    # sin autenticacion). Docker Hub y public.ecr.aws limitan las descargas
+    # anonimas por IP, y los runners de GitHub comparten IPs: los dos ya
+    # fallaron con toomanyrequests.
     services:
       telemetry-postgres:
-        image: public.ecr.aws/docker/library/postgres:17
+        image: mirror.gcr.io/library/postgres:17
         env:
           POSTGRES_USER: querylens_monitor
           POSTGRES_PASSWORD: monitor_pass
@@ -89,7 +93,7 @@ jobs:
           --health-retries 10
 
       telemetry-mysql:
-        image: public.ecr.aws/docker/library/mysql:8.0
+        image: mirror.gcr.io/library/mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: ql_root
           MYSQL_DATABASE: ql_demo
