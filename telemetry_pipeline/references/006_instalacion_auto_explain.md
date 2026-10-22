@@ -49,7 +49,11 @@ SHOW logging_collector;           -- off = hará falta reiniciar en el Paso 3
 SHOW log_destination;
 SHOW log_directory;               -- 'log' = relativo al directorio de datos
 SHOW compute_query_id;            -- auto basta si pg_stat_statements está cargado
+SHOW log_min_messages;            -- error o más bajo (default: warning): los abrazos mortales son errores
+SHOW log_error_verbosity;         -- default o verbose; terse quita el DETAIL que trae el ciclo
 ```
+
+Las mismas funciones del Paso 4 le sirven a QueryLens para leer los informes de abrazo mortal (`deadlock detected`) que Postgres escribe en el log. Con `log_min_messages` y `log_error_verbosity` en sus valores por defecto no hay nada que cambiar.
 
 ## Paso 2 — Activar auto_explain y el log JSON
 

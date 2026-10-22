@@ -168,6 +168,67 @@ class CaptureTimestampRow(BaseModel):
     captured_at: Annotated[str | None, BeforeValidator(_to_iso)] = None
 
 
+class DeadlockLock(BaseModel):
+    """Un bloqueo de un informe de abrazo mortal: el que una transaccion
+    mantiene o el que espera."""
+    schema_name: str | None = None
+    table_name: str | None = None
+    # MySQL: indice del registro bloqueado. Postgres no lo informa.
+    index_name: str | None = None
+    # MySQL: record | table. Postgres: el tipo de objeto sobre el que espera
+    # (transactionid, tuple, relation, ...).
+    lock_type: str | None = None
+    # MySQL en el vocabulario de performance_schema.data_locks.LOCK_MODE
+    # (X, S, X,REC_NOT_GAP, X,GAP, X,INSERT_INTENTION, IX...). Postgres como
+    # lo nombra pg_locks.mode (ShareLock, ExclusiveLock, ...).
+    lock_mode: str
+    # Identificadores fisicos del recurso, nunca datos de la fila: MySQL
+    # "space:page:heap" de cada registro (o "table" en un bloqueo de tabla);
+    # Postgres el objeto tal como lo escribe el informe ("transaction 67257",
+    # "tuple (0,1) of relation 16384"). Dos bloqueos sobre el mismo recurso
+    # comparten un elemento.
+    resources: list[str] = Field(default_factory=list)
+
+
+class DeadlockTransaction(BaseModel):
+    # Postgres: pid del backend. MySQL: id del processlist (CONNECTION_ID()).
+    process_id: int | None = None
+    transaction_id: str | None = None
+    # Solo la victima de Postgres trae query_id (es su linea del log).
+    query_id: QueryId = None
+    # La sentencia que esperaba, sin literales. El texto real nunca viaja.
+    canonic_query: str | None = None
+    # Solo MySQL: Postgres no informa los bloqueos que mantiene cada proceso.
+    holds: list[DeadlockLock] = Field(default_factory=list)
+    waits_for: DeadlockLock | None = None
+    # process_id de las transacciones del ciclo que retienen lo que espera.
+    blocked_by: list[int] = Field(default_factory=list)
+    # Solo MySQL: "N row lock(s)" y "undo log entries M" del informe.
+    rows_locked: int | None = None
+    undo_log_entries: int | None = None
+    victim: bool = False
+
+
+class DeadlockReport(BaseModel):
+    """Un abrazo mortal que el motor detecto y resolvio revirtiendo una victima.
+
+    Postgres lo deja en el log del servidor y MySQL en SHOW ENGINE INNODB
+    STATUS (solo el ultimo) y performance_schema.error_log (solo el encabezado
+    de cada uno). Cada snapshot trae los de una ventana reciente, asi que el
+    mismo informe llega en varios snapshots seguidos: el consumidor descarta
+    los repetidos por detected_at y su contenido."""
+    # Hora del servidor, en UTC, en que el motor detecto el ciclo.
+    detected_at: Annotated[str, BeforeValidator(_to_iso)]
+    # postgres_log | innodb_status | mysql_error_log
+    source: str
+    database_name: str | None = None
+    # False: se sabe que ocurrio pero no que transacciones lo formaron (MySQL
+    # con mas de un abrazo entre dos snapshots, o Postgres con
+    # log_error_verbosity=terse). No se puede clasificar.
+    complete: bool = True
+    transactions: list[DeadlockTransaction] = Field(default_factory=list)
+
+
 class LogicalShape(BaseModel):
     scans: int = 0
     joins: int = 0
@@ -229,6 +290,8 @@ class SnapshotPayload(BaseModel):
     foreign_keys: ListOrNone[ForeignKeyRow] = []
     # Mismo motivo que foreign_keys: default [] para que los goldens previos validen.
     capture_timestamp: ListOrNone[CaptureTimestampRow] = []
+    # La escribe DeadlocksStage, no el collect: default [] por los goldens previos.
+    deadlocks: ListOrNone[DeadlockReport] = []
     canonic_explains: ListOrNone[CanonicExplain] = []
 
     @field_validator("statements", mode="after")

@@ -194,6 +194,23 @@ CATALOG: dict[str, IssueDef] = {
         "No se pudo leer el log de auto_explain: los planes son genericos, sin los valores reales de cada ejecucion.",
         "Opcional: sigue la guia de instalacion de auto_explain (funciones querylens.log_files y querylens.read_log).",
     ),
+    # ---------- contencion (DeadlocksStage) ----------
+    "DEADLOCK_REPORTS_UNAVAILABLE": IssueDef(
+        "collect", "config", DEGRADED,
+        "No se pudieron leer los informes de abrazo mortal: QueryLens no puede "
+        "analizar los abrazos mortales de esta base.",
+        "Postgres: sigue la guia de instalacion de auto_explain (funciones "
+        "querylens.log_files y querylens.read_log). MySQL: otorga PROCESS al "
+        "usuario de monitoreo (GRANT PROCESS ON *.* TO <usuario_de_monitoreo>;).",
+    ),
+    "DEADLOCK_REPORTS_PARTIAL": IssueDef(
+        "collect", "config", INFO,
+        "Los informes de abrazo mortal llegan incompletos: si hay varios abrazos "
+        "seguidos, algunos se cuentan sin detalle o no se ven.",
+        "Postgres: log_error_verbosity distinto de terse y log_min_messages en "
+        "error o mas bajo. MySQL 8.0.22 o superior con "
+        "SET PERSIST innodb_print_all_deadlocks = ON; SET PERSIST log_error_verbosity = 3;",
+    ),
     # ---------- pipeline interno ----------
     "SNAPSHOT_VALIDATION_FAILED": IssueDef(
         "pipeline", "internal", BLOCKING,

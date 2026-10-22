@@ -49,6 +49,18 @@ run_engine(dialect, connection_factory, db_id)                  main.py
   │     │     conn.commit()  ← M-12: la transacción de lectura se cierra YA. No
   │     │     retener snapshot/vacuum (PG) ni MVCC (MySQL) durante el resto del ciclo.
   │     │
+  │     ├─ DeadlocksStage.execute(stats, conn)               stages/deadlocks.py
+  │     │     corre siempre, aunque statements haya fallado; transacción corta propia.
+  │     │     Informes de abrazo mortal de los últimos 120 s (CT-01 a CT-04):
+  │     │       Postgres: líneas 40P01 del log JSON vía querylens.read_log()
+  │     │       MySQL: SHOW ENGINE INNODB STATUS (detalle del último) +
+  │     │              performance_schema.error_log MY-012468 (cada uno, sin detalle)
+  │     │     stages/deadlock_reports.py los traduce al modelo canónico: solo
+  │     │     canonic_query y direcciones físicas (space:page:heap), nunca literales
+  │     │     stats["deadlocks"] = [DeadlockReport]
+  │     │     sin fuente → rollback, DEADLOCK_REPORTS_UNAVAILABLE
+  │     │     fuente parcial → DEADLOCK_REPORTS_PARTIAL
+  │     │
   │     ├─ (2) CandidatesStage.execute(stats)                stages/candidates.py
   │     │     stats = collector.preprocess_statements(stats) → hook por motor (MySQL calcula
   │     │                                                     stddev y coeff de variación)
@@ -211,6 +223,9 @@ run_engine(dialect, factory, db_id)                     main.py
     post_collect       health/checks.py, antes de normalize/redact:
                        '<insufficient privilege>' → MISSING_PG_READ_ALL_STATS; muestra MySQL truncada
                        (sin PROCESS, active_queries de MySQL falla con 1227 → MISSING_PROCESS_PRIVILEGE)
+    DeadlocksStage     sin funciones de log (PG) o sin PROCESS (MySQL) → DEADLOCK_REPORTS_UNAVAILABLE;
+                       log_error_verbosity=terse (PG), innodb_print_all_deadlocks=OFF o
+                       log_error_verbosity<3 (MySQL) → DEADLOCK_REPORTS_PARTIAL
     ExplainStage       errores agrupados por code con count (sin query_id) + NO_EXPLAINABLE_CANDIDATES
   validación / encolado → SNAPSHOT_VALIDATION_FAILED, ENQUEUE_FAILED, PAYLOAD_TOO_LARGE
   finally: health_writer.flush(...)   una transacción: last_run + upsert issues + resolve

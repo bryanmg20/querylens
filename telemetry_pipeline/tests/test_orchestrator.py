@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pytest
 from sqlalchemy.dialects import postgresql
 
@@ -116,6 +118,13 @@ _ROWS_BY_SQL = {
     ],
     "resolved_schema": _SCHEMA_RESOLVER,
     "EXPLAIN (GENERIC_PLAN, FORMAT JSON)": [{"QUERY PLAN": _EXPLAIN_PLAN}],
+    # DeadlocksStage: servidor con la configuracion por defecto y sin logs
+    "current_setting('log_error_verbosity')": [{
+        "log_error_verbosity": "default",
+        "log_min_messages": "warning",
+        "database_name": "ql_demo",
+        "now_utc": datetime(2026, 1, 1, 12, 0, 30),
+    }],
 }
 
 
@@ -368,3 +377,12 @@ def test_collect_commits_the_read_transaction_before_explain():
     )
     assert first_commit < first_explain
     assert conn.commit_calls >= 3  # 1 del orquestador + 2 de transacciones cortas
+
+
+def test_deadlocks_are_read_even_when_statements_fail():
+    """Los informes de abrazo mortal no dependen de statements: traen su propia
+    sentencia ya canonica."""
+    conn = _FakeConn({"pg_stat_statements": RuntimeError("boom")})
+    stats, _, _ = _run(conn)
+    assert stats["deadlocks"] == []
+    assert any("querylens.log_files()" in sql for sql in conn.sent)
