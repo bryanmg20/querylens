@@ -23,7 +23,7 @@ LOOKBACK_S segundos y el detector descarta los que ya vio.
 import json
 from datetime import datetime, timedelta
 
-from querylens_contract.snapshot import to_naive_utc
+from querylens_contract import to_naive_utc
 from sqlalchemy import text
 
 from health.report import HealthReport
@@ -134,16 +134,16 @@ class DeadlocksStage:
                 log_error_verbosity=settings["log_error_verbosity"],
                 log_min_messages=settings["log_min_messages"],
             )
-        since = _naive(settings["now_utc"]) - timedelta(seconds=LOOKBACK_S)
+        since = to_naive_utc(settings["now_utc"]) - timedelta(seconds=LOOKBACK_S)
 
-        records = _pg_deadlock_records(log, conn)
+        records = _pg_deadlock_records(log, conn, since)
         if not records:
             return []
         reports = [parse_postgres_deadlock(record) for record in records]
 
         raw = sorted({report["detected_at"] for report in reports if report["detected_at"]})
         utc = {
-            row["raw"]: _naive(row["utc"])
+            row["raw"]: to_naive_utc(row["utc"])
             for row in conn.execute(PG_TIMESTAMPS_SQL.bindparams(raw=raw)).mappings()
         } if raw else {}
         kept = []
@@ -184,7 +184,7 @@ class DeadlocksStage:
 
     def _mysql(self, conn) -> list[dict]:
         settings = next(iter(conn.execute(text(MYSQL_SETTINGS_SQL)).mappings()))
-        now = _naive(settings["now_utc"])
+        now = to_naive_utc(settings["now_utc"])
         since = now - timedelta(seconds=LOOKBACK_S)
         offset = timedelta(seconds=int(settings["system_offset_s"] or 0))
 
@@ -228,7 +228,7 @@ class DeadlocksStage:
             )
             return []
         try:
-            return [_naive(row["logged_at"]) for row in conn.execute(text(MYSQL_ERROR_LOG_SQL)).mappings()]
+            return [to_naive_utc(row["logged_at"]) for row in conn.execute(text(MYSQL_ERROR_LOG_SQL)).mappings()]
         except Exception as e:
             # performance_schema.error_log existe desde 8.0.22
             logger.info(f"mysql | DEADLOCKS | error_log no disponible | {e}")
@@ -236,9 +236,11 @@ class DeadlocksStage:
             return []
 
 
-def _pg_deadlock_records(log: PgLogTail, conn) -> list[dict]:
+def _pg_deadlock_records(log: PgLogTail, conn, since: datetime) -> list[dict]:
+    """Un archivo que no cambio desde `since` no puede tener abrazos de la
+    ventana: ahi se corta, sin leer los mas viejos."""
     records = []
-    for lines in log.files(conn):
+    for lines in log.files(conn, modified_since=since):
         for line in lines:
             if _PG_DEADLOCK_MARKER not in line:
                 continue
@@ -249,10 +251,6 @@ def _pg_deadlock_records(log: PgLogTail, conn) -> list[dict]:
             if isinstance(record, dict) and record.get("state_code") == "40P01":
                 records.append(record)
     return records
-
-
-def _naive(value: datetime) -> datetime:
-    return to_naive_utc(value)
 
 
 def _iso(value: datetime) -> str:

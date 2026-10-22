@@ -36,6 +36,7 @@ from main_sandbox import ENGINES
 from overhead.workload import BURN_QUERIES
 from runner import Runner
 from stages import auto_explain as auto_explain_stage
+from stages import pg_log
 
 BURN_CONCURRENCY = 3
 
@@ -48,24 +49,28 @@ def _install_hooks():
 
     Envuelve las funciones reales sin cambiar su resultado: es evidencia de que
     el ciclo medido es el pipeline actual (AutoExplainStage leyendo el log) y no
-    uno degradado al plan generico."""
+    uno degradado al plan generico. Los bytes salen de PgLogTail, que lee la
+    ventana una vez por ciclo para auto_explain y deadlocks juntos."""
     original_execute = auto_explain_stage.AutoExplainStage.execute
-    original_collect = auto_explain_stage._collect_plans
+    original_read_next = pg_log.PgLogTail._read_next
 
-    def execute(self, stats, conn):
-        result = original_execute(self, stats, conn)
+    def execute(self, stats, conn, *args, **kwargs):
+        result = original_execute(self, stats, conn, *args, **kwargs)
         _cycle_info["candidates"] = sum(
             1 for c in stats.get("top_impact_queries") or [] if c.get("ready_for_explain")
         )
         _cycle_info["auto_explain_plans"] = len(stats.get("auto_explain_plans") or {})
         return result
 
-    def collect(chunk, *args, **kwargs):
-        _cycle_info["log_bytes_read"] = _cycle_info.get("log_bytes_read", 0) + len(chunk)
-        return original_collect(chunk, *args, **kwargs)
+    def read_next(self, *args, **kwargs):
+        before = self.bytes_read
+        try:
+            return original_read_next(self, *args, **kwargs)
+        finally:
+            _cycle_info["log_bytes_read"] = _cycle_info.get("log_bytes_read", 0) + self.bytes_read - before
 
     auto_explain_stage.AutoExplainStage.execute = execute
-    auto_explain_stage._collect_plans = collect
+    pg_log.PgLogTail._read_next = read_next
 
 
 class Daemon:

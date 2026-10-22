@@ -54,8 +54,8 @@ class AutoExplainStage:
         if not wanted:
             return stats
 
-        # El issue va en el scope "explain" (el CHECK de pipeline_health no
-        # tiene otro): ExplainStage lo marca evaluado en cada ciclo.
+        # El issue va en el scope "explain": ExplainStage lo marca evaluado en
+        # cada ciclo, asi que se resuelve en cuanto el log vuelve a leerse.
         try:
             # Transaccion corta, como cada EXPLAIN (M-12): si la funcion no
             # existe, el rollback deja la conexion lista para ExplainStage.

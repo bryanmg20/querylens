@@ -55,6 +55,8 @@ class _Conn:
         # [(fragmento del SQL, funcion(params) -> filas | Exception)]
         self.handlers = handlers
         self.sent = []
+        # parametros de cada sentencia: el SQL de text() solo muestra :name
+        self.params = []
         self.rollbacks = 0
 
     def begin(self):
@@ -64,6 +66,7 @@ class _Conn:
         sql = str(stmt)
         params = stmt.compile().params
         self.sent.append(sql)
+        self.params.append(params)
         for fragment, handler in self.handlers:
             if fragment in sql:
                 rows = handler(params)
@@ -154,13 +157,71 @@ def test_postgres_drops_reports_older_than_the_lookback():
     assert _run("postgres", conn) == []
 
 
-def test_postgres_reads_older_files_within_the_window():
+def test_postgres_reads_older_files_modified_within_the_window():
     ct01, ct02 = _pg_records()
     conn = _pg_conn([
         ("postgresql-Thu.json", _pg_log(ct02), PG_NOW),
-        ("postgresql-Wed.json", _pg_log(ct01), PG_NOW - timedelta(hours=1)),
+        ("postgresql-Wed.json", _pg_log(ct01), PG_NOW - timedelta(seconds=30)),
     ])
     assert [r["transactions"][0]["process_id"] for r in _run("postgres", conn)] == [790, 812]
+
+
+def test_postgres_stops_at_the_first_file_not_modified_in_the_window():
+    ct01, _ = _pg_records()
+    old = PG_NOW - timedelta(seconds=LOOKBACK_S + 60)
+    conn = _pg_conn([
+        ("postgresql-Thu.json", _pg_log(), PG_NOW),
+        ("postgresql-Wed.json", _pg_log(ct01), old),
+    ])
+    assert _run("postgres", conn) == []
+    assert [p["name"] for p in conn.params if "name" in p] == ["postgresql-Thu.json"]
+
+
+def test_auto_explain_still_reads_the_file_deadlocks_skipped():
+    """El corte por fecha es de deadlocks: auto_explain busca planes en toda la
+    ventana, aunque el archivo sea viejo."""
+    plan_line = json.dumps({
+        "dbname": "ql_demo", "query_id": 111,
+        "message": "duration: 60.1 ms  plan:\n" + json.dumps({"Plan": {"Node Type": "Seq Scan"}}),
+    }, separators=(",", ":"))
+    old = PG_NOW - timedelta(seconds=LOOKBACK_S + 60)
+    conn = _pg_conn([
+        ("postgresql-Thu.json", _pg_log(), PG_NOW),
+        ("postgresql-Wed.json", (plan_line + "\n").encode(), old),
+    ])
+    log = PgLogTail()
+    stats = {"top_impact_queries": [{"query_id": 111, "ready_for_explain": True, "database_name": "ql_demo"}]}
+
+    DeadlocksStage(_Collector("postgres")).execute(stats, conn, log)
+    AutoExplainStage(_Collector("postgres")).execute(stats, conn, log)
+
+    assert 111 in stats["auto_explain_plans"]
+    assert sum("querylens.log_files()" in sql for sql in conn.sent) == 1
+
+
+def test_a_failed_read_is_retried_by_the_next_stage():
+    """Un error transitorio en deadlocks no le quita el log a auto_explain."""
+    plan_line = json.dumps({
+        "dbname": "ql_demo", "query_id": 111,
+        "message": "duration: 60.1 ms  plan:\n" + json.dumps({"Plan": {"Node Type": "Seq Scan"}}),
+    }, separators=(",", ":"))
+    conn = _pg_conn([("postgresql-Thu.json", (plan_line + "\n").encode(), PG_NOW)])
+    failures = [RuntimeError("canceling statement due to statement timeout")]
+    read_log = dict(conn.handlers)["querylens.read_log"]
+    conn.handlers = [
+        (fragment, (lambda p: failures.pop() if failures else read_log(p)) if fragment == "querylens.read_log" else handler)
+        for fragment, handler in conn.handlers
+    ]
+    report = HealthReport()
+    log = PgLogTail()
+    stats = {"top_impact_queries": [{"query_id": 111, "ready_for_explain": True, "database_name": "ql_demo"}]}
+
+    DeadlocksStage(_Collector("postgres"), report).execute(stats, conn, log)
+    AutoExplainStage(_Collector("postgres"), report).execute(stats, conn, log)
+
+    assert report.has("DEADLOCK_REPORTS_UNAVAILABLE")
+    assert not report.has("AUTO_EXPLAIN_LOG_UNAVAILABLE")
+    assert 111 in stats["auto_explain_plans"]
 
 
 def test_postgres_window_starting_mid_line_ignores_the_cut_line(monkeypatch):
@@ -365,3 +426,15 @@ def test_other_dialects_are_skipped():
     conn = _Conn([])
     assert _run("sqlserver", conn) == []
     assert conn.sent == []
+
+
+def test_log_tail_counts_the_bytes_read_once():
+    ct01, _ = _pg_records()
+    content = _pg_log(ct01)
+    conn = _pg_conn([("postgresql-Thu.json", content, PG_NOW)])
+    log = PgLogTail()
+
+    list(log.files(conn))
+    list(log.files(conn))
+
+    assert log.bytes_read == len(content)

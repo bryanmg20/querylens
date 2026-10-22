@@ -28,6 +28,7 @@ from config.connections import get_connection_mysql, get_connection_postgres  # 
 from orchestrator import Orchestrator  # noqa: E402
 from stages import auto_explain as ae  # noqa: E402
 from stages import explain_normalizer as en  # noqa: E402
+from stages import pg_log  # noqa: E402
 
 SEED = 20261012
 CONN = {"postgres": get_connection_postgres, "mysql": get_connection_mysql}
@@ -80,7 +81,7 @@ def reset_stats():
 def generic_only():
     original = ae.AutoExplainStage.execute
 
-    def no_plans(self, stats, conn):
+    def no_plans(self, stats, conn, *args, **kwargs):
         stats["auto_explain_plans"] = {}
         return stats
 
@@ -464,7 +465,7 @@ def p5_my(cells=(0, 5000, 9000, 9900, 10000, 10100, 12000)):
 
 
 def p5():
-    return {"postgres": p5_pg(), "mysql": p5_my(), "log_window_bytes": ae.LOG_WINDOW_BYTES}
+    return {"postgres": p5_pg(), "mysql": p5_my(), "log_window_bytes": pg_log.LOG_WINDOW_BYTES}
 
 
 # ---------------------------------------------------------------- main

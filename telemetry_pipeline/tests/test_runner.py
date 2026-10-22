@@ -202,7 +202,14 @@ def test_backoff_dobra_hasta_el_tope(caplog):
 _PIPELINE = Path(__file__).resolve().parent.parent
 
 
-@pytest.mark.parametrize("level, expected", [(None, logging.DEBUG), ("WARNING", logging.WARNING)])
+@pytest.mark.parametrize("level, expected", [
+    (None, logging.DEBUG),
+    ("WARNING", logging.WARNING),
+    ("warning", logging.WARNING),
+    # en blanco o desconocido no es un nivel explicito: el runner sigue en DEBUG
+    (" ", logging.DEBUG),
+    ("verbose", logging.DEBUG),
+])
 def test_runner_respeta_un_ql_log_level_explicito(level, expected):
     """Sin QL_LOG_LEVEL el runner deja su detalle por ciclo en DEBUG; con un
     nivel explicito manda el del entorno, como en el resto del pipeline."""
