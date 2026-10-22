@@ -5,9 +5,9 @@ deadlock_timeout, InnoDB al instante): el ciclo nunca aparece en una muestra
 de active_queries. Lo que queda es el informe que el motor escribe al
 revertir la victima, y eso es lo que lee este stage.
 
-Postgres: las lineas "deadlock detected" (state_code 40P01) del log JSON, con
-las mismas funciones querylens.log_files() / querylens.read_log() que usa
-auto_explain (guia references/006). Los errores van al log con la
+Postgres: las lineas "deadlock detected" (state_code 40P01) del log JSON, de
+la misma ventana que lee auto_explain (stages/pg_log.PgLogTail, una sola
+lectura por ciclo; guia references/006). Los errores van al log con la
 configuracion por defecto (log_min_messages=warning).
 
 MySQL: SHOW ENGINE INNODB STATUS trae el detalle, pero solo del ultimo abrazo.
@@ -29,8 +29,8 @@ from sqlalchemy import text
 from health.report import HealthReport
 from logger import get_logger
 from models.stats import Stats
-from stages.auto_explain import READ_LOG_SQL
 from stages.deadlock_reports import parse_innodb_status, parse_innodb_timestamp, parse_postgres_deadlock
+from stages.pg_log import PgLogTail
 
 logger = get_logger(__name__)
 
@@ -38,11 +38,9 @@ logger = get_logger(__name__)
 # del runner (tope 60 s): un abrazo no se pierde porque un ciclo falle.
 LOOKBACK_S = 120
 
-# Bytes del final del log que se leen por ciclo, repartidos entre los archivos
-# mas recientes, como en auto_explain. Un dia con mucho auto_explain puede
-# escribir mas que esto en LOOKBACK_S: los abrazos que queden antes de la
+# La ventana del log es la de PgLogTail (2 MB). Un dia con mucho auto_explain
+# puede escribir mas que eso en LOOKBACK_S: los abrazos que queden antes de la
 # ventana leida se pierden.
-LOG_WINDOW_BYTES = 2 * 1024 * 1024
 
 # Un encabezado de error_log y el informe de INNODB STATUS son el mismo abrazo
 # si estan a menos de esto (INNODB STATUS escribe la hora sin fracciones).
@@ -63,10 +61,6 @@ SELECT current_setting('log_error_verbosity') AS log_error_verbosity,
 PG_TIMESTAMPS_SQL = text(
     "SELECT raw, (raw::timestamptz AT TIME ZONE 'UTC') AS utc FROM unnest(CAST(:raw AS text[])) AS raw"
 )
-
-# Como LOG_FILES_SQL de auto_explain, con la fecha: un archivo que no cambio
-# dentro de la ventana no puede tener abrazos nuevos.
-PG_LOG_FILES_SQL = "SELECT name, size, modification FROM querylens.log_files() ORDER BY modification DESC"
 
 PG_RELATIONS_SQL = text(
     """
@@ -105,17 +99,19 @@ class DeadlocksStage:
         self.collector = collector
         self.report = report if report is not None else HealthReport()
 
-    def execute(self, stats: Stats, conn) -> Stats:
+    def execute(self, stats: Stats, conn, log: PgLogTail | None = None) -> Stats:
         stats["deadlocks"] = []
         dialect = self.collector.source_dialect
-        read = {"postgres": self._postgres, "mysql": self._mysql}.get(dialect)
-        if read is None:
+        if dialect not in ("postgres", "mysql"):
             return stats
         try:
             # Transaccion corta, como auto_explain: si falta una funcion o un
             # permiso, el rollback deja la conexion lista para lo que sigue.
             with conn.begin():
-                reports = read(conn)
+                if dialect == "postgres":
+                    reports = self._postgres(conn, log if log is not None else PgLogTail())
+                else:
+                    reports = self._mysql(conn)
         except Exception as e:
             logger.info(f"{dialect} | DEADLOCKS | informes no disponibles | {e}")
             self.report.add("DEADLOCK_REPORTS_UNAVAILABLE", section="deadlocks")
@@ -130,7 +126,7 @@ class DeadlocksStage:
 
     # ---------------------------------------------------------- postgres
 
-    def _postgres(self, conn) -> list[dict]:
+    def _postgres(self, conn, log: PgLogTail) -> list[dict]:
         settings = next(iter(conn.execute(text(PG_SETTINGS_SQL)).mappings()))
         if settings["log_error_verbosity"] == "terse" or settings["log_min_messages"] in _PG_SILENT_LEVELS:
             self.report.add(
@@ -140,7 +136,7 @@ class DeadlocksStage:
             )
         since = _naive(settings["now_utc"]) - timedelta(seconds=LOOKBACK_S)
 
-        records = self._read_pg_records(conn, since)
+        records = _pg_deadlock_records(log, conn)
         if not records:
             return []
         reports = [parse_postgres_deadlock(record) for record in records]
@@ -159,44 +155,8 @@ class DeadlocksStage:
             kept.append(report)
 
         self._resolve_pg_relations(conn, kept, settings["database_name"])
-        return kept
-
-    def _read_pg_records(self, conn, since: datetime) -> list[dict]:
-        records = []
-        budget = LOG_WINDOW_BYTES
-        for log_file in conn.execute(text(PG_LOG_FILES_SQL)).mappings():
-            if budget <= 0:
-                break
-            modified = log_file["modification"]
-            if modified is not None and _naive(modified) < since:
-                # del mas nuevo al mas viejo: los que siguen tampoco cambiaron en la ventana
-                break
-            size = int(log_file["size"] or 0)
-            if size <= 0:
-                continue
-            length = min(size, budget)
-            start_offset = size - length
-            row = next(iter(conn.execute(
-                text(READ_LOG_SQL).bindparams(name=log_file["name"], start_offset=start_offset, max_bytes=length)
-            ).mappings()), None)
-            chunk = row["chunk"] if row is not None else None
-            if chunk is None:
-                continue
-            budget -= length
-            lines = bytes(chunk).split(b"\n")
-            if start_offset > 0:
-                # la ventana empieza en medio de una linea
-                lines = lines[1:]
-            for line in lines:
-                if _PG_DEADLOCK_MARKER not in line:
-                    continue
-                try:
-                    record = json.loads(line)
-                except ValueError:
-                    continue
-                if isinstance(record, dict) and record.get("state_code") == "40P01":
-                    records.append(record)
-        return records
+        # el log se lee del archivo mas nuevo al mas viejo; como en MySQL, por hora
+        return sorted(kept, key=lambda report: report["detected_at"])
 
     def _resolve_pg_relations(self, conn, reports: list[dict], database_name: str) -> None:
         """relation_oid -> schema y tabla, solo para la base conectada: los
@@ -274,6 +234,21 @@ class DeadlocksStage:
             logger.info(f"mysql | DEADLOCKS | error_log no disponible | {e}")
             self.report.add("DEADLOCK_REPORTS_PARTIAL", section="deadlocks")
             return []
+
+
+def _pg_deadlock_records(log: PgLogTail, conn) -> list[dict]:
+    records = []
+    for lines in log.files(conn):
+        for line in lines:
+            if _PG_DEADLOCK_MARKER not in line:
+                continue
+            try:
+                record = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(record, dict) and record.get("state_code") == "40P01":
+                records.append(record)
+    return records
 
 
 def _naive(value: datetime) -> datetime:

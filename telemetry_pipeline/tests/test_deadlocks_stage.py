@@ -11,7 +11,10 @@ import pytest
 from querylens_contract import DeadlockReport
 
 from health.report import HealthReport
+from stages import pg_log
+from stages.auto_explain import AutoExplainStage
 from stages.deadlocks import LOOKBACK_S, DeadlocksStage
+from stages.pg_log import PgLogTail
 
 pytestmark = pytest.mark.unit
 
@@ -151,31 +154,49 @@ def test_postgres_drops_reports_older_than_the_lookback():
     assert _run("postgres", conn) == []
 
 
-def test_postgres_skips_files_not_modified_in_the_window():
-    ct01, _ = _pg_records()
-    old = PG_NOW - timedelta(seconds=LOOKBACK_S + 60)
+def test_postgres_reads_older_files_within_the_window():
+    ct01, ct02 = _pg_records()
     conn = _pg_conn([
-        ("postgresql-Thu.json", _pg_log(), PG_NOW),
-        ("postgresql-Wed.json", _pg_log(ct01), old),
+        ("postgresql-Thu.json", _pg_log(ct02), PG_NOW),
+        ("postgresql-Wed.json", _pg_log(ct01), PG_NOW - timedelta(hours=1)),
     ])
-    assert _run("postgres", conn) == []
-    assert not any("postgresql-Wed.json" in sql for sql in conn.sent)
+    assert [r["transactions"][0]["process_id"] for r in _run("postgres", conn)] == [790, 812]
 
 
-def test_postgres_window_starting_mid_line_ignores_the_cut_line():
+def test_postgres_window_starting_mid_line_ignores_the_cut_line(monkeypatch):
     ct01, ct02 = _pg_records()
     content = _pg_log(ct01, ct02, junk=False)
     first_line_end = content.index(b"\n") + 1
     conn = _pg_conn([("postgresql-Thu.json", content, PG_NOW)])
+    monkeypatch.setattr(pg_log, "LOG_WINDOW_BYTES", len(content) - first_line_end + 10)
 
-    from stages import deadlocks
-    original = deadlocks.LOG_WINDOW_BYTES
-    deadlocks.LOG_WINDOW_BYTES = len(content) - first_line_end + 10
-    try:
-        reports = _run("postgres", conn)
-    finally:
-        deadlocks.LOG_WINDOW_BYTES = original
+    reports = _run("postgres", conn)
+
     assert [r["transactions"][0]["process_id"] for r in reports] == [812]
+
+
+def test_postgres_log_is_read_once_per_cycle_with_auto_explain():
+    """Deadlocks y auto_explain comparten la ventana: auto_explain recorre lo
+    que ya leyo DeadlocksStage sin volver a consultar el log."""
+    ct01, _ = _pg_records()
+    plan_line = json.dumps({
+        "dbname": "ql_demo", "query_id": 111,
+        "message": "duration: 60.1 ms  plan:\n" + json.dumps({"Plan": {"Node Type": "Seq Scan"}}),
+    }, separators=(",", ":"))
+    content = _pg_log(ct01) + (plan_line + "\n").encode()
+    conn = _pg_conn([("postgresql-Thu.json", content, PG_NOW)])
+    log = PgLogTail()
+
+    stats = {"top_impact_queries": [{"query_id": 111, "ready_for_explain": True, "database_name": "ql_demo"}]}
+    DeadlocksStage(_Collector("postgres")).execute(stats, conn, log)
+    reads_after_deadlocks = sum("querylens.read_log" in sql for sql in conn.sent)
+    AutoExplainStage(_Collector("postgres")).execute(stats, conn, log)
+
+    assert len(stats["deadlocks"]) == 1
+    assert 111 in stats["auto_explain_plans"]
+    assert reads_after_deadlocks == 1
+    assert sum("querylens.read_log" in sql for sql in conn.sent) == 1
+    assert sum("querylens.log_files()" in sql for sql in conn.sent) == 1
 
 
 def test_postgres_resolves_relation_oids_of_the_connected_database():
