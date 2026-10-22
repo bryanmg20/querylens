@@ -12,8 +12,8 @@ from anti_patterns.statement_history import parse_instant
 from logger import get_logger
 from models import Hallazgo
 
-from .ct01_inconsistent_order import detect_inconsistent_order
 from .ct05_long_transaction_cascade import detect_long_transaction_cascade
+from .deadlock_detector import detect_deadlocks
 from .state import ensure_contention_state_table, load_contention_state, save_contention_state
 
 logger = get_logger(__name__)
@@ -59,7 +59,7 @@ def _run(engine: Engine, snapshot: SnapshotPayload, fallback_captured_at: dateti
         return []
 
     findings, roots = detect_long_transaction_cascade(snapshot, captured_at, previous)
-    deadlock_findings, deadlocks = detect_inconsistent_order(snapshot, captured_at, state.deadlocks_for(captured_at))
+    deadlock_findings, deadlocks = detect_deadlocks(snapshot, captured_at, state.deadlocks_for(captured_at))
     save_contention_state(engine, snapshot.db_id, state.advance(captured_at, roots, deadlocks))
     if roots:
         logger.info(
@@ -68,7 +68,7 @@ def _run(engine: Engine, snapshot: SnapshotPayload, fallback_captured_at: dateti
         )
     if deadlock_findings:
         logger.info(
-            "  contencion | db_id=%s | abrazos mortales CT-01=%d",
-            snapshot.db_id, len(deadlock_findings),
+            "  contencion | db_id=%s | abrazos mortales=%s",
+            snapshot.db_id, ", ".join(f.antipatron for f in deadlock_findings),
         )
     return findings + deadlock_findings

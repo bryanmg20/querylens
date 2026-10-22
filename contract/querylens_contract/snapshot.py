@@ -168,13 +168,35 @@ class CaptureTimestampRow(BaseModel):
     captured_at: Annotated[str | None, BeforeValidator(to_iso)] = None
 
 
+LockMode = Literal["S", "X", "IS", "IX"]
+LockScope = Literal["row", "gap", "row+gap", "insert_intention", "table", "other"]
+
+
 class DeadlockLock(BaseModel):
     """Un bloqueo de un informe de abrazo mortal: el que una transaccion
-    mantiene o el que espera."""
+    mantiene o el que espera.
+
+    mode, scope y targets son el vocabulario comun que leen los detectores:
+    cada parser traduce el de su motor. lock_type, lock_mode y resources son
+    los del motor, tal como los escribe el informe, y solo van a la evidencia.
+    None en un campo comun es "el motor no lo informa", no "no hay"."""
     schema_name: str | None = None
     table_name: str | None = None
     # MySQL: indice del registro bloqueado. Postgres no lo informa.
     index_name: str | None = None
+
+    # S compartido, X exclusivo, IS/IX de intencion sobre una tabla. None si
+    # el motor usa un modo sin equivalente o no dice cual.
+    mode: LockMode | None = None
+    # row: la fila. gap: el hueco antes de la fila. row+gap: los dos
+    # (next-key). insert_intention: insercion en un hueco. table: la tabla.
+    # other: un recurso que no es fila ni tabla (advisory lock, pagina...).
+    scope: LockScope | None = None
+    # El recurso bloqueado: dos bloqueos sobre el mismo recurso comparten un
+    # elemento. Solo se compara dentro del mismo informe. None si el motor no
+    # lo identifica: Postgres espera la transaccion duena de la fila, no la fila.
+    targets: list[str] | None = None
+
     # MySQL: record | table. Postgres: el tipo de objeto sobre el que espera
     # (transactionid, tuple, relation, ...).
     lock_type: str | None = None
@@ -185,8 +207,7 @@ class DeadlockLock(BaseModel):
     # Identificadores fisicos del recurso, nunca datos de la fila: MySQL
     # "space:page:heap" de cada registro (o "table" en un bloqueo de tabla);
     # Postgres el objeto tal como lo escribe el informe ("transaction 67257",
-    # "tuple (0,1) of relation 16384"). Dos bloqueos sobre el mismo recurso
-    # comparten un elemento.
+    # "tuple (0,1) of relation 16384").
     resources: list[str] = Field(default_factory=list)
 
 
@@ -198,8 +219,9 @@ class DeadlockTransaction(BaseModel):
     query_id: QueryId = None
     # La sentencia que esperaba, sin literales. El texto real nunca viaja.
     canonic_query: str | None = None
-    # Solo MySQL: Postgres no informa los bloqueos que mantiene cada proceso.
-    holds: list[DeadlockLock] = Field(default_factory=list)
+    # None: el motor no informa lo que mantiene (Postgres). [] seria que no
+    # mantiene nada.
+    holds: list[DeadlockLock] | None = None
     waits_for: DeadlockLock | None = None
     # process_id de las transacciones del ciclo que retienen lo que espera.
     blocked_by: list[int] = Field(default_factory=list)

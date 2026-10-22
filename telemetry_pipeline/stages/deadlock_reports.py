@@ -19,6 +19,10 @@ la linea y CONTEXT da la tabla de su espera.
 
 MySQL (seccion LATEST DETECTED DEADLOCK de SHOW ENGINE INNODB STATUS): por
 transaccion, que mantiene y que espera, con indice, modo y registro.
+
+Cada bloqueo sale con el vocabulario comun del contrato (mode, scope,
+targets) ademas del crudo del motor: los detectores leen solo el comun, y un
+motor nuevo solo necesita su parser. Lo que el motor no informa queda en None.
 """
 import re
 from datetime import datetime
@@ -44,6 +48,32 @@ _PG_TRANSACTION_RE = re.compile(r"^transaction (\d+)")
 _PG_CONTEXT_TABLE_RE = re.compile(r'tuple \(\d+,\d+\) in relation "((?:[^"]|"")+)"')
 _PG_OF_DATABASE_RE = re.compile(r" of database \d+$")
 
+# Modo comun de cada modo de pg_locks segun sobre que se pide. Los que no
+# tienen equivalente (ShareUpdateExclusiveLock, ShareRowExclusiveLock) quedan
+# en None.
+_PG_RELATION_MODES = {
+    "AccessShareLock": "IS",
+    "RowShareLock": "IS",
+    "RowExclusiveLock": "IX",
+    "ShareLock": "S",
+    "ExclusiveLock": "X",
+    "AccessExclusiveLock": "X",
+}
+# El bloqueo de tupla con que Postgres ordena la cola de una fila: FOR KEY
+# SHARE y FOR SHARE lo piden en AccessShare y RowShare, FOR NO KEY UPDATE y
+# FOR UPDATE en Exclusive y AccessExclusive.
+_PG_TUPLE_MODES = {
+    "AccessShareLock": "S",
+    "RowShareLock": "S",
+    "ExclusiveLock": "X",
+    "AccessExclusiveLock": "X",
+}
+_PG_OTHER_MODES = {"ShareLock": "S", "ExclusiveLock": "X"}
+
+_PG_WRITE_RE = re.compile(r"^(UPDATE|DELETE|INSERT|MERGE)\b")
+_PG_FOR_UPDATE_RE = re.compile(r"\bFOR (NO KEY )?UPDATE\b")
+_PG_FOR_SHARE_RE = re.compile(r"\bFOR (KEY )?SHARE\b")
+
 
 def parse_postgres_deadlock(record: dict) -> dict:
     """Una linea jsonlog con state_code 40P01. detected_at queda con el
@@ -51,7 +81,9 @@ def parse_postgres_deadlock(record: dict) -> dict:
     puede preguntarle al servidor por la zona.
 
     Las esperas sobre una relacion traen relation_oid: el stage lo resuelve a
-    nombre con pg_class y lo quita."""
+    nombre con pg_class y lo quita. Las esperas de fila traen row_key cuando
+    la sentencia dice que fila toca: el stage lo convierte en targets y lo
+    quita."""
     waits: dict[int, dict] = {}
     statements: dict[int, str] = {}
     current = None
@@ -87,19 +119,28 @@ def parse_postgres_deadlock(record: dict) -> dict:
 
     victim = record.get("pid")
     context_table = _pg_context_table(record.get("context"))
+    # (columna, literal) -> token, compartido por todo el informe
+    tokens: dict[tuple[str, str], str] = {}
     for pid, wait in waits.items():
         canonic = canonicalize_query(statements.get(pid), "postgres") if pid in statements else None
-        lock = _pg_lock(wait["lock_mode"], wait["target"])
+        lock = _pg_lock(wait["lock_mode"], wait["target"], canonic)
         if lock.get("table_name") is None and lock.get("relation_oid") is None:
             # Postgres espera la fila sobre el transactionid de quien la tiene:
             # la tabla sale del CONTEXT (solo la victima) o de su sentencia
             lock["table_name"] = (context_table if pid == victim else None) or statement_table(canonic)
+        if lock["lock_type"] == "transactionid" and pid in statements:
+            row_key = pg_row_key(statements[pid], tokens)
+            if row_key is not None:
+                # el rol de la linea es el de la victima: para la otra se
+                # asume la misma aplicacion. Lo usa el stage para el search_path
+                lock["row_key"] = {**row_key, "role": record.get("user")}
         report["transactions"].append({
             "process_id": pid,
             "transaction_id": str(record["txid"]) if pid == victim and record.get("txid") else None,
             "query_id": record.get("query_id") if pid == victim else None,
             "canonic_query": canonic,
-            "holds": [],
+            # el log no dice que mantiene cada proceso
+            "holds": None,
             "waits_for": lock,
             "blocked_by": [wait["blocked_by"]],
             "victim": pid == victim,
@@ -107,23 +148,133 @@ def parse_postgres_deadlock(record: dict) -> dict:
     return report
 
 
-def _pg_lock(lock_mode: str, target: str) -> dict:
+def _pg_lock(lock_mode: str, target: str, canonic_query: str | None = None) -> dict:
     target = _PG_OF_DATABASE_RE.sub("", target)
     lock = {"lock_mode": lock_mode, "resources": [target]}
     tuple_match = _PG_TUPLE_RE.match(target)
     relation_match = _PG_RELATION_RE.match(target)
     if tuple_match:
         lock.update(lock_type="tuple", relation_oid=int(tuple_match.group(3)))
+        lock.update(mode=_PG_TUPLE_MODES.get(lock_mode), scope="row", targets=[target])
     elif relation_match:
         lock.update(lock_type="relation", relation_oid=int(relation_match.group(1)))
+        lock.update(mode=_PG_RELATION_MODES.get(lock_mode), scope="table", targets=[target])
     elif _PG_TRANSACTION_RE.match(target):
+        # La espera de una fila: el ShareLock es sobre la transaccion que la
+        # tiene, no dice que fila ni en que modo se pide. El modo sale de la
+        # sentencia que espera; la fila no se sabe.
         lock["lock_type"] = "transactionid"
+        lock.update(mode=statement_lock_mode(canonic_query), scope="row", targets=None)
     elif target.startswith("virtual transaction"):
+        # espera a que termine otra transaccion (CREATE INDEX CONCURRENTLY...)
         lock["lock_type"] = "virtualxid"
+        lock.update(mode=None, scope="other", targets=None)
     else:
         # advisory lock [..], page N of relation, extension of relation, object ...
         lock["lock_type"] = target.split(" ", 1)[0]
+        lock.update(mode=_PG_OTHER_MODES.get(lock_mode), scope="other", targets=[target])
     return lock
+
+
+def statement_lock_mode(canonic_query: str | None) -> str | None:
+    """El modo de fila que pide la sentencia: X para las que modifican y FOR
+    [NO KEY] UPDATE, S para FOR [KEY] SHARE."""
+    if not canonic_query or canonic_query == "Not available":
+        return None
+    if _PG_WRITE_RE.match(canonic_query) or _PG_FOR_UPDATE_RE.search(canonic_query):
+        return "X"
+    if _PG_FOR_SHARE_RE.search(canonic_query):
+        return "S"
+    return None
+
+
+def pg_row_key(statement: str, tokens: dict[tuple[str, str], str]) -> dict | None:
+    """Que fila toca la sentencia segun su WHERE: la tabla y las igualdades
+    columna = literal del AND de primer nivel. El log no dice que fila espera
+    cada proceso; esto es lo unico del informe que la identifica, y solo si la
+    sentencia trae los valores escritos (con $1 no hay de donde sacarlos).
+
+    Ningun literal sale de aca: cada valor se reemplaza por un token (v1,
+    v2...) que se comparte entre las sentencias del mismo informe, asi que dos
+    sentencias con id = 1 llevan el mismo token sin decir cual es el valor.
+    Que las columnas identifiquen una sola fila lo decide el stage."""
+    try:
+        ast = sqlglot.parse_one(statement, read="postgres")
+    except Exception:
+        return None
+    if isinstance(ast, exp.Update):
+        if ast.args.get("from_"):
+            return None
+        table = ast.this
+    elif isinstance(ast, exp.Delete):
+        if ast.args.get("using"):
+            return None
+        table = ast.this
+    elif isinstance(ast, exp.Select) and ast.args.get("locks"):
+        if ast.args.get("joins") or not ast.args.get("from_"):
+            return None
+        table = ast.args["from_"].this
+    else:
+        return None
+    where = ast.args.get("where")
+    if not isinstance(table, exp.Table) or where is None:
+        return None
+
+    names = {table.name, table.alias_or_name}
+    values = {}
+    for condition in _conjuncts(where.this):
+        pair = _column_equals_literal(condition, names)
+        if pair is not None:
+            column, literal = pair
+            values[column] = tokens.setdefault((column, literal), f"v{len(tokens) + 1}")
+    if not values:
+        return None
+    schema = table.args.get("db")
+    return {
+        "schema": _pg_identifier(schema) if schema else None,
+        "table": _pg_identifier(table.this),
+        "values": values,
+    }
+
+
+def _pg_identifier(identifier: exp.Identifier) -> str:
+    """Como lo guarda pg_catalog: sin comillas Postgres lo pasa a minusculas."""
+    return identifier.name if identifier.quoted else identifier.name.lower()
+
+
+def _conjuncts(node):
+    if isinstance(node, exp.Paren):
+        yield from _conjuncts(node.this)
+    elif isinstance(node, exp.And):
+        yield from _conjuncts(node.this)
+        yield from _conjuncts(node.expression)
+    else:
+        yield node
+
+
+def _column_equals_literal(node, table_names: set[str]) -> tuple[str, str] | None:
+    if not isinstance(node, exp.EQ):
+        return None
+    for column, value in ((node.this, node.expression), (node.expression, node.this)):
+        if not isinstance(column, exp.Column) or (column.table and column.table not in table_names):
+            continue
+        literal = _literal(value)
+        if literal is None:
+            continue
+        return _pg_identifier(column.this), literal
+    return None
+
+
+def _literal(node) -> str | None:
+    """'1' y 1 son el mismo valor para la fila: se compara el texto. Un $1
+    (Parameter) no es literal."""
+    if isinstance(node, exp.Cast):
+        node = node.this
+    if isinstance(node, exp.Neg) and isinstance(node.this, exp.Literal) and not node.this.is_string:
+        return f"-{node.this.this}"
+    if isinstance(node, exp.Literal):
+        return node.this
+    return None
 
 
 def _pg_context_table(context: str | None) -> str | None:
@@ -296,7 +447,29 @@ def _innodb_locks(lines: list[str]) -> list[dict]:
         # el resto (n_fields, el volcado hex de cada campo) son datos de la fila: se descarta
     for lock in locks:
         lock.pop("_page", None)
+        lock.update(innodb_canonical(lock["lock_type"], lock["lock_mode"]))
+        # el registro o la tabla ya es la identidad fisica del recurso
+        lock["targets"] = list(lock["resources"]) or None
     return locks
+
+
+def innodb_canonical(lock_type: str, lock_mode: str) -> dict:
+    """'X,REC_NOT_GAP' de un registro -> mode X, scope row. Sin sufijo un
+    bloqueo de registro es next-key: la fila y el hueco anterior."""
+    mode, *flags = lock_mode.split(",")
+    canonical_mode = mode if mode in ("S", "X", "IS", "IX") else None
+    if lock_type == "table":
+        # AUTO-INC no es S ni X: queda sin modo
+        return {"mode": canonical_mode, "scope": "table"}
+    if "INSERT_INTENTION" in flags:
+        scope = "insert_intention"
+    elif "GAP" in flags:
+        scope = "gap"
+    elif "REC_NOT_GAP" in flags:
+        scope = "row"
+    else:
+        scope = "row+gap"
+    return {"mode": canonical_mode, "scope": scope}
 
 
 def innodb_lock_mode(text: str) -> str:

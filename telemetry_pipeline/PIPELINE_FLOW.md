@@ -57,6 +57,10 @@ run_engine(dialect, connection_factory, db_id)                  main.py
   │     │              performance_schema.error_log MY-012468 (cada uno, sin detalle)
   │     │     stages/deadlock_reports.py los traduce al modelo canónico: solo
   │     │     canonic_query y direcciones físicas (space:page:heap), nunca literales
+  │     │     Postgres: el log no dice qué fila espera cada proceso. Si la sentencia
+  │     │       trae sus valores escritos y cubren un índice único (pg_index), las
+  │     │       filas se etiquetan "row 1", "row 2"… dentro del informe (misma
+  │     │       etiqueta = misma fila); con $1 quedan sin identificar (targets None)
   │     │     stats["deadlocks"] = [DeadlockReport]
   │     │     sin fuente → rollback, DEADLOCK_REPORTS_UNAVAILABLE
   │     │     fuente parcial → DEADLOCK_REPORTS_PARTIAL

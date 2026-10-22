@@ -13,7 +13,7 @@ from querylens_contract import DeadlockReport
 from health.report import HealthReport
 from stages import pg_log
 from stages.auto_explain import AutoExplainStage
-from stages.deadlocks import LOOKBACK_S, DeadlocksStage
+from stages.deadlocks import LOOKBACK_S, DeadlocksStage, search_path_schemas
 from stages.pg_log import PgLogTail
 
 pytestmark = pytest.mark.unit
@@ -103,8 +103,14 @@ def _pg_records():
     return [json.loads(line) for line in (GOLDEN / "postgres_40p01.jsonl").read_text().splitlines()]
 
 
-def _pg_conn(files, settings=None, relations=(), fail=None):
-    """files: [(name, bytes, modification)] del mas nuevo al mas viejo."""
+# la tabla de los fixtures y su clave primaria
+CUENTAS = {"schema_name": "public", "table_name": "ql_ct01_cuentas", "table_oid": 16384}
+CUENTAS_PK = {"table_oid": 16384, "index_oid": 16390, "columns": ["id"]}
+
+
+def _pg_conn(files, settings=None, relations=(), fail=None, tables=(CUENTAS,), unique_keys=(CUENTAS_PK,), paths=None):
+    """files: [(name, bytes, modification)] del mas nuevo al mas viejo.
+    paths: rol -> fila de PG_ROLE_SEARCH_PATH_SQL."""
     settings = {
         "log_error_verbosity": "default",
         "log_min_messages": "warning",
@@ -133,8 +139,14 @@ def _pg_conn(files, settings=None, relations=(), fail=None):
         ]),
         ("querylens.read_log", read_log),
         ("unnest(CAST(:raw", timestamps),
-        ("pg_catalog.pg_class", lambda p: [row for row in relations if row["oid"] in p["oids"]]),
+        ("c.oid = ANY(CAST(:oids", lambda p: [row for row in relations if row["oid"] in p["oids"]]),
+        ("c.relname = ANY(CAST(:tables", lambda p: [row for row in tables if row["table_name"] in p["tables"]]),
+        ("pg_db_role_setting", lambda p: [(paths or {}).get(p["role"], _NO_PATHS)]),
+        ("pg_catalog.pg_index", lambda p: [row for row in unique_keys if row["table_oid"] in p["oids"]]),
     ])
+
+
+_NO_PATHS = {"role_database": None, "role_only": None, "database_only": None, "server": None}
 
 
 def test_postgres_reads_deadlocks_from_the_log_window():
@@ -308,6 +320,210 @@ def test_postgres_does_not_name_relations_of_another_database():
     assert lock.get("table_name") is None
     assert "relation_oid" not in lock
     assert not any("pg_catalog.pg_class" in sql for sql in conn.sent)
+
+
+def _row_record(*statements, dbname="ql_demo", user="app_user"):
+    """Un 40P01 de dos procesos que esperan filas, con estas sentencias."""
+    first, second = statements
+    return {
+        "timestamp": "2026-10-22 00:46:05.000 UTC",
+        "pid": 10,
+        "dbname": dbname,
+        "user": user,
+        "state_code": "40P01",
+        "detail": (
+            "Process 10 waits for ShareLock on transaction 2; blocked by process 11.\n"
+            "Process 11 waits for ShareLock on transaction 1; blocked by process 10.\n"
+            f"Process 10: {first}\n"
+            f"Process 11: {second}"
+        ),
+    }
+
+
+def _targets(report):
+    return [trx["waits_for"]["targets"] for trx in report["transactions"]]
+
+
+def test_postgres_rows_are_labeled_from_the_literals_of_the_statements():
+    ct01, ct02 = _pg_records()
+    conn = _pg_conn([("postgresql-Thu.json", _pg_log(ct01, ct02), PG_NOW)])
+
+    first, second = _run("postgres", conn)
+
+    # CT-01: id=2 e id=1, filas distintas. CT-02: id=1 las dos
+    assert _targets(first) == [["row 1"], ["row 2"]]
+    assert _targets(second) == [["row 1"], ["row 1"]]
+    dumped = json.dumps([first, second])
+    assert "row_key" not in dumped
+    for literal in ("id=1", "id=2", "saldo=saldo", '"v1"'):
+        assert literal not in dumped, literal
+
+
+def test_postgres_rows_without_a_unique_key_are_not_labeled():
+    ct01, ct02 = _pg_records()
+    conn = _pg_conn([("postgresql-Thu.json", _pg_log(ct01, ct02), PG_NOW)], unique_keys=())
+
+    for report in _run("postgres", conn):
+        assert _targets(report) == [None, None]
+        assert "row_key" not in json.dumps(report)
+
+
+def test_postgres_prepared_statements_leave_the_row_unknown():
+    record = _row_record("UPDATE ql_ct01_cuentas SET saldo = $1 WHERE id = $2;", "UPDATE ql_ct01_cuentas SET saldo = $1 WHERE id = $2;")
+    conn = _pg_conn([("postgresql-Thu.json", _pg_log(record), PG_NOW)])
+
+    (report,) = _run("postgres", conn)
+
+    assert _targets(report) == [None, None]
+    assert not any("pg_catalog.pg_index" in sql for sql in conn.sent)
+
+
+def test_postgres_one_unknown_row_leaves_the_whole_report_unlabeled():
+    record = _row_record("UPDATE ql_ct01_cuentas SET saldo = 1 WHERE id = 1;", "UPDATE ql_ct01_cuentas SET saldo = $1 WHERE id = $2;")
+    conn = _pg_conn([("postgresql-Thu.json", _pg_log(record), PG_NOW)])
+
+    (report,) = _run("postgres", conn)
+
+    assert _targets(report) == [None, None]
+    assert "row_key" not in json.dumps(report)
+
+
+def test_postgres_the_same_table_by_two_unique_keys_is_not_compared():
+    record = _row_record(
+        "UPDATE ql_ct01_cuentas SET saldo = 1 WHERE id = 1;",
+        "UPDATE ql_ct01_cuentas SET saldo = 1 WHERE numero = 'A-1';",
+    )
+    by_number = {**CUENTAS_PK, "index_oid": 16391, "columns": ["numero"]}
+    conn = _pg_conn([("postgresql-Thu.json", _pg_log(record), PG_NOW)], unique_keys=(CUENTAS_PK, by_number))
+
+    (report,) = _run("postgres", conn)
+
+    assert _targets(report) == [None, None]
+
+
+def test_postgres_composite_unique_key_needs_all_its_columns():
+    composite = {**CUENTAS_PK, "columns": ["banco", "id"]}
+    covered = _row_record(
+        "UPDATE ql_ct01_cuentas SET saldo = 1 WHERE banco = 7 AND id = 1;",
+        "UPDATE ql_ct01_cuentas SET saldo = 2 WHERE id = 1 AND banco = 7 AND saldo > 0;",
+    )
+    partial = _row_record("UPDATE ql_ct01_cuentas SET saldo = 1 WHERE id = 1;", "UPDATE ql_ct01_cuentas SET saldo = 2 WHERE id = 1;")
+    partial["timestamp"] = "2026-10-22 00:46:06.000 UTC"
+    conn = _pg_conn([("postgresql-Thu.json", _pg_log(covered, partial), PG_NOW)], unique_keys=(composite,))
+
+    first, second = _run("postgres", conn)
+
+    assert _targets(first) == [["row 1"], ["row 1"]]
+    assert _targets(second) == [None, None]
+
+
+def _schemas_record(first, second, user="app_user"):
+    return _row_record(
+        f"UPDATE {first} SET saldo = 1 WHERE id = 1;", f"UPDATE {second} SET saldo = 2 WHERE id = 1;", user=user,
+    )
+
+
+VENTAS = {"schema_name": "ventas", "table_name": "ql_ct01_cuentas", "table_oid": 20000}
+VENTAS_PK = {"table_oid": 20000, "index_oid": 20001, "columns": ["id"]}
+
+
+def test_postgres_table_found_in_another_schema_without_the_search_path():
+    # la sentencia no dice el esquema y la tabla solo existe en "ventas"
+    conn = _pg_conn(
+        [("postgresql-Thu.json", _pg_log(_schemas_record("ql_ct01_cuentas", "ql_ct01_cuentas")), PG_NOW)],
+        tables=(VENTAS,), unique_keys=(VENTAS_PK,),
+    )
+
+    (report,) = _run("postgres", conn)
+
+    assert _targets(report) == [["row 1"], ["row 1"]]
+    assert not any("pg_db_role_setting" in sql for sql in conn.sent)
+
+
+def test_postgres_qualified_table_picks_its_schema():
+    conn = _pg_conn(
+        [("postgresql-Thu.json", _pg_log(_schemas_record("ventas.ql_ct01_cuentas", "public.ql_ct01_cuentas")), PG_NOW)],
+        tables=(CUENTAS, VENTAS), unique_keys=(CUENTAS_PK, VENTAS_PK),
+    )
+
+    (report,) = _run("postgres", conn)
+
+    # mismo id en dos tablas distintas: filas distintas
+    assert _targets(report) == [["row 1"], ["row 2"]]
+
+
+@pytest.mark.parametrize("path_row, expected", [
+    # ALTER ROLE app_user SET search_path = ventas, public
+    ({**_NO_PATHS, "role_only": "search_path=ventas, public"}, 20000),
+    # el de rol y base gana al de solo rol
+    ({**_NO_PATHS, "role_database": "search_path=public", "role_only": "search_path=ventas"}, 16384),
+    # "$user" es el rol: hay un esquema que se llama como el rol
+    ({**_NO_PATHS, "server": 'search_path="$user", public'}, 30000),
+    # sin nada configurado: el valor por defecto del servidor
+    (_NO_PATHS, 30000),
+])
+def test_postgres_ambiguous_table_uses_the_search_path_of_the_role(path_row, expected):
+    own = {"schema_name": "app_user", "table_name": "ql_ct01_cuentas", "table_oid": 30000}
+    keys = [CUENTAS_PK, VENTAS_PK, {"table_oid": 30000, "index_oid": 30001, "columns": ["id"]}]
+    conn = _pg_conn(
+        [("postgresql-Thu.json", _pg_log(_schemas_record("ql_ct01_cuentas", "ql_ct01_cuentas")), PG_NOW)],
+        tables=(CUENTAS, VENTAS, own), unique_keys=keys, paths={"app_user": path_row},
+    )
+
+    (report,) = _run("postgres", conn)
+
+    assert _targets(report) == [["row 1"], ["row 1"]]
+    index_query = next(params for sql, params in zip(conn.sent, conn.params, strict=True) if "pg_catalog.pg_index" in sql)
+    assert index_query["oids"] == [expected]
+
+
+def test_postgres_ambiguous_table_outside_the_search_path_is_not_labeled():
+    conn = _pg_conn(
+        [("postgresql-Thu.json", _pg_log(_schemas_record("ql_ct01_cuentas", "ql_ct01_cuentas")), PG_NOW)],
+        tables=(CUENTAS, VENTAS), unique_keys=(CUENTAS_PK, VENTAS_PK),
+        paths={"app_user": {**_NO_PATHS, "role_only": "search_path=otro"}},
+    )
+
+    (report,) = _run("postgres", conn)
+
+    assert _targets(report) == [None, None]
+    assert not any("pg_catalog.pg_index" in sql for sql in conn.sent)
+
+
+def test_postgres_unknown_table_is_not_labeled():
+    conn = _pg_conn(
+        [("postgresql-Thu.json", _pg_log(_schemas_record("ql_ct01_cuentas", "ql_ct01_cuentas")), PG_NOW)],
+        tables=(),
+    )
+
+    (report,) = _run("postgres", conn)
+
+    assert _targets(report) == [None, None]
+
+
+@pytest.mark.parametrize("value, schemas", [
+    ('"$user", public', ["app_user", "public"]),
+    ("ventas,PUBLIC", ["ventas", "public"]),
+    ('"Mi Esquema", "con""comilla"', ["Mi Esquema", 'con"comilla']),
+    ("$user", ["app_user"]),
+    ("", []),
+])
+def test_search_path_schemas(value, schemas):
+    assert search_path_schemas(value, "app_user") == schemas
+
+
+def test_postgres_rows_of_another_database_are_not_labeled():
+    record = _row_record(
+        "UPDATE ql_ct01_cuentas SET saldo = 1 WHERE id = 1;", "UPDATE ql_ct01_cuentas SET saldo = 2 WHERE id = 1;",
+        dbname="otra_base",
+    )
+    conn = _pg_conn([("postgresql-Thu.json", _pg_log(record), PG_NOW)])
+
+    (report,) = _run("postgres", conn)
+
+    assert _targets(report) == [None, None]
+    assert "row_key" not in json.dumps(report)
+    assert not any("pg_catalog.pg_index" in sql for sql in conn.sent)
 
 
 def test_postgres_terse_verbosity_is_reported_as_partial():

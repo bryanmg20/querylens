@@ -71,6 +71,61 @@ PG_RELATIONS_SQL = text(
     """
 )
 
+# Tablas de los row_key por nombre, en todos los esquemas de la base: una
+# sentencia sin esquema se resuelve con el search_path de la aplicacion, que no
+# es el de la sesion del pipeline. Si el nombre esta en un solo esquema no hay
+# ambiguedad.
+PG_ROW_TABLES_SQL = text(
+    """
+    SELECT n.nspname AS schema_name, c.relname AS table_name, c.oid::bigint AS table_oid
+    FROM pg_catalog.pg_class c
+    JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relname = ANY(CAST(:tables AS text[]))
+      AND c.relkind IN ('r', 'p')
+      AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+      AND n.nspname NOT LIKE 'pg_toast%'
+    """
+)
+
+# search_path con que arranca una sesion del rol en esta base: el de ALTER
+# ROLE ... IN DATABASE ... SET, el del rol, el de la base o el del servidor,
+# en ese orden. El del servidor se lee de la sesion del pipeline solo si no
+# lo pisa algo del pipeline (su rol, su base o un SET).
+PG_ROLE_SEARCH_PATH_SQL = text(
+    """
+    SELECT
+      (SELECT cfg FROM pg_catalog.pg_db_role_setting s, unnest(s.setconfig) AS cfg
+       WHERE cfg LIKE 'search_path=%' AND s.setrole = r.oid AND s.setdatabase = d.oid) AS role_database,
+      (SELECT cfg FROM pg_catalog.pg_db_role_setting s, unnest(s.setconfig) AS cfg
+       WHERE cfg LIKE 'search_path=%' AND s.setrole = r.oid AND s.setdatabase = 0) AS role_only,
+      (SELECT cfg FROM pg_catalog.pg_db_role_setting s, unnest(s.setconfig) AS cfg
+       WHERE cfg LIKE 'search_path=%' AND s.setrole = 0 AND s.setdatabase = d.oid) AS database_only,
+      CASE WHEN st.source IN ('default', 'configuration file', 'command line', 'environment variable', 'override')
+           THEN 'search_path=' || st.setting END AS server
+    FROM pg_catalog.pg_database d
+    LEFT JOIN pg_catalog.pg_roles r ON r.rolname = :role
+    CROSS JOIN pg_catalog.pg_settings st
+    WHERE d.datname = current_database() AND st.name = 'search_path'
+    """
+)
+_PG_DEFAULT_SEARCH_PATH = 'search_path="$user", public'
+
+# Indices unicos de las tablas de los row_key: si las columnas del WHERE
+# cubren uno, la sentencia toca una sola fila. Los parciales y de expresiones
+# no cuentan.
+PG_UNIQUE_KEYS_SQL = text(
+    """
+    SELECT i.indrelid::bigint AS table_oid, i.indexrelid::bigint AS index_oid,
+           array_agg(a.attname::text ORDER BY a.attname) AS columns
+    FROM pg_catalog.pg_index i
+    JOIN pg_catalog.pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
+    WHERE i.indrelid = ANY(CAST(:oids AS oid[]))
+      AND i.indisunique AND i.indisvalid AND i.indpred IS NULL AND i.indexprs IS NULL
+    GROUP BY i.indrelid, i.indexrelid, i.indisprimary
+    ORDER BY i.indrelid, i.indisprimary DESC, i.indexrelid
+    """
+)
+
 # La sesion del pipeline esta en +00:00 (config/connections): LOGGED y NOW(6)
 # salen en UTC. INNODB STATUS escribe en la zona del sistema: el offset la
 # pasa a UTC.
@@ -155,6 +210,7 @@ class DeadlocksStage:
             kept.append(report)
 
         self._resolve_pg_relations(conn, kept, settings["database_name"])
+        self._label_pg_rows(conn, kept, settings["database_name"])
         # el log se lee del archivo mas nuevo al mas viejo; como en MySQL, por hora
         return sorted(kept, key=lambda report: report["detected_at"])
 
@@ -179,6 +235,67 @@ class DeadlocksStage:
             if name is not None:
                 lock["schema_name"] = name["schema_name"]
                 lock["table_name"] = name["table_name"]
+
+    def _label_pg_rows(self, conn, reports: list[dict], database_name: str) -> None:
+        """row_key -> targets ("row 1", "row 2"...): dos esperas con la misma
+        etiqueta son sobre la misma fila. Se etiqueta un informe solo si todas
+        sus esperas son de fila y cada una identifica su fila por un indice
+        unico de una tabla que se pudo resolver; si no, targets queda en None
+        y el detector no adivina."""
+        local = []
+        for report in reports:
+            locks = [trx["waits_for"] for trx in report["transactions"]]
+            keys = [lock.pop("row_key", None) for lock in locks]
+            if report["database_name"] == database_name and keys and all(keys):
+                local.append((locks, keys))
+        names = sorted({key["table"] for _, keys in local for key in keys})
+        if not names:
+            return
+
+        candidates: dict[str, list[tuple[str, int]]] = {}
+        for row in conn.execute(PG_ROW_TABLES_SQL.bindparams(tables=names)).mappings():
+            candidates.setdefault(row["table_name"], []).append((row["schema_name"], int(row["table_oid"])))
+        # el search_path solo hace falta para los nombres que estan en varios esquemas
+        ambiguous_roles = sorted({
+            key["role"] for _, keys in local for key in keys
+            if key["schema"] is None and len(candidates.get(key["table"], [])) > 1 and key["role"]
+        })
+        paths = {role: self._pg_search_path(conn, role) for role in ambiguous_roles}
+
+        resolved = [
+            (locks, keys, [_resolve_table(key, candidates.get(key["table"], []), paths.get(key["role"])) for key in keys])
+            for locks, keys in local
+        ]
+        oids = sorted({oid for _, _, table_oids in resolved for oid in table_oids if oid is not None})
+        if not oids:
+            return
+        unique: dict[int, list[tuple[int, list[str]]]] = {}
+        for row in conn.execute(PG_UNIQUE_KEYS_SQL.bindparams(oids=oids)).mappings():
+            unique.setdefault(int(row["table_oid"]), []).append((int(row["index_oid"]), list(row["columns"])))
+
+        for locks, keys, table_oids in resolved:
+            identities = [
+                _row_identity(key, oid, unique.get(oid, [])) if oid is not None else None
+                for key, oid in zip(keys, table_oids, strict=True)
+            ]
+            if not all(identities):
+                continue
+            # la misma tabla por dos indices distintos (id = 1 y email = 'x')
+            # puede ser la misma fila: no se puede comparar
+            indexes = {}
+            if any(indexes.setdefault(table, index) != index for table, index, _ in identities):
+                continue
+            labels: dict[tuple, str] = {}
+            for lock, identity in zip(locks, identities, strict=True):
+                lock["targets"] = [labels.setdefault(identity, f"row {len(labels) + 1}")]
+
+    def _pg_search_path(self, conn, role: str) -> list[str]:
+        row = next(iter(conn.execute(PG_ROLE_SEARCH_PATH_SQL.bindparams(role=role)).mappings()), None)
+        setting = next(
+            (row[column] for column in ("role_database", "role_only", "database_only", "server") if row and row[column]),
+            _PG_DEFAULT_SEARCH_PATH,
+        )
+        return search_path_schemas(setting.removeprefix("search_path="), role)
 
     # ------------------------------------------------------------- mysql
 
@@ -251,6 +368,68 @@ def _pg_deadlock_records(log: PgLogTail, conn, since: datetime) -> list[dict]:
             if isinstance(record, dict) and record.get("state_code") == "40P01":
                 records.append(record)
     return records
+
+
+def _resolve_table(key: dict, candidates: list[tuple[str, int]], search_path: list[str] | None) -> int | None:
+    """OID de la tabla del row_key. Con esquema, ese; sin esquema, la unica
+    con ese nombre o la primera del search_path de la aplicacion. Un SET
+    search_path de la sesion de la aplicacion no queda en ningun catalogo: si
+    el nombre esta en varios esquemas y el del rol no decide, no se resuelve."""
+    if key["schema"] is not None:
+        return next((oid for schema, oid in candidates if schema == key["schema"]), None)
+    if len(candidates) == 1:
+        return candidates[0][1]
+    for wanted in search_path or ():
+        oid = next((oid for schema, oid in candidates if schema == wanted), None)
+        if oid is not None:
+            return oid
+    return None
+
+
+def search_path_schemas(value: str, role: str | None) -> list[str]:
+    """'"$user", public, "Mi Esquema"' -> [role, 'public', 'Mi Esquema'].
+    Sin comillas Postgres pasa el nombre a minusculas; $user es el rol."""
+    items: list[tuple[str, bool]] = []
+    current, quoted, in_quotes = "", False, False
+    index = 0
+    while index < len(value):
+        char = value[index]
+        if in_quotes:
+            if char == '"' and value[index + 1:index + 2] == '"':
+                current += '"'
+                index += 1
+            elif char == '"':
+                in_quotes = False
+            else:
+                current += char
+        elif char == '"':
+            in_quotes, quoted = True, True
+        elif char == ",":
+            items.append((current, quoted))
+            current, quoted = "", False
+        elif not char.isspace():
+            current += char
+        index += 1
+    items.append((current, quoted))
+
+    schemas = []
+    for name, was_quoted in items:
+        name = name if was_quoted else name.lower()
+        if name == "$user":
+            if role:
+                schemas.append(role)
+        elif name:
+            schemas.append(name)
+    return schemas
+
+
+def _row_identity(key: dict, table_oid: int, indexes: list[tuple[int, list[str]]]) -> tuple | None:
+    """(tabla, indice, tokens de sus columnas) del primer indice unico que el
+    WHERE cubre entero, la clave primaria primero."""
+    for index_oid, columns in indexes:
+        if all(column in key["values"] for column in columns):
+            return table_oid, index_oid, tuple(key["values"][column] for column in columns)
+    return None
 
 
 def _iso(value: datetime) -> str:

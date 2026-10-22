@@ -2,7 +2,7 @@
 
 Una fila por db_id en public.contention_state. Guarda las raices que cumplieron
 la regla de CT-05 en la ultima muestra procesada y los abrazos mortales ya
-vistos (CT-01), y tambien los de la muestra anterior a esa: si el job se
+vistos (CT-01, CT-02), y tambien los de la muestra anterior a esa: si el job se
 reintenta (el hallazgo no llego a guardarse), se recalcula contra la misma
 muestra previa y sale el mismo resultado.
 """

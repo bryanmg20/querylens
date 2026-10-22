@@ -13,9 +13,12 @@ from querylens_contract import DeadlockReport
 
 from stages.deadlock_reports import (
     MAX_RESOURCES_PER_LOCK,
+    innodb_canonical,
     innodb_lock_mode,
     parse_innodb_status,
     parse_postgres_deadlock,
+    pg_row_key,
+    statement_lock_mode,
     statement_table,
 )
 
@@ -63,9 +66,13 @@ def test_innodb_ct01_both_transactions_hold_x_and_wait_on_the_other_record():
         "lock_type": "record",
         "lock_mode": "X,REC_NOT_GAP",
         "resources": ["12:4:2"],
+        "mode": "X",
+        "scope": "row",
+        "targets": ["12:4:2"],
     }]
     assert first["waits_for"]["resources"] == ["12:4:3"]
     assert first["waits_for"]["lock_mode"] == "X,REC_NOT_GAP"
+    assert (first["waits_for"]["mode"], first["waits_for"]["scope"]) == ("X", "row")
     assert second["holds"][0]["resources"] == ["12:4:3"]
     assert second["waits_for"]["resources"] == ["12:4:2"]
     # cada una espera el registro que la otra mantiene
@@ -80,7 +87,8 @@ def test_innodb_ct02_holds_shared_and_waits_exclusive_on_the_same_record():
     first, second = report["transactions"]
     assert first["holds"][0]["lock_mode"] == "S,REC_NOT_GAP"
     assert first["waits_for"]["lock_mode"] == "X,REC_NOT_GAP"
-    assert first["holds"][0]["resources"] == first["waits_for"]["resources"] == second["waits_for"]["resources"]
+    assert (first["holds"][0]["mode"], first["waits_for"]["mode"]) == ("S", "X")
+    assert first["holds"][0]["targets"] == first["waits_for"]["targets"] == second["waits_for"]["targets"]
     assert first["undo_log_entries"] == 0
     _no_raw_data(report)
 
@@ -161,6 +169,23 @@ def test_innodb_lock_modes_use_data_locks_names(text, expected):
     assert innodb_lock_mode(text) == expected
 
 
+@pytest.mark.parametrize("lock_type, lock_mode, mode, scope", [
+    ("record", "X,REC_NOT_GAP", "X", "row"),
+    ("record", "S,REC_NOT_GAP", "S", "row"),
+    # next-key: la fila y el hueco anterior
+    ("record", "X", "X", "row+gap"),
+    ("record", "S", "S", "row+gap"),
+    ("record", "X,GAP", "X", "gap"),
+    ("record", "X,GAP,INSERT_INTENTION", "X", "insert_intention"),
+    ("record", "X,INSERT_INTENTION", "X", "insert_intention"),
+    ("table", "IX", "IX", "table"),
+    ("table", "X", "X", "table"),
+    ("table", "AUTO-INC", None, "table"),
+])
+def test_innodb_locks_translate_to_the_common_vocabulary(lock_type, lock_mode, mode, scope):
+    assert innodb_canonical(lock_type, lock_mode) == {"mode": mode, "scope": scope}
+
+
 def test_innodb_table_lock():
     status = (
         "------------------------\nLATEST DETECTED DEADLOCK\n------------------------\n"
@@ -180,6 +205,7 @@ def test_innodb_table_lock():
     assert first["waits_for"] == {
         "schema_name": "db", "table_name": "b", "index_name": None,
         "lock_type": "table", "lock_mode": "X", "resources": ["table db.b"],
+        "mode": "X", "scope": "table", "targets": ["table db.b"],
     }
     assert first["blocked_by"] == [8]
     assert second["blocked_by"] == [7]
@@ -204,16 +230,34 @@ def test_postgres_ct01_from_the_server_log():
         "lock_mode": "ShareLock",
         "resources": ["transaction 67257"],
         "lock_type": "transactionid",
+        # el UPDATE pide la fila en X; el ShareLock es sobre la transaccion
+        "mode": "X",
+        "scope": "row",
+        # la fila no se sabe: se espera a la transaccion que la tiene
+        "targets": None,
         # del CONTEXT, que solo describe a la victima
         "table_name": "ql_ct01_cuentas",
+        "row_key": {"schema": None, "table": "ql_ct01_cuentas", "values": {"id": "v1"}, "role": "ql_user"},
     }
     assert victim["blocked_by"] == [797]
-    assert victim["holds"] == []
+    # el log no dice que mantiene cada proceso
+    assert victim["holds"] is None
     assert (other["process_id"], other["victim"], other["query_id"]) == (797, False, None)
     assert other["waits_for"]["resources"] == ["transaction 67256"]
     # de su sentencia: el CONTEXT no habla de ella
     assert other["waits_for"]["table_name"] == "ql_ct01_cuentas"
     assert other["canonic_query"] == "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2"
+    # la fila de cada uno, con tokens en lugar de los valores (id=2 e id=1)
+    assert victim["waits_for"]["row_key"]["values"] == {"id": "v1"}
+    assert other["waits_for"]["row_key"]["values"] == {"id": "v2"}
+    _no_raw_data(report)
+
+
+def test_postgres_ct02_rows_share_the_token():
+    report = parse_postgres_deadlock(_pg_records()[1])
+    keys = [trx["waits_for"]["row_key"] for trx in report["transactions"]]
+    assert keys[0] == keys[1]
+    assert keys[0]["values"] == {"id": "v1"}
     _no_raw_data(report)
 
 
@@ -242,10 +286,15 @@ def test_postgres_tuple_and_relation_waits_keep_the_oid_for_the_stage():
         "resources": ["tuple (0,1) of relation 16384"],
         "lock_type": "tuple",
         "relation_oid": 16384,
+        "mode": "X",
+        "scope": "row",
+        "targets": ["tuple (0,1) of relation 16384"],
     }
     assert other["waits_for"]["lock_type"] == "relation"
     assert other["waits_for"]["relation_oid"] == 16390
     assert other["waits_for"]["resources"] == ["relation 16390"]
+    assert (other["waits_for"]["mode"], other["waits_for"]["scope"]) == ("X", "table")
+    assert other["waits_for"]["targets"] == ["relation 16390"]
 
 
 def test_postgres_multiline_statement_is_canonicalized_whole():
@@ -280,3 +329,90 @@ def test_postgres_terse_log_without_detail_is_incomplete():
 ])
 def test_statement_table(canonic, table):
     assert statement_table(canonic) == table
+
+
+@pytest.mark.parametrize("canonic, mode", [
+    ("UPDATE cuentas SET saldo = $1 WHERE id = $2", "X"),
+    ("DELETE FROM cuentas WHERE id = $1", "X"),
+    ("INSERT INTO cuentas (id, saldo) VALUES ($1, $2)", "X"),
+    ("SELECT saldo FROM cuentas WHERE id = $1 FOR UPDATE", "X"),
+    ("SELECT saldo FROM cuentas WHERE id = $1 FOR NO KEY UPDATE", "X"),
+    ("SELECT saldo FROM cuentas WHERE id = $1 FOR SHARE", "S"),
+    ("SELECT saldo FROM cuentas WHERE id = $1 FOR KEY SHARE NOWAIT", "S"),
+    ("SELECT saldo FROM cuentas WHERE id = $1", None),
+    ("Not available", None),
+    (None, None),
+])
+def test_statement_lock_mode(canonic, mode):
+    assert statement_lock_mode(canonic) == mode
+
+
+def test_postgres_row_wait_takes_the_mode_of_its_statement():
+    record = {
+        "timestamp": "t", "pid": 10, "dbname": "d",
+        "detail": (
+            "Process 10 waits for ShareLock on transaction 2; blocked by process 11.\n"
+            "Process 11 waits for ShareLock on transaction 1; blocked by process 10.\n"
+            "Process 10: SELECT saldo FROM cuentas WHERE id = 7 FOR SHARE;\n"
+            "Process 11: CALL algo();"
+        ),
+    }
+    victim, other = parse_postgres_deadlock(record)["transactions"]
+    assert (victim["waits_for"]["mode"], victim["waits_for"]["scope"]) == ("S", "row")
+    # no se sabe que pide: queda sin modo, no se adivina
+    assert other["waits_for"]["mode"] is None
+
+
+@pytest.mark.parametrize("pg_mode, mode", [
+    ("AccessShareLock", "IS"),
+    ("RowShareLock", "IS"),
+    ("RowExclusiveLock", "IX"),
+    ("ShareLock", "S"),
+    ("ShareUpdateExclusiveLock", None),
+    ("ShareRowExclusiveLock", None),
+    ("ExclusiveLock", "X"),
+    ("AccessExclusiveLock", "X"),
+])
+def test_postgres_relation_modes(pg_mode, mode):
+    record = {
+        "timestamp": "t", "pid": 10, "dbname": "d",
+        "detail": (
+            f"Process 10 waits for {pg_mode} on relation 16390 of database 5; blocked by process 11.\n"
+            "Process 11 waits for AccessExclusiveLock on relation 16384 of database 5; blocked by process 10."
+        ),
+    }
+    lock = parse_postgres_deadlock(record)["transactions"][0]["waits_for"]
+    assert (lock["mode"], lock["scope"]) == (mode, "table")
+
+
+@pytest.mark.parametrize("statement, key", [
+    ("UPDATE t SET a = 1 WHERE id = 1", {"schema": None, "table": "t", "values": {"id": "v1"}}),
+    ("UPDATE public.t x SET a = 1 WHERE x.id = 1 AND (k = 'b' AND saldo >= 3)",
+     {"schema": "public", "table": "t", "values": {"id": "v1", "k": "v2"}}),
+    ('UPDATE "Ventas"."MiT" SET a = 1 WHERE "Id" = -3', {"schema": "Ventas", "table": "MiT", "values": {"Id": "v1"}}),
+    ("UPDATE T SET a = 1 WHERE ID = 1", {"schema": None, "table": "t", "values": {"id": "v1"}}),
+    ("UPDATE t SET a = 1 WHERE 1 = id", {"schema": None, "table": "t", "values": {"id": "v1"}}),
+    ("SELECT * FROM t WHERE id = '1'::int FOR SHARE", {"schema": None, "table": "t", "values": {"id": "v1"}}),
+    ("DELETE FROM t WHERE id = 1", {"schema": None, "table": "t", "values": {"id": "v1"}}),
+    # sin valores escritos, o sin una fila identificable por el WHERE
+    ("UPDATE t SET a = $1 WHERE id = $2", None),
+    ("UPDATE t SET a = 1 WHERE id = 1 OR id = 2", None),
+    ("UPDATE t SET a = 1 FROM u WHERE t.id = u.id AND t.id = 1", None),
+    ("DELETE FROM t USING u WHERE t.id = 1", None),
+    ("SELECT * FROM t WHERE id = 1", None),
+    ("SELECT * FROM t JOIN u ON t.id = u.id WHERE t.id = 1 FOR UPDATE", None),
+    ("UPDATE t SET a = 1", None),
+    ("UPDATE a SET x = 1 WHERE id = 1; UPDATE b SET x = 2 WHERE id = 2;", None),
+    ("SELECT transferir(1, 2)", None),
+])
+def test_pg_row_key(statement, key):
+    assert pg_row_key(statement, {}) == key
+
+
+def test_pg_row_key_tokens_are_shared_within_a_report():
+    tokens = {}
+    first = pg_row_key("UPDATE t SET a = 1 WHERE id = 7", tokens)
+    second = pg_row_key("UPDATE t SET a = 2 WHERE id = '7'", tokens)
+    third = pg_row_key("UPDATE t SET a = 3 WHERE id = 8", tokens)
+    assert first["values"] == second["values"] == {"id": "v1"}
+    assert third["values"] == {"id": "v2"}
