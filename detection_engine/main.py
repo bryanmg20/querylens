@@ -68,7 +68,7 @@ def process_job(engine: Engine, job: dict) -> list[Hallazgo]:
 
     # Corre las reglas y los reporta en logs y stdout
     findings = detect_all(snapshot, history=history, captured_at=captured_at)
-    # contencion (CT-05) con su propio estado; sus hallazgos se guardan con los demas
+    # contencion (CT-01, CT-05) con su propio estado; sus hallazgos se guardan con los demas
     findings += run_contention(engine, snapshot, fallback_captured_at=captured_at)
 
     logger.info(

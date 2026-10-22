@@ -1,7 +1,7 @@
 -- Estado del modulo de contencion (detection_engine/deadlocks): las raices de
 -- cascada de bloqueo (CT-05) que cumplieron la regla en la ultima muestra y en
--- la anterior. Una sola fila por db_id que se reemplaza en cada snapshot: CT-05
--- solo necesita comparar dos muestras consecutivas.
+-- la anterior, y los abrazos mortales ya procesados (CT-01). Una sola fila por
+-- db_id que se reemplaza en cada snapshot.
 
 CREATE TABLE IF NOT EXISTS public.contention_state (
     db_id TEXT PRIMARY KEY,
@@ -14,3 +14,10 @@ CREATE TABLE IF NOT EXISTS public.contention_state (
     prev_captured_at TIMESTAMPTZ,
     prev_roots JSONB NOT NULL DEFAULT '[]'
 );
+
+-- Abrazos mortales ya vistos y conteo por firma (DeadlockMemory):
+-- {"seen": {detected_at: firma}, "signatures": {firma: {count, first_seen_at, last_seen_at}}}.
+-- ADD COLUMN IF NOT EXISTS: la tabla ya existe en las bases creadas con CT-05.
+ALTER TABLE public.contention_state ADD COLUMN IF NOT EXISTS deadlocks JSONB NOT NULL DEFAULT '{}';
+-- lo mismo en la muestra anterior a captured_at, para recalcular un reintento
+ALTER TABLE public.contention_state ADD COLUMN IF NOT EXISTS prev_deadlocks JSONB NOT NULL DEFAULT '{}';
