@@ -1,0 +1,50 @@
+=====================================
+2026-10-22 16:24:23 140497241822784 INNODB MONITOR OUTPUT
+=====================================
+[...]
+------------------------
+LATEST DETECTED DEADLOCK
+------------------------
+2026-10-22 16:24:22 140497171510848
+*** (1) TRANSACTION:
+TRANSACTION 65074, ACTIVE 3 sec inserting
+mysql tables in use 1, locked 1
+LOCK WAIT 3 lock struct(s), heap size 1128, 2 row lock(s)
+MySQL thread id 433, OS thread handle 140497242879552, query id 4216 172.20.0.4 app_user update
+INSERT INTO ql_ct03_reservas VALUES (25, 3)
+
+*** (1) HOLDS THE LOCK(S):
+RECORD LOCKS space id 15 page no 4 n bits 72 index PRIMARY of table `ql_demo`.`ql_ct03_reservas` trx id 65074 lock_mode X
+Record lock, heap no 1 PHYSICAL RECORD: n_fields 1; compact format; info bits 0
+ 0: len 8; hex 73757072656d756d; asc supremum;;
+
+
+*** (1) WAITING FOR THIS LOCK TO BE GRANTED:
+RECORD LOCKS space id 15 page no 4 n bits 72 index PRIMARY of table `ql_demo`.`ql_ct03_reservas` trx id 65074 lock_mode X insert intention waiting
+Record lock, heap no 1 PHYSICAL RECORD: n_fields 1; compact format; info bits 0
+ 0: len 8; hex 73757072656d756d; asc supremum;;
+
+
+*** (2) TRANSACTION:
+TRANSACTION 65075, ACTIVE 2 sec inserting
+mysql tables in use 1, locked 1
+LOCK WAIT 3 lock struct(s), heap size 1128, 2 row lock(s)
+MySQL thread id 438, OS thread handle 140497240766016, query id 4217 172.20.0.4 app_user update
+INSERT INTO ql_ct03_reservas VALUES (26, 4)
+
+*** (2) HOLDS THE LOCK(S):
+RECORD LOCKS space id 15 page no 4 n bits 72 index PRIMARY of table `ql_demo`.`ql_ct03_reservas` trx id 65075 lock_mode X
+Record lock, heap no 1 PHYSICAL RECORD: n_fields 1; compact format; info bits 0
+ 0: len 8; hex 73757072656d756d; asc supremum;;
+
+
+*** (2) WAITING FOR THIS LOCK TO BE GRANTED:
+RECORD LOCKS space id 15 page no 4 n bits 72 index PRIMARY of table `ql_demo`.`ql_ct03_reservas` trx id 65075 lock_mode X insert intention waiting
+Record lock, heap no 1 PHYSICAL RECORD: n_fields 1; compact format; info bits 0
+ 0: len 8; hex 73757072656d756d; asc supremum;;
+
+*** WE ROLL BACK TRANSACTION (2)
+------------
+TRANSACTIONS
+------------
+[...]

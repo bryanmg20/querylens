@@ -3,7 +3,10 @@
 Los fixtures de golden/deadlocks/ se capturaron contra ql_mysql (8.0.46) y
 ql_postgres (17) con la inyeccion de la Tabla 3: dos sesiones actualizan las
 filas 1 y 2 en orden opuesto (CT-01), y dos sesiones leen la fila 1 con FOR
-SHARE y luego la actualizan (CT-02).
+SHARE y luego la actualizan (CT-02). Los de CT-03 y CT-04 son solo de MySQL:
+dos sesiones bloquean con FOR UPDATE una clave inexistente del mismo hueco y
+despues la insertan (entre dos filas y al final del indice), y un UPDATE sin
+indice que recorre la tabla choca con otro que tiene una de sus filas.
 """
 import json
 from pathlib import Path
@@ -90,6 +93,50 @@ def test_innodb_ct02_holds_shared_and_waits_exclusive_on_the_same_record():
     assert (first["holds"][0]["mode"], first["waits_for"]["mode"]) == ("S", "X")
     assert first["holds"][0]["targets"] == first["waits_for"]["targets"] == second["waits_for"]["targets"]
     assert first["undo_log_entries"] == 0
+    _no_raw_data(report)
+
+
+def test_innodb_ct03_holds_the_gap_and_waits_to_insert_into_it():
+    report = parse_innodb_status(_innodb("innodb_status_ct03.txt"))
+    DeadlockReport.model_validate(report)
+
+    assert report["complete"] is True
+    first, second = report["transactions"]
+    for trx in (first, second):
+        assert (trx["holds"][0]["mode"], trx["holds"][0]["scope"]) == ("X", "gap")
+        assert (trx["waits_for"]["mode"], trx["waits_for"]["scope"]) == ("X", "insert_intention")
+        # el hueco se identifica por el registro que lo cierra (la fila 20)
+        assert trx["holds"][0]["targets"] == trx["waits_for"]["targets"] == ["14:4:3"]
+        assert trx["canonic_query"] == "INSERT INTO ql_ct03_reservas VALUES ($1, $2)"
+    assert (first["blocked_by"], second["blocked_by"]) == ([423], [422])
+    _no_raw_data(report)
+    assert "(15, 3)" not in json.dumps(report)
+
+
+def test_innodb_ct03_gap_at_the_end_of_the_index_is_next_key_on_supremum():
+    # despues de la ultima fila InnoDB bloquea el supremum (heap 1) sin "gap
+    # before rec": queda como next-key, no como gap
+    report = parse_innodb_status(_innodb("innodb_status_ct03_supremum.txt"))
+    DeadlockReport.model_validate(report)
+
+    for trx in report["transactions"]:
+        assert trx["holds"][0]["scope"] == "row+gap"
+        assert trx["waits_for"]["scope"] == "insert_intention"
+        assert trx["holds"][0]["targets"] == trx["waits_for"]["targets"] == ["15:4:1"]
+
+
+def test_innodb_ct04_update_without_index_locks_the_scanned_rows():
+    report = parse_innodb_status(_innodb("innodb_status_ct04.txt"))
+    DeadlockReport.model_validate(report)
+
+    scanner, other = report["transactions"]
+    assert scanner["canonic_query"] == "UPDATE ql_ct04_pedidos SET estado = $1 WHERE cliente = $2"
+    assert (scanner["rows_locked"], scanner["undo_log_entries"]) == (150, 3)
+    assert len(scanner["holds"][0]["resources"]) == MAX_RESOURCES_PER_LOCK
+    # el cruce sale directo: lo que espera la otra (la fila 1) esta dentro del tope
+    assert other["waits_for"]["targets"] == ["16:4:2"]
+    assert (scanner["blocked_by"], other["blocked_by"]) == ([447], [448])
+    assert other["victim"] is True
     _no_raw_data(report)
 
 
