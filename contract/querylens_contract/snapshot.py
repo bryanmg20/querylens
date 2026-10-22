@@ -14,7 +14,7 @@ def _list_or_empty(value):
     return [] if value is None else value
 
 
-def _to_naive_utc(dt):
+def to_naive_utc(dt):
     """Aware datetime -> UTC naíve; naive se deja tal cual.
 
     Postgres entrega timestamptz en la zona de su sesión; MySQL entrega DATETIME
@@ -28,13 +28,13 @@ def _to_naive_utc(dt):
     return dt
 
 
-def _to_iso(value):
+def to_iso(value):
     if isinstance(value, datetime):
-        return _to_naive_utc(value).isoformat(sep=" ", timespec="microseconds")
+        return to_naive_utc(value).isoformat(sep=" ", timespec="microseconds")
     return value
 
 
-def _to_bool(value):
+def to_bool(value):
     if isinstance(value, str):
         normalized = value.strip().upper()
         if normalized == "GRANTED":
@@ -44,7 +44,7 @@ def _to_bool(value):
     return value
 
 
-def _to_int_list(value):
+def to_int_list(value):
     if value is None:
         return []
     if isinstance(value, str):
@@ -82,7 +82,7 @@ class StatementRow(BaseModel):
     # MySQL: SUM_SORT_MERGE_PASSES. Postgres: None (temp_blks_written, en
     # disk_spill_indicator, ya incluye los ordenamientos).
     sort_merge_passes: int | None = None
-    counters_epoch: Annotated[str | None, BeforeValidator(_to_iso)] = None
+    counters_epoch: Annotated[str | None, BeforeValidator(to_iso)] = None
     canonic_query: str | None = None
     # True cuando SnapshotPayload recorto query_text a MAX_STATEMENT_TEXT_CHARS.
     # Solo pasa en statements: los candidatos viajan con el texto completo.
@@ -99,7 +99,7 @@ class LockRow(BaseModel):
     database_name: str | None = None
     table_name: str | None = None
     lock_mode: str
-    is_granted: Annotated[bool, BeforeValidator(_to_bool)]
+    is_granted: Annotated[bool, BeforeValidator(to_bool)]
 
 
 class ActiveQueryRow(BaseModel):
@@ -108,13 +108,13 @@ class ActiveQueryRow(BaseModel):
     query_text: str | None = None
     query_id: QueryId
     canonic_query: str | None = None
-    transaction_start_time: Annotated[str | None, BeforeValidator(_to_iso)] = None
+    transaction_start_time: Annotated[str | None, BeforeValidator(to_iso)] = None
     # Vocabulario de pg_stat_activity.state ('active', 'idle in transaction', ...);
     # MySQL se traduce a ese mismo vocabulario en su query.
     session_state: str | None = None
     # Cuando empezo a esperar el lock que no le conceden; None si no espera.
-    wait_start_time: Annotated[str | None, BeforeValidator(_to_iso)] = None
-    blocking_pids: Annotated[list[int], BeforeValidator(_to_int_list)] = Field(
+    wait_start_time: Annotated[str | None, BeforeValidator(to_iso)] = None
+    blocking_pids: Annotated[list[int], BeforeValidator(to_int_list)] = Field(
         default_factory=list
     )
 
@@ -124,7 +124,7 @@ class IndexRow(BaseModel):
     table_name: str
     index_name: str
     index_scans: int | None = None
-    last_index_scan: Annotated[str | None, BeforeValidator(_to_iso)] = None
+    last_index_scan: Annotated[str | None, BeforeValidator(to_iso)] = None
     index_ref: str | None = None
     index_size_bytes: int | None = None
 
@@ -159,13 +159,13 @@ class ForeignKeyRow(BaseModel):
 
 
 class ServerStartRow(BaseModel):
-    server_start_time: Annotated[str | None, BeforeValidator(_to_iso)] = None
+    server_start_time: Annotated[str | None, BeforeValidator(to_iso)] = None
 
 
 class CaptureTimestampRow(BaseModel):
     """Hora del servidor al tomar el snapshot. Es la referencia para calcular
     antiguedades (transaction_start_time, wait_start_time) con el mismo reloj."""
-    captured_at: Annotated[str | None, BeforeValidator(_to_iso)] = None
+    captured_at: Annotated[str | None, BeforeValidator(to_iso)] = None
 
 
 class DeadlockLock(BaseModel):
@@ -218,7 +218,7 @@ class DeadlockReport(BaseModel):
     mismo informe llega en varios snapshots seguidos: el consumidor descarta
     los repetidos por detected_at y su contenido."""
     # Hora del servidor, en UTC, en que el motor detecto el ciclo.
-    detected_at: Annotated[str, BeforeValidator(_to_iso)]
+    detected_at: Annotated[str, BeforeValidator(to_iso)]
     # postgres_log | innodb_status | mysql_error_log
     source: str
     database_name: str | None = None

@@ -23,7 +23,7 @@ LOOKBACK_S segundos y el detector descarta los que ya vio.
 import json
 from datetime import datetime, timedelta
 
-from querylens_contract.snapshot import _to_naive_utc
+from querylens_contract.snapshot import to_naive_utc
 from sqlalchemy import text
 
 from health.report import HealthReport
@@ -277,7 +277,7 @@ class DeadlocksStage:
 
 
 def _naive(value: datetime) -> datetime:
-    return _to_naive_utc(value)
+    return to_naive_utc(value)
 
 
 def _iso(value: datetime) -> str:
