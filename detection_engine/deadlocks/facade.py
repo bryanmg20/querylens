@@ -13,6 +13,7 @@ from logger import get_logger
 from models import Hallazgo
 
 from .ct05_long_transaction_cascade import detect_long_transaction_cascade
+from .deadlock_detector import detect_deadlocks
 from .state import ensure_contention_state_table, load_contention_state, save_contention_state
 
 logger = get_logger(__name__)
@@ -58,10 +59,16 @@ def _run(engine: Engine, snapshot: SnapshotPayload, fallback_captured_at: dateti
         return []
 
     findings, roots = detect_long_transaction_cascade(snapshot, captured_at, previous)
-    save_contention_state(engine, snapshot.db_id, state.advance(captured_at, roots))
+    deadlock_findings, deadlocks = detect_deadlocks(snapshot, captured_at, state.deadlocks_for(captured_at))
+    save_contention_state(engine, snapshot.db_id, state.advance(captured_at, roots, deadlocks))
     if roots:
         logger.info(
             "  contencion | db_id=%s | raices en cascada=%d | hallazgos=%d",
             snapshot.db_id, len(roots), len(findings),
         )
-    return findings
+    if deadlock_findings:
+        logger.info(
+            "  contencion | db_id=%s | abrazos mortales=%s",
+            snapshot.db_id, ", ".join(f.antipatron for f in deadlock_findings),
+        )
+    return findings + deadlock_findings

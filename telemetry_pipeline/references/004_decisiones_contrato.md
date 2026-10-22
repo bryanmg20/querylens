@@ -113,7 +113,7 @@ MySQL resume las listas del digest: `IN (...)` y `VALUES (...) /* , ... */`. sql
 
 - Campo por statement (`str | None`, con `BeforeValidator` que normaliza a ISO) con el momento en que arrancó la ventana de contadores: Postgres `stats_since AS counters_epoch` (`collectors/postgres/queries.py`), MySQL `FIRST_SEEN AS counters_epoch` (`collectors/mysql/queries.py`); la normalización a ISO/UTC es común en `stages/normalize.py` (`EPOCH_FIELDS = ("counters_epoch", "minmax_epoch")`).
 - **Decisión: no se usa como gate de encolado.** `stats_since`/`FIRST_SEEN` casi no cambian (solo en reset, evict o restart de las stats), mientras los contadores cambian en cada snapshot: usarlo como "ya lo leí" dejaría silenciosas a las bases cuyos contadores se reinician. Por eso se encola siempre y la retención de mensajes ya leídos queda del lado del consumidor.
-- Volumen consecuencia de esa decisión, medido (2026-10-08, goldens regenerados con `ci/regenerate_goldens.py`, que imprime el tamaño del payload validado): **Postgres ~32 KB con 11 statements; MySQL ~22 KB con 10 statements** (~2–3 KB por statement adicional). A 8 640 snapshots/día/base a 10 s: ~280 MB/día/base en Postgres y ~190 MB/día/base en MySQL (sin consumidor, la cola crece sin cota; ver la receta de medición real en `PIPELINE_FLOW.md`).
+- Volumen consecuencia de esa decisión, medido (2026-10-08, goldens regenerados con `ci/regenerate_goldens.py`, que imprime el tamaño del payload validado): **Postgres ~32 KB con 11 statements; MySQL ~22 KB con 10 statements** (~2–3 KB por statement adicional). A 8 640 snapshots/día/base a 10 s: ~280 MB/día/base en Postgres y ~190 MB/día/base en MySQL (si el consumidor `detection_engine` se detiene, la cola crece sin cota; ver la receta de medición real en `PIPELINE_FLOW.md`).
 
 ## index_size_bytes: nivel tabla en MySQL
 
@@ -123,7 +123,7 @@ MySQL resume las listas del digest: `IN (...)` y `VALUES (...) /* , ... */`. sql
 ## server_start_timestamp: momento de arranque del servidor
 
 - Renombrado desde `stats_reset_timestamp`/`stats_reset` (ver CODE_REVIEW.md, hallazgo N-2): el valor NO es un reset de contadores. Postgres entrega `pg_postmaster_start_time()` y MySQL `now() - Uptime` — el instante en que arrancó el servidor de base de datos.
-- Sigue siendo `str | None` normalizado a ISO/UTC sin offset por `_to_iso`. Se conserva el shape de lista (una fila con un campo) para no tocar el contrato encolado más allá del nombre.
+- Sigue siendo `str | None` normalizado a ISO/UTC sin offset por `to_iso`. Se conserva el shape de lista (una fila con un campo) para no tocar el contrato encolado más allá del nombre.
 
 ## foreign_keys: relaciones para AP-06 (N+1)
 

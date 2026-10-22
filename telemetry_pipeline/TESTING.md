@@ -41,6 +41,7 @@ venv\Scripts\python -m pytest
 | `python -m pytest -v` | Verboso (funciones por nombre) |
 | `python -m pytest -k "mysql"` | Filtrar por palabra clave |
 | `python -m pytest --collect-only` | Listar tests sin ejecutarlos |
+| `ruff check telemetry_pipeline` | Lint (`telemetry_pipeline/ruff.toml`: imports sin usar, tests con excepciones ciegas, nombres redefinidos); lo corre el job `lint` |
 | `python main_sandbox.py` | Extrae el par postgres/mysql fijo del sandbox y encola en `analyze_job` |
 | `python main.py` | Extrae solo las bases registradas y activas en `registered_databases` |
 | `python runner.py` | Daemon: repite `main.py` cada `EXTRACT_INTERVAL_S` (10 s por defecto) |
@@ -73,7 +74,7 @@ docker exec querylens_db psql -U ql_user -d ql_demo \
 | Cadencia | `EXTRACT_INTERVAL_S` (default 10 s; vacío, 0, negativo o no numérico → 10 s con warning) |
 | Host/puerto de cada target | Sale de la fila de `registered_databases` (Fernet), no del env; `MONITOR_PG_*`/`MONITOR_MY_*` solo los usa `main_sandbox.py` |
 | Gate de encolado | **Ninguno**: se encola siempre. Retener/borrar los mensajes ya leídos de PGMQ es tarea del consumidor |
-| Cola | Solo produce: sin consumidor en `analyze_job` la cola crece (tamaño real por snapshot y receta de medición en `PIPELINE_FLOW.md`) |
+| Cola | Solo produce: el consumidor de `analyze_job` es `detection_engine`; si se detiene, la cola crece (tamaño real por snapshot y receta de medición en `PIPELINE_FLOW.md`) |
 | Fallo de ciclo | backoff 10 → 20 → 40 → 60 s (tope), y vuelve al intervalo normal al volver a correr bien; un target que no conecta no dispara backoff (lo aislaba `run_targets()`) |
 | Parada | `SIGINT`/`SIGTERM`/`SIGBREAK` → termina tras el ciclo en curso (`returncode 0`) |
 | Log | `logs/pipeline.log` (5 MB × 3): INFO/ERROR siempre, el detalle de cada ciclo a DEBUG |
@@ -84,6 +85,7 @@ docker exec querylens_db psql -U ql_user -d ql_demo \
 tests/
 ├── conftest.py                          # fixtures: mysql_snapshot, postgres_snapshot
 ├── golden/
+│   ├── deadlocks/                       # informes reales de abrazo mortal (InnoDB STATUS, log 40P01)
 │   ├── mysql_snapshot.json              # snapshot real capturado en MySQL
 │   └── postgres_snapshot.json           # snapshot real capturado en Postgres
 ├── test_architecture.py                 # patrones de diseño (contract)
@@ -92,6 +94,8 @@ tests/
 ├── test_collectors_explainable.py       # mark_explainable por motor (unit)
 ├── test_collect_stage.py                # CollectStage + fallos aislados (unit)
 ├── test_connections.py                  # conexiones env-driven (unit)
+├── test_deadlock_reports.py             # parsers de informes de abrazo mortal (unit)
+├── test_deadlocks_stage.py              # DeadlocksStage + ventana compartida del log (unit)
 ├── test_e2e_main.py                     # main_sandbox + main + cola PGMQ (integration)
 ├── test_enqueue.py                      # pgmq.send parametrizado (unit)
 ├── test_explain_normalizer.py           # normalizadores de plan (unit)
@@ -127,14 +131,15 @@ Si cambia el contrato del snapshot, los fixtures se regeneran capturando de nuev
 
 ## Integración continua
 
-`.github/workflows/pipeline.yml` define dos jobs:
+`.github/workflows/pipeline.yml` define tres jobs:
 
 | Job | Cuándo | Qué corre | Servicios |
 |-----|--------|-----------|-----------|
+| `lint` | cada push y PR | `ruff check telemetry_pipeline` (versión fijada en `requirements-dev.txt`) | ninguno |
 | `unit` | cada push y PR | `-m "not integration"` | ninguno |
 | `integration` | cada **push** (merge a cualquier rama) | suite completa | Postgres 17 + MySQL 8 + PGMQ |
 
-`unit` es el que bloquea el merge en PR. `integration` corre en cada push (cualquier rama) porque levanta tres motores y tarda; los PR solo corren `unit`.
+`lint` y `unit` son los que bloquean el merge en PR. `integration` corre en cada push (cualquier rama) porque levanta tres motores y tarda; los PR solo corren `unit`.
 
 ### Por qué las conexiones se parametrizaron
 
@@ -331,7 +336,7 @@ Los campos van en `null` cuando no hay dato; el script **no** rellena con ceros 
 
 | Archivo | Para quién | Contenido |
 |---------|------------|-----------|
-| `requirements.txt` | Runtime (correr el pipeline en un servidor) | sqlalchemy, psycopg2, pymysql, sqlglot, python-dotenv, pydantic |
-| `requirements-dev.txt` | Desarrollo (tests) | `-r requirements.txt` + `pytest` |
+| `requirements.txt` | Runtime (correr el pipeline en un servidor) | sqlalchemy, psycopg2, pymysql, sqlglot, python-dotenv, pydantic, cryptography, con rango `>=versión probada,<próxima mayor` |
+| `requirements-dev.txt` | Desarrollo (tests, lint) | `-r requirements.txt` + `pytest` + `ruff` |
 
 Pytest no vive en `requirements.txt` a propósito: un entorno que solo ejecuta el pipeline no debe instalar el runner de tests.

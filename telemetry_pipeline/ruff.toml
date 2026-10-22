@@ -1,0 +1,9 @@
+# Lint del pipeline (CI: job lint). Solo reglas que encuentran defectos, no
+# estilo: F (pyflakes: imports/variables sin usar, nombres redefinidos),
+# E9 (errores de sintaxis) y B (bugbear: excepciones ciegas en tests,
+# variables de bucle sin usar, defaults mutables).
+target-version = "py311"
+extend-exclude = ["venv", "logs"]
+
+[lint]
+select = ["F", "E9", "B"]

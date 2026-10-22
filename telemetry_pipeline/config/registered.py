@@ -19,15 +19,15 @@ from dataclasses import dataclass
 from typing import Callable
 
 from cryptography.fernet import Fernet, InvalidToken
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 from sqlalchemy.engine import Engine, URL
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
 from config.connections import (
     _make_url,
     get_connection_querylens_db,
-    mysql_connect_args,
-    postgres_connect_args,
+    mysql_engine,
+    postgres_engine,
 )
 from health import writer as health_writer
 from logger import get_logger
@@ -143,16 +143,7 @@ def _target_url(
 
 
 def _engine(dialect: str, url: URL) -> Engine:
-    if dialect == "mysql":
-        return create_engine(
-            url,
-            pool_size=1,
-            max_overflow=10,
-            pool_pre_ping=True,
-            echo=False,
-            connect_args=mysql_connect_args(),
-        )
-    return create_engine(url, connect_args=postgres_connect_args())
+    return mysql_engine(url) if dialect == "mysql" else postgres_engine(url)
 
 
 def load_registered_targets() -> list[Target] | None:

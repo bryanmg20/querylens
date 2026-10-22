@@ -10,6 +10,7 @@ Por eso cada test de esta archivo afirma sobre el valor ya convertido, no sobre
 que la llamada no levante excepcion.
 """
 import pytest
+from pydantic import ValidationError
 
 from datetime import datetime, timedelta, timezone
 
@@ -86,7 +87,7 @@ class TestListOrNone:
         """
         raw = _base()
         del raw["locks"]
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             SnapshotPayload.from_snapshot(raw)
 
     def test_collector_output_shape_is_accepted(self):
@@ -135,7 +136,7 @@ class TestStatementCanonicQuery:
         assert payload.statements[0].canonic_query is None
 
 class TestLockCoercion:
-    """_to_bool: InnoDB reporta el estado como texto, el contrato lo quiere bool."""
+    """to_bool: InnoDB reporta el estado como texto, el contrato lo quiere bool."""
 
     def test_granted_becomes_true(self):
         assert LockRow(process_id=1, lock_mode="X", is_granted="GRANTED").is_granted is True
@@ -160,7 +161,7 @@ class TestLockCoercion:
     def test_unknown_string_is_rejected(self):
         """Un estado que no es GRANTED ni WAITING no puede convertirse a False:
         seria indistinguible de un lock realmente en espera."""
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             LockRow(process_id=1, lock_mode="X", is_granted="UNKNOWN")
 
     def test_end_to_end_in_snapshot(self):
@@ -172,7 +173,7 @@ class TestLockCoercion:
 
 
 class TestBlockingPids:
-    """_to_int_list: pg_blocking_pids devuelve un csv de texto o null."""
+    """to_int_list: pg_blocking_pids devuelve un csv de texto o null."""
 
     @pytest.mark.parametrize(
         "raw,expected",
@@ -259,17 +260,17 @@ class TestValidationIsNotBypassed:
     validadores y dejaria pasar el snapshot sin convertir."""
 
     def test_wrong_statements_type_is_rejected(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             SnapshotPayload.from_snapshot(_base(statements={"not": "a list"}))
 
     def test_missing_required_field_is_rejected(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             SnapshotPayload.from_snapshot(_base(db_id=None))
 
     def test_unknown_physical_operation_is_rejected(self):
         """El Literal de PhysicalOperation es la parte que el fix del normalizer
         hizo cumplir: un tipo fuera del contrato no puede entrar."""
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             SnapshotPayload.from_snapshot(_base(canonic_explains=[{
                 "query_id": 1,
                 "canonical_plan": {
@@ -355,7 +356,7 @@ class TestForeignKeys:
         assert SnapshotPayload.from_snapshot(_base(foreign_keys=None)).foreign_keys == []
 
     def test_non_numeric_position_is_rejected(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             SnapshotPayload.from_snapshot(_base(foreign_keys=[self._row(position="first")]))
 
 

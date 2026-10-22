@@ -1,0 +1,62 @@
+=====================================
+2026-10-22 16:24:07 140497242879552 INNODB MONITOR OUTPUT
+=====================================
+[...]
+------------------------
+LATEST DETECTED DEADLOCK
+------------------------
+2026-10-22 16:24:06 140497171510848
+*** (1) TRANSACTION:
+TRANSACTION 65051, ACTIVE 3 sec inserting
+mysql tables in use 1, locked 1
+LOCK WAIT 3 lock struct(s), heap size 1128, 2 row lock(s)
+MySQL thread id 422, OS thread handle 140497243936320, query id 4088 172.20.0.4 app_user update
+INSERT INTO ql_ct03_reservas VALUES (15, 3)
+
+*** (1) HOLDS THE LOCK(S):
+RECORD LOCKS space id 14 page no 4 n bits 72 index PRIMARY of table `ql_demo`.`ql_ct03_reservas` trx id 65051 lock_mode X locks gap before rec
+Record lock, heap no 3 PHYSICAL RECORD: n_fields 4; compact format; info bits 0
+ 0: len 4; hex 80000014; asc     ;;
+ 1: len 6; hex 00000000fe16; asc       ;;
+ 2: len 7; hex 8200000119011d; asc        ;;
+ 3: len 4; hex 80000002; asc     ;;
+
+
+*** (1) WAITING FOR THIS LOCK TO BE GRANTED:
+RECORD LOCKS space id 14 page no 4 n bits 72 index PRIMARY of table `ql_demo`.`ql_ct03_reservas` trx id 65051 lock_mode X locks gap before rec insert intention waiting
+Record lock, heap no 3 PHYSICAL RECORD: n_fields 4; compact format; info bits 0
+ 0: len 4; hex 80000014; asc     ;;
+ 1: len 6; hex 00000000fe16; asc       ;;
+ 2: len 7; hex 8200000119011d; asc        ;;
+ 3: len 4; hex 80000002; asc     ;;
+
+
+*** (2) TRANSACTION:
+TRANSACTION 65052, ACTIVE 2 sec inserting
+mysql tables in use 1, locked 1
+LOCK WAIT 3 lock struct(s), heap size 1128, 2 row lock(s)
+MySQL thread id 423, OS thread handle 140497241822784, query id 4089 172.20.0.4 app_user update
+INSERT INTO ql_ct03_reservas VALUES (16, 4)
+
+*** (2) HOLDS THE LOCK(S):
+RECORD LOCKS space id 14 page no 4 n bits 72 index PRIMARY of table `ql_demo`.`ql_ct03_reservas` trx id 65052 lock_mode X locks gap before rec
+Record lock, heap no 3 PHYSICAL RECORD: n_fields 4; compact format; info bits 0
+ 0: len 4; hex 80000014; asc     ;;
+ 1: len 6; hex 00000000fe16; asc       ;;
+ 2: len 7; hex 8200000119011d; asc        ;;
+ 3: len 4; hex 80000002; asc     ;;
+
+
+*** (2) WAITING FOR THIS LOCK TO BE GRANTED:
+RECORD LOCKS space id 14 page no 4 n bits 72 index PRIMARY of table `ql_demo`.`ql_ct03_reservas` trx id 65052 lock_mode X locks gap before rec insert intention waiting
+Record lock, heap no 3 PHYSICAL RECORD: n_fields 4; compact format; info bits 0
+ 0: len 4; hex 80000014; asc     ;;
+ 1: len 6; hex 00000000fe16; asc       ;;
+ 2: len 7; hex 8200000119011d; asc        ;;
+ 3: len 4; hex 80000002; asc     ;;
+
+*** WE ROLL BACK TRANSACTION (2)
+------------
+TRANSACTIONS
+------------
+[...]

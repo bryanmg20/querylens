@@ -49,6 +49,22 @@ run_engine(dialect, connection_factory, db_id)                  main.py
   │     │     conn.commit()  ← M-12: la transacción de lectura se cierra YA. No
   │     │     retener snapshot/vacuum (PG) ni MVCC (MySQL) durante el resto del ciclo.
   │     │
+  │     ├─ DeadlocksStage.execute(stats, conn)               stages/deadlocks.py
+  │     │     corre siempre, aunque statements haya fallado; transacción corta propia.
+  │     │     Informes de abrazo mortal de los últimos 120 s (CT-01 a CT-04):
+  │     │       Postgres: líneas 40P01 del log JSON vía querylens.read_log()
+  │     │       MySQL: SHOW ENGINE INNODB STATUS (detalle del último) +
+  │     │              performance_schema.error_log MY-012468 (cada uno, sin detalle)
+  │     │     stages/deadlock_reports.py los traduce al modelo canónico: solo
+  │     │     canonic_query y direcciones físicas (space:page:heap), nunca literales
+  │     │     Postgres: el log no dice qué fila espera cada proceso. Si la sentencia
+  │     │       trae sus valores escritos y cubren un índice único (pg_index), las
+  │     │       filas se etiquetan "row 1", "row 2"… dentro del informe (misma
+  │     │       etiqueta = misma fila); con $1 quedan sin identificar (targets None)
+  │     │     stats["deadlocks"] = [DeadlockReport]
+  │     │     sin fuente → rollback, DEADLOCK_REPORTS_UNAVAILABLE
+  │     │     fuente parcial → DEADLOCK_REPORTS_PARTIAL
+  │     │
   │     ├─ (2) CandidatesStage.execute(stats)                stages/candidates.py
   │     │     stats = collector.preprocess_statements(stats) → hook por motor (MySQL calcula
   │     │                                                     stddev y coeff de variación)
@@ -120,7 +136,7 @@ run_engine(dialect, connection_factory, db_id)                  main.py
   │
   └─ send_to_queue(payload_json, querylens_engine)           enqueue.py
         SELECT * FROM pgmq.send('analyze_job', CAST(:payload AS JSONB))
-        → msg_id (print en main)
+        → msg_id (logger.info en main: "<dialect> | enqueue | msg_id=...")
 ```
 
 Degradación por sección y privacidad (Q3/Q4):
@@ -181,7 +197,7 @@ Y explícitamente **no**:
 | No hace | Por qué |
 |---------|---------|
 | No lee `MONITOR_PG_*` / `MONITOR_MY_*` | El host, puerto, usuario y password de cada target salen de la fila (Fernet con `AUTH_ENCRYPTION_KEY`). Esas variables solo las consume `main_sandbox.py`; están en el servicio `pipeline` únicamente por si alguien corre esa entrada dentro del contenedor |
-| No consume `analyze_job` | Solo produce. **Sin consumidor la cola crece**; el tamaño por snapshot **no está acotado** (va el payload completo: statements + candidatos + planes + columnas/índices/tablas). Medido (2026-10-08, `ci/regenerate_goldens.py` imprime el payload validado): **PG ~32 KB con 11 statements; MySQL ~22 KB con 10 statements** (~2–3 KB por statement adicional) → una base con cientos/miles de statements genera snapshots de cientos de KB a varios MB. Crecimiento ≈ `bytes_promedio × 8 640/día × nº de bases`. Verificar con `SELECT count(*), pg_size_pretty(avg(pg_column_size(message))::bigint) FROM pgmq.q_analyze_job`. `pg_stat_statements` guarda el texto completo de cada query: `statements[*].query_text` viaja recortado a `MAX_STATEMENT_TEXT_CHARS` (8192, `query_text_truncated: true`), el mismo largo sobre el que `canonic_query` ya queda en `"Not available"`; los candidatos viajan completos. `PAYLOAD_TOO_LARGE` (info) abre por encima de 1 MB y se resuelve por debajo de 0,9 MB (histéresis) |
+| No consume `analyze_job` | Solo produce. El consumidor es `detection_engine` (lee con `pgmq.read` y archiva con `pgmq.archive`); si se detiene, **la cola crece**; el tamaño por snapshot **no está acotado** (va el payload completo: statements + candidatos + planes + columnas/índices/tablas). Medido (2026-10-08, `ci/regenerate_goldens.py` imprime el payload validado): **PG ~32 KB con 11 statements; MySQL ~22 KB con 10 statements** (~2–3 KB por statement adicional) → una base con cientos/miles de statements genera snapshots de cientos de KB a varios MB. Crecimiento ≈ `bytes_promedio × 8 640/día × nº de bases`. Verificar con `SELECT count(*), pg_size_pretty(avg(pg_column_size(message))::bigint) FROM pgmq.q_analyze_job`. `pg_stat_statements` guarda el texto completo de cada query: `statements[*].query_text` viaja recortado a `MAX_STATEMENT_TEXT_CHARS` (8192, `query_text_truncated: true`), el mismo largo sobre el que `canonic_query` ya queda en `"Not available"`; los candidatos viajan completos. `PAYLOAD_TOO_LARGE` (info) abre por encima de 1 MB y se resuelve por debajo de 0,9 MB (histéresis) |
 | No guarda estado entre ciclos | Sin dedupe ni gate por `counters_epoch`: cada vuelta emite un snapshot por base aunque nada haya cambiado. La retención de mensajes ya leídos es del consumidor |
 | No persigue EXPLAIN fallidos (decisión 2026-10-08) | Cada ciclo **reintenta** los candidatos cuya explicación falló (el `ExplainStage` se recrea por ciclo; no hay contador ni backoff a nivel proceso). El fallo queda como `ERROR` de `stages.explain` en el log y ese candidato no obtiene plan en ese ciclo; se vuelve a probar en el siguiente. Quedó así por decisión del usuario, por el momento. **Causa típica conocida:** refs sin calificar que el rol resuelve por un schema que no es el primero con tablas (`SET LOCAL search_path` lo recorta; limitación conocida y aceptada, ver `references/004` → "EXPLAIN y search_path") |
 | No corre en paralelo | Un hilo, una vuelta a la vez; el aislamiento por target (dentro de `run_targets()`) es lo que evita que una base caída tape a las demás |
@@ -211,8 +227,12 @@ run_engine(dialect, factory, db_id)                     main.py
     post_collect       health/checks.py, antes de normalize/redact:
                        '<insufficient privilege>' → MISSING_PG_READ_ALL_STATS; muestra MySQL truncada
                        (sin PROCESS, active_queries de MySQL falla con 1227 → MISSING_PROCESS_PRIVILEGE)
+    DeadlocksStage     sin funciones de log (PG) o sin PROCESS (MySQL) → DEADLOCK_REPORTS_UNAVAILABLE;
+                       log_error_verbosity=terse (PG), innodb_print_all_deadlocks=OFF o
+                       log_error_verbosity<3 (MySQL) → DEADLOCK_REPORTS_PARTIAL
     ExplainStage       errores agrupados por code con count (sin query_id) + NO_EXPLAINABLE_CANDIDATES
-  validación / encolado → SNAPSHOT_VALIDATION_FAILED, ENQUEUE_FAILED, PAYLOAD_TOO_LARGE
+  validación / encolado → SNAPSHOT_VALIDATION_FAILED, PAYLOAD_TOO_LARGE (scope pipeline);
+                       ENQUEUE_FAILED (scope enqueue: solo se resuelve en un ciclo que volvió a encolar)
   finally: health_writer.flush(...)   una transacción: last_run + upsert issues + resolve
 ```
 

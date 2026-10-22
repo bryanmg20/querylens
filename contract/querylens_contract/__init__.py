@@ -9,6 +9,9 @@ from .snapshot import (
     CaptureTimestampRow,
     CanonicalPlan,
     ColumnRow,
+    DeadlockLock,
+    DeadlockReport,
+    DeadlockTransaction,
     Estimates,
     ForeignKeyRow,
     IndexRow,
@@ -20,6 +23,10 @@ from .snapshot import (
     StatementCandidate,
     StatementRow,
     TableRow,
+    to_bool,
+    to_int_list,
+    to_iso,
+    to_naive_utc,
 )
 
 __all__ = [
@@ -28,6 +35,9 @@ __all__ = [
     "CaptureTimestampRow",
     "CanonicalPlan",
     "ColumnRow",
+    "DeadlockLock",
+    "DeadlockReport",
+    "DeadlockTransaction",
     "Estimates",
     "ForeignKeyRow",
     "IndexRow",
@@ -39,4 +49,8 @@ __all__ = [
     "StatementRow",
     "ServerStartRow",
     "TableRow",
+    "to_bool",
+    "to_int_list",
+    "to_iso",
+    "to_naive_utc",
 ]

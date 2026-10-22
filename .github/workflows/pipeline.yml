@@ -12,6 +12,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint:
+    # ruff con telemetry_pipeline/ruff.toml: solo reglas que encuentran
+    # defectos (imports sin usar, tests con excepciones ciegas, nombres
+    # redefinidos). La version sale de requirements-dev.txt.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install "$(grep '^ruff==' telemetry_pipeline/requirements-dev.txt)"
+      - run: ruff check telemetry_pipeline
+
   unit:
     # Corre en cada push y PR. Sin servicios: si algo falla aqui, no se fusiona.
     runs-on: ubuntu-latest
@@ -31,6 +44,28 @@ jobs:
           name: report-unit
           path: report-unit.xml
 
+  detector:
+    # Tests del detection_engine (antipatrones, contencion y el contrato
+    # contra los goldens del pipeline). Sin servicios, como unit. Usa su
+    # propio pytest.ini: `models` es el de detection_engine, no el del pipeline.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: detection_engine/requirements.txt
+      - run: pip install -e contract -r detection_engine/requirements.txt "$(grep '^pytest' telemetry_pipeline/requirements-dev.txt)"
+      - name: detector
+        working-directory: detection_engine
+        run: python -m pytest --junitxml=../report-detector.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: report-detector
+          path: report-detector.xml
+
   integration:
     # Corre en cada push (merge a cualquier rama). Los PR solo corren unit.
     # Sin gate a develop: si algo falla aqui, no hay merge limpio.
@@ -38,9 +73,13 @@ jobs:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
 
+    # Imagenes oficiales desde mirror.gcr.io (espejo de Docker Hub de Google,
+    # sin autenticacion). Docker Hub y public.ecr.aws limitan las descargas
+    # anonimas por IP, y los runners de GitHub comparten IPs: los dos ya
+    # fallaron con toomanyrequests.
     services:
       telemetry-postgres:
-        image: public.ecr.aws/docker/library/postgres:17
+        image: mirror.gcr.io/library/postgres:17
         env:
           POSTGRES_USER: querylens_monitor
           POSTGRES_PASSWORD: monitor_pass
@@ -54,7 +93,7 @@ jobs:
           --health-retries 10
 
       telemetry-mysql:
-        image: public.ecr.aws/docker/library/mysql:8.0
+        image: mirror.gcr.io/library/mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: ql_root
           MYSQL_DATABASE: ql_demo

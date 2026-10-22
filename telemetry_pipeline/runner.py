@@ -27,14 +27,16 @@ import time
 
 from config.registered import _get_queue_engine, load_registered_targets
 from health import writer as health_writer
-from logger import get_logger
+from logger import explicit_level_from_env, get_logger
 from main import run_targets
 
 logger = get_logger(__name__)
-# El detalle de cada ciclo (duracion y targets) baja a DEBUG para que el log
-# del archivo cuente cuanto duro cada vuelta sin ensuciar la consola: el resto
-# del pipeline se queda en INFO.
-logger.setLevel(logging.DEBUG)
+# El detalle de cada ciclo (duracion y targets) va en DEBUG: por defecto el
+# runner lo deja visible en el archivo y el resto del pipeline se queda en
+# INFO. Un QL_LOG_LEVEL valido manda tambien aca (get_logger ya lo aplico); uno
+# en blanco o desconocido no cuenta como explicito.
+if explicit_level_from_env() is None:
+    logger.setLevel(logging.DEBUG)
 
 DEFAULT_INTERVAL_S = 10.0
 MAX_BACKOFF_S = 60.0

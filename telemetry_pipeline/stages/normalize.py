@@ -3,7 +3,7 @@ import re
 import sqlglot
 from sqlglot import exp
 
-from querylens_contract.snapshot import _to_naive_utc
+from querylens_contract.snapshot import to_bool, to_int_list, to_iso
 from models.stats import Stats
 from stages import canonicalizers, type_conversions
 
@@ -38,24 +38,27 @@ EPOCH_FIELDS = ("counters_epoch", "minmax_epoch")
 EPOCH_SECTIONS = ("statements", "top_impact_queries", "non_explainable_candidates")
 
 
+# Las conversiones de abajo usan los mismos helpers que los validadores del
+# contrato (querylens_contract.snapshot): una sola fuente para la forma de
+# fechas, pids y estado de locks. El stage las aplica para que stats ya tenga
+# la forma del contrato antes de validar.
+
+
 def normalize_statement_epochs(stats: Stats):
     """Deja las fechas de contadores en un unico formato sin tz, en UTC.
 
     Postgres (`stats_since`, timestamptz) y MySQL (`FIRST_SEEN`, DATETIME) llegan
     con tipos distintos: uno con zona y el otro naive. La sesion MySQL se fija a
     +00:00 (init_command en config/connections) y el timestamptz se pasa a UTC
-    (querylens_contract.snapshot._to_naive_utc). Se hornean a la misma representacion que usa
+    (querylens_contract.snapshot.to_iso). Se hornean a la misma representacion que usa
     `normalize_active_query_timestamps`, asi el consumidor puede compararlas
     entre motores sin parsear dos formatos.
     """
     for section in EPOCH_SECTIONS:
         for row in stats.get(section) or []:
             for field in EPOCH_FIELDS:
-                ts = row.get(field)
-                if isinstance(ts, datetime):
-                    row[field] = _to_naive_utc(ts).isoformat(
-                        sep=" ", timespec="microseconds"
-                    )
+                if isinstance(row.get(field), datetime):
+                    row[field] = to_iso(row[field])
 
 
 ACTIVE_QUERY_TIMESTAMP_FIELDS = ("transaction_start_time", "wait_start_time")
@@ -64,29 +67,20 @@ ACTIVE_QUERY_TIMESTAMP_FIELDS = ("transaction_start_time", "wait_start_time")
 def normalize_active_query_timestamps(stats: Stats):
     for stmt in stats.get("active_queries") or []:
         for field in ACTIVE_QUERY_TIMESTAMP_FIELDS:
-            ts = stmt.get(field)
-            if isinstance(ts, datetime):
-                stmt[field] = _to_naive_utc(ts).isoformat(sep=" ", timespec="microseconds")
+            if isinstance(stmt.get(field), datetime):
+                stmt[field] = to_iso(stmt[field])
 
 def normalize_blocking_pids(stats: Stats):
     for query in stats.get("active_queries") or []:
-        blocking_pids = query.get("blocking_pids")
-        if blocking_pids is not None:
-            query["blocking_pids"] = [int(pid) for pid in blocking_pids.split(",") if pid.strip().isdigit()]
-        else:
-            query["blocking_pids"] = []
+        query["blocking_pids"] = to_int_list(query.get("blocking_pids"))
 
 def normalize_locks(stats: Stats):
     for lock in stats.get("locks") or []:
-        is_granted = lock.get("is_granted")
-        if is_granted == "GRANTED":
-            lock["is_granted"] = True
-        elif is_granted == "WAITING":
-            lock["is_granted"] = False
+        lock["is_granted"] = to_bool(lock.get("is_granted"))
 
 def normalize_predicate(stats: Stats):
     for explain in stats.get("canonic_explains") or []:
-        for operation in explain.get("canonical_plan", []).get("physical_operations", []):
+        for operation in explain.get("canonical_plan", {}).get("physical_operations", []):
             predicate = operation.get("predicate")
             if predicate:
                 cleaned_predicate = clean_mysql_explain_predicate_dynamic(predicate)

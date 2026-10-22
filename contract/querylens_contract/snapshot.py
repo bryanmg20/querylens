@@ -14,7 +14,7 @@ def _list_or_empty(value):
     return [] if value is None else value
 
 
-def _to_naive_utc(dt):
+def to_naive_utc(dt):
     """Aware datetime -> UTC naíve; naive se deja tal cual.
 
     Postgres entrega timestamptz en la zona de su sesión; MySQL entrega DATETIME
@@ -28,13 +28,13 @@ def _to_naive_utc(dt):
     return dt
 
 
-def _to_iso(value):
+def to_iso(value):
     if isinstance(value, datetime):
-        return _to_naive_utc(value).isoformat(sep=" ", timespec="microseconds")
+        return to_naive_utc(value).isoformat(sep=" ", timespec="microseconds")
     return value
 
 
-def _to_bool(value):
+def to_bool(value):
     if isinstance(value, str):
         normalized = value.strip().upper()
         if normalized == "GRANTED":
@@ -44,7 +44,7 @@ def _to_bool(value):
     return value
 
 
-def _to_int_list(value):
+def to_int_list(value):
     if value is None:
         return []
     if isinstance(value, str):
@@ -82,7 +82,7 @@ class StatementRow(BaseModel):
     # MySQL: SUM_SORT_MERGE_PASSES. Postgres: None (temp_blks_written, en
     # disk_spill_indicator, ya incluye los ordenamientos).
     sort_merge_passes: int | None = None
-    counters_epoch: Annotated[str | None, BeforeValidator(_to_iso)] = None
+    counters_epoch: Annotated[str | None, BeforeValidator(to_iso)] = None
     canonic_query: str | None = None
     # True cuando SnapshotPayload recorto query_text a MAX_STATEMENT_TEXT_CHARS.
     # Solo pasa en statements: los candidatos viajan con el texto completo.
@@ -99,7 +99,7 @@ class LockRow(BaseModel):
     database_name: str | None = None
     table_name: str | None = None
     lock_mode: str
-    is_granted: Annotated[bool, BeforeValidator(_to_bool)]
+    is_granted: Annotated[bool, BeforeValidator(to_bool)]
 
 
 class ActiveQueryRow(BaseModel):
@@ -108,13 +108,13 @@ class ActiveQueryRow(BaseModel):
     query_text: str | None = None
     query_id: QueryId
     canonic_query: str | None = None
-    transaction_start_time: Annotated[str | None, BeforeValidator(_to_iso)] = None
+    transaction_start_time: Annotated[str | None, BeforeValidator(to_iso)] = None
     # Vocabulario de pg_stat_activity.state ('active', 'idle in transaction', ...);
     # MySQL se traduce a ese mismo vocabulario en su query.
     session_state: str | None = None
     # Cuando empezo a esperar el lock que no le conceden; None si no espera.
-    wait_start_time: Annotated[str | None, BeforeValidator(_to_iso)] = None
-    blocking_pids: Annotated[list[int], BeforeValidator(_to_int_list)] = Field(
+    wait_start_time: Annotated[str | None, BeforeValidator(to_iso)] = None
+    blocking_pids: Annotated[list[int], BeforeValidator(to_int_list)] = Field(
         default_factory=list
     )
 
@@ -124,7 +124,7 @@ class IndexRow(BaseModel):
     table_name: str
     index_name: str
     index_scans: int | None = None
-    last_index_scan: Annotated[str | None, BeforeValidator(_to_iso)] = None
+    last_index_scan: Annotated[str | None, BeforeValidator(to_iso)] = None
     index_ref: str | None = None
     index_size_bytes: int | None = None
 
@@ -159,13 +159,96 @@ class ForeignKeyRow(BaseModel):
 
 
 class ServerStartRow(BaseModel):
-    server_start_time: Annotated[str | None, BeforeValidator(_to_iso)] = None
+    server_start_time: Annotated[str | None, BeforeValidator(to_iso)] = None
 
 
 class CaptureTimestampRow(BaseModel):
     """Hora del servidor al tomar el snapshot. Es la referencia para calcular
     antiguedades (transaction_start_time, wait_start_time) con el mismo reloj."""
-    captured_at: Annotated[str | None, BeforeValidator(_to_iso)] = None
+    captured_at: Annotated[str | None, BeforeValidator(to_iso)] = None
+
+
+LockMode = Literal["S", "X", "IS", "IX"]
+LockScope = Literal["row", "gap", "row+gap", "insert_intention", "table", "other"]
+
+
+class DeadlockLock(BaseModel):
+    """Un bloqueo de un informe de abrazo mortal: el que una transaccion
+    mantiene o el que espera.
+
+    mode, scope y targets son el vocabulario comun que leen los detectores:
+    cada parser traduce el de su motor. lock_type, lock_mode y resources son
+    los del motor, tal como los escribe el informe, y solo van a la evidencia.
+    None en un campo comun es "el motor no lo informa", no "no hay"."""
+    schema_name: str | None = None
+    table_name: str | None = None
+    # MySQL: indice del registro bloqueado. Postgres no lo informa.
+    index_name: str | None = None
+
+    # S compartido, X exclusivo, IS/IX de intencion sobre una tabla. None si
+    # el motor usa un modo sin equivalente o no dice cual.
+    mode: LockMode | None = None
+    # row: la fila. gap: el hueco antes de la fila. row+gap: los dos
+    # (next-key). insert_intention: insercion en un hueco. table: la tabla.
+    # other: un recurso que no es fila ni tabla (advisory lock, pagina...).
+    scope: LockScope | None = None
+    # El recurso bloqueado: dos bloqueos sobre el mismo recurso comparten un
+    # elemento. Solo se compara dentro del mismo informe. None si el motor no
+    # lo identifica: Postgres espera la transaccion duena de la fila, no la fila.
+    targets: list[str] | None = None
+
+    # MySQL: record | table. Postgres: el tipo de objeto sobre el que espera
+    # (transactionid, tuple, relation, ...).
+    lock_type: str | None = None
+    # MySQL en el vocabulario de performance_schema.data_locks.LOCK_MODE
+    # (X, S, X,REC_NOT_GAP, X,GAP, X,INSERT_INTENTION, IX...). Postgres como
+    # lo nombra pg_locks.mode (ShareLock, ExclusiveLock, ...).
+    lock_mode: str
+    # Identificadores fisicos del recurso, nunca datos de la fila: MySQL
+    # "space:page:heap" de cada registro (o "table" en un bloqueo de tabla);
+    # Postgres el objeto tal como lo escribe el informe ("transaction 67257",
+    # "tuple (0,1) of relation 16384").
+    resources: list[str] = Field(default_factory=list)
+
+
+class DeadlockTransaction(BaseModel):
+    # Postgres: pid del backend. MySQL: id del processlist (CONNECTION_ID()).
+    process_id: int | None = None
+    transaction_id: str | None = None
+    # Solo la victima de Postgres trae query_id (es su linea del log).
+    query_id: QueryId = None
+    # La sentencia que esperaba, sin literales. El texto real nunca viaja.
+    canonic_query: str | None = None
+    # None: el motor no informa lo que mantiene (Postgres). [] seria que no
+    # mantiene nada.
+    holds: list[DeadlockLock] | None = None
+    waits_for: DeadlockLock | None = None
+    # process_id de las transacciones del ciclo que retienen lo que espera.
+    blocked_by: list[int] = Field(default_factory=list)
+    # Solo MySQL: "N row lock(s)" y "undo log entries M" del informe.
+    rows_locked: int | None = None
+    undo_log_entries: int | None = None
+    victim: bool = False
+
+
+class DeadlockReport(BaseModel):
+    """Un abrazo mortal que el motor detecto y resolvio revirtiendo una victima.
+
+    Postgres lo deja en el log del servidor y MySQL en SHOW ENGINE INNODB
+    STATUS (solo el ultimo) y performance_schema.error_log (solo el encabezado
+    de cada uno). Cada snapshot trae los de una ventana reciente, asi que el
+    mismo informe llega en varios snapshots seguidos: el consumidor descarta
+    los repetidos por detected_at y su contenido."""
+    # Hora del servidor, en UTC, en que el motor detecto el ciclo.
+    detected_at: Annotated[str, BeforeValidator(to_iso)]
+    # postgres_log | innodb_status | mysql_error_log
+    source: str
+    database_name: str | None = None
+    # False: se sabe que ocurrio pero no que transacciones lo formaron (MySQL
+    # con mas de un abrazo entre dos snapshots, o Postgres con
+    # log_error_verbosity=terse). No se puede clasificar.
+    complete: bool = True
+    transactions: list[DeadlockTransaction] = Field(default_factory=list)
 
 
 class LogicalShape(BaseModel):
@@ -229,6 +312,8 @@ class SnapshotPayload(BaseModel):
     foreign_keys: ListOrNone[ForeignKeyRow] = []
     # Mismo motivo que foreign_keys: default [] para que los goldens previos validen.
     capture_timestamp: ListOrNone[CaptureTimestampRow] = []
+    # La escribe DeadlocksStage, no el collect: default [] por los goldens previos.
+    deadlocks: ListOrNone[DeadlockReport] = []
     canonic_explains: ListOrNone[CanonicExplain] = []
 
     @field_validator("statements", mode="after")

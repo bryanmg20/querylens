@@ -53,8 +53,15 @@ def _level_from_env() -> int:
     QL_LOG_LEVEL=DEBUG hace visible la linea DEBUG de tamano de payload de
     main._log_payload_size, muerta desde que logger.py fija INFO a mansalva.
     """
-    level = (os.getenv("QL_LOG_LEVEL") or "INFO").strip().upper()
-    return getattr(logging, level, logging.INFO)
+    level = explicit_level_from_env()
+    return logging.INFO if level is None else level
+
+
+def explicit_level_from_env() -> int | None:
+    """El nivel de QL_LOG_LEVEL si nombra uno valido; None si falta, esta en
+    blanco o no se reconoce (entonces cada logger usa su default)."""
+    name = (os.getenv("QL_LOG_LEVEL") or "").strip().upper()
+    return logging.getLevelNamesMapping().get(name)
 
 
 def get_logger(name: str) -> logging.Logger:

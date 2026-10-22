@@ -65,6 +65,12 @@ class PreflightResult:
 # clave de la base -> (instante del chequeo, resultado)
 _CACHE: dict[str, tuple[float, PreflightResult]] = {}
 
+# Una entrada que no se refresca en este tiempo es de una base que ya no se
+# monitorea (se desregistro o cambio de host/usuario). Las activas se refrescan
+# cada TTL: el margen evita perder la base del delta de dealloc por un ciclo lento.
+EVICT_AFTER_TTLS = 3
+MIN_EVICT_AFTER_S = 3600.0
+
 
 def reset_cache() -> None:
     _CACHE.clear()
@@ -165,6 +171,13 @@ def _cache_key(collector) -> str:
     return collector.source_dialect
 
 
+def _evict_stale(now: float, ttl: float) -> None:
+    horizon = max(EVICT_AFTER_TTLS * ttl, MIN_EVICT_AFTER_S)
+    for key, (checked_at, _) in list(_CACHE.items()):
+        if now - checked_at > horizon:
+            del _CACHE[key]
+
+
 class PreflightStage:
     def __init__(self, collector, report, ttl=None, clock=time.monotonic):
         self.collector = collector
@@ -186,6 +199,7 @@ class PreflightStage:
         else:
             result = check(conn, cached[1].facts if cached is not None else None)
             _CACHE[key] = (now, result)
+            _evict_stale(now, ttl)
             self.report.checked("preflight")
 
         for code, params in result.issues:

@@ -7,7 +7,7 @@ from health.report import HealthReport
 
 pytestmark = pytest.mark.unit
 
-SCOPES = {"connection", "credentials", "collect", "preflight", "explain", "pipeline"}
+SCOPES = {"connection", "credentials", "collect", "preflight", "explain", "pipeline", "enqueue"}
 CATEGORIES = {"connection", "extension", "permission", "config", "version", "internal"}
 
 
@@ -116,6 +116,15 @@ def test_mysql_sample_at_limit_is_truncated():
     report = HealthReport()
     report.facts["sql_text_limit"] = 10
     stats = {"statements": [{"query_sample_text": "x" * 10}, {"query_sample_text": "short"}]}
+    post_collect(stats, report, "mysql")
+    assert report.issues[("QUERY_TEXT_TRUNCATED", "")]["rows"] == 1
+
+
+def test_mysql_sample_cut_before_a_multibyte_character_is_truncated():
+    # limite 10 bytes: "aaaaaaa" (7) + "ñ" (2) = 9; el siguiente "€" (3) no entraba
+    report = HealthReport()
+    report.facts["sql_text_limit"] = 10
+    stats = {"statements": [{"query_sample_text": "aaaaaaañ"}, {"query_sample_text": "aaaaaa"}]}
     post_collect(stats, report, "mysql")
     assert report.issues[("QUERY_TEXT_TRUNCATED", "")]["rows"] == 1
 

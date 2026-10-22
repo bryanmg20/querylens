@@ -13,7 +13,6 @@ import pytest
 from collectors.base import DB_Engine_Collector
 from collectors.mysql.collector import Mysql_Collector
 from collectors.postgres.collector import Postgres_Collector
-from stages import schema_resolver
 from stages.candidates import CandidatesStage
 
 pytestmark = pytest.mark.unit

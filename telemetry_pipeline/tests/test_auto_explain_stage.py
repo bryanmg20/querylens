@@ -3,7 +3,7 @@ import json
 import pytest
 
 from health.report import HealthReport
-from stages import auto_explain
+from stages import pg_log
 from stages.auto_explain import AutoExplainStage
 from stages.explain import ExplainStage
 from stages.explain_normalizer import PostgresExplainNormalizer
@@ -251,7 +251,7 @@ def test_window_reads_the_tail_and_drops_the_cut_first_line(monkeypatch):
     second = _log_line(111, _plan(total_cost=2.0))
     content = _file(first, second)
     # La ventana empieza en medio de `first`: solo `second` entra completa.
-    monkeypatch.setattr(auto_explain, "LOG_WINDOW_BYTES", len(second) + 50)
+    monkeypatch.setattr(pg_log, "LOG_WINDOW_BYTES", len(second) + 50)
     conn = _LogConn([("postgresql-Sun.json", content)])
     plans = _run(conn, _stats((111, {})))
     assert conn.reads[0]["start_offset"] == len(content) - (len(second) + 50)
@@ -264,7 +264,7 @@ def test_window_cut_inside_a_multibyte_character_does_not_break(monkeypatch):
     content = _file(first, second)
     # Cortar dentro de una ñ (2 bytes) deja bytes que no son UTF-8 valido.
     cut = content.index("ñ".encode()) + 1
-    monkeypatch.setattr(auto_explain, "LOG_WINDOW_BYTES", len(content) - cut)
+    monkeypatch.setattr(pg_log, "LOG_WINDOW_BYTES", len(content) - cut)
     conn = _LogConn([("postgresql-Sun.json", content)])
     plans = _run(conn, _stats((111, {}), (222, {})))
     assert set(plans) == {222}
@@ -273,7 +273,7 @@ def test_window_cut_inside_a_multibyte_character_does_not_break(monkeypatch):
 def test_window_budget_is_shared_across_files(monkeypatch):
     newest = _file(_log_line(222))
     older = _file(_log_line(111))
-    monkeypatch.setattr(auto_explain, "LOG_WINDOW_BYTES", len(newest) + 10)
+    monkeypatch.setattr(pg_log, "LOG_WINDOW_BYTES", len(newest) + 10)
     conn = _LogConn([("postgresql-Sun.json", newest), ("postgresql-Sat.json", older)])
     _run(conn, _stats((111, {}), (222, {})))
     assert conn.reads[1]["max_bytes"] == 10

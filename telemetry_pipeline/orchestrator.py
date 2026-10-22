@@ -8,9 +8,11 @@ from stages.auto_explain import AutoExplainStage
 from stages.canonicalizers import redact_active_queries
 from stages.candidates import CandidatesStage
 from stages.collect import CollectStage
+from stages.deadlocks import DeadlocksStage
 from stages.enrich import EnrichStage
 from stages.explain import ExplainStage
 from stages.normalize import NormalizeStage
+from stages.pg_log import PgLogTail
 
 logger = get_logger(__name__)
 
@@ -22,6 +24,7 @@ class Orchestrator:
         self.report = report if report is not None else HealthReport()
         self.preflight = PreflightStage(collector, self.report)
         self.collect = CollectStage(collector, self.report)
+        self.deadlocks = DeadlocksStage(collector, self.report)
         self.candidates = CandidatesStage(collector)
         self.auto_explain = AutoExplainStage(collector, self.report)
         self.explain = ExplainStage(collector, self.report)
@@ -52,9 +55,14 @@ class Orchestrator:
             # abierta retiene vacuum/snapshot en Postgres y undo/MVCC en MySQL
             # durante el EXPLAIN y el encolado.
             conn.commit()
+            # Deadlocks y auto_explain leen la misma ventana del log de
+            # Postgres: una sola lectura por ciclo (en MySQL no se usa).
+            log = PgLogTail()
+            # No depende de statements: trae su propia sentencia ya canonica
+            self.deadlocks.execute(stats, conn, log)
             if stats.get("statements") is not None:
                 self.candidates.execute(stats)
-                self.auto_explain.execute(stats, conn)
+                self.auto_explain.execute(stats, conn, log)
                 self.explain.execute(stats, conn)
                 self.normalize.execute(stats)
             else:

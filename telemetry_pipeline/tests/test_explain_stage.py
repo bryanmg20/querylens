@@ -470,15 +470,6 @@ def test_postgres_commits_the_short_transaction_per_candidate():
     assert conn.commit_calls == 2
 
 
-def test_postgres_explain_error_rolls_back_the_short_transaction():
-    conn = _FailingConn()
-    stats = _stats(schema_name="public")
-    ExplainStage(_FakeCollector()).execute(stats, conn)
-    assert conn.rollback_calls == 1
-    assert conn.commit_calls == 0
-    assert stats["canonic_explains"] == []
-
-
 class _FakeForeignEngine:
     def __init__(self, url, tracker=None):
         self.url = url

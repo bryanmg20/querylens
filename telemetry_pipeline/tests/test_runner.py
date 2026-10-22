@@ -4,6 +4,10 @@ Ninguna prueba duerme de verdad: el reloj, el stop y la carga de targets se
 inyectan, asi que la aritmetica de "sin ticks atrasados" se verifica exacta.
 """
 import logging
+import os
+import subprocess
+import sys
+from pathlib import Path
 from unittest import mock
 
 import pytest
@@ -119,7 +123,6 @@ def test_ciclo_registra_la_duracion_en_debug(caplog):
 def test_espera_lo_que_falta_por_ciclo_sin_acumular():
     """Ancla al INICIO del ciclo: ciclo de 5 s con intervalo 10 -> espera 5;
     el arranque del siguiente sigue siendo start+intervalo."""
-    objetivo = []
     runner = runner_mod.Runner(
         interval=10, load=lambda: None, run=mock.MagicMock(), clock=_Clock(0, 5, 10, 11)
     )
@@ -194,3 +197,28 @@ def test_backoff_dobra_hasta_el_tope(caplog):
     assert len(llamadas) == 4
     runner.backoff = min(runner.backoff * 2, runner_mod.MAX_BACKOFF_S)
     assert runner.backoff == 60, "el tope evita esperas larguisimas tras un corte largo"
+
+
+_PIPELINE = Path(__file__).resolve().parent.parent
+
+
+@pytest.mark.parametrize("level, expected", [
+    (None, logging.DEBUG),
+    ("WARNING", logging.WARNING),
+    ("warning", logging.WARNING),
+    # en blanco o desconocido no es un nivel explicito: el runner sigue en DEBUG
+    (" ", logging.DEBUG),
+    ("verbose", logging.DEBUG),
+])
+def test_runner_respeta_un_ql_log_level_explicito(level, expected):
+    """Sin QL_LOG_LEVEL el runner deja su detalle por ciclo en DEBUG; con un
+    nivel explicito manda el del entorno, como en el resto del pipeline."""
+    env = {k: v for k, v in os.environ.items() if k != "QL_LOG_LEVEL"}
+    env["PYTHONPATH"] = os.pathsep.join([str(_PIPELINE), str(_PIPELINE.parent / "contract")])
+    if level:
+        env["QL_LOG_LEVEL"] = level
+    out = subprocess.run(
+        [sys.executable, "-c", "import runner; print(runner.logger.level)"],
+        cwd=_PIPELINE, env=env, capture_output=True, text=True, check=True,
+    )
+    assert int(out.stdout.strip().splitlines()[-1]) == expected
