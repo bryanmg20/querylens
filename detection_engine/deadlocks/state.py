@@ -54,8 +54,9 @@ SIGNATURE_RETENTION = timedelta(days=7)
 class DeadlockMemory:
     """Abrazos mortales ya procesados y cuantas veces aparecio cada firma."""
 
-    # detected_at -> firma ("" si el informe vino sin detalle). El mismo
-    # informe llega en varios snapshots seguidos.
+    # "detected_at|pid de la victima" (detected_at solo si no hay victima)
+    # -> firma ("" si el informe vino sin detalle). El mismo informe llega en
+    # varios snapshots seguidos.
     seen: dict[str, str] = field(default_factory=dict)
     # firma -> {"count", "first_seen_at", "last_seen_at"} (isoformat)
     signatures: dict[str, dict] = field(default_factory=dict)
@@ -65,8 +66,8 @@ class DeadlockMemory:
         signature_after = captured_at - SIGNATURE_RETENTION
         return DeadlockMemory(
             seen={
-                detected_at: signature for detected_at, signature in self.seen.items()
-                if _after(detected_at, seen_after)
+                key: signature for key, signature in self.seen.items()
+                if _after(key.split("|", 1)[0], seen_after)
             },
             signatures={
                 signature: info for signature, info in self.signatures.items()

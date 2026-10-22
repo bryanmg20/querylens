@@ -181,7 +181,7 @@ def test_finding_identifies_the_cycle_and_recommends_a_single_order():
     assert "orden de acceso unico" in finding.recomendacion
     assert "error 1213" in finding.recomendacion
     assert "en modo exclusivo" in finding.explicacion
-    assert memory.seen == {DETECTED: evidence["signature"]}
+    assert memory.seen == {f"{DETECTED}|265": evidence["signature"]}
 
 
 def test_postgres_finding_notes_that_holds_are_unknown():

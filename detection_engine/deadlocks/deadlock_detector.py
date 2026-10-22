@@ -18,6 +18,7 @@ from . import (
     ct02_mode_conversion,
     ct03_range_contention,
     ct04_lock_amplification,
+    cycles,
     unclassified_deadlock,
 )
 from .cycles import deadlock_signature
@@ -46,6 +47,24 @@ def classify(report, indexes=()) -> str | None:
     return None
 
 
+def report_key(report) -> str:
+    """Clave del informe en la memoria. detected_at solo no basta: el log de
+    Postgres tiene milisegundos y dos abrazos pueden caer en el mismo. La
+    victima es la misma en cada snapshot que trae el informe."""
+    victim = cycles.victim(report)
+    if victim is None or victim.process_id is None:
+        return report.detected_at
+    return f"{report.detected_at}|{victim.process_id}"
+
+
+def _already_seen(report, seen: dict[str, str]) -> bool:
+    if report.complete:
+        return report_key(report) in seen
+    # Encabezado de MySQL sin detalle: el mismo abrazo pudo llegar completo
+    # en un snapshot anterior (INNODB STATUS todavia lo tenia), con victima
+    return report.detected_at in seen or any(key.startswith(f"{report.detected_at}|") for key in seen)
+
+
 def detect_deadlocks(
     snapshot: SnapshotPayload,
     captured_at: datetime,
@@ -61,22 +80,23 @@ def detect_deadlocks(
     without_detail = 0
 
     for report in sorted(snapshot.deadlocks, key=lambda r: r.detected_at):
-        if report.detected_at in seen:
+        if _already_seen(report, seen):
             continue
+        key = report_key(report)
         if not report.complete:
-            seen[report.detected_at] = ""
+            seen[key] = ""
             without_detail += 1
             continue
         antipatron = classify(report, snapshot.indexes)
         if antipatron is None:
-            seen[report.detected_at] = ""
+            seen[key] = ""
             logger.info(
                 "  contencion | db_id=%s | abrazo de %s sin patron (ni CT-01 a CT-04 ni sin clasificar)",
                 snapshot.db_id, report.detected_at,
             )
             continue
         signature = deadlock_signature(report, antipatron)
-        seen[report.detected_at] = signature
+        seen[key] = signature
         info = signatures.get(signature)
         if info is None:
             info = {"count": 0, "first_seen_at": report.detected_at}

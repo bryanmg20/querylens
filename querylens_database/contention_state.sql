@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS public.contention_state (
 );
 
 -- Abrazos mortales ya vistos y conteo por firma (DeadlockMemory):
--- {"seen": {detected_at: firma}, "signatures": {firma: {count, first_seen_at, last_seen_at}}}.
+-- {"seen": {"detected_at|pid de la victima": firma}, "signatures": {firma: {count, first_seen_at, last_seen_at}}}.
 -- ADD COLUMN IF NOT EXISTS: la tabla ya existe en las bases creadas con CT-05.
 ALTER TABLE public.contention_state ADD COLUMN IF NOT EXISTS deadlocks JSONB NOT NULL DEFAULT '{}';
 -- lo mismo en la muestra anterior a captured_at, para recalcular un reintento

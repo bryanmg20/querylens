@@ -136,7 +136,33 @@ def test_each_pattern_counts_its_own_recurrence():
 def test_both_patterns_in_one_snapshot():
     findings, memory = detect_deadlocks(snapshot(mysql_ct02(), pg_ct01()), T0, DeadlockMemory())
     assert sorted(f.antipatron for f in findings) == [CT01, CT02]
-    assert set(memory.seen) == {DETECTED, PG_DETECTED}
+    assert set(memory.seen) == {f"{DETECTED}|237", f"{PG_DETECTED}|790"}
+
+
+def test_two_deadlocks_in_the_same_millisecond_are_both_reported():
+    # el log de Postgres tiene milisegundos: la hora sola no los distingue
+    detected = "2026-10-22 00:59:30.123000"
+    other = pg_ct01(detected_at=detected)
+    for trx in other["transactions"]:
+        trx["process_id"] += 100
+        trx["blocked_by"] = [pid + 100 for pid in trx["blocked_by"]]
+    both = snapshot(pg_ct01(detected_at=detected), other)
+    findings, memory = detect_deadlocks(both, T0, DeadlockMemory())
+    assert len(findings) == 2
+    assert set(memory.seen) == {f"{detected}|790", f"{detected}|890"}
+
+    again, _ = detect_deadlocks(both, T0 + timedelta(seconds=10), memory)
+    assert again == []
+
+
+def test_header_without_detail_of_a_report_already_seen_is_not_counted():
+    # MySQL: el abrazo llego completo y en el ciclo siguiente, ya pisado en
+    # INNODB STATUS por otro, solo su encabezado de error_log
+    _, memory = detect_deadlocks(snapshot(mysql_ct01()), T0, DeadlockMemory())
+    header = {"detected_at": DETECTED, "source": "mysql_error_log", "complete": False}
+    findings, after = detect_deadlocks(snapshot(header), T0 + timedelta(seconds=10), memory)
+    assert findings == []
+    assert after.seen == memory.seen
 
 
 def test_incomplete_and_unmatched_reports_are_remembered_without_finding():
@@ -146,7 +172,7 @@ def test_incomplete_and_unmatched_reports_are_remembered_without_finding():
     indexes = [index_row("id"), index_row("cliente", name="ix_cliente")]
     findings, memory = detect_deadlocks(snapshot(unmatched, incomplete, indexes=indexes), T0, DeadlockMemory())
     assert findings == []
-    assert memory.seen == {DETECTED: "", "2026-10-22 00:59:20.100000": ""}
+    assert memory.seen == {f"{DETECTED}|447": "", "2026-10-22 00:59:20.100000": ""}
     assert memory.signatures == {}
 
 
