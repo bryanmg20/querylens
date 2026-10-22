@@ -112,13 +112,15 @@ _PG_DEFAULT_SEARCH_PATH = 'search_path="$user", public'
 
 # Indices unicos de las tablas de los row_key: si las columnas del WHERE
 # cubren uno, la sentencia toca una sola fila. Los parciales y de expresiones
-# no cuentan.
+# no cuentan. Solo las columnas clave: indkey trae tambien las de INCLUDE, que
+# no hacen falta en el WHERE para que sea unica.
 PG_UNIQUE_KEYS_SQL = text(
     """
     SELECT i.indrelid::bigint AS table_oid, i.indexrelid::bigint AS index_oid,
            array_agg(a.attname::text ORDER BY a.attname) AS columns
     FROM pg_catalog.pg_index i
-    JOIN pg_catalog.pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
+    JOIN pg_catalog.pg_attribute a
+      ON a.attrelid = i.indrelid AND a.attnum = ANY((i.indkey::int2[])[0:i.indnkeyatts - 1])
     WHERE i.indrelid = ANY(CAST(:oids AS oid[]))
       AND i.indisunique AND i.indisvalid AND i.indpred IS NULL AND i.indexprs IS NULL
     GROUP BY i.indrelid, i.indexrelid, i.indisprimary
