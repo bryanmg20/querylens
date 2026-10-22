@@ -33,8 +33,9 @@ from sqlglot import exp
 from stages.canonicalizers import canonicalize_query
 
 # Tope de recursos por bloqueo. Un UPDATE sin indice (CT-04) puede mantener
-# miles de registros; para encontrar el ciclo alcanza con unos pocos y
-# rows_locked conserva el total.
+# miles de registros; rows_locked conserva el total. Lo que espera alguna
+# transaccion del informe se conserva aunque pase el tope: es el cruce del
+# ciclo (_trim_resources).
 MAX_RESOURCES_PER_LOCK = 64
 
 
@@ -371,6 +372,7 @@ def parse_innodb_status(status: str) -> dict | None:
     )
     if complete:
         _innodb_blocked_by(transactions)
+        _trim_resources(transactions)
     else:
         # TOO DEEP OR LONG SEARCH: InnoDB corto la busqueda sin informar el ciclo
         transactions = []
@@ -441,9 +443,8 @@ def _innodb_locks(lines: list[str]) -> list[dict]:
                 "resources": [f"table {_unquote(schema)}.{_unquote(table)}"],
             })
         elif (match := _INNODB_RECORD_RE.match(line)) and locks and locks[-1]["lock_type"] == "record":
-            resources = locks[-1]["resources"]
-            if len(resources) < MAX_RESOURCES_PER_LOCK:
-                resources.append(f"{locks[-1]['_page']}:{match.group(1)}")
+            # sin tope: se recorta despues de cruzar las esperas (_trim_resources)
+            locks[-1]["resources"].append(f"{locks[-1]['_page']}:{match.group(1)}")
         # el resto (n_fields, el volcado hex de cada campo) son datos de la fila: se descarta
     for lock in locks:
         lock.pop("_page", None)
@@ -503,6 +504,26 @@ def _innodb_blocked_by(transactions: list[dict]) -> None:
         if not holders and len(transactions) == 2:
             holders = [other["process_id"] for other in transactions if other is not trx]
         trx["blocked_by"] = [pid for pid in holders if pid is not None]
+
+
+def _trim_resources(transactions: list[dict]) -> None:
+    """Cada bloqueo a MAX_RESOURCES_PER_LOCK recursos, pero sin perder lo que
+    espera alguna transaccion del informe: blocked_by ya se calculo con todo
+    y los detectores buscan ese cruce en holds."""
+    waited = {resource for trx in transactions for resource in trx["waits_for"]["resources"]}
+    for trx in transactions:
+        for lock in [trx["waits_for"], *trx["holds"]]:
+            # en el orden del informe
+            budget = MAX_RESOURCES_PER_LOCK - sum(resource in waited for resource in lock["resources"])
+            kept = []
+            for resource in lock["resources"]:
+                if resource in waited:
+                    kept.append(resource)
+                elif budget > 0:
+                    kept.append(resource)
+                    budget -= 1
+            lock["resources"] = kept
+            lock["targets"] = list(kept) or None
 
 
 def _unquote(identifier: str) -> str:

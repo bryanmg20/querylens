@@ -201,6 +201,62 @@ def test_innodb_caps_resources_but_keeps_rows_locked():
     assert big["blocked_by"] == [8]
 
 
+def _three_way_status(waited_heap):
+    """La 1 recorrio la tabla (heap 2 a 201 de la pagina 4) y espera lo de la
+    2; la 2 espera lo de la 3; la 3 espera waited_heap de la pagina 4."""
+    records = "".join(
+        f"Record lock, heap no {heap} PHYSICAL RECORD: n_fields 4; compact format; info bits 0\n"
+        for heap in range(2, 202)
+    )
+
+    def trx(number, holds, waits):
+        return (
+            f"*** ({number}) TRANSACTION:\nTRANSACTION {10 + number}, ACTIVE 2 sec\n"
+            f"LOCK WAIT 3 lock struct(s), heap size 1128, 2 row lock(s), undo log entries 1\n"
+            f"MySQL thread id {number}, OS thread handle 1, query id 1 localhost u updating\n"
+            f"UPDATE t SET a = 1 WHERE id = 1\n"
+            f"*** ({number}) HOLDS THE LOCK(S):\n{holds}"
+            f"*** ({number}) WAITING FOR THIS LOCK TO BE GRANTED:\n{waits}"
+        )
+
+    def record(page, heap, number, suffix=" locks rec but not gap"):
+        return (
+            f"RECORD LOCKS space id 9 page no {page} n bits 300 index PRIMARY of table `db`.`t` "
+            f"trx id {10 + number} lock_mode X{suffix}\n"
+            f"Record lock, heap no {heap} PHYSICAL RECORD: n_fields 4; compact format; info bits 0\n"
+        )
+
+    scan = (
+        "RECORD LOCKS space id 9 page no 4 n bits 300 index PRIMARY of table `db`.`t` trx id 11 lock_mode X\n"
+        + records
+    )
+    return (
+        "------------------------\nLATEST DETECTED DEADLOCK\n------------------------\n"
+        "2026-10-22 01:00:00 1\n"
+        + trx(1, scan, record(5, 2, 1, " locks rec but not gap waiting"))
+        + trx(2, record(5, 2, 2), record(6, 2, 2, " locks rec but not gap waiting"))
+        + trx(3, record(6, 2, 3), record(4, waited_heap, 3, " locks rec but not gap waiting"))
+        + "*** WE ROLL BACK TRANSACTION (3)\n"
+        "------------\nTRANSACTIONS\n------------\n"
+    )
+
+
+def test_innodb_cap_keeps_the_waited_record_past_the_limit():
+    # heap 150 es el registro 149 de la 1: queda despues del tope, y sin el
+    # la 3 no tendria quien la bloquea (con 3 no hay "es la otra")
+    report = parse_innodb_status(_three_way_status(waited_heap=150))
+    DeadlockReport.model_validate(report)
+
+    scanner, _, third = report["transactions"]
+    assert third["blocked_by"] == [1]
+    resources = scanner["holds"][0]["resources"]
+    # el esperado ocupa un lugar del tope; los demas, en el orden del informe
+    assert len(resources) == MAX_RESOURCES_PER_LOCK
+    assert resources[:-1] == [f"9:4:{heap}" for heap in range(2, 1 + MAX_RESOURCES_PER_LOCK)]
+    assert resources[-1] == "9:4:150"
+    assert scanner["holds"][0]["targets"] == resources
+
+
 @pytest.mark.parametrize("text, expected", [
     ("X locks rec but not gap", "X,REC_NOT_GAP"),
     ("X locks rec but not gap waiting", "X,REC_NOT_GAP"),
