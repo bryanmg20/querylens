@@ -12,6 +12,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint:
+    # ruff con telemetry_pipeline/ruff.toml: solo reglas que encuentran
+    # defectos (imports sin usar, tests con excepciones ciegas, nombres
+    # redefinidos). La version sale de requirements-dev.txt.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install "$(grep '^ruff==' telemetry_pipeline/requirements-dev.txt)"
+      - run: ruff check telemetry_pipeline
+
   unit:
     # Corre en cada push y PR. Sin servicios: si algo falla aqui, no se fusiona.
     runs-on: ubuntu-latest

@@ -300,7 +300,6 @@ def test_statements_failure_redacts_active_queries():
 
 def test_statements_failure_logs_degradation(caplog):
     """Q3: la degradacion no puede ser silenciosa; se avisa con WARNING."""
-    import orchestrator as orchestrator_module
 
     conn = _FakeConn({"pg_stat_statements": RuntimeError("boom")})
     with caplog.at_level("WARNING", logger="orchestrator"):

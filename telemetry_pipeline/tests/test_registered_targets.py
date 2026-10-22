@@ -375,7 +375,7 @@ def test_load_registered_targets_reuses_queue_engine(fernet, monkeypatch):
 def test_run_engine_disposes_target_even_if_queue_engine_fails(monkeypatch, postgres_snapshot):
     """C-5: If get_connection_querylens_db() raises, target_engine must still be disposed."""
     target_engine = mock.MagicMock()
-    orchestrator = _parchea_engines(monkeypatch, postgres_snapshot)
+    _parchea_engines(monkeypatch, postgres_snapshot)
     # Make queue engine creation fail
     monkeypatch.setattr(main, "get_connection_querylens_db", lambda: (_ for _ in ()).throw(RuntimeError("queue down")))
 

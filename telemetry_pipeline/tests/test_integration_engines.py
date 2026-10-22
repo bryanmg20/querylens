@@ -10,7 +10,7 @@ y en la raiz del repo.
 import uuid
 
 import pytest
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 
 from collectors.postgres.collector import Postgres_Collector
 from config.connections import (

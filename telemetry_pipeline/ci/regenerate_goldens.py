@@ -21,7 +21,6 @@ USAGE (con los contenedores del sandbox arriba):
     python ci/regenerate_goldens.py --battery-reps 30
 """
 import json
-import os
 import subprocess
 import sys
 from collections import Counter

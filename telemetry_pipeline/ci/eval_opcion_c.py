@@ -262,9 +262,9 @@ RARE_SHAPES = {
 
 def p3_workload(rng):
     plan = []
-    for name, sql in FREQ_SHAPES.items():
+    for name in FREQ_SHAPES:
         plan += [(name, 0, None)] * 4 + [(name, rng.choice(RARE), None) for _ in range(12)]
-    for name, sql in RARE_SHAPES.items():
+    for name in RARE_SHAPES:
         plan += [(name, rng.choice(RARE), rng.choice(RARE)) for _ in range(12)]
     rng.shuffle(plan)
     return plan
