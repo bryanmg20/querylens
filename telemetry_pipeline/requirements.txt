@@ -1,7 +1,10 @@
-sqlalchemy
-psycopg2
-pymysql
-sqlglot
-python-dotenv
-pydantic
-cryptography
+# Rango: desde la version con la que corre la suite hasta la proxima mayor.
+# Un release mayor (pydantic, sqlalchemy, sqlglot) puede cambiar la
+# validacion o el parseo: se sube a mano, con la suite verde.
+sqlalchemy>=2.1.4,<3
+psycopg2>=2.9.13,<3
+pymysql>=1.2.3,<2
+sqlglot>=30.22.0,<31
+python-dotenv>=1.2.4,<2
+pydantic>=2.14.0,<3
+cryptography>=50.0.2,<51

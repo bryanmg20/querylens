@@ -206,6 +206,25 @@ def test_after_ttl_checks_again():
     assert "preflight" in second.scopes
 
 
+def test_refresh_evicts_entries_of_bases_no_longer_monitored():
+    # una base desregistrada deja de refrescarse; una activa se refresca cada TTL
+    preflight._CACHE["postgresql://gone@h/db"] = (0.0, preflight.PreflightResult())
+    preflight._CACHE["postgresql://active@h/db"] = (3000.0, preflight.PreflightResult())
+
+    _run(_pg_conn(), clock=_Clock(3700.0))
+
+    assert "postgresql://gone@h/db" not in preflight._CACHE
+    assert "postgresql://active@h/db" in preflight._CACHE
+    assert "postgres" in preflight._CACHE
+
+
+def test_eviction_horizon_scales_with_a_long_ttl():
+    preflight._CACHE["postgresql://slow@h/db"] = (0.0, preflight.PreflightResult())
+    # TTL 1800 s: el horizonte es 3 x 1800 = 5400 s, no la hora minima
+    _run(_pg_conn(), clock=_Clock(5000.0), ttl=1800)
+    assert "postgresql://slow@h/db" in preflight._CACHE
+
+
 @pytest.mark.parametrize("raw, ttl", [("", 300.0), ("60", 60.0), ("0", 0.0), ("-5", 300.0), ("x", 300.0)])
 def test_ttl_from_env(monkeypatch, raw, ttl):
     monkeypatch.setenv("HEALTH_PREFLIGHT_TTL_S", raw)

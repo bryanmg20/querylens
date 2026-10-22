@@ -31,10 +31,11 @@ from logger import get_logger
 from main import run_targets
 
 logger = get_logger(__name__)
-# El detalle de cada ciclo (duracion y targets) baja a DEBUG para que el log
-# del archivo cuente cuanto duro cada vuelta sin ensuciar la consola: el resto
-# del pipeline se queda en INFO.
-logger.setLevel(logging.DEBUG)
+# El detalle de cada ciclo (duracion y targets) va en DEBUG: por defecto el
+# runner lo deja visible en el archivo y el resto del pipeline se queda en
+# INFO. Un QL_LOG_LEVEL explicito manda tambien aca (get_logger ya lo aplico).
+if not os.getenv("QL_LOG_LEVEL"):
+    logger.setLevel(logging.DEBUG)
 
 DEFAULT_INTERVAL_S = 10.0
 MAX_BACKOFF_S = 60.0

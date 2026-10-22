@@ -1,11 +1,16 @@
 # Revisión de código — `telemetry_pipeline` y `querylens_database`
 
-**Fecha:** 2026-10-07 · **Última actualización:** 2026-10-10 (rama `feature/pipeline-health`)
+**Fecha:** 2026-10-07 · **Última actualización:** 2026-10-21 (rama `feature/deadlocks`)
 **Alcance:** `telemetry_pipeline/**` (código, tests, docs, Dockerfile/CI), `querylens_database/*.sql` y su integración en `docker-compose.yml`. Fuera de alcance: `auth_service/`, `frontend/`, `ql_sandbox/`.
 **Método:** lectura completa de los módulos del pipeline, verificación de afirmaciones de los docs, revisión de la DDL, ejecución de la suite (`466 passed, 21 deselected` — las de integración requieren contenedores) y reproducción de los hallazgos sospechosos con scripts mínimos.
 **Contexto:** proyecto en desarrollo. Las severidades son relativas a ese estado: "Alta" = pierde datos o puede parar el daemon en producción.
 
-> **Estado actual (2026-10-10) — leer esto primero.** Los bloques "Actualizado" de abajo son historia por ronda; el estado vigente de cada pendiente está en el **Plan de acción consolidado** (columna *Estado*).
+> **Estado actual (2026-10-21) — leer esto primero. El pipeline no tiene pendientes.**
+> - **Cierre de la revisión (2026-10-21):** se verificó cada pendiente contra el código. Resueltos con fix y test: I-1, I-2 (resto de M-7), I-3 (=N-3, matiz de B-6), I-4 (=N-5), I-5 (=B-11), I-6 (=B-8), I-9 (=B-7), I-15, I-17, I-19. Cerrados por decisión (CAJA 3): M-6 (sin fallback, D-7), I-16 (D-8), I-18 (D-9); M-5 y M-11 siguen como D-4, y A-3 como D-3. Los pendientes de despliegue y de la base de QueryLens (I-7, I-8, I-10, I-11, I-12 = B-1, B-2, B-3, B-9, B-10) salen del alcance del pipeline y quedan en la sección **Fuera del pipeline**, al final.
+> - **Suite:** **991 passed** (unit/contract/integración, `pytest` desde la raíz con el sandbox arriba). Mutantes: 146 en `ci/mutants.py`, ninguno inválido; los 3 que no coincidían con el código (`normalize: no castear datetime`, `normalizer/pg: leer Total Cost como estimated_rows`, `selectors: derrame incluye los que no derraman`) se reescribieron.
+> - **Correcciones a esta revisión:** el consumidor de `analyze_job` ya está en el repo (`detection_engine/main.py`: `pgmq.read` + `pgmq.archive`), así que "la cola no tiene consumidor" (D-1, A-3, Contexto clave) quedó desactualizado. Los goldens se regeneraron con el sandbox el 2026-10-12 (`e87437a`, `cf29e64`): el parche offline de N-1 ya no es necesario.
+
+> **Estado al 2026-10-10 (histórico).** Los bloques "Actualizado" de abajo son historia por ronda; el estado vigente de cada pendiente está en el **Plan de acción consolidado** (columna *Estado*).
 > - **Suite:** **773 passed** unit/contract (`pytest -m "not integration"`); integración verde contra el stack (e2e + `test_health_integration.py`).
 > - **Funcionalidad nueva desde la última revisión:** sección `foreign_keys` en ambos motores (para AP-06), `canonic_query` en `statements`, y **salud del pipeline** (`pipeline_health`: paquete `telemetry_pipeline/health/`, tablas `last_run`/`issues`, purga en `runner.py`; ver `PIPELINE_FLOW.md` → "Salud del pipeline").
 > - **Cambia la lectura de M-5 / D-4:** un error de recolección sigue llegando al snapshot como sección vacía (contrato sin cambios), pero **ya no es invisible**: queda en `pipeline_health.last_run.sections_failed` y como issue con su causa (permiso, extensión, timeout...) que la API puede mostrarle al cliente.
@@ -33,9 +38,9 @@
 > - **N-1 (MEDIA — privacidad):** el `EXPLAIN FORMAT=JSON` de MySQL corre sobre `QUERY_SAMPLE_TEXT` (con literales), así que `canonic_explains[*].predicate` traía valores reales al golden — verificado: `(a.id > 3000)`, `(sbtest1.c LIKE '%7%')`, `BETWEEN 2000 AND 4000` — **contradiendo la afirmación de privacidad de `references/004_decisiones_contrato.md:73`** ("la cola no contiene literales de datos reales"; el informe verificó `query_sample_text` y `query_text` pero no este canal). Corregido en `clean_mysql_explain_predicate_dynamic` (`stages/normalize.py`): literales → placeholder `$n` en la ruta sqlglot **y** en el fallback por regex (el fallback era un canal de fuga igual); `NULL`/`TRUE`/`FALSE` intactos. Golden MySQL parcheado offline (6 de 17 predicados; idempotente en los 11 restantes — la regeneración oficial con sandbox queda para el usuario). Contrato nuevo: `test_snapshot_contract.py::test_predicates_are_canonicalized` exige "sin literales" (MySQL: números sueltos y strings entrecomillados; PG: strings — `SubPlan 1` es nomenclatura de plan, no dato). Docs: nota nueva en `references/004` y `PIPELINE_FLOW.md:207`. Tests: 7 nuevos. Suite **510 passed**.
 > - **N-2 (BAJA — ciclo de vida):** `with active.begin()` cierra la **transacción**, no la **conexión**: la conexión extranjera de `ExplainStage._foreign_connection` (`engine.connect()`, `explain.py`) nunca se cerraba — `dispose()` no toca lo enganchado y sin `.close()` explícito dependía del GC. Corregido con `finally: if active is not conn: active.close()` (el guard es imprescindible: `conn` la cierra el orchestrator). Tests: cierre en éxito, cierre cuando el EXPLAIN falla, y que la conexión compartida **nunca** se cierra desde la etapa.
 > - **N-4 (BAJA — docs/despliegue):** `PIPELINE_FLOW.md:134` prometía `QL_LOG_LEVEL=${QL_LOG_LEVEL:-INFO}` como palanca de despliegue sin estar cableado en el servicio `pipeline` del compose, y citaba tres nombres muertos (`pg_isready -d ql_metrics` — el healthcheck real usa `${QUERYLENS_DB}`; `01_schema.sql` — el init real es `init.sql`; `CollectorsStage` — la función es `main._log_payload_size`). Añadida `QL_LOG_LEVEL: ${QL_LOG_LEVEL:-INFO}` al compose y corregidas las tres referencias.
-> - **Quedan abiertos de esa ronda (no tocados):** N-3 (`runner.py:34` fija DEBUG y anula `QL_LOG_LEVEL` para su módulo), N-5 (`load_dotenv(override=True)` en import), N-6 (`LOCKS_QUERY` incluye los locks del propio pipeline), N-7 (dos focos del patrón `or []` residual: `selectors.py:5`, `mysql/collector.py:49`), N-8 (una excepción de lectura de la cola se disfraza de "sin bases" y repite WARNING cada ciclo).
+> - **Quedan abiertos de esa ronda (no tocados):** N-3 (`runner.py:34` fija DEBUG y anula `QL_LOG_LEVEL` para su módulo), N-5 (`load_dotenv(override=True)` en import), N-6 (`LOCKS_QUERY` incluye los locks del propio pipeline), N-7 (dos focos del patrón `or []` residual: `selectors.py:5`, `mysql/collector.py:49`), N-8 (una excepción de lectura de la cola se disfraza de "sin bases" y repite WARNING cada ciclo). **Cerrados después:** N-6 = C-6, N-7 = C-1, N-8 = C-2 (2026-10-08); N-3 = I-3 y N-5 = I-4 (2026-10-21).
 > - **Correcciones al informe:** B-6 queda **resuelto-implícito** con `QL_LOG_LEVEL` (Q1, `b890bdf`): el `debug` de `registered.py` ya es alcanzable desde el env (queda el matiz de N-3: `runner.py:34` lo ignora para su propio módulo). Y el mutante `selectors: no inyectar ready_for_explain` estaba en INVALIDOS (`ci/mutants.py:204` esperaba 16 espacios, el código tiene 12 desde que se reescribió `init_ready_for_explain`): corregido, ahora 42/42 muertos en `normalize` y 22/22 en `explain`.
-> - **Siguen vigentes sin cambios:** A-3 restante (LIMIT / envío por cambio de secciones), M-5, M-7 parcial (duplicación de normalización y de engine), M-11 (`captured_at`/`source_dialect`), la defensa en profundidad del `EXPLAIN` (prefijo sobre `query_sample_text`) y B-1 a B-12 — salvo B-6, corregido arriba. De esta ronda: N-3 y N-5 a N-8. **Pendiente del usuario:** regenerar los goldens con el sandbox (`ci/regenerate_goldens.py`); el parche offline de N-1 debe coincidir.
+> - **Siguen vigentes sin cambios:** A-3 restante (LIMIT / envío por cambio de secciones), M-5, M-7 parcial (duplicación de normalización y de engine), M-11 (`captured_at`/`source_dialect`), la defensa en profundidad del `EXPLAIN` (prefijo sobre `query_sample_text`) y B-1 a B-12 — salvo B-6, corregido arriba. De esta ronda: N-3 y N-5 a N-8. **Pendiente del usuario:** regenerar los goldens con el sandbox (`ci/regenerate_goldens.py`); el parche offline de N-1 debe coincidir. **Hecho** el 2026-10-12 (`e87437a`, `cf29e64`).
 >
 > **Actualizado (2026-10-08, auditoría C-1 a C-7):** **los 7 hallazgos críticos C-1 a C-7 están RESUELTOS** con fixes y tests de regresión:
 > - **C-1** (`selectors.py:5`, `mysql/collector.py:49`): `statements=None` ya no crashea — patrón `or []` en `select_high_impact_time_statements`, `select_unstable_statements`, `select_disk_spill_indicator`, y `calculate_stddev_coeff`. Tests: `test_selectors.py::test_select_high_impact_handles_none_statements`, `test_select_unstable_handles_none_statements`, `test_select_disk_spill_handles_none_statements`, `test_collectors_explainable.py::TestMysqlCalculateStddevCoeff::test_handles_none_statements`.
@@ -128,6 +133,8 @@ Los docs afirman "**~8 KB por snapshot; 10 s × N bases = ~70 MB/día/base**". C
 
 **Parcial en `bf13020`:** docs corregidos — `PIPELINE_FLOW.md:143` y `TESTING.md:76` reemplazan el `~8 KB` (falso ~5×) por el rango medido 37–49 KB en 12-14 statements y la receta `SELECT count(*), pg_size_pretty(avg(pg_column_size(message)))`. Observabilidad: `main._log_payload_size` — DEBUG de bytes siempre, `WARNING` único por db_id al cruzar `PAYLOAD_WARN_BYTES` (1 MB), patrón de transición de `runner._report_state`. **No** se añadió `LIMIT`/omisión de secciones: truncar rompería la validación del consumidor y la retención de la cola es responsabilidad suya; la decisión quedó registrada en el propio `PIPELINE_FLOW.md:143`.
 
+**Cerrado (2026-10-21):** el `LIMIT`/envío por cambio queda como decisión D-3.
+
 **Nota (ronda M-6 a M-12):** el polling de **10 s** (`runner.py:40` `interval_from_env`, fijado por `test_runner.py:52`) es el default pensado para **pruebas y sandbox**. Para producción la cadencia prevista es **30–60 s** — se deja como decisión de deploy, sin tocar el código ni el contrato.
 
 ---
@@ -144,7 +151,7 @@ row[field] = ts.replace(tzinfo=None).isoformat(...)
 
 **Sugerencia:** `ts.astimezone(timezone.utc).replace(tzinfo=None)` en el lado aware, y forzar/ documentar `time_zone='+00:00'` en la sesión de MySQL.
 
-**Resuelto en `bf13020`:** helper único `_to_naive_utc` en `models/snapshot.py` (aware → UTC naive; el naive sin tocarse), aplicado en `_to_iso` (cubre `counters_epoch`, `transaction_start_time`, `last_index_scan`, `stats_reset`) y en `normalize_statement_epochs`/`normalize_active_query_timestamps`. El lado MySQL queda fijado a UTC por el `time_zone='+00:00'` del `init_command` de A-2 — las dos mitades del docstring ahora se cumplen. Tests: `normalize_statement_epochs` no tenía cobertura — ahora 2 casos, más casos de offset `-05:00` en active_queries y en `_to_iso` (`test_normalize.py`, `test_snapshot.py`).
+**Resuelto en `bf13020`:** helper único `to_naive_utc` en `models/snapshot.py` (aware → UTC naive; el naive sin tocarse), aplicado en `to_iso` (cubre `counters_epoch`, `transaction_start_time`, `last_index_scan`, `stats_reset`) y en `normalize_statement_epochs`/`normalize_active_query_timestamps`. El lado MySQL queda fijado a UTC por el `time_zone='+00:00'` del `init_command` de A-2 — las dos mitades del docstring ahora se cumplen. Tests: `normalize_statement_epochs` no tenía cobertura — ahora 2 casos, más casos de offset `-05:00` en active_queries y en `to_iso` (`test_normalize.py`, `test_snapshot.py`).
 
 ---
 
@@ -155,6 +162,8 @@ row[field] = ts.replace(tzinfo=None).isoformat(...)
 Si falla la query de `locks`, el payload llega con `locks: []`. El consumidor no puede distinguir "la base no tiene locks" de "no pude leer los locks". Combinado con A-1: el único fallo que se nota es el de `statements`, y se nota porque **no** llega nada. Además el snapshot no tiene **timestamp de captura** (ver MEDIA-11).
 
 **Nota (ronda M-6 a M-12, sin cambio de contrato):** se verificó en el código que los fallos por permisos **sí quedan en el log**: `CollectStage` captura por sección, hace `rollback()`, deja `stats[key] = None` y emite `logger.error(f"{dialect} | collect_telemetry | query={key} | {error del driver}")` — un `permission denied` del rol monitor aparece ahí con su mensaje. Sigue sin añadirse `collect_errors` ni `captured_at` (decisión del usuario, ver MEDIA-11).
+
+**Cerrado (2026-10-21):** decisión D-4. El fallo de una sección ya no es invisible: queda en `pipeline_health` (`sections_failed` + issue con su causa).
 
 ---
 
@@ -168,18 +177,22 @@ Cinco sitios dicen `"fallback a ENGINES"` y el docstring dice "main() cae a los 
 
 **Resuelto (ronda M-6 a M-12):** el docstring del módulo y los 4 mensajes de `config/registered.py` ya dicen `"no se extrae nada"` y ninguno anuncia un fallback; el test `test_registered_targets.py` fija el texto. La **implementación de un fallback real** (e.g. hacia los ENGINES fijos del sandbox) queda **pendiente explícitamente**: el docstring de `registered.py` apunta a este hallazgo, y `main()` y `main_sandbox.py` siguen siendo rutas separadas.
 
+**Cerrado (2026-10-21, decisión D-7):** no se implementa el fallback. Sin bases registradas `main()` no extrae nada (lo dice el log y lo registra `pipeline_health`); el sandbox se corre con `main_sandbox.py`. Así un despliegue mal configurado no monitorea una base de prueba sin avisar.
+
 ---
 
 ### MEDIA-7 — Lógica de normalización duplicada (dos fuentes de verdad)
 
-- Transformaciones hechas **dos veces**: `normalize_locks` / `normalize_blocking_pids` / `normalize_statement_epochs` (etapa) y los validadores `_to_bool` / `_to_int_list` / `_to_iso` (pydantic) hacen lo mismo con distinto código (`stages/normalize.py:57-79` vs `models/snapshot.py:11-32`). Si cambia uno y no el otro, o el snapshot viaja mal, o se rechaza.
+- Transformaciones hechas **dos veces**: `normalize_locks` / `normalize_blocking_pids` / `normalize_statement_epochs` (etapa) y los validadores `to_bool` / `to_int_list` / `to_iso` (pydantic) hacen lo mismo con distinto código (`stages/normalize.py:57-79` vs `models/snapshot.py:11-32`). Si cambia uno y no el otro, o el snapshot viaja mal, o se rechaza.
 - `_base_operation` está **copiado idéntico** en `stages/explain_normalizer.py:190` y `:337`.
 - Construcción del engine MySQL duplicada: `connections.get_connection_mysql` vs `registered._engine` (mismos `pool_size/max_overflow/pre_ping`, pueden divergir; ya divergen en Postgres: el target no tiene `pre_ping`).
 - `anonimize_query_text` (`canonicalizers.py:43-51`) es en la práctica un **no-op**: `select_candidates_to_explain` ya copia `query_text` con `{**statement, ...}`, así que "restaurar"lo desde `statements` escribe el mismo valor.
 
 **Sugerencia:** que un lado sea la única fuente (misma función usada por etapa y modelo), extraer `_base_operation` compartido, y borrar o renombrar `anonimize_query_text` (ver MEDIA-10).
 
-**Resuelto (parcial, ronda M-6 a M-12):** `_base_operation` pasó a una **función de módulo única** en `stages/explain_normalizer.py` (las dos copias idénticas estaban en las clases Postgres/MySQL); `anonimize_query_text` se **eliminó** — era un no-op confirmado (los candidatos copian `query_text` con `{**statement}`). Se quitaron sus tests (2 en `test_canonicalizers.py` + `TestQueryTextIsRestored` en `test_normalize_stage.py`), el mutante que la protegía y la mención en `PIPELINE_FLOW.md`. **Quedan abiertas** las otras dos duplicaciones: `normalize_locks`/`normalize_blocking_pids`/`normalize_statement_epochs` (etapa) vs los validadores pydantic (`_to_bool`/`_to_int_list`/`_to_iso`), y la construcción del engine (MySQL con `pool_size=1` rodada dos veces; Postgres divergiendo en `pre_ping`).
+**Resuelto (parcial, ronda M-6 a M-12):** `_base_operation` pasó a una **función de módulo única** en `stages/explain_normalizer.py` (las dos copias idénticas estaban en las clases Postgres/MySQL); `anonimize_query_text` se **eliminó** — era un no-op confirmado (los candidatos copian `query_text` con `{**statement}`). Se quitaron sus tests (2 en `test_canonicalizers.py` + `TestQueryTextIsRestored` en `test_normalize_stage.py`), el mutante que la protegía y la mención en `PIPELINE_FLOW.md`. **Quedan abiertas** las otras dos duplicaciones: `normalize_locks`/`normalize_blocking_pids`/`normalize_statement_epochs` (etapa) vs los validadores pydantic (`to_bool`/`to_int_list`/`to_iso`), y la construcción del engine (MySQL con `pool_size=1` rodada dos veces; Postgres divergiendo en `pre_ping`).
+
+**Resuelto (2026-10-21, I-1 e I-2):** las funciones del stage (`normalize_locks`, `normalize_blocking_pids`, `normalize_statement_epochs`, `normalize_active_query_timestamps`) llaman a los mismos helpers que los validadores del contrato (`to_bool`, `to_int_list`, `to_iso` de `querylens_contract.snapshot`): una sola fuente. Los engines salen de `config.connections.postgres_engine` / `mysql_engine`, que usan las factorías del sandbox y `registered._engine`. Tests: `test_registered_mysql_engine_has_the_same_pool_as_the_sandbox_one`; mutantes `contrato: *` y `connections: pool MySQL distinto`.
 
 ---
 
@@ -227,6 +240,8 @@ Cinco sitios dicen `"fallback a ENGINES"` y el docstring dice "main() cae a los 
 
 **Sugerencia:** `captured_at` (UTC) y `source_dialect` en el payload; son dos campos que no rompen "unicidad del evento".
 
+**Cerrado (decisión D-4; ver también FP-1).** Nota 2026-10-21: el snapshot ya trae la sección `capture_timestamp` (hora del servidor al capturar, agregada para CT-05), así que la mitad "sin timestamp de captura" quedó cubierta.
+
 ---
 
 ### MEDIA-12 — Transacción abierta sobre el target durante todo el ciclo
@@ -257,17 +272,17 @@ Postgres emite `SET LOCAL search_path TO DEFAULT` cuando no hay schema; MySQL de
 
 | # | Dónde | Hallazgo |
 |---|---|---|
-| B-1 | `querylens_database/init.sql:2` | `CREATE ROLE postgres WITH SUPERUSER LOGIN` crea un superusuario extra sin password; el comentario habla de `pg_partman`, que no se usa en el repo. Si `POSTGRES_USER=postgres`, la sentencia falla y depende de que `psql` continúe tras el error. |
-| B-2 | `querylens_database/registered_databases.sql:28` | `database_identifier VARCHAR(32) UNIQUE` (corrección al informe previo: es `VARCHAR(32)`, no `VARCHAR(23)`) ya crea un índice y además se crea `idx_registered_databases_identifier`: índice duplicado (escritura/almacenamiento gratis cada INSERT/UPDATE). |
-| B-3 | `querylens_database/*` + `docker-compose.yml:15-16` | Los DDL van en `docker-entrypoint-initdb.d`, solo corren en el **primer** arranque del volumen: cualquier cambio posterior requiere migración manual (hoy no hay tooling). Orden accidental: `02_registered_databases.sql` se ejecuta antes que `init.sql` (`'0' < 'i'`); funciona porque la tabla no depende de pgmq. |
+| B-1 → fuera del pipeline (=I-10) | `querylens_database/init.sql:2` | `CREATE ROLE postgres WITH SUPERUSER LOGIN` crea un superusuario extra sin password; el comentario habla de `pg_partman`, que no se usa en el repo. Si `POSTGRES_USER=postgres`, la sentencia falla y depende de que `psql` continúe tras el error. |
+| B-2 → fuera del pipeline (=I-11) | `querylens_database/registered_databases.sql:28` | `database_identifier VARCHAR(32) UNIQUE` (corrección al informe previo: es `VARCHAR(32)`, no `VARCHAR(23)`) ya crea un índice y además se crea `idx_registered_databases_identifier`: índice duplicado (escritura/almacenamiento gratis cada INSERT/UPDATE). |
+| B-3 → fuera del pipeline (=I-12) | `querylens_database/*` + `docker-compose.yml:15-16` | Los DDL van en `docker-entrypoint-initdb.d`, solo corren en el **primer** arranque del volumen: cualquier cambio posterior requiere migración manual (hoy no hay tooling). Orden accidental: `02_registered_databases.sql` se ejecuta antes que `init.sql` (`'0' < 'i'`); funciona porque la tabla no depende de pgmq. |
 | B-4 ✅ (=C-4) | `config/registered.py:138` | `with get_connection_querylens_db().connect()` crea un **engine nuevo por ciclo (cada 10 s)** y nunca lo dispone. SQLAlchemy lo cierra por GC, pero es inconsistente con el `dispose()` cuidadoso de `run_engine` y genera churn de conexiones a la cola. |
 | B-5 ✅ (=C-5) | `main.py:36-37` | `target_engine` se crea **antes** del `try`: si `get_connection_querylens_db()` lanzara, ese engine no se dispone (hoy `create_engine` casi no lanza, pero es la misma estructura que A-8). |
-| B-6 | `config/registered.py:157` + `logger.py:57` | **Resuelto-implícito (Q1, `b890bdf`):** con `QL_LOG_LEVEL=DEBUG` el `logger.debug("N base(s) activa(s)")` sí se emite (`_level_from_env` fija el nivel por proceso); con el default INFO no aparece, que era la intención del comentario. Matiz abierto: `runner.py:34` sigue fijando DEBUG a su propio logger sin consultar el env (N-3 de la ronda 2). |
-| B-7 | `main.py:63` | `print(...)` en el camino caliente en vez del logger (los docs lo enuncian como diseño, pero en contenedor ensucia stdout y no tiene timestamp/nivel). |
-| B-8 | `requirements.txt` | 7 dependencias **sin versión fijada** (`sqlalchemy`, `pydantic`, `cryptography`...): builds no reproducibles; un release mayor de pydantic/sqlalchemy puede romper la validación en producción sin tocar código. |
-| B-9 | `docker-compose.yml:11,38` | Puertos publicados en todas las interfaces (`0.0.0.0`): Postgres (5432) y auth (8000). Para despliegue, bindear a `127.0.0.1:puerto`. |
-| B-10 | `docker-compose.yml:26-29,69-72` | `auth-service` y `pipeline` comparten el mismo rol (`QUERYLENS_USER`) y la misma clave: ese rol es a la vez dueño de la cola **y** lector de `encrypted_password`. Menor privilegio: rol separado para el pipeline con `SELECT` solo sobre `registered_databases` + `pgmq.send`. |
-| B-11 | `stages/normalize.py:83` | `explain.get("canonical_plan", []).get(...)` — si faltara la clave, `.get` se llamaría sobre una `list` (hoy inalcanzable: el normalizador siempre la escribe; usar `{}` o `.get(..., {})` como default). |
+| B-6 ✅ (=I-3) | `config/registered.py:157` + `logger.py:57` | **Resuelto-implícito (Q1, `b890bdf`):** con `QL_LOG_LEVEL=DEBUG` el `logger.debug("N base(s) activa(s)")` sí se emite (`_level_from_env` fija el nivel por proceso); con el default INFO no aparece, que era la intención del comentario. Matiz abierto: `runner.py:34` sigue fijando DEBUG a su propio logger sin consultar el env (N-3 de la ronda 2). |
+| B-7 ✅ (=I-9) | `main.py:63` | `print(...)` en el camino caliente en vez del logger (los docs lo enuncian como diseño, pero en contenedor ensucia stdout y no tiene timestamp/nivel). |
+| B-8 ✅ (=I-6) | `requirements.txt` | 7 dependencias **sin versión fijada** (`sqlalchemy`, `pydantic`, `cryptography`...): builds no reproducibles; un release mayor de pydantic/sqlalchemy puede romper la validación en producción sin tocar código. |
+| B-9 → fuera del pipeline (=I-7) | `docker-compose.yml:11,38` | Puertos publicados en todas las interfaces (`0.0.0.0`): Postgres (5432) y auth (8000). Para despliegue, bindear a `127.0.0.1:puerto`. |
+| B-10 → fuera del pipeline (=I-8) | `docker-compose.yml:26-29,69-72` | `auth-service` y `pipeline` comparten el mismo rol (`QUERYLENS_USER`) y la misma clave: ese rol es a la vez dueño de la cola **y** lector de `encrypted_password`. Menor privilegio: rol separado para el pipeline con `SELECT` solo sobre `registered_databases` + `pgmq.send`. |
+| B-11 ✅ (=I-5) | `stages/normalize.py:83` | `explain.get("canonical_plan", []).get(...)` — si faltara la clave, `.get` se llamaría sobre una `list` (hoy inalcanzable: el normalizador siempre la escribe; usar `{}` o `.get(..., {})` como default). |
 | B-12 ✅ (=C-7) | `stages/explain.py:53` | `is_single_statement` descarta cualquier query con `;` dentro de un literal o comentario (falso "multi-statement"): se pierden EXPLAINs válidos de forma silenciosa (solo warning). |
 
 ---
@@ -298,7 +313,9 @@ Defense-in-depth que añadiría: aplicar el mismo filtro de prefijo **al texto q
 
 ---
 
-## Prioridad sugerida
+## Prioridad sugerida (histórica, 2026-10-07)
+
+> Todo lo de esta lista está resuelto o cerrado por decisión: ver el Plan de acción consolidado.
 
 1. **M-6** (log/docstring anuncian un fallback que no existe) — engaña al operador sobre si hay extracción.
 2. **M-5** (error de recolección se publica como "sin datos") — el consumidor no distinguirá "vacío" de "no leí"; atado a decidir `captured_at`/`collect_errors`.
@@ -318,7 +335,7 @@ Defense-in-depth que añadiría: aplicar el mismo filtro de prefijo **al texto q
 | `main.py` | Producción | `database_identifier` de `registered_databases` (pisa constante ANTES de validar) | N/A (una corrida) | Llamado por `runner.py` |
 | `runner.py` | Daemon producción | Hereda de `main.py` | `EXTRACT_INTERVAL_S` (default 10s = **pruebas**; prod 30-60s via env) | **Proceso que se despliega** |
 
-**El consumidor de `q_analyze_job` NO está en este repo** — es un servicio externo separado (los tests simulan consumo con `pgmq.read`, ver `test_e2e_main.py:172`). El pipeline solo produce.
+**El consumidor de la cola `analyze_job` (tabla `pgmq.q_analyze_job`) está en `detection_engine/`** (`main.py`: `pgmq.read` con visibility timeout y `pgmq.archive` al terminar). Al escribir esta revisión era externo; los tests del pipeline siguen simulando el consumo con `pgmq.read` (`test_e2e_main.py`). El pipeline solo produce.
 
 ---
 
@@ -340,25 +357,25 @@ Defense-in-depth que añadiría: aplicar el mismo filtro de prefijo **al texto q
 
 | # | Hallazgo | Archivo:línea | Acción | Estado (2026-10-10) |
 |---|----------|---------------|--------|--------|
-| **I-1** | Normalización duplicada: etapa vs validadores pydantic | `stages/normalize.py:39-82` vs `models/snapshot.py:25-46` | Unificar: que etapa use validadores pydantic (o viceversa). Una sola fuente de verdad. | Abierto |
-| **I-2** | Engine MySQL construido 2 veces | `config/connections.py:92` vs `config/registered.py:144` | Unificar builders: una sola factory por motor, reutilizada por `connections.py` y `registered.py`. | Parcial: `connect_args` ya es único y Postgres ya no diverge en `pre_ping`; los parámetros de pool de MySQL siguen repetidos |
-| **I-3** | `runner.py` fija `DEBUG` hardcodeado, ignora `QL_LOG_LEVEL` | `runner.py:37` | Leer `QL_LOG_LEVEL` via `logger._level_from_env()` en lugar de `logging.DEBUG` hardcodeado. | Abierto |
-| **I-4** | `load_dotenv(override=True)` en import de módulo | `config/connections.py:128` | Quitar `override=True`; cargar `.env` solo en entrypoints (`main.py`, `runner.py`, `main_sandbox.py`). Efecto visto: un `DB_PORT` exportado en la shell no gana sobre el `.env`. | Abierto |
-| **I-5** | `.get` inseguro en `normalize_predicate` | `stages/normalize.py:85` | Cambiar `explain.get("canonical_plan", [])` por `explain.get("canonical_plan", {})`. | Abierto |
-| **I-6** | Deps sin pin en `requirements.txt` (7 deps) | `telemetry_pipeline/requirements.txt` | Pinnear versiones mínimas compatibles (ej. `sqlalchemy>=2.0,<3.0`, `pydantic>=2.0,<3.0`, etc.). | Abierto |
-| **I-7** | Puertos publicados en `0.0.0.0` | `docker-compose.yml:10,46,65,81` | Cambiar a `127.0.0.1:puerto` para despliegue. | Abierto (de despliegue) |
-| **I-8** | Rol compartido auth-service/pipeline/API | `docker-compose.yml` | Crear rol `querylens_pipeline` con `SELECT` en `registered_databases` + `pgmq.send` + escritura en `pipeline_health`; la API solo `SELECT` en `pipeline_health`. | Abierto (de despliegue) |
-| **I-9** | `print()` en camino caliente | `main.py:150` | Cambiar a `logger.info(f"Diccionario encolado con ID: {msg_id}")`. | Abierto |
-| **I-10** | Superusuario `postgres` innecesario en `init.sql` | `querylens_database/init.sql:2` | Eliminar `CREATE ROLE postgres WITH SUPERUSER LOGIN`; `pg_partman` no se usa. | Abierto |
-| **I-11** | Índice duplicado en `registered_databases` | `querylens_database/registered_databases.sql:6,28` | Eliminar `CREATE INDEX idx_registered_databases_identifier` (ya existe por `UNIQUE`). | Abierto |
-| **I-12** | DDL solo en primer arranque, sin migraciones | `docker-compose.yml:12-15` | Evaluar herramienta (alembic, golang-migrate, SQL puro versionado). | Abierto; ahora son 3 DDL (`init`, `registered_databases`, `pipeline_health`). La aplicación manual de `pipeline_health.sql` está documentada en `PIPELINE_FLOW.md` |
+| **I-1** | Normalización duplicada: etapa vs validadores pydantic | `stages/normalize.py:39-82` vs `models/snapshot.py:25-46` | Unificar: que etapa use validadores pydantic (o viceversa). Una sola fuente de verdad. | **Resuelto** (2026-10-21): el stage usa `to_bool`/`to_int_list`/`to_iso` del contrato |
+| **I-2** | Engine MySQL construido 2 veces | `config/connections.py:92` vs `config/registered.py:144` | Unificar builders: una sola factory por motor, reutilizada por `connections.py` y `registered.py`. | **Resuelto** (2026-10-21): `postgres_engine`/`mysql_engine` en `config/connections.py`, usados por las factorías y `registered._engine` |
+| **I-3** | `runner.py` fija `DEBUG` hardcodeado, ignora `QL_LOG_LEVEL` | `runner.py:37` | Leer `QL_LOG_LEVEL` via `logger._level_from_env()` en lugar de `logging.DEBUG` hardcodeado. | **Resuelto** (2026-10-21): el runner baja a DEBUG solo si `QL_LOG_LEVEL` no está definido (`test_runner_respeta_un_ql_log_level_explicito`) |
+| **I-4** | `load_dotenv(override=True)` en import de módulo | `config/connections.py:128` | Quitar `override=True`; cargar `.env` solo en entrypoints (`main.py`, `runner.py`, `main_sandbox.py`). Efecto visto: un `DB_PORT` exportado en la shell no gana sobre el `.env`. | **Resuelto** (2026-10-21): `load_dotenv` sin `override`; lo exportado gana sobre el `.env` (`test_exported_variable_wins_over_the_env_file`). Se mantiene la carga al importar: completa lo que falta y no pisa nada |
+| **I-5** | `.get` inseguro en `normalize_predicate` | `stages/normalize.py:85` | Cambiar `explain.get("canonical_plan", [])` por `explain.get("canonical_plan", {})`. | **Resuelto** (2026-10-21) |
+| **I-6** | Deps sin pin en `requirements.txt` (7 deps) | `telemetry_pipeline/requirements.txt` | Pinnear versiones mínimas compatibles (ej. `sqlalchemy>=2.0,<3.0`, `pydantic>=2.0,<3.0`, etc.). | **Resuelto** (2026-10-21): rangos `>=versión probada,<próxima mayor` en `requirements.txt` y `requirements-dev.txt` |
+| **I-7** | Puertos publicados en `0.0.0.0` | `docker-compose.yml:10,46,65,81` | Cambiar a `127.0.0.1:puerto` para despliegue. | → **Fuera del pipeline** (sección final) |
+| **I-8** | Rol compartido auth-service/pipeline/API | `docker-compose.yml` | Crear rol `querylens_pipeline` con `SELECT` en `registered_databases` + `pgmq.send` + escritura en `pipeline_health`; la API solo `SELECT` en `pipeline_health`. | → **Fuera del pipeline** (sección final) |
+| **I-9** | `print()` en camino caliente | `main.py:150` | Cambiar a `logger.info(f"Diccionario encolado con ID: {msg_id}")`. | **Resuelto** (2026-10-21): `logger.info` con dialecto, `msg_id` y bytes del payload |
+| **I-10** | Superusuario `postgres` innecesario en `init.sql` | `querylens_database/init.sql:2` | Eliminar `CREATE ROLE postgres WITH SUPERUSER LOGIN`; `pg_partman` no se usa. | → **Fuera del pipeline** (sección final) |
+| **I-11** | Índice duplicado en `registered_databases` | `querylens_database/registered_databases.sql:6,28` | Eliminar `CREATE INDEX idx_registered_databases_identifier` (ya existe por `UNIQUE`). | → **Fuera del pipeline** (sección final) |
+| **I-12** | DDL solo en primer arranque, sin migraciones | `docker-compose.yml:12-15` | Evaluar herramienta (alembic, golang-migrate, SQL puro versionado). | → **Fuera del pipeline** (sección final) |
 | **I-13** | Defensa EXPLAIN: sin filtro sobre `query_sample_text` (MySQL) | `stages/explain.py:117` | Re-aplicar la puerta de solo lectura al texto que realmente se explica. | **Resuelto** (2026-10-08): `is_explainable_command` corre sobre el texto explicado; solo `SELECT`/`WITH` |
 | **I-14** | `pipeline_health`: `PAYLOAD_TOO_LARGE` oscila alrededor del umbral. Visto en el sandbox: el snapshot de Postgres pesa ~1,1 MB, a caballo de `PAYLOAD_WARN_BYTES` (1 MB); cada cruce resuelve el issue y el siguiente abre **una fila nueva**. Causa medida: ~1 MB era `statements[*].query_text` de 20 `INSERT` masivos de `sysbench prepare` (~58 KB cada uno; `pg_stat_statements` guarda el texto completo) que ya tenían `canonic_query = "Not available"` | `main.py`, `models/snapshot.py`, `health/writer.py:56` | (1) `SnapshotPayload` recorta `statements[*].query_text` a `MAX_STATEMENT_TEXT_CHARS` (8192, el mismo tope de `canonic_query`) con `query_text_truncated: true`; candidatos, `canonic_query` y EXPLAIN usan el texto completo. (2) Histéresis: abre por encima de 1 MB y resuelve solo por debajo de 0,9 MB (`main._payload_too_large`, estado por proceso). Snapshot del sandbox: 1,1 MB → 336 KB | **Resuelto** (tests `test_snapshot.py`, `test_main_payload_warning.py`; verificado en vivo) |
-| **I-15** | `pipeline_health`: `ENQUEUE_FAILED` se resuelve sin re-intentar el encolado. Si un ciclo falla al encolar y el siguiente falla en la validación (no llega a encolar), el scope `pipeline` cuenta como evaluado | `main.py:125,146`, `health/writer.py:56` | Scope propio para el encolado (`checked("enqueue")` solo tras intentar `send_to_queue`) y mover `ENQUEUE_FAILED` a ese scope. | Abierto (raro, no grave) |
-| **I-16** | `pipeline_health`: latencia de los issues del preflight (`PS_CONSUMER_DISABLED`, `TRACK_COUNTS_OFF`, `STATEMENTS_EVICTING`, `PG_VERSION_UNSUPPORTED`...): hasta `HEALTH_PREFLIGHT_TTL_S` (300 s) en aparecer o resolverse | `health/preflight.py:25,153` | Aceptable por diseño (el preflight se cachea para no sumar overhead cada 10 s). Si molesta: TTL menor, o detectar `PS_CONSUMER_DISABLED` por resultado como se hizo con PROCESS. | Abierto (by design) |
-| **I-17** | `pipeline_health`: la detección de texto truncado en MySQL compara bytes `>= performance_schema_max_sql_text_length`. Un corte en frontera de carácter multibyte (UTF-8) queda por debajo del límite y no se detecta; un texto sin cortar de exactamente el límite cuenta como truncado | `health/checks.py:39` | Comparar con un margen (p. ej. `>= limit - 3`) o detectar el corte por la forma del texto (SQL sin cerrar, ya lo marca `mask_sql`). Afecta solo un aviso `info`. | Abierto |
-| **I-18** | `pipeline_health`: `registered._record` hace un flush completo (upsert + resolve) por cada fila inválida en **cada** `load_registered_targets`, es decir cada 10 s | `config/registered.py:86` | Aceptable: es la misma cadencia que una base sana. Si molesta: escribir solo en transición (patrón `_report_state`). Nota: deja efectos de escritura en el camino de lectura de targets. | Abierto (aceptado) |
-| **I-19** | `pipeline_health`: la caché del preflight (`_CACHE`, clave = URL sin password) nunca expulsa entradas de bases que se desregistraron o cambiaron de host/usuario | `health/preflight.py:66` | Despreciable (una entrada por URL). Si crece: expulsar entradas más viejas que el TTL al insertar. | Abierto (despreciable) |
+| **I-15** | `pipeline_health`: `ENQUEUE_FAILED` se resuelve sin re-intentar el encolado. Si un ciclo falla al encolar y el siguiente falla en la validación (no llega a encolar), el scope `pipeline` cuenta como evaluado | `main.py:125,146`, `health/writer.py:56` | Scope propio para el encolado (`checked("enqueue")` solo tras intentar `send_to_queue`) y mover `ENQUEUE_FAILED` a ese scope. | **Resuelto** (2026-10-21): scope `enqueue`, marcado solo al intentar `send_to_queue` (`test_invalid_snapshot_does_not_resolve_a_previous_enqueue_failure`) |
+| **I-16** | `pipeline_health`: latencia de los issues del preflight (`PS_CONSUMER_DISABLED`, `TRACK_COUNTS_OFF`, `STATEMENTS_EVICTING`, `PG_VERSION_UNSUPPORTED`...): hasta `HEALTH_PREFLIGHT_TTL_S` (300 s) en aparecer o resolverse | `health/preflight.py:25,153` | Aceptable por diseño (el preflight se cachea para no sumar overhead cada 10 s). Si molesta: TTL menor, o detectar `PS_CONSUMER_DISABLED` por resultado como se hizo con PROCESS. | **Cerrado por decisión** → D-8 |
+| **I-17** | `pipeline_health`: la detección de texto truncado en MySQL compara bytes `>= performance_schema_max_sql_text_length`. Un corte en frontera de carácter multibyte (UTF-8) queda por debajo del límite y no se detecta; un texto sin cortar de exactamente el límite cuenta como truncado | `health/checks.py:39` | Comparar con un margen (p. ej. `>= limit - 3`) o detectar el corte por la forma del texto (SQL sin cerrar, ya lo marca `mask_sql`). Afecta solo un aviso `info`. | **Resuelto** (2026-10-21): margen de 3 bytes (`_MULTIBYTE_SLACK`); test con corte antes de un carácter multibyte |
+| **I-18** | `pipeline_health`: `registered._record` hace un flush completo (upsert + resolve) por cada fila inválida en **cada** `load_registered_targets`, es decir cada 10 s | `config/registered.py:86` | Aceptable: es la misma cadencia que una base sana. Si molesta: escribir solo en transición (patrón `_report_state`). Nota: deja efectos de escritura en el camino de lectura de targets. | **Cerrado por decisión** → D-9 |
+| **I-19** | `pipeline_health`: la caché del preflight (`_CACHE`, clave = URL sin password) nunca expulsa entradas de bases que se desregistraron o cambiaron de host/usuario | `health/preflight.py:66` | Despreciable (una entrada por URL). Si crece: expulsar entradas más viejas que el TTL al insertar. | **Resuelto** (2026-10-21): al refrescar se expulsan las entradas sin refrescar en `max(3 × TTL, 1 h)` |
 ---
 
 ### Revisión de `pipeline_health` (2026-10-10) — resueltos
@@ -379,12 +396,15 @@ Defense-in-depth que añadiría: aplicar el mismo filtro de prefijo **al texto q
 
 | # | Tema | Documentación | Nota |
 |---|------|---------------|------|
-| **D-1** | Cola sin consumidor → crece sin límite | `PIPELINE_FLOW.md:153`, `references/004_decisiones_contrato.md:100` | Retención = consumidor. `_log_payload_size` avisa a 1MB. |
+| **D-1** | Retención de la cola | `PIPELINE_FLOW.md:153`, `references/004_decisiones_contrato.md:100` | Retención = consumidor (hoy `detection_engine`, que archiva cada mensaje con `pgmq.archive`). `_log_payload_size` avisa a 1MB. |
 | **D-2** | Intervalo 10s default (pruebas) | `PIPELINE_FLOW.md:202`, `runner.py:36` | Prod = 30-60s via `EXTRACT_INTERVAL_S` env. |
 | **D-3** | Sin `LIMIT` en queries de recolección | `PIPELINE_FLOW.md:153` | Truncar rompería validación consumidor. |
 | **D-4** | Sin `captured_at`/`source_dialect`/`collect_errors` en el snapshot | `references/004_decisiones_contrato.md` | Decisión usuario: "snapshot vacío no sirve". El fallo vs vacío ya no queda solo en el log: lo registra `pipeline_health` (`sections_failed` + issue con causa) fuera del contrato del snapshot. |
 | **D-5** | EXPLAIN con `search_path` reducido | `references/004_decisiones_contrato.md:46-54` | Limitación conocida: refs no calificadas pueden fallar. Reintenta cada ciclo. |
 | **D-6** | `db_id` hardcodeado en sandbox | `stages/enrich.py:3`, `main_sandbox.py:22` | **A propósito**: sandbox usa constante; prod la pisa con `database_identifier` real. |
+| **D-7** | Sin fallback a los ENGINES del sandbox (M-6) | `config/registered.py` (docstring y logs) | Decisión 2026-10-21: sin bases registradas `main()` no extrae nada; el sandbox va por `main_sandbox.py`. Evita monitorear una base de prueba sin avisar. |
+| **D-8** | Latencia de los issues del preflight hasta el TTL (I-16) | `health/preflight.py` | Decisión 2026-10-21: el preflight se cachea `HEALTH_PREFLIGHT_TTL_S` (300 s) para no sumar consultas cada ciclo; un issue tarda hasta ese tiempo en aparecer o resolverse. Se ajusta con la variable. |
+| **D-9** | `registered._record` escribe en cada ciclo por fila inválida (I-18) | `config/registered.py` | Decisión 2026-10-21: misma cadencia que una base sana; el upsert solo actualiza `last_seen`/`occurrences`. |
 
 ---
 
@@ -401,8 +421,22 @@ Defense-in-depth que añadiría: aplicar el mismo filtro de prefijo **al texto q
 
 ### Orden de ejecución sugerido
 
-1. ~~**C-1 a C-7** (funcionalidad/seguridad crítica — 1-2 días)~~ ✅ **COMPLETADO**
-2. **I-1, I-2 (resto), I-3, I-4, I-6** (robustez core — 1 día)
-3. **I-5, I-9, I-10, I-11** (calidad, cambios de una línea) y **I-7, I-8, I-12** (despliegue — según sprint). ~~I-13~~ ✅
-4. **I-14 a I-19** (`pipeline_health`, menores; I-16, I-18 e I-19 aceptados salvo que molesten). ~~R-1 a R-7~~ ✅
+1. ~~**C-1 a C-7**~~ ✅ **COMPLETADO**
+2. ~~**I-1, I-2, I-3, I-4, I-6**~~ ✅ **COMPLETADO** (2026-10-21)
+3. ~~**I-5, I-9**~~ ✅ (2026-10-21) · ~~I-13~~ ✅ · I-7, I-8, I-10, I-11, I-12 → **Fuera del pipeline**
+4. ~~**I-14, I-15, I-17, I-19**~~ ✅ · I-16, I-18 → CAJA 3 (D-8, D-9) · ~~R-1 a R-7~~ ✅
 5. **CAJA 3 y 4** — no requieren acción (documentadas / falsas)
+
+---
+
+## Fuera del pipeline (despliegue y base de QueryLens)
+
+Quedan fuera del alcance de esta revisión, que desde 2026-10-21 es solo el pipeline. Se dejan aquí para no perderlos; ninguno afecta al código de `telemetry_pipeline/`.
+
+| # | Hallazgo | Dónde | Acción sugerida | Estado |
+|---|----------|-------|-----------------|--------|
+| **I-7** (=B-9) | Puertos publicados en `0.0.0.0` | `docker-compose.yml` | `127.0.0.1:puerto` en despliegue | Abierto (despliegue) |
+| **I-8** (=B-10) | Rol compartido auth-service/pipeline/API | `docker-compose.yml` | Rol `querylens_pipeline` con `SELECT` en `registered_databases` + `pgmq.send` + escritura en `pipeline_health` | Abierto (despliegue) |
+| **I-10** (=B-1) | Superusuario `postgres` innecesario | `querylens_database/init.sql:2` | Quitar `CREATE ROLE postgres WITH SUPERUSER LOGIN` | Abierto (base de QueryLens) |
+| **I-11** (=B-2) | Índice duplicado | `querylens_database/registered_databases.sql` | Quitar `idx_registered_databases_identifier` (ya lo crea `UNIQUE`) | Abierto (base de QueryLens) |
+| **I-12** (=B-3) | DDL solo en el primer arranque, sin migraciones | `docker-compose.yml`, `querylens_database/` | Evaluar herramienta de migraciones | Abierto (base de QueryLens) |

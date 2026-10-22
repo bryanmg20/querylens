@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from pydantic import ValidationError
 
 from config.connections import get_connection_querylens_db
-from config.registered import Target, _get_queue_engine, load_registered_targets
+from config.registered import _get_queue_engine, load_registered_targets
 from collectors.factory import Engine_Factory
 from enqueue import send_to_queue
 from health import writer as health_writer
@@ -155,6 +155,9 @@ def _cycle(
     size_bytes = _log_payload_size(dialect, db_id, payload_json)
     if _payload_too_large(_health_db_id(dialect, db_id), size_bytes):
         report.add("PAYLOAD_TOO_LARGE", size_bytes=size_bytes)
+    # Scope propio: un ENQUEUE_FAILED solo se resuelve en un ciclo que volvio a
+    # intentar encolar, no en uno que fallo antes (p. ej. en la validacion).
+    report.checked("enqueue")
     try:
         msg_id = send_to_queue(payload_json, querylens_engine)
     except Exception as e:
@@ -162,7 +165,7 @@ def _cycle(
         mark_recorded(e)
         raise
     report.msg_id = msg_id
-    print(f"Diccionario encolado con ID: {msg_id}")
+    logger.info(f"{dialect} | enqueue | msg_id={msg_id} | {size_bytes} bytes")
     return msg_id
 
 

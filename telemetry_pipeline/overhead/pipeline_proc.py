@@ -14,8 +14,8 @@ Protocolo por stdin (una orden por linea), respuesta por el stdout original:
     off           -> "ack off" cuando termino el ciclo en curso (si habia uno):
                      al recibir el ack ningun ciclo puede pisar el bloque siguiente
     quit          -> "ack quit" y sale
-El stdout del pipeline (main imprime "Diccionario encolado ...") se desvia a
-stderr para no mezclarse con el protocolo.
+Cualquier stdout del pipeline (prints de librerias o de depuracion) se desvia
+a stderr para no mezclarse con el protocolo.
 
 --mode burn reemplaza el pipeline por BURN_CONCURRENCY copias concurrentes de
 workload.BURN_QUERIES con la misma cadencia: es el control positivo, un

@@ -218,7 +218,7 @@ CATALOG: dict[str, IssueDef] = {
         "No requiere accion de tu parte; el equipo de QueryLens fue notificado.",
     ),
     "ENQUEUE_FAILED": IssueDef(
-        "pipeline", "internal", BLOCKING,
+        "enqueue", "internal", BLOCKING,
         "QueryLens tuvo un problema interno al enviar la telemetria a analisis.",
         "No requiere accion de tu parte; el equipo de QueryLens fue notificado.",
     ),

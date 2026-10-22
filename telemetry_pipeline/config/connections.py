@@ -66,6 +66,25 @@ def mysql_connect_args() -> dict:
     }
 
 
+def postgres_engine(url: URL) -> Engine:
+    """Engine de un Postgres (target, monitor del sandbox o cola). Fuente unica
+    de su configuracion: la usan estas factorias y registered._engine."""
+    return create_engine(url, connect_args=postgres_connect_args())
+
+
+def mysql_engine(url: URL) -> Engine:
+    """Engine de un target MySQL. Fuente unica de los parametros de pool: la
+    usan estas factorias y registered._engine."""
+    return create_engine(
+        url,
+        pool_size=1,
+        max_overflow=10,
+        pool_pre_ping=True,
+        echo=False,
+        connect_args=mysql_connect_args(),
+    )
+
+
 def get_connection_postgres() -> Engine:
     """Motor de telemetry Postgres. Solo lee, por eso usa el rol monitor.
 
@@ -86,7 +105,7 @@ def get_connection_postgres() -> Engine:
         password=db_password,
         database=db_name,
     )
-    return create_engine(url, connect_args=postgres_connect_args())
+    return postgres_engine(url)
 
 
 def get_connection_mysql() -> Engine:
@@ -112,20 +131,16 @@ def get_connection_mysql() -> Engine:
         database="",
     )
 
-    return create_engine(
-        url,
-        pool_size=1,
-        max_overflow=10,
-        pool_pre_ping=True,
-        echo=False,
-        connect_args=mysql_connect_args(),
-    )
+    return mysql_engine(url)
 
 
 _env_path = Path(__file__).resolve().parents[2] / ".env"
 if not _env_path.exists():
     _env_path = Path(__file__).resolve().parent.parent / ".env"
-load_dotenv(dotenv_path=_env_path, override=True)
+# Sin override: una variable exportada en la shell o en el compose gana sobre
+# el .env, como en cualquier herramienta con dotenv. El .env completa lo que
+# falta.
+load_dotenv(dotenv_path=_env_path)
 
 
 def get_connection_mysql_app() -> Engine:
@@ -156,14 +171,7 @@ def get_connection_mysql_app() -> Engine:
         database=db_name,
     )
 
-    return create_engine(
-        url,
-        pool_size=1,
-        max_overflow=10,
-        pool_pre_ping=True,
-        echo=False,
-        connect_args=mysql_connect_args(),
-    )
+    return mysql_engine(url)
 
 
 def get_connection_querylens_db() -> Engine:
@@ -182,4 +190,4 @@ def get_connection_querylens_db() -> Engine:
         password=db_password,
         database=db_name,
     )
-    return create_engine(url, connect_args=postgres_connect_args())
+    return postgres_engine(url)

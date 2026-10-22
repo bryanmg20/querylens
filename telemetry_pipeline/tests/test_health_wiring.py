@@ -180,7 +180,32 @@ def test_enqueue_failure_is_recorded(monkeypatch):
 
     [report] = flushed
     assert ("ENQUEUE_FAILED", "") in report.issues
-    assert {"credentials", "pipeline"} <= report.scopes
+    assert {"credentials", "pipeline", "enqueue"} <= report.scopes
+
+
+def test_invalid_snapshot_does_not_resolve_a_previous_enqueue_failure(monkeypatch):
+    """Si el ciclo no llega a encolar (snapshot invalido), el scope enqueue no
+    queda evaluado: un ENQUEUE_FAILED abierto de un ciclo anterior sigue abierto."""
+    flushed = []
+    monkeypatch.setattr(main, "get_connection_querylens_db", mock.MagicMock)
+    monkeypatch.setattr(
+        main.health_writer, "flush",
+        lambda engine, db_id, report, started_at: flushed.append(report),
+    )
+    monkeypatch.setattr(
+        main.SnapshotPayload, "from_snapshot",
+        mock.Mock(side_effect=main.ValidationError.from_exception_data("SnapshotPayload", [])),
+    )
+    send = mock.Mock()
+    monkeypatch.setattr(main, "send_to_queue", send)
+
+    main.run_engine("postgres", lambda: _FakeEngine(_FakeConn()), db_id="db_1")
+
+    [report] = flushed
+    assert ("SNAPSHOT_VALIDATION_FAILED", "") in report.issues
+    assert "pipeline" in report.scopes
+    assert "enqueue" not in report.scopes
+    send.assert_not_called()
 
 
 # ---------- registered ----------

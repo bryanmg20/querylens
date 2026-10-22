@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS pipeline_health.issues (
     id          BIGSERIAL PRIMARY KEY,
     db_id       TEXT NOT NULL,
     code        TEXT NOT NULL,
-    -- connection | credentials | collect | preflight | explain | pipeline
+    -- connection | credentials | collect | preflight | explain | pipeline | enqueue
     scope       TEXT NOT NULL,
     -- connection | extension | permission | config | version | internal
     category    TEXT NOT NULL,

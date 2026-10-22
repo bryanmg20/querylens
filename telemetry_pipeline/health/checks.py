@@ -10,6 +10,12 @@ from models.stats import Stats
 # Lo que Postgres pone en query cuando el rol no puede ver queries ajenas.
 PG_HIDDEN_TEXT = "<insufficient privilege>"
 
+# MySQL corta el texto en un borde de caracter: si el siguiente era multibyte
+# (UTF-8, hasta 4 bytes) la muestra queda hasta 3 bytes por debajo del limite.
+# Un texto real que termina justo en esa franja da un falso positivo; solo
+# afecta un aviso info.
+_MULTIBYTE_SLACK = 3
+
 
 def _count(rows, predicate) -> int:
     return sum(1 for row in rows or [] if predicate(row))
@@ -36,7 +42,7 @@ def post_collect(stats: Stats, report: HealthReport, dialect: str) -> None:
         truncated = _count(
             stats.get("statements"),
             lambda r: bool(r.get("query_sample_text"))
-            and len(str(r["query_sample_text"]).encode("utf-8")) >= limit,
+            and len(str(r["query_sample_text"]).encode("utf-8")) >= limit - _MULTIBYTE_SLACK,
         )
         if truncated:
             report.add("QUERY_TEXT_TRUNCATED", rows=truncated, sql_text_limit=limit)

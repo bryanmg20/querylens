@@ -205,11 +205,11 @@ def test_registered_engine_uses_the_same_timeout_wiring(monkeypatch):
 
     seen = []
     monkeypatch.setattr(
-        registered, "postgres_connect_args",
+        connections, "postgres_connect_args",
         lambda: seen.append("pg") or postgres_connect_args(),
     )
     monkeypatch.setattr(
-        registered, "mysql_connect_args",
+        connections, "mysql_connect_args",
         lambda: seen.append("my") or mysql_connect_args(),
     )
     url = URL.create(
@@ -219,6 +219,25 @@ def test_registered_engine_uses_the_same_timeout_wiring(monkeypatch):
     registered._engine("postgres", url)
     registered._engine("mysql", url)
     assert seen == ["pg", "my"]
+
+
+def test_registered_mysql_engine_has_the_same_pool_as_the_sandbox_one():
+    """Una sola factory por motor: el target registrado y el del sandbox no
+    pueden divergir en el pool."""
+    import config.registered as registered
+    from sqlalchemy.engine import URL
+
+    url = URL.create(drivername="mysql+pymysql", username="u", password="p", host="h", port=3306)
+    target = registered._engine("mysql", url)
+    sandbox = get_connection_mysql()
+    try:
+        for engine in (target, sandbox):
+            assert engine.pool.size() == 1
+            assert engine.pool._max_overflow == 10
+            assert engine.pool._pre_ping is True
+    finally:
+        target.dispose()
+        sandbox.dispose()
 
 
 def test_querylens_db_reads_credentials_from_environment(monkeypatch):
@@ -286,3 +305,21 @@ def test_env_file_is_not_committed():
         encoding="utf-8"
     )
     assert ".env" in gitignore.splitlines()
+
+
+def test_exported_variable_wins_over_the_env_file():
+    """load_dotenv sin override: lo exportado en la shell o el compose no lo
+    pisa el .env (el repo trae uno con DB_PORT)."""
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    pipeline = Path(__file__).resolve().parent.parent
+    env = {**os.environ, "DB_PORT": "6543"}
+    env["PYTHONPATH"] = os.pathsep.join([str(pipeline), str(pipeline.parent / "contract")])
+    out = subprocess.run(
+        [sys.executable, "-c", "import os, config.connections; print(os.environ['DB_PORT'])"],
+        cwd=pipeline, env=env, capture_output=True, text=True, check=True,
+    )
+    assert out.stdout.strip().splitlines()[-1] == "6543"
