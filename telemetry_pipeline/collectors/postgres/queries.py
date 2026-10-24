@@ -51,6 +51,10 @@ WHERE userid != (SELECT oid FROM pg_roles WHERE rolname = session_user)
   -- impacto. USER cubre tambien USER MAPPING ... OPTIONS (password '...').
   -- No se filtra por la palabra password: borraria SELECT ... WHERE password = $1.
   AND s.query !~* '^\\s*(CREATE|ALTER)\\s+(ROLE|USER|GROUP)\\M'
+  -- pg_stat_statements es de todo el servidor, pero el esquema (indices,
+  -- tablas, columnas) solo es el de la base conectada: una consulta de otra
+  -- base se cruzaria con el public.<tabla> de esta.
+  AND s.dbid = (SELECT oid FROM pg_database WHERE datname = current_database())
 ORDER BY total_exec_time DESC;
 """
 
@@ -68,7 +72,10 @@ LEFT JOIN pg_database d ON d.oid = l.database
 JOIN pg_stat_activity a ON a.pid = l.pid
 -- IS DISTINCT FROM y no !=: los procesos de fondo (autovacuum) tienen usesysid
 -- NULL y con != se descartaban; su pid llega en blocking_pids de quien bloquean.
-WHERE a.usesysid IS DISTINCT FROM (SELECT oid FROM pg_roles WHERE rolname = session_user);
+WHERE a.usesysid IS DISTINCT FROM (SELECT oid FROM pg_roles WHERE rolname = session_user)
+  -- Por la base de la sesion y no por l.database: la espera de una fila es un
+  -- lock transactionid, con l.database NULL.
+  AND a.datname = current_database();
 """
 
 
@@ -89,7 +96,8 @@ SELECT
     )                     AS wait_start_time,
     pg_blocking_pids(pid) AS blocking_pids  
 FROM pg_stat_activity
-WHERE usesysid != (SELECT oid FROM pg_roles WHERE rolname = session_user);
+WHERE usesysid != (SELECT oid FROM pg_roles WHERE rolname = session_user)
+  AND datname = current_database();
 """
 
 

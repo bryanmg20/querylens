@@ -299,8 +299,8 @@ def test_postgres_resolves_relation_oids_of_the_connected_database():
     assert "relation_oid" not in first["waits_for"]
 
 
-def test_postgres_does_not_name_relations_of_another_database():
-    # el mismo OID en otra base del servidor es otra tabla
+def test_postgres_drops_deadlocks_of_another_database():
+    # el log es de todo el servidor; el mismo OID en otra base es otra tabla
     record = {
         "timestamp": "2026-10-22 00:46:05.000 UTC",
         "pid": 10,
@@ -314,11 +314,7 @@ def test_postgres_does_not_name_relations_of_another_database():
     relations = [{"oid": 16390, "schema_name": "public", "table_name": "b"}]
     conn = _pg_conn([("postgresql-Thu.json", _pg_log(record), PG_NOW)], relations=relations)
 
-    (report,) = _run("postgres", conn)
-
-    lock = report["transactions"][0]["waits_for"]
-    assert lock.get("table_name") is None
-    assert "relation_oid" not in lock
+    assert _run("postgres", conn) == []
     assert not any("pg_catalog.pg_class" in sql for sql in conn.sent)
 
 
@@ -512,17 +508,17 @@ def test_search_path_schemas(value, schemas):
     assert search_path_schemas(value, "app_user") == schemas
 
 
-def test_postgres_rows_of_another_database_are_not_labeled():
+@pytest.mark.parametrize("dbname", ["otra_base", None])
+def test_postgres_row_deadlocks_outside_the_connected_database_are_dropped(dbname):
     record = _row_record(
         "UPDATE ql_ct01_cuentas SET saldo = 1 WHERE id = 1;", "UPDATE ql_ct01_cuentas SET saldo = 2 WHERE id = 1;",
-        dbname="otra_base",
+        dbname=dbname,
     )
+    if dbname is None:
+        del record["dbname"]
     conn = _pg_conn([("postgresql-Thu.json", _pg_log(record), PG_NOW)])
 
-    (report,) = _run("postgres", conn)
-
-    assert _targets(report) == [None, None]
-    assert "row_key" not in json.dumps(report)
+    assert _run("postgres", conn) == []
     assert not any("pg_catalog.pg_index" in sql for sql in conn.sent)
 
 

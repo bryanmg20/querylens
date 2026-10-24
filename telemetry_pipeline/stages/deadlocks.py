@@ -208,37 +208,41 @@ class DeadlocksStage:
             detected_at = utc.get(report["detected_at"])
             if detected_at is None or detected_at < since:
                 continue
+            # el log es de todo el servidor: un deadlock de otra base trae
+            # consultas de otro proyecto y tablas que esta conexion no ve. Un
+            # 40P01 siempre sale de un backend con base, asi que sin dbname
+            # tampoco se puede asegurar que sea de esta.
+            if report["database_name"] != settings["database_name"]:
+                continue
             report["detected_at"] = _iso(detected_at)
             kept.append(report)
 
-        self._resolve_pg_relations(conn, kept, settings["database_name"])
-        self._label_pg_rows(conn, kept, settings["database_name"])
+        self._resolve_pg_relations(conn, kept)
+        self._label_pg_rows(conn, kept)
         # el log se lee del archivo mas nuevo al mas viejo; como en MySQL, por hora
         return sorted(kept, key=lambda report: report["detected_at"])
 
-    def _resolve_pg_relations(self, conn, reports: list[dict], database_name: str) -> None:
-        """relation_oid -> schema y tabla, solo para la base conectada: los
-        OID de otra base no significan nada aca."""
-        local, foreign = [], []
-        for report in reports:
-            for trx in report["transactions"]:
-                lock = trx["waits_for"]
-                if lock.get("relation_oid") is not None:
-                    (local if report["database_name"] == database_name else foreign).append(lock)
-        for lock in foreign:
-            lock.pop("relation_oid")
-        oids = sorted({lock["relation_oid"] for lock in local})
+    def _resolve_pg_relations(self, conn, reports: list[dict]) -> None:
+        """relation_oid -> schema y tabla. Los informes ya son todos de la base
+        conectada: los OID de otra base no significarian nada aca."""
+        locks = [
+            trx["waits_for"]
+            for report in reports
+            for trx in report["transactions"]
+            if trx["waits_for"].get("relation_oid") is not None
+        ]
+        oids = sorted({lock["relation_oid"] for lock in locks})
         names = {
             int(row["oid"]): row
             for row in conn.execute(PG_RELATIONS_SQL.bindparams(oids=oids)).mappings()
         } if oids else {}
-        for lock in local:
+        for lock in locks:
             name = names.get(lock.pop("relation_oid"))
             if name is not None:
                 lock["schema_name"] = name["schema_name"]
                 lock["table_name"] = name["table_name"]
 
-    def _label_pg_rows(self, conn, reports: list[dict], database_name: str) -> None:
+    def _label_pg_rows(self, conn, reports: list[dict]) -> None:
         """row_key -> targets ("row 1", "row 2"...): dos esperas con la misma
         etiqueta son sobre la misma fila. Se etiqueta un informe solo si todas
         sus esperas son de fila y cada una identifica su fila por un indice
@@ -248,7 +252,7 @@ class DeadlocksStage:
         for report in reports:
             locks = [trx["waits_for"] for trx in report["transactions"]]
             keys = [lock.pop("row_key", None) for lock in locks]
-            if report["database_name"] == database_name and keys and all(keys):
+            if keys and all(keys):
                 local.append((locks, keys))
         names = sorted({key["table"] for _, keys in local for key in keys})
         if not names:

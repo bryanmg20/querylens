@@ -32,10 +32,6 @@ class ExplainStage:
         return f"SET LOCAL search_path TO {quoted}"
 
     @staticmethod
-    def _connected_database(engine):
-        return (engine.url.database or "").strip() or None
-
-    @staticmethod
     def _schema_context_sql(schema_name, database_name, dialect, engine):
         if dialect == "postgres":
             return ExplainStage._search_path_sql(schema_name, engine)
@@ -46,33 +42,26 @@ class ExplainStage:
         return None
 
     def _connection_for(self, query, conn):
-        """Un candidato de Postgres que vive en otra base (database_name != la
-        base conectada del target) se explica en una conexion dedicada a esa
-        base: una conexion de Postgres no puede cambiar de base con USE, el
-        plan solo puede armarse en el contexto real de cada base.
+        """Postgres siempre usa la conexion del ciclo: el colector solo trae
+        candidatos de la base conectada (STATEMENTS_QUERY filtra por
+        current_database()).
 
         MySQL sin schema (la app corrio la query sin base por defecto) va a una
         sesion nueva sin base: la conexion compartida arrastra el USE del
         candidato anterior y armaria el plan de una query sin calificar contra
         otra base. Sin base, la query calificada (base.tabla) se explica igual
         que corrio, y la sin calificar falla como fallo en la app."""
-        if self.collector.source_dialect != "postgres":
-            if query.get("schema_name") or query.get("database_name"):
-                return conn
-            return self._foreign_connection("")
-        database_name = query.get("database_name")
-        if not database_name:
+        if self.collector.source_dialect == "postgres":
             return conn
-        connected_db = self._connected_database(self.collector.engine)
-        if database_name == connected_db:
+        if query.get("schema_name") or query.get("database_name"):
             return conn
-        return self._foreign_connection(database_name)
+        return self._foreign_connection("")
 
     def _foreign_connection(self, database_name):
         from sqlalchemy import create_engine
         from sqlalchemy.pool import NullPool
 
-        from config.connections import mysql_connect_args, postgres_connect_args
+        from config.connections import mysql_connect_args
 
         engine = self._foreign_engines.get(database_name)
         if engine is not None:
@@ -81,12 +70,7 @@ class ExplainStage:
         if self._foreign_engine_factory is not None:
             engine = self._foreign_engine_factory(url)
         else:
-            connect_args = (
-                postgres_connect_args()
-                if self.collector.source_dialect == "postgres"
-                else mysql_connect_args()
-            )
-            engine = create_engine(url, connect_args=connect_args, poolclass=NullPool)
+            engine = create_engine(url, connect_args=mysql_connect_args(), poolclass=NullPool)
         self._foreign_engines[database_name] = engine
         return engine.connect()
 
@@ -150,8 +134,8 @@ class ExplainStage:
                 try:
                     active = self._connection_for(query, conn)
                 except Exception as e:
-                    # Base ajena sin CONNECT (u otra falla al abrirla): se
-                    # pierde este candidato, no el resto del ciclo.
+                    # Falla al abrir la sesion nueva de MySQL: se pierde este
+                    # candidato, no el resto del ciclo.
                     failures += 1
                     logger.error(f"{dialect} | EXPLAIN | query_id={query_id} | connect | {e}")
                     code, params = classify(e, dialect=dialect, scope="explain", phase="connect")

@@ -516,17 +516,17 @@ def _tracker_stage(tracker=None):
     return stage
 
 
-def test_postgres_foreign_database_routes_to_dedicated_connection():
+def test_postgres_never_opens_another_connection():
+    # el colector solo trae candidatos de la base conectada
     conn = _FakeConn()
     stats = _stats(schema_name="public")
     stats["top_impact_queries"][0]["database_name"] = "ventas"
     created = []
     stage = _tracker_stage(created)
     stage.execute(stats, conn)
-    assert conn.sent == []
+    assert conn.sent[0] == "SET LOCAL search_path TO public"
     assert stats["canonic_explains"][0]["query_id"] == 1
-    assert len(created) == 1
-    assert created[0].url.database == "ventas"
+    assert created == []
 
 
 def test_postgres_same_database_uses_main_connection():
@@ -539,51 +539,17 @@ def test_postgres_same_database_uses_main_connection():
     assert stage._foreign_engines == {}
 
 
-def test_postgres_foreign_engine_is_reused_for_same_database():
-    conn = _FakeConn()
-    stats = _stats(schema_name="public")
-    stats["top_impact_queries"][0]["database_name"] = "ventas"
-    stats["top_impact_queries"].append(
-        {
-            "query_id": 5,
-            "query_text": "SELECT * FROM sbtest2 WHERE id = $1",
-            "ready_for_explain": True,
-            "schema_name": "public",
-            "database_name": "ventas",
-        }
-    )
+def test_mysql_fresh_session_engine_is_reused_and_disposed():
+    conn = _FakeConn(rows=[{"EXPLAIN": '{"query_block": {"select_id": 1}}'}])
+    stats = _mysql_stats(schema_name=None)
+    stats["top_impact_queries"].append({**stats["top_impact_queries"][0], "query_id": 8})
     created = []
-    stage = _tracker_stage(created)
+    stage = _mysql_tracker_stage(created)
     stage.execute(stats, conn)
     assert len(created) == 1
     assert created[0].connect_calls == 2
-
-
-def test_postgres_foreign_engines_are_disposed_after_execute():
-    conn = _FakeConn()
-    stats = _stats(schema_name="public")
-    stats["top_impact_queries"][0]["database_name"] = "ventas"
-    created = []
-    stage = _tracker_stage(created)
-    stage.execute(stats, conn)
-    assert all(engine.disposed for engine in created)
+    assert created[0].disposed
     assert stage._foreign_engines == {}
-
-
-def test_postgres_foreign_connection_is_closed_after_execute():
-    """N-2: el `with active.begin()` cierra la transaccion, no la conexion.
-    La conexion extranjera (creada con engine.connect() en _foreign_connection)
-    tiene que cerrarse explicitamente; sin esto queda enganchada hasta que el
-    GC la finalize. La compartida del ciclo NO se toca: la cierra el orchestrator.
-    """
-    conn = _FakeConn()
-    stats = _stats(schema_name="public")
-    stats["top_impact_queries"][0]["database_name"] = "ventas"
-    created = []
-    stage = _tracker_stage(created)
-    stage.execute(stats, conn)
-    assert created[0].created_conns[0].close_calls == 1
-    assert conn.close_calls == 0
 
 
 def test_postgres_shared_connection_is_never_closed_by_the_stage():
@@ -595,7 +561,11 @@ def test_postgres_shared_connection_is_never_closed_by_the_stage():
     assert conn.close_calls == 0
 
 
-def test_postgres_foreign_connection_is_closed_even_when_explain_fails():
+def test_mysql_fresh_session_is_closed_even_when_explain_fails():
+    """N-2: el `with active.begin()` cierra la transaccion, no la conexion.
+    La sesion nueva (creada con engine.connect() en _foreign_connection) tiene
+    que cerrarse explicitamente, tambien si el EXPLAIN falla. La compartida del
+    ciclo NO se toca: la cierra el orchestrator."""
     class _FailingForeignEngine(_FakeForeignEngine):
         def connect(self):
             self.connect_calls += 1
@@ -604,10 +574,9 @@ def test_postgres_foreign_connection_is_closed_even_when_explain_fails():
             return conn
 
     conn = _FakeConn()
-    stats = _stats(schema_name="public")
-    stats["top_impact_queries"][0]["database_name"] = "ventas"
+    stats = _mysql_stats(schema_name=None)
     created = []
-    stage = ExplainStage(_TrackerCollector(None))
+    stage = ExplainStage(_FakeMysqlCollector())
     stage._foreign_engine_factory = lambda url: _FailingForeignEngine(url, created)
     stage.execute(stats, conn)
     assert created[0].created_conns[0].close_calls == 1
@@ -615,9 +584,9 @@ def test_postgres_foreign_connection_is_closed_even_when_explain_fails():
 
 
 def test_mysql_never_opens_foreign_connection():
-    """El ruteo por base es solo de Postgres: en MySQL una conexion cambia de
-    base con USE, asi que el mismo conn del ciclo sirve para todo. Si alguien
-    reutilizara _foreign_connection para mysql, abriria conexiones de mas."""
+    """Con base conocida, en MySQL una conexion cambia de base con USE, asi
+    que el mismo conn del ciclo sirve para todo. Solo el candidato sin base va
+    a una sesion nueva."""
     conn = _FakeConn(rows=[{"EXPLAIN": '{"query_block": {"select_id": 1}}'}])
     stats = _mysql_stats()
     stats["top_impact_queries"][0]["database_name"] = "ventas"
