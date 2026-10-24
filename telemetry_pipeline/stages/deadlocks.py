@@ -208,6 +208,12 @@ class DeadlocksStage:
             detected_at = utc.get(report["detected_at"])
             if detected_at is None or detected_at < since:
                 continue
+            # el log es de todo el servidor: un deadlock de otra base trae
+            # consultas de otro proyecto y tablas que esta conexion no ve. Un
+            # 40P01 siempre sale de un backend con base, asi que sin dbname
+            # tampoco se puede asegurar que sea de esta.
+            if report["database_name"] != settings["database_name"]:
+                continue
             report["detected_at"] = _iso(detected_at)
             kept.append(report)
 

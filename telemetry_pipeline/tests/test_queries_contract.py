@@ -159,6 +159,18 @@ def test_grid_sections_carry_database_name():
     assert re.search(r"s\.CURRENT_SCHEMA\s+AS database_name", MYSQL_ACTIVE_QUERIES_QUERY)
 
 
+def test_pg_grid_sections_are_scoped_to_the_connected_database():
+    # el esquema solo es el de la base conectada; las vistas globales tambien
+    assert re.search(
+        r"s\.dbid = \(SELECT oid FROM pg_database WHERE datname = current_database\(\)\)",
+        PG_STATEMENTS_QUERY,
+    )
+    # por la sesion: los locks transactionid tienen l.database NULL
+    assert re.search(r"a\.datname = current_database\(\)", PG_LOCKS_QUERY)
+    assert not re.search(r"l\.database\s*=", PG_LOCKS_QUERY)
+    assert re.search(r"\bdatname = current_database\(\)", PG_ACTIVE_QUERIES_QUERY)
+
+
 def _pg_role_command_filter():
     """La regex POSIX del WHERE de STATEMENTS_QUERY, traducida a Python
     (\\M de Postgres = fin de palabra = \\b)."""
