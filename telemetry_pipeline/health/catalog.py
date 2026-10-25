@@ -211,6 +211,23 @@ CATALOG: dict[str, IssueDef] = {
         "error o mas bajo. MySQL 8.0.22 o superior con "
         "SET PERSIST innodb_print_all_deadlocks = ON; SET PERSIST log_error_verbosity = 3;",
     ),
+    # ---------- calidad de la captura (EngineCountersStage, writer) ----------
+    "DEADLOCK_COUNTER_UNAVAILABLE": IssueDef(
+        "collect", "config", INFO,
+        "No se pudo leer el contador de abrazos mortales del motor: el reporte "
+        "no puede decir cuantos abrazos hubo ni cuantos se perdieron.",
+        "Postgres: el usuario de monitoreo necesita leer pg_stat_database. MySQL: "
+        "otorga PROCESS al usuario de monitoreo y activa el contador con "
+        "SET GLOBAL innodb_monitor_enable = 'lock_deadlocks';",
+    ),
+    "LOG_WINDOW_OVERRUN": IssueDef(
+        "collect", "config", DEGRADED,
+        "El log de Postgres crecio entre dos ciclos mas de lo que QueryLens lee "
+        "por ciclo: los abrazos mortales y los planes de auto_explain escritos "
+        "en ese tramo no se leyeron.",
+        "Baja el volumen del log: sube auto_explain.log_min_duration y revisa "
+        "log_statement, log_min_duration_statement y log_connections.",
+    ),
     # ---------- pipeline interno ----------
     "SNAPSHOT_VALIDATION_FAILED": IssueDef(
         "pipeline", "internal", BLOCKING,

@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from sqlalchemy import text
 from sqlalchemy.exc import ProgrammingError
 
+from health import cycle_sample
 from health.catalog import CATALOG
 from health.report import HealthReport
 from logger import get_logger
@@ -73,6 +74,31 @@ PURGE_LAST_RUN = """
 DELETE FROM pipeline_health.last_run
 WHERE finished_at < now() - make_interval(days => :days)
 """
+PURGE_SAMPLES = """
+DELETE FROM pipeline_health.cycle_samples
+WHERE taken_at < now() - make_interval(days => :days)
+"""
+
+# La muestra anterior de la base, contra la que se calculan las diferencias.
+PREV_SAMPLE_SELECT = """
+SELECT taken_at, engine_deadlocks, counter_epoch, log_files
+FROM pipeline_health.cycle_samples
+WHERE db_id = :db_id AND taken_at < :taken_at
+ORDER BY taken_at DESC
+LIMIT 1
+"""
+
+CYCLE_SAMPLE_INSERT = """
+INSERT INTO pipeline_health.cycle_samples
+    (db_id, taken_at, engine_deadlocks, counter_epoch, log_files,
+     deadlocks_since_prev, counter_reset, log_bytes_since_prev,
+     seconds_since_prev, log_window_overrun)
+VALUES
+    (:db_id, :taken_at, :engine_deadlocks, :counter_epoch, CAST(:log_files AS JSONB),
+     :deadlocks_since_prev, :counter_reset, :log_bytes_since_prev,
+     :seconds_since_prev, :log_window_overrun)
+ON CONFLICT (db_id, taken_at) DO NOTHING
+"""
 
 _schema_warned = False
 
@@ -88,14 +114,15 @@ def retention_days() -> int:
 
 
 def _handle_error(action: str, db_id: str | None, exc: Exception) -> None:
-    """Schema ausente: un warning por proceso (runner cicla cada 10 s). Lo demas: error."""
+    """Schema o tabla ausente (p. ej. cycle_samples en una base sin migrar): un
+    warning por proceso (runner cicla cada 10 s). Lo demas: error."""
     global _schema_warned
     if isinstance(exc, ProgrammingError) and getattr(exc.orig, "pgcode", None) in ("42P01", "3F000"):
         if not _schema_warned:
             _schema_warned = True
             logger.warning(
-                "health | schema pipeline_health no existe | aplicar "
-                "querylens_database/pipeline_health.sql; no se registra la salud"
+                "health | falta el schema pipeline_health o una de sus tablas | aplicar "
+                "querylens_database/pipeline_health.sql; lo que dependa de ella no se registra"
             )
         return
     label = f" | db_id={db_id}" if db_id else ""
@@ -120,8 +147,44 @@ def _issue_rows(db_id: str, report: HealthReport) -> list[dict]:
     return rows
 
 
+def _record_sample(engine, db_id: str, report: HealthReport) -> None:
+    """Guarda la muestra del ciclo con sus diferencias contra la anterior. En
+    su propia transaccion, antes que last_run: si la tabla falta (base sin
+    migrar), last_run e issues se escriben igual. Un desborde de la ventana del
+    log queda ademas como issue de este mismo flush."""
+    sample = report.cycle_sample
+    if sample is None:
+        return
+    try:
+        with engine.begin() as conn:
+            prev = conn.execute(text(PREV_SAMPLE_SELECT), {
+                "db_id": db_id, "taken_at": sample["taken_at"],
+            }).mappings().first()
+            derived = cycle_sample.derive(dict(prev) if prev is not None else None, sample)
+            conn.execute(text(CYCLE_SAMPLE_INSERT), {
+                "db_id": db_id,
+                "taken_at": sample["taken_at"],
+                "engine_deadlocks": sample["engine_deadlocks"],
+                "counter_epoch": sample["counter_epoch"],
+                "log_files": json.dumps(sample["log_files"]) if sample["log_files"] is not None else None,
+                **derived,
+            })
+    except Exception as exc:
+        _handle_error("sample", db_id, exc)
+        return
+    if derived["log_window_overrun"]:
+        report.add(
+            "LOG_WINDOW_OVERRUN", section="deadlocks",
+            log_bytes=derived["log_bytes_since_prev"],
+            seconds=round(derived["seconds_since_prev"], 1),
+            window_bytes=cycle_sample.LOG_WINDOW_BYTES,
+        )
+
+
 def flush(engine, db_id: str, report: HealthReport, started_at: datetime) -> None:
-    """last_run + upsert de issues + resolucion, en una sola transaccion."""
+    """Muestra del ciclo, y last_run + upsert de issues + resolucion en una
+    sola transaccion."""
+    _record_sample(engine, db_id, report)
     try:
         with engine.begin() as conn:
             conn.execute(text(LAST_RUN_UPSERT), {
@@ -162,5 +225,12 @@ def purge(engine, days: int | None = None) -> None:
             issues = conn.execute(text(PURGE_ISSUES), {"days": days}).rowcount
             runs = conn.execute(text(PURGE_LAST_RUN), {"days": days}).rowcount
         logger.debug(f"health | purge | {issues} issue(s), {runs} last_run(s) | > {days} dias")
+    except Exception as exc:
+        _handle_error("purge", None, exc)
+    # Aparte: sin cycle_samples (base sin migrar) lo de arriba se purga igual
+    try:
+        with engine.begin() as conn:
+            samples = conn.execute(text(PURGE_SAMPLES), {"days": days}).rowcount
+        logger.debug(f"health | purge | {samples} muestra(s) | > {days} dias")
     except Exception as exc:
         _handle_error("purge", None, exc)

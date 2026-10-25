@@ -9,6 +9,7 @@ from stages.canonicalizers import redact_active_queries
 from stages.candidates import CandidatesStage
 from stages.collect import CollectStage
 from stages.deadlocks import DeadlocksStage
+from stages.engine_counters import EngineCountersStage
 from stages.enrich import EnrichStage
 from stages.explain import ExplainStage
 from stages.normalize import NormalizeStage
@@ -25,6 +26,7 @@ class Orchestrator:
         self.preflight = PreflightStage(collector, self.report)
         self.collect = CollectStage(collector, self.report)
         self.deadlocks = DeadlocksStage(collector, self.report)
+        self.engine_counters = EngineCountersStage(collector, self.report)
         self.candidates = CandidatesStage(collector)
         self.auto_explain = AutoExplainStage(collector, self.report)
         self.explain = ExplainStage(collector, self.report)
@@ -60,6 +62,8 @@ class Orchestrator:
             log = PgLogTail()
             # No depende de statements: trae su propia sentencia ya canonica
             self.deadlocks.execute(stats, conn, log)
+            # Despues de deadlocks: reusa el listado del log que ya pidio
+            self.engine_counters.execute(stats, conn, log)
             if stats.get("statements") is not None:
                 self.candidates.execute(stats)
                 self.auto_explain.execute(stats, conn, log)

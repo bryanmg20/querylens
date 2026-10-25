@@ -33,6 +33,9 @@ class HealthReport:
         self.msg_id: int | None = None
         # Datos del preflight que usan los chequeos post-collect (no se persisten).
         self.facts: dict = {}
+        # Muestra cruda de EngineCountersStage; writer.flush la guarda en
+        # pipeline_health.cycle_samples. None: el ciclo no llego a tomarla.
+        self.cycle_sample: dict | None = None
 
     def add(self, code: str, section: str = "", **params) -> None:
         if code not in CATALOG:

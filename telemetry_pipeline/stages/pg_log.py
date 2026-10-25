@@ -8,6 +8,10 @@ archivo siguiente. El que llega segundo recorre lo ya leido sin volver a
 consultar. Si una lectura falla, no se recuerda el error: el consumidor
 siguiente reintenta desde el archivo que fallo, en su propia transaccion.
 
+EngineCountersStage usa el listado (nombre y tamano de cada archivo) para medir
+cuanto crecio el log entre ciclos: listing() lo devuelve sin otra consulta si
+un consumidor ya lo pidio.
+
 No hay estado entre ciclos: el orquestador crea un PgLogTail por ciclo y cada
 ciclo relee la ventana.
 """
@@ -29,6 +33,8 @@ class PgLogTail:
     def __init__(self):
         # archivos listados que todavia no se leyeron (None: falta listarlos)
         self._pending: list | None = None
+        # el listado completo, tal como lo devolvio log_files()
+        self._listing: list[dict] | None = None
         self._budget = 0
         # (ultima modificacion, lineas completas) de cada archivo ya leido,
         # del mas nuevo al mas viejo
@@ -54,10 +60,20 @@ class PgLogTail:
             elif not self._read_next(conn, modified_since):
                 return
 
-    def _read_next(self, conn, modified_since: datetime | None) -> bool:
-        if self._pending is None:
-            self._pending = [dict(row) for row in conn.execute(text(LOG_FILES_SQL)).mappings()]
+    def listing(self, conn) -> list[dict]:
+        """Archivos del log (name, size, modification) del mas nuevo al mas
+        viejo, del mismo listado que usa la lectura."""
+        self._list(conn)
+        return [dict(log_file) for log_file in self._listing]
+
+    def _list(self, conn) -> None:
+        if self._listing is None:
+            self._listing = [dict(row) for row in conn.execute(text(LOG_FILES_SQL)).mappings()]
+            self._pending = [dict(log_file) for log_file in self._listing]
             self._budget = LOG_WINDOW_BYTES
+
+    def _read_next(self, conn, modified_since: datetime | None) -> bool:
+        self._list(conn)
         while self._pending and self._budget > 0:
             log_file = self._pending[0]
             modified = log_file.get("modification")
