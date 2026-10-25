@@ -1,5 +1,5 @@
 """Bateria de predicados: mismo SELECT en Postgres (generic + literal) y MySQL,
-pasado por el normalizador real del pipeline. Corre dentro de querylens_pipeline;
+pasado por el normalizador real del pipeline. Corre dentro del servicio pipeline;
 ver README.md de esta carpeta."""
 import copy
 import json

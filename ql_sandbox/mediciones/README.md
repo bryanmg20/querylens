@@ -6,7 +6,7 @@ Mide cuántos casos detecta cada antipatrón cuando hay **muchas consultas disti
 - **40 controles**: consultas sanas que corren al mismo tiempo y **no** deberían marcarse (para medir falsos positivos);
 - en algunos casos, **extra**: casos reales que quedan fuera de la regla declarada, reportados aparte (no cuentan en el 90 %).
 
-Todo pasa por el sistema real: carga en el sandbox → `telemetry_pipeline` (contenedor `querylens_pipeline`) → PGMQ → `detection_engine` (contenedor `querylens_detection_engine`) → `public.hallazgos`, con un snapshot cada **60 s** (la ventana del informe).
+Todo pasa por el sistema real: carga en el sandbox → `telemetry_pipeline` (servicio `pipeline` del compose) → PGMQ → `detection_engine` (servicio `detection-engine`) → `public.hallazgos`, con un snapshot cada **60 s** (la ventana del informe).
 
 ## Cómo correrlo
 
@@ -39,7 +39,7 @@ Cada corrida usa un `db_id` propio (`medicion-<corrida>`): su historia en `state
 | `measure.py` | host | orquesta: arma tablas, lanza la carga, toma los snapshots, inyecta (AP-01), evalúa y escribe el reporte |
 | `driver.py` | contenedor desechable (imagen `querylens-pipeline`) | crea las tablas, calcula el `query_id` de cada caso, calibra (AP-07) y genera la carga con hilos |
 | `cases.py` | — | definición de tablas, casos, inyección y limpieza de cada medición |
-| `pipeline_snapshot.py` | `querylens_pipeline` | un snapshot de un motor con el `db_id` de la corrida |
+| `pipeline_snapshot.py` | servicio `pipeline` | un snapshot de un motor con el `db_id` de la corrida |
 
 El `query_id` de cada caso lo calcula el propio motor: `EXPLAIN (VERBOSE)` → `Query Identifier` en Postgres y `STATEMENT_DIGEST()` en MySQL. Antes de correr se verifica que no haya dos casos con el mismo `query_id`.
 

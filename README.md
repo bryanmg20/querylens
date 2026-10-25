@@ -5,6 +5,17 @@
 QUERYLENS surge en un contexto donde diagnosticar problemas de rendimiento en bases de datos relacionales sigue siendo un proceso artesanal que depende de expertos escasos y herramientas comerciales costosas, dejando a la mayoría de equipos de desarrollo sin una solución accesible. La herramienta se conecta de forma no intrusiva a bases de datos PostgreSQL y MySQL, detecta automáticamente ocho anti-patrones de rendimiento y abrazos mortales entre transacciones, y entrega cada hallazgo con evidencia, explicación en lenguaje claro y recomendación accionable, todo sin instalar nada dentro del servidor. Su valor radica en democratizar el diagnóstico de rendimiento, poniendo en manos de cualquier desarrollador una capacidad que hoy solo está al alcance de especialistas o de organizaciones con presupuesto para soluciones empresariales.
 </p>
 
+## Levantar el stack
+
+Requiere Docker con Compose v2.17 o superior (`docker compose version`).
+
+```bash
+python3 scripts/gen_env.py > .env   # o copiar .env.example y llenarlo
+docker compose up -d --build --wait
+```
+
+La aplicación queda en http://127.0.0.1:8080 (nginx, el único puerto publicado). Las variables están documentadas en [.env.example](.env.example). Las dependencias de Python están congeladas en los `requirements.txt` de cada servicio; se regeneran con `scripts/lock_requirements.sh` (ver [TESTING.md](telemetry_pipeline/TESTING.md#por-qué-hay-dos-requirements-y-dos-archivos-por-cada-uno)).
+
 ## Documentación del repositorio
 
 ### Primer informe

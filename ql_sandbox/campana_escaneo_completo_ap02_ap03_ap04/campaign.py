@@ -1,9 +1,9 @@
 """Campana de AP-02 (escaneo completo evitable), AP-03 (predicado no sargable)
 y AP-04 (indice ausente) por el flujo real de QueryLens.
 
-Nada se simula: la carga sale de ql_sysbench, el runner de querylens_pipeline
+Nada se simula: la carga sale de ql_sysbench, el runner del servicio pipeline
 toma los snapshots de las bases registradas (cada EXTRACT_INTERVAL_S), el
-contenedor querylens_detection_engine los procesa con sus ACTIVE_RULES y los
+servicio detection-engine los procesa con sus ACTIVE_RULES y los
 hallazgos quedan en public.hallazgos con el db_id de la base registrada, que es
 lo que muestra el frontend.
 
@@ -28,6 +28,7 @@ USO (desde la raiz del repo)
 Salida: ql_sandbox/campana_escaneo_completo_ap02_ap03_ap04/resultados_<fecha>.json y reporte_<fecha>.md
 """
 import argparse
+import functools
 import json
 import random
 import subprocess
@@ -39,7 +40,6 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 LOAD_CONTAINER = "ql_sysbench"
-QUERYLENS_CONTAINER = "querylens_db"
 STOP_FILE = "/tmp/ql_cmp_stop"
 ROWS = 1_000_000
 WORKERS = 4
@@ -212,6 +212,16 @@ def run(cmd, input_text=None, check=True) -> str:
     return result.stdout
 
 
+@functools.cache
+def compose_container(service):
+    # Id del contenedor de <service> en el compose de la raiz. Sin container_name
+    # fijo el nombre depende del proyecto (docker compose -p, COMPOSE_PROJECT_NAME).
+    out = run(["docker", "compose", "-f", str(HERE.parents[1] / "docker-compose.yml"), "ps", "-q", service]).strip()
+    if not out:
+        raise RuntimeError(f"el servicio {service} del compose de la raiz no esta corriendo")
+    return out
+
+
 def engine_sql(engine: str, sql: str) -> str:
     if engine == "postgres":
         cmd = ["docker", "exec", "-i", "ql_postgres", "psql", "-U", "ql_user", "-d", "ql_demo",
@@ -222,7 +232,7 @@ def engine_sql(engine: str, sql: str) -> str:
 
 
 def querylens_sql(sql: str) -> str:
-    return run(["docker", "exec", "-i", QUERYLENS_CONTAINER, "psql", "-U", "ql_user", "-d", "ql_demo", "-At"],
+    return run(["docker", "exec", "-i", compose_container("postgres"), "psql", "-U", "ql_user", "-d", "ql_demo", "-At"],
                sql).strip()
 
 

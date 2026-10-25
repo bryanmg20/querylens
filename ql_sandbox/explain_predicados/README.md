@@ -6,7 +6,7 @@ Usa el código real del pipeline (`EXPLAIN` + `stages/explain_normalizer.py` + `
 
 ## Qué hace
 
-**`pred_battery.py`** (corre dentro del contenedor `querylens_pipeline`):
+**`pred_battery.py`** (corre dentro del servicio `pipeline` del compose):
 1. Crea `ql_pt_orders` (100.000 filas) y `ql_pt_customers` (5.000) en el sandbox de los dos motores, con índices en `status`, `created_at`, `customer_id` y `email`.
 2. Por cada uno de los 40 casos (`CASES`) saca tres planes:
    - `pg_generic`: `EXPLAIN (GENERIC_PLAN)` sobre el texto con `$n`, como lo deja `pg_stat_statements`;
@@ -22,16 +22,16 @@ Usa el código real del pipeline (`EXPLAIN` + `stages/explain_normalizer.py` + `
 
 ## Requisitos
 
-- Sandbox levantado (`ql_postgres` y `ql_mysql`) y el compose de la raíz (`querylens_pipeline`).
+- Sandbox levantado (`ql_postgres` y `ql_mysql`) y el compose de la raíz (servicio `pipeline`).
 - Se conecta como `ql_user` (Postgres) y `root` (MySQL) por `host.docker.internal`, con las contraseñas del sandbox.
 
 ## Uso (desde la raíz del repo, Git Bash)
 
 ```bash
 # 1. Correr la batería dentro del contenedor del pipeline
-docker cp ql_sandbox/explain_predicados/pred_battery.py querylens_pipeline:/tmp/pred_battery.py
-MSYS_NO_PATHCONV=1 docker exec -w /app querylens_pipeline python /tmp/pred_battery.py
-docker cp querylens_pipeline:/tmp/pred_battery.json ql_sandbox/explain_predicados/pred_battery.json
+docker compose cp ql_sandbox/explain_predicados/pred_battery.py pipeline:/tmp/pred_battery.py
+MSYS_NO_PATHCONV=1 docker compose exec -w /app pipeline python /tmp/pred_battery.py
+docker compose cp pipeline:/tmp/pred_battery.json ql_sandbox/explain_predicados/pred_battery.json
 
 # 2. Analizar con los detectores
 cd detection_engine

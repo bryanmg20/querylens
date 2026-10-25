@@ -15,7 +15,7 @@ Medición vigente del requisito del informe (`PrimerInforme.md`): **el sobrecost
 | Postgres: auto_explain activo en las dos ventanas, su costo nunca se mide | Brazo de instrumentación, reportado aparte |
 | MySQL: costo del monitor con `LIKE` sobre `PIPELINE_FINGERPRINT` | `events_statements_summary_by_user_by_event_name` del usuario `querylens_monitor` |
 | `run_engine` suelto dentro del proceso del medidor | `overhead/pipeline_proc.py`: daemon en otro proceso con `runner.Runner` y cadencia real |
-| El contenedor `querylens_pipeline` del compose extrae en paralelo y ensucia la ventana "carga sola" | El preflight aborta si está corriendo |
+| El servicio `pipeline` del compose extrae en paralelo y ensucia la ventana "carga sola" | El preflight aborta si está corriendo |
 
 ## Cómo correrlo
 
@@ -25,7 +25,7 @@ docker compose -f ql_sandbox/docker-compose.yml up -d
 docker compose up -d
 
 # 2. Parar el daemon del compose: si extrae, ensucia los bloques sin pipeline
-docker stop querylens_pipeline
+docker compose stop pipeline
 
 # 3. Medir (desde telemetry_pipeline/, con el venv)
 cd telemetry_pipeline
@@ -35,7 +35,7 @@ python -m overhead.run --profile serious --engine both                 # ~1 h: e
 python -m overhead.run --profile serious --engine postgres             # ~30 min, un motor
 
 # 4. Volver a levantar el daemon
-docker start querylens_pipeline
+docker compose start pipeline
 ```
 
 | Perfil | Bloque | Pares por motor | Tiempo aprox. |
@@ -45,7 +45,7 @@ docker start querylens_pipeline
 | `--stress` | igual | +4 pares con cadencia de 2 s | +6 min por motor |
 | `--positive-control` | igual | +3/+4 pares | +3/+6 min por motor |
 
-Opciones: `--pairs N` (pares del brazo pipeline), `--block-s S`, `--warmup-s S` (60 s), `--cadence S` (10 s por defecto, como `runner.DEFAULT_INTERVAL_S`), `--workers N` (2), `--seed`, `--skip-instrumentation`, `--allow-degraded` (medir sin auto_explain/funciones de log o con consumers apagados), `--allow-external-pipeline` (medir con `querylens_pipeline` arriba; solo para probar el código).
+Opciones: `--pairs N` (pares del brazo pipeline), `--block-s S`, `--warmup-s S` (60 s), `--cadence S` (10 s por defecto, como `runner.DEFAULT_INTERVAL_S`), `--workers N` (2), `--seed`, `--skip-instrumentation`, `--allow-degraded` (medir sin auto_explain/funciones de log o con consumers apagados), `--allow-external-pipeline` (medir con el servicio `pipeline` arriba; solo para probar el código).
 
 Si el veredicto sale `INCONCLUSO`, repetir con más pares (`--pairs 16`).
 
