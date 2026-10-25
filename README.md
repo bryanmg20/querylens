@@ -14,7 +14,7 @@ python3 scripts/gen_env.py > .env   # o copiar .env.example y llenarlo
 docker compose up -d --build --wait
 ```
 
-La aplicación queda en http://127.0.0.1:8080 (nginx, el único puerto publicado). Las variables están documentadas en [.env.example](.env.example). Las dependencias de Python están congeladas en los `requirements.txt` de cada servicio; se regeneran con `scripts/lock_requirements.sh` (ver [TESTING.md](telemetry_pipeline/TESTING.md#por-qué-hay-dos-requirements-y-dos-archivos-por-cada-uno)).
+La aplicación queda en http://querylens.localhost:8080 (nginx, el único puerto publicado). Los navegadores resuelven `*.localhost` a 127.0.0.1 sin tocar el archivo hosts; http://127.0.0.1:8080 también sirve. Las variables están documentadas en [.env.example](.env.example). Las dependencias de Python están congeladas en los `requirements.txt` de cada servicio; se regeneran con `scripts/lock_requirements.sh` (ver [TESTING.md](telemetry_pipeline/TESTING.md#por-qué-hay-dos-requirements-y-dos-archivos-por-cada-uno)).
 
 ## Documentación del repositorio
 
