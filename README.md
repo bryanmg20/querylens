@@ -11,8 +11,10 @@ Requiere Docker con Compose v2.17 o superior (`docker compose version`).
 
 ```bash
 python3 scripts/gen_env.py > .env   # o copiar .env.example y llenarlo
-docker compose up -d --build --wait
+docker compose --profile ui up -d --build --wait
 ```
+
+Sin `--profile ui` (o `COMPOSE_PROFILES=ui` en `.env`), `up` levanta el modo headless: monitoreo y reportes sin interfaz ni puertos publicados, administrado con `docker compose run --rm cli`. Ver [INSTALL_HEADLESS.md](INSTALL_HEADLESS.md).
 
 La aplicación queda en http://querylens.localhost:8080 (nginx, el único puerto publicado). Los navegadores resuelven `*.localhost` a 127.0.0.1 sin tocar el archivo hosts; http://127.0.0.1:8080 también sirve. Las variables están documentadas en [.env.example](.env.example). Las dependencias de Python están congeladas en los `requirements.txt` de cada servicio; se regeneran con `scripts/lock_requirements.sh` (ver [TESTING.md](telemetry_pipeline/TESTING.md#por-qué-hay-dos-requirements-y-dos-archivos-por-cada-uno)).
 
