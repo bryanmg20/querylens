@@ -138,6 +138,11 @@ services:
     restart: unless-stopped
 
   api-rest:
+    # Perfil "ui" (con frontend y nginx): solo sirve a la interfaz. Sin el
+    # perfil, up deja el modo headless (monitoreo + scheduler) y la
+    # administracion va por el CLI. Con interfaz:
+    #   docker compose --profile ui up -d
+    profiles: ["ui"]
     build:
       context: ./api_rest
     environment:
@@ -174,6 +179,7 @@ services:
     restart: unless-stopped
 
   frontend:
+    profiles: ["ui"]
     build:
       context: ./frontend
       # Rutas relativas al origen de nginx (mismo origen, sin CORS). Next las
@@ -210,7 +216,9 @@ services:
 
   nginx:
     # Punto de entrada unico (nginx/nginx.conf): / al frontend, /auth/ al
-    # auth-service y /api/ a la api-rest.
+    # auth-service y /api/ a la api-rest. Perfil "ui", como lo que tiene
+    # detras: en modo headless no se publica ningun puerto.
+    profiles: ["ui"]
     # Rama stable (1.27 era mainline y ya no recibe parches), con digest.
     image: nginx:1.30-alpine@sha256:47928bf67eb62a1863cb08d9ecb52d3e704304ba614eaee17884204677702951
     ports:
@@ -344,6 +352,86 @@ services:
       db-roles:
         condition: service_completed_successfully
     restart: unless-stopped
+
+  scheduler:
+    # Ventanas de recoleccion (cli/querylens.sh scheduler): cada
+    # SCHEDULER_INTERVAL_S enciende monitoring_enabled de las bases cuyo
+    # collect_from llego, lo apaga al llegar collect_until y, pasado
+    # REPORT_GRACE_S (el detector procesa en diferido por la cola), escribe el
+    # reporte de hallazgos en ./reports. Todo el estado vive en
+    # registered_databases: un reinicio no pierde ventanas.
+    build:
+      context: ./cli
+    command: ["scheduler"]
+    environment: &cli-environment
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: ${QUERYLENS_DB:?falta en .env}
+      # Rol propio (querylens_database/service_roles.sql): lee bases sin sus
+      # credenciales, hallazgos y salud; cambia monitoreo y ventana.
+      PGUSER: ql_cli
+      PGPASSWORD: ${QL_CLI_DB_PASSWORD:?falta en .env}
+      # Zona en que se escriben y se muestran las horas de la ventana y de los
+      # reportes (TZ para date, PGTZ para la sesion de psql).
+      TZ: ${QL_TZ:-America/Bogota}
+      PGTZ: ${QL_TZ:-America/Bogota}
+      AUTH_URL: http://auth-service:8000
+      REPORTS_DIR: /reports
+      REPORT_FORMAT: ${REPORT_FORMAT:-md}
+      SCHEDULER_INTERVAL_S: ${SCHEDULER_INTERVAL_S:-60}
+      REPORT_GRACE_S: ${REPORT_GRACE_S:-300}
+      HEARTBEAT_FILE: /tmp/heartbeat
+    # Mismo uid que el dueno del repo: los reportes (modo 600) quedan legibles
+    # para el en el host, sin sudo. ./reports existe en el repo (.gitkeep): si
+    # Docker lo creara, seria de root y este uid no podria escribir.
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    volumes:
+      - ./reports:/reports
+    healthcheck:
+      # Sano si hubo una vuelta buena en los ultimos 3 min (SCHEDULER_INTERVAL_S
+      # de 60 s por defecto); una vuelta que falla no late.
+      test: ["CMD-SHELL", "test -n \"$$(find /tmp/heartbeat -mmin -3 2>/dev/null)\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 64m
+    logging: *default-logging
+    networks: [backend]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-roles:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  cli:
+    # Administracion en modo headless, bajo demanda (perfil "cli": up no lo
+    # levanta; run no necesita --profile):
+    #   docker compose run --rm cli              # menu
+    #   docker compose run --rm cli list         # subcomandos (scripts, cron)
+    # Registra y prueba bases por el auth-service (cifra las credenciales) y
+    # lee/cambia lo demas en la base con el rol ql_cli.
+    profiles: ["cli"]
+    build:
+      context: ./cli
+    environment: *cli-environment
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    volumes:
+      - ./reports:/reports
+    stdin_open: true
+    tty: true
+    logging: *default-logging
+    networks: [backend]
+    # auth-service ya espera a db-roles; repetirlo aqui volveria a correr
+    # db-roles en cada run.
+    depends_on:
+      auth-service:
+        condition: service_healthy
 
   tests:
     # Suites de telemetry_pipeline y detection_engine dentro de la red de

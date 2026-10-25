@@ -11,3 +11,7 @@ node_modules/
 graphify-out/
 /CLAUDE.md
 *.egg-info/
+# Reportes del CLI/scheduler: datos del cliente, no se versionan. El
+# directorio si (.gitkeep), para que Docker no lo cree como root.
+reports/*
+!reports/.gitkeep
