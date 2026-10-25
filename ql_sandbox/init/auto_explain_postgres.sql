@@ -1,7 +1,8 @@
 -- Funciones que dejan a querylens_monitor leer el log JSON de auto_explain.
 --
 -- Mismo SQL que el Paso 4 de telemetry_pipeline/references/006_instalacion_auto_explain.md
--- (si cambia uno, cambia el otro). La configuración del servidor (auto_explain,
+-- y que querylens_database/setup_target_postgres.sql (si cambia uno, cambian
+-- todos). La configuración del servidor (auto_explain,
 -- jsonlog, rotación) va en los -c del servicio postgres de docker-compose.yml.
 --
 -- Lo ejecuta el servicio postgres_setup en cada `docker compose up`, también
