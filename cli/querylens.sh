@@ -303,6 +303,17 @@ FROM pipeline_health.last_run
 WHERE db_id = :'id'
 SQL
     echo
+    echo "Captura de abrazos mortales (ultima hora):"
+    q -P footer=off -v id="$id" <<'SQL'
+SELECT count(*) AS ciclos,
+       sum(deadlocks_since_prev) AS abrazos_del_motor,
+       count(*) FILTER (WHERE log_window_overrun) AS ciclos_con_desborde,
+       round((max(log_bytes_since_prev / nullif(seconds_since_prev, 0)) / 1024)::numeric, 1)
+           AS log_kb_s_max
+FROM pipeline_health.cycle_samples
+WHERE db_id = :'id' AND taken_at >= now() - interval '1 hour'
+SQL
+    echo
     echo "Problemas abiertos:"
     q -P footer=off -x -v id="$id" <<'SQL'
 SELECT severity AS severidad, code AS codigo, nullif(section, '') AS seccion,
