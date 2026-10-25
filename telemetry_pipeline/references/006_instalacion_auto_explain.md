@@ -4,6 +4,8 @@ Esta guía activa los **planes reales** en Postgres. Sin ella, QueryLens explica
 
 Funciona con cualquier driver de la aplicación (JDBC, Go, Node, .NET, Rails, Python…), porque el plan lo escribe Postgres al ejecutar.
 
+> **Para los clientes:** [`querylens_database/setup_target_postgres.sql`](../../querylens_database/setup_target_postgres.sql) aplica esta guía completa (Pasos 2 y 4, junto con `pg_stat_statements` y el rol) en una sola corrida, y al final dice si hace falta el reinicio del Paso 3. Ver [PREPARAR_BASE.md](../../PREPARAR_BASE.md). Esta guía queda como referencia de qué cambia y por qué.
+
 > **Sandbox del repo:** `ql_sandbox/docker-compose.yml` ya trae todo esto. Los `-c` del servicio `postgres` aplican la configuración de los Pasos 2 y 3, y el servicio `postgres_setup` ejecuta `ql_sandbox/init/auto_explain_postgres.sql` (el SQL del Paso 4) en cada `docker compose up`, también con un volumen que ya existía. Esta guía es para las bases de los clientes.
 
 ## Requisitos

@@ -12,24 +12,17 @@ QueryLens se instala **dentro de la red del cliente**, en el mismo servidor de l
 ## 1. Requisitos
 
 - Linux con Docker y Compose v2.17 o superior (`docker compose version`).
-- Acceso de superusuario a la base que se va a monitorear, una sola vez, para prepararla (paso 2).
-- Postgres o MySQL. Esta guía cubre Postgres; para MySQL, ver `ql_sandbox/init/init_mysql.sql`.
+- Acceso de administrador a la base que se va a monitorear, una sola vez, para prepararla (paso 2).
+- PostgreSQL 17 o superior, o MySQL 8.0.18 o superior.
 
 ## 2. Preparar la base a monitorear (DBA)
 
-1. En `postgresql.conf`, agregar `pg_stat_statements` a `shared_preload_libraries` y **reiniciar** Postgres.
-2. Opcional, para abrazos mortales y planes reales: configurar `auto_explain` y el log JSON según los Pasos 1 a 3 de [006_instalacion_auto_explain.md](telemetry_pipeline/references/006_instalacion_auto_explain.md).
-3. En **cada** base a monitorear, como superusuario:
-   ```bash
-   psql -U postgres -d <base> -f querylens_database/setup_target.sql
-   ```
-   Crea el rol `querylens_monitor` (solo `pg_monitor`), la extensión `pg_stat_statements` y las funciones `querylens.log_files()` / `querylens.read_log()`. Al final pide la contraseña del rol. Se puede repetir sin problema.
-4. Si QueryLens corre en el mismo servidor y Postgres está instalado fuera de Docker, el host a registrar es `host.docker.internal`. Postgres debe escuchar en la IP del bridge de Docker (`listen_addresses`, normalmente `172.17.0.1`), y `pg_hba.conf` debe aceptar la red de Docker:
-   ```
-   host  all  querylens_monitor  172.16.0.0/12  scram-sha-256
-   ```
+Un script por motor activa todo lo que QueryLens necesita y crea el usuario `querylens_monitor`; si lo pide, se reinicia la base una vez. El paso a paso está en [PREPARAR_BASE.md](PREPARAR_BASE.md):
 
-El rol no puede leer datos de las tablas. `EXPLAIN` sí necesita `SELECT` sobre ellas: sin ese permiso QueryLens funciona, pero sin los antipatrones que dependen del plan. Darlo es decisión del dueño de la base; los `GRANT` están comentados al final de `setup_target.sql`.
+```bash
+psql -U postgres -d <base> -f querylens_database/setup_target_postgres.sql   # PostgreSQL
+mysql -u root -p <base> < querylens_database/setup_target_mysql.sql          # MySQL
+```
 
 ## 3. Instalar QueryLens
 
@@ -121,9 +114,9 @@ nginx escucha solo en `127.0.0.1:8080`. Para entrar desde otra máquina, un tún
 
 | Síntoma | Qué revisar |
 |---|---|
-| `add` responde "Sin conexión" | Host, puerto y `pg_hba.conf` (paso 2.4). Desde el contenedor, `localhost` es el propio contenedor: usar `host.docker.internal` |
+| `add` responde "Sin conexión" | Host, puerto y `pg_hba.conf` o `bind-address` ([PREPARAR_BASE.md](PREPARAR_BASE.md)). Desde el contenedor, `localhost` es el propio contenedor: usar `host.docker.internal` |
 | `list` muestra `disponible: no` | El `auth-service` no logra conectarse; revisar `docker compose logs auth-service` |
-| El reporte sale vacío | `querylens health ID`: suele faltar `pg_stat_statements` en `shared_preload_libraries` o en la base |
+| El reporte sale vacío | `querylens health ID`: si muestra un problema de configuración, falta un paso de [PREPARAR_BASE.md](PREPARAR_BASE.md) (por ejemplo, el reinicio) |
 | No aparece el reporte de una ventana | `docker compose logs scheduler`, y que `reports/` exista y pertenezca a `HOST_UID` |
 | Muchas bases a la vez | El pipeline las recorre una tras otra: con decenas de ventanas simultáneas cada ciclo tarda más. Revisar `pipeline_health.last_run` |
 
@@ -135,3 +128,18 @@ docker compose up -d --build --wait
 ```
 
 `db-roles` aplica en cada `up` los roles y las columnas nuevas de `registered_databases`, así que un volumen existente no necesita migraciones manuales para esta versión.
+
+## 8. Desinstalar
+
+1. Quitar QueryLens de cada base monitoreada (usuario, `auto_explain`, configuración): ver [Quitar QueryLens de la base](PREPARAR_BASE.md#quitar-querylens-de-la-base).
+2. Guardar lo que se quiera conservar de `reports/`.
+3. Borrar el stack.
+
+   **Atención:** `-v` borra los volúmenes, es decir, las bases registradas, los hallazgos y la salud del pipeline. No se puede deshacer.
+
+   ```bash
+   cd /opt/querylens
+   docker compose --profile ui --profile cli down -v --rmi local
+   cd / && sudo rm -rf /opt/querylens
+   ```
+4. Quitar el alias `querylens` del perfil de la shell, si se agregó.
