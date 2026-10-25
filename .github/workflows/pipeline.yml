@@ -66,6 +66,65 @@ jobs:
           name: report-detector
           path: report-detector.xml
 
+  stack:
+    # Levanta docker-compose.yml tal cual (red interna, roles por servicio,
+    # nginx) y lo prueba desde fuera solo por el puerto de nginx. Si un
+    # servicio apunta a localhost en vez de al nombre del contenedor, o a un
+    # rol le falta un GRANT, algun servicio no llega a healthy o el smoke falla.
+    needs: unit
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: mirror de Docker Hub
+        # Mismo motivo que los services de integration: las imagenes base
+        # (nginx, python, node) salen de Docker Hub y el runner comparte IP.
+        run: |
+          echo '{"registry-mirrors": ["https://mirror.gcr.io"]}' | sudo tee /etc/docker/daemon.json
+          sudo systemctl restart docker
+
+      - name: .env desechable
+        # El .env real no se versiona: valores aleatorios solo para este job.
+        run: |
+          python3 - > .env <<'PY'
+          import base64, os, secrets
+          print("QUERYLENS_USER=ql_user")
+          print("QUERYLENS_DB=ql_demo")
+          print(f"QUERYLENS_PASSWORD={secrets.token_hex(16)}")
+          print(f"AUTH_ENCRYPTION_KEY={base64.urlsafe_b64encode(os.urandom(32)).decode()}")
+          print(f"JWT_SECRET_KEY={secrets.token_urlsafe(48)}")
+          for role in ("AUTH", "API", "PIPELINE", "DETECTOR"):
+              print(f"QL_{role}_DB_PASSWORD={secrets.token_hex(16)}")
+          PY
+
+      - name: docker compose up
+        # --wait: falla si un servicio no llega a healthy (o db-roles no sale
+        # con 0). pipeline y detection-engine solo laten tras hablar con la
+        # base con su propio rol.
+        run: docker compose up -d --build --wait --wait-timeout 300
+
+      - name: smoke por nginx
+        # Solo el puerto publicado de nginx: el registro escribe con ql_auth y
+        # el diagnostico lee con ql_api. host no se contacta al registrar.
+        run: |
+          base=http://127.0.0.1:8080
+          curl -fsS "$base/healthz"
+          curl -fsS -o /dev/null "$base/"
+          curl -fsS "$base/auth/health"
+          curl -fsS "$base/api/health"
+          token=$(curl -fsS -X POST "$base/auth/databases" \
+            -H 'Content-Type: application/json' \
+            -d '{"connection_name":"ci","engine":"postgresql","host":"ci.invalid","port":5432,"username":"ci","password":"ci","database_name":"ci"}' \
+            | python3 -c 'import json, sys; print(json.load(sys.stdin)["access_token"])')
+          curl -fsS -o /dev/null -H "Authorization: Bearer $token" "$base/api/diagnostics"
+
+      - name: estado y logs
+        if: failure()
+        run: |
+          docker compose ps -a
+          docker compose logs --no-color --tail 200
+
   integration:
     # Corre en cada push (merge a cualquier rama). Los PR solo corren unit.
     # Sin gate a develop: si algo falla aqui, no hay merge limpio.
@@ -108,7 +167,7 @@ jobs:
           --health-retries 15
 
       querylens-db:
-        image: ghcr.io/pgmq/pg17-pgmq:latest
+        image: ghcr.io/pgmq/pg17-pgmq:v1.13.0@sha256:1ce7c40f588a08cfad14bc2b228eb35db98270163e27308cec109762b8120c85
         env:
           POSTGRES_USER: ql_user
           POSTGRES_PASSWORD: ql_pass
