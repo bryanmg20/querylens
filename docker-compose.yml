@@ -76,6 +76,7 @@ services:
       QL_API_DB_PASSWORD: ${QL_API_DB_PASSWORD:?falta en .env}
       QL_PIPELINE_DB_PASSWORD: ${QL_PIPELINE_DB_PASSWORD:?falta en .env}
       QL_DETECTOR_DB_PASSWORD: ${QL_DETECTOR_DB_PASSWORD:?falta en .env}
+      QL_CLI_DB_PASSWORD: ${QL_CLI_DB_PASSWORD:?falta en .env}
     # El script y los DDL del detection_engine que crea como ql_detector.
     volumes:
       - ./querylens_database:/querylens_database:ro

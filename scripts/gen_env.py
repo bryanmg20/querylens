@@ -22,10 +22,10 @@ print(f"QUERYLENS_PASSWORD={secrets.token_hex(16)}")
 # Fernet: 32 bytes en base64 url-safe.
 print(f"AUTH_ENCRYPTION_KEY={base64.urlsafe_b64encode(os.urandom(32)).decode()}")
 print(f"JWT_SECRET_KEY={secrets.token_urlsafe(48)}")
-for role in ("AUTH", "API", "PIPELINE", "DETECTOR"):
+for role in ("AUTH", "API", "PIPELINE", "DETECTOR", "CLI"):
     print(f"QL_{role}_DB_PASSWORD={secrets.token_hex(16)}")
-# uid/gid de quien genera el .env, para el servicio tests (default 1000). En
-# Windows no existen y Docker Desktop no los necesita.
+# uid/gid de quien genera el .env, para los servicios tests, cli y scheduler
+# (default 1000). En Windows no existen y Docker Desktop no los necesita.
 if hasattr(os, "getuid"):
     print(f"HOST_UID={os.getuid()}")
     print(f"HOST_GID={os.getgid()}")
