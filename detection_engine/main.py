@@ -1,11 +1,14 @@
 import argparse
+import os
 import time
 from datetime import datetime, timezone
+from pathlib import Path
 
 from pydantic import ValidationError
 from querylens_contract import SnapshotPayload
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import OperationalError
 
 from models import Hallazgo
 from anti_patterns.statement_history import STALE_AFTER, next_statement_histories
@@ -26,6 +29,15 @@ logger = get_logger(__name__)
 QUEUE_NAME = "analyze_job" # Cola de la que el Telemetry Pipeline publica los snapshots a analizar
 POLL_INTERVAL_SECONDS = 5 # Tiempo de espera si la cola esta vacia
 VISIBILITY_TIMEOUT_SECONDS = 30 # Tiempo que el mensaje queda oculto mientras se procesa
+MAX_RECONNECT_BACKOFF_SECONDS = 60 # Tope de espera entre reintentos con la base caida
+
+
+# Marca de vida para el healthcheck de docker-compose: se toca cada vez que la
+# cola responde. Sin HEARTBEAT_FILE (fuera del contenedor) no hace nada.
+def beat() -> None:
+    heartbeat_file = os.getenv("HEARTBEAT_FILE")
+    if heartbeat_file:
+        Path(heartbeat_file).touch()
 
 
 # Lee el siguiente mensaje disponible en la cola sin eliminarlo
@@ -132,10 +144,26 @@ def main(oneshot: bool = False) -> None:
     ensure_hallazgos_table(engine)
     ensure_statement_samples_table(engine)
 
+    backoff = POLL_INTERVAL_SECONDS
     try:
         while True:
             # Lee el siguiente mensaje disponible en la cola
-            job = read_next_job(engine)
+            try:
+                job = read_next_job(engine)
+            except OperationalError as error:
+                # Base caida o reiniciandose: esperar (doblando, con tope) y
+                # reintentar, en vez de terminar el proceso
+                if oneshot:
+                    raise
+                logger.warning(
+                    "Sin conexion a la base (%s). Reintento en %ss.",
+                    type(error.orig).__name__ if error.orig else type(error).__name__, backoff,
+                )
+                time.sleep(backoff)
+                backoff = min(backoff * 2, MAX_RECONNECT_BACKOFF_SECONDS)
+                continue
+            backoff = POLL_INTERVAL_SECONDS
+            beat()
 
             # Sin mensajes: esperar y volver a preguntar
             if job is None:
