@@ -216,3 +216,31 @@ def test_advance_without_deadlocks_keeps_the_memory():
     state = ContentionState().advance(T0, {}, memory)
     t1 = T0 + timedelta(seconds=10)
     assert state.advance(t1, {}).deadlocks == memory
+
+
+# ------------------------------------------------- eventos (deadlock_events)
+
+def test_every_new_report_is_an_event_with_or_without_finding():
+    incomplete = {"detected_at": "2026-10-22 00:59:20.100000", "source": "mysql_error_log", "complete": False}
+    unmatched = mysql_ct04(detected_at="2026-10-22 00:59:22.000000")
+    indexes = [index_row("id"), index_row("cliente", name="ix_cliente")]
+    events = []
+    findings, _ = detect_deadlocks(
+        snapshot(mysql_ct01(), unmatched, incomplete, indexes=indexes), T0, DeadlockMemory(), events
+    )
+    assert len(findings) == 1
+    # en orden de detected_at, como los procesa el detector
+    assert [(e.detected_at, e.source, e.complete, e.antipatron) for e in events] == [
+        ("2026-10-22 00:59:20.100000", "mysql_error_log", False, None),
+        ("2026-10-22 00:59:22.000000", "innodb_status", True, None),
+        (DETECTED, "innodb_status", True, CT01),
+    ]
+    assert events[2].report_key == f"{DETECTED}|265"
+
+
+def test_a_report_already_seen_is_not_a_new_event():
+    events = []
+    _, memory = detect_deadlocks(snapshot(mysql_ct01()), T0, DeadlockMemory(), events)
+    header = {"detected_at": DETECTED, "source": "mysql_error_log", "complete": False}
+    detect_deadlocks(snapshot(mysql_ct01(), header), T0 + timedelta(seconds=10), memory, events)
+    assert len(events) == 1

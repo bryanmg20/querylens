@@ -11,7 +11,7 @@ from datetime import datetime
 from querylens_contract import SnapshotPayload
 
 from logger import get_logger
-from models import Hallazgo
+from models import DeadlockEvent, Hallazgo
 
 from . import (
     ct01_inconsistent_order,
@@ -69,9 +69,11 @@ def detect_deadlocks(
     snapshot: SnapshotPayload,
     captured_at: datetime,
     memory: DeadlockMemory,
+    events: list[DeadlockEvent] | None = None,
 ) -> tuple[list[Hallazgo], DeadlockMemory]:
     """Hallazgos de los abrazos nuevos de este snapshot y la memoria
-    actualizada, que sera la de la siguiente muestra."""
+    actualizada, que sera la de la siguiente muestra. Si se pasa events, se le
+    agrega cada abrazo nuevo, tenga o no hallazgo."""
     memory = memory.pruned(captured_at)
     seen = dict(memory.seen)
     signatures = {signature: dict(info) for signature, info in memory.signatures.items()}
@@ -86,8 +88,10 @@ def detect_deadlocks(
         if not report.complete:
             seen[key] = ""
             without_detail += 1
+            _record(events, key, report, None)
             continue
         antipatron = classify(report, snapshot.indexes)
+        _record(events, key, report, antipatron)
         if antipatron is None:
             seen[key] = ""
             logger.info(
@@ -112,3 +116,14 @@ def detect_deadlocks(
             snapshot.db_id, without_detail,
         )
     return findings, DeadlockMemory(seen=seen, signatures=signatures)
+
+
+def _record(events: list[DeadlockEvent] | None, key: str, report, antipatron: str | None) -> None:
+    if events is not None:
+        events.append(DeadlockEvent(
+            report_key=key,
+            detected_at=report.detected_at,
+            source=report.source,
+            complete=report.complete,
+            antipatron=antipatron,
+        ))

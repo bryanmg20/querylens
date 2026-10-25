@@ -65,6 +65,7 @@ GRANT CREATE ON SCHEMA public TO ql_detector;
 ALTER TABLE IF EXISTS public.hallazgos OWNER TO ql_detector;
 ALTER TABLE IF EXISTS public.statement_samples OWNER TO ql_detector;
 ALTER TABLE IF EXISTS public.contention_state OWNER TO ql_detector;
+ALTER TABLE IF EXISTS public.deadlock_events OWNER TO ql_detector;
 
 -- Crearlas aqui (como ql_detector) si faltan, para poder dar el SELECT de la
 -- api-rest antes del primer arranque del detector.
@@ -75,3 +76,5 @@ SET ROLE ql_detector;
 RESET ROLE;
 
 GRANT SELECT ON public.hallazgos TO ql_api, ql_cli;
+-- el reporte compara los abrazos capturados con el contador del motor
+GRANT SELECT ON public.deadlock_events TO ql_cli;

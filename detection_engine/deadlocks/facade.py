@@ -10,7 +10,7 @@ from sqlalchemy.engine import Engine
 
 from anti_patterns.statement_history import parse_instant
 from logger import get_logger
-from models import Hallazgo
+from models import DeadlockEvent, Hallazgo
 
 from .ct05_long_transaction_cascade import detect_long_transaction_cascade
 from .deadlock_detector import detect_deadlocks
@@ -59,8 +59,11 @@ def _run(engine: Engine, snapshot: SnapshotPayload, fallback_captured_at: dateti
         return []
 
     findings, roots = detect_long_transaction_cascade(snapshot, captured_at, previous)
-    deadlock_findings, deadlocks = detect_deadlocks(snapshot, captured_at, state.deadlocks_for(captured_at))
-    save_contention_state(engine, snapshot.db_id, state.advance(captured_at, roots, deadlocks))
+    events: list[DeadlockEvent] = []
+    deadlock_findings, deadlocks = detect_deadlocks(
+        snapshot, captured_at, state.deadlocks_for(captured_at), events
+    )
+    save_contention_state(engine, snapshot.db_id, state.advance(captured_at, roots, deadlocks), events)
     if roots:
         logger.info(
             "  contencion | db_id=%s | raices en cascada=%d | hallazgos=%d",
