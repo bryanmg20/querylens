@@ -199,6 +199,55 @@ def test_backoff_dobra_hasta_el_tope(caplog):
     assert runner.backoff == 60, "el tope evita esperas larguisimas tras un corte largo"
 
 
+# ---------- heartbeat para el healthcheck ----------
+
+
+def test_heartbeat_late_tras_cada_ciclo_bueno_y_no_tras_uno_fallido():
+    """El healthcheck del compose mira la edad del archivo: un ciclo que
+    revienta (base caida) no debe renovarlo. Aqui fallan el 1ro y el 3ro."""
+    latidos = []
+    resultados = iter([RuntimeError("caido"), None, RuntimeError("caido"), None])
+
+    def run(_targets):
+        resultado = next(resultados)
+        if resultado is not None:
+            raise resultado
+
+    runner = runner_mod.Runner(
+        interval=10, load=lambda: [1], run=run, heartbeat=lambda: latidos.append(1)
+    )
+    runner.stop = _FakeStop(stop_after=4)
+
+    runner.run_forever()
+
+    assert len(latidos) == 2
+
+
+def test_heartbeat_late_tambien_sin_bases_registradas():
+    """Sin bases activas el daemon esta sano: el ciclo termina bien."""
+    latidos = []
+    runner = runner_mod.Runner(
+        interval=10, load=lambda: [], run=mock.MagicMock(),
+        heartbeat=lambda: latidos.append(1),
+    )
+    runner.stop = _FakeStop(stop_after=1)
+
+    runner.run_forever()
+
+    assert latidos == [1]
+
+
+def test_touch_heartbeat_escribe_solo_con_heartbeat_file(monkeypatch, tmp_path):
+    archivo = tmp_path / "heartbeat"
+    monkeypatch.delenv("HEARTBEAT_FILE", raising=False)
+    runner_mod._touch_heartbeat()
+    assert not archivo.exists()
+
+    monkeypatch.setenv("HEARTBEAT_FILE", str(archivo))
+    runner_mod._touch_heartbeat()
+    assert archivo.exists()
+
+
 _PIPELINE = Path(__file__).resolve().parent.parent
 
 
