@@ -17,8 +17,8 @@
 # mas tardar 45 s despues de que la raiz cumple 30 s (metrica M4).
 #
 # USO
-#   docker exec ql_sysbench bash /scripts/mysql/simulate_long_transaction_mysql.sh
-#   HOLD_SECONDS=60 WAITERS=3 docker exec -e HOLD_SECONDS -e WAITERS ql_sysbench bash /scripts/mysql/simulate_long_transaction_mysql.sh
+#   docker exec ql_sysbench bash /scripts/mysql/simulate_ct05_long_transaction_mysql.sh
+#   HOLD_SECONDS=60 WAITERS=3 docker exec -e HOLD_SECONDS -e WAITERS ql_sysbench bash /scripts/mysql/simulate_ct05_long_transaction_mysql.sh
 # ============================================================
 
 set -euo pipefail

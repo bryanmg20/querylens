@@ -26,8 +26,8 @@
 # a mas tardar 15 s despues del abrazo (metrica M4).
 #
 # USO
-#   docker exec ql_sysbench bash /scripts/mysql/simulate_deadlock_no_index_mysql.sh
-#   PAUSE_SECONDS=3 docker exec -e PAUSE_SECONDS ql_sysbench bash /scripts/mysql/simulate_deadlock_no_index_mysql.sh
+#   docker exec ql_sysbench bash /scripts/mysql/simulate_ct04_deadlock_no_index_mysql.sh
+#   PAUSE_SECONDS=3 docker exec -e PAUSE_SECONDS ql_sysbench bash /scripts/mysql/simulate_ct04_deadlock_no_index_mysql.sh
 # ============================================================
 
 set -euo pipefail

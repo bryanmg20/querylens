@@ -15,8 +15,8 @@
 # mas tardar 45 s despues de que la raiz cumple 30 s (metrica M4).
 #
 # USO
-#   docker exec ql_sysbench bash /scripts/postgres/simulate_long_transaction_postgres.sh
-#   HOLD_SECONDS=60 WAITERS=3 docker exec -e HOLD_SECONDS -e WAITERS ql_sysbench bash /scripts/postgres/simulate_long_transaction_postgres.sh
+#   docker exec ql_sysbench bash /scripts/postgres/simulate_ct05_long_transaction_postgres.sh
+#   HOLD_SECONDS=60 WAITERS=3 docker exec -e HOLD_SECONDS -e WAITERS ql_sysbench bash /scripts/postgres/simulate_ct05_long_transaction_postgres.sh
 # ============================================================
 
 set -euo pipefail

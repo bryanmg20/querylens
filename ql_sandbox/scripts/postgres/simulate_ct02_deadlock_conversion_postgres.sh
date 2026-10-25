@@ -24,9 +24,9 @@
 # En los dos casos a mas tardar 15 s despues del abrazo (metrica M4).
 #
 # USO
-#   docker exec ql_sysbench bash /scripts/postgres/simulate_deadlock_conversion_postgres.sh
-#   MODE=prepared docker exec -e MODE ql_sysbench bash /scripts/postgres/simulate_deadlock_conversion_postgres.sh
-#   PAUSE_SECONDS=3 docker exec -e PAUSE_SECONDS ql_sysbench bash /scripts/postgres/simulate_deadlock_conversion_postgres.sh
+#   docker exec ql_sysbench bash /scripts/postgres/simulate_ct02_deadlock_conversion_postgres.sh
+#   MODE=prepared docker exec -e MODE ql_sysbench bash /scripts/postgres/simulate_ct02_deadlock_conversion_postgres.sh
+#   PAUSE_SECONDS=3 docker exec -e PAUSE_SECONDS ql_sysbench bash /scripts/postgres/simulate_ct02_deadlock_conversion_postgres.sh
 # ============================================================
 
 set -euo pipefail

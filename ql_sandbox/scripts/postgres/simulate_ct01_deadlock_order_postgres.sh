@@ -15,8 +15,8 @@
 # abrazo (metrica M4).
 #
 # USO
-#   docker exec ql_sysbench bash /scripts/postgres/simulate_deadlock_order_postgres.sh
-#   PAUSE_SECONDS=3 docker exec -e PAUSE_SECONDS ql_sysbench bash /scripts/postgres/simulate_deadlock_order_postgres.sh
+#   docker exec ql_sysbench bash /scripts/postgres/simulate_ct01_deadlock_order_postgres.sh
+#   PAUSE_SECONDS=3 docker exec -e PAUSE_SECONDS ql_sysbench bash /scripts/postgres/simulate_ct01_deadlock_order_postgres.sh
 # ============================================================
 
 set -euo pipefail

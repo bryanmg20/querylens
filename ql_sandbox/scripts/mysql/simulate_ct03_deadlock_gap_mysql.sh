@@ -28,8 +28,8 @@
 # UPDATE, a mas tardar 15 s despues del abrazo (metrica M4).
 #
 # USO
-#   docker exec ql_sysbench bash /scripts/mysql/simulate_deadlock_gap_mysql.sh
-#   GAP=end docker exec -e GAP ql_sysbench bash /scripts/mysql/simulate_deadlock_gap_mysql.sh
+#   docker exec ql_sysbench bash /scripts/mysql/simulate_ct03_deadlock_gap_mysql.sh
+#   GAP=end docker exec -e GAP ql_sysbench bash /scripts/mysql/simulate_ct03_deadlock_gap_mysql.sh
 # ============================================================
 
 set -euo pipefail
