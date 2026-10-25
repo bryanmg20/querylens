@@ -5,9 +5,11 @@
 # carpeta: storage.py lee los DDL de ../querylens_database, asi que esa carpeta
 # se copia junto al codigo.
 #
-# psycopg2 se compila contra libpq (no trae wheel), por eso el toolchain en la
-# misma capa y libpq5 como dependencia explicita para sobrevivir al purge.
-FROM python:3.11-slim
+# requirements.txt es un lock con hashes (scripts/lock_requirements.sh) y todo
+# trae wheel (psycopg2-binary incluye su libpq): sin apt ni compilador.
+# Tag + digest: el mismo build en cualquier maquina. Para actualizar,
+# cambiar el digest (docker buildx imagetools inspect python:3.11-slim).
+FROM python:3.11-slim@sha256:b7a9e5f6a93d6d4a31f129bbd4bdee69efccb6ded0fb230d78aafaf37af98377
 
 ENV PYTHONUNBUFFERED=1
 
@@ -15,16 +17,13 @@ WORKDIR /app
 
 COPY detection_engine/requirements.txt .
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends build-essential libpq-dev libpq5 \
-    && pip install --no-cache-dir -r requirements.txt \
-    && apt-get purge -y --auto-remove build-essential libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir --require-hashes -r requirements.txt
 
 # Contrato del snapshot compartido con el pipeline (contract/querylens_contract):
 # el detector valida cada mensaje de analyze_job con los mismos modelos.
+# --no-deps: su pydantic ya vino del lock.
 COPY contract/ /contract/
-RUN pip install --no-cache-dir /contract
+RUN pip install --no-cache-dir --no-deps /contract
 
 COPY detection_engine/ .
 

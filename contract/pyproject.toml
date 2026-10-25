@@ -2,7 +2,9 @@
 # detection_engine (consumidor). Se instala en cada imagen con
 # `pip install /contract` y en desarrollo con `pip install -e contract`.
 [build-system]
-requires = ["setuptools>=68"]
+# Version exacta: pip descarga el backend en cada build (aislado), y con un
+# rango cada imagen podia construir el contrato con otro setuptools.
+requires = ["setuptools==84.2.1"]
 build-backend = "setuptools.build_meta"
 
 [project]

@@ -1,0 +1,6 @@
+# Dependencias de desarrollo (tests, lint), encima de las de runtime. El lock
+# es requirements-dev.txt (scripts/lock_requirements.sh).
+-r requirements.in
+
+pytest>=8.0,<10
+ruff==0.17.1
