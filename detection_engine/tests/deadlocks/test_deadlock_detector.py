@@ -270,3 +270,23 @@ def test_a_report_already_seen_is_not_a_new_event():
     header = {"detected_at": DETECTED, "source": "mysql_error_log", "complete": False}
     detect_deadlocks(snapshot(mysql_ct01(), header), T0 + timedelta(seconds=10), memory, events)
     assert len(events) == 1
+
+
+# ------------------------------------------------- base del abrazo
+
+def test_finding_and_event_name_the_schema_of_the_deadlock_not_the_registered_one():
+    # MySQL: la conexion ve todo el servidor; el abrazo es de ql_otra aunque el
+    # registro diga ql_demo
+    raw = mysql_ct01()
+    raw["database_name"] = "ql_otra"
+    events = []
+    findings, _ = detect_deadlocks(snapshot(raw), T0, DeadlockMemory(), events)
+    assert [f.database_name for f in findings] == ["ql_otra"]
+    assert [e.database_name for e in events] == ["ql_otra"]
+
+
+def test_header_without_detail_has_no_database():
+    header = {"detected_at": DETECTED, "source": "mysql_error_log", "complete": False}
+    events = []
+    detect_deadlocks(snapshot(header), T0, DeadlockMemory(), events)
+    assert [e.database_name for e in events] == [None]

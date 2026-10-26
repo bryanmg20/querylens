@@ -13,3 +13,7 @@ CREATE TABLE IF NOT EXISTS public.hallazgos (
     recomendacion TEXT NOT NULL,
     detectado_en TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- base donde ocurrio el hallazgo. db_id es el registro (en MySQL, todo el
+-- servidor); en MySQL esto es el schema. NULL si el detector no lo sabe.
+ALTER TABLE public.hallazgos ADD COLUMN IF NOT EXISTS database_name TEXT;

@@ -35,6 +35,7 @@ def save_findings(engine: Engine, db_id: str | None, findings: list[Hallazgo]) -
             "severidad": finding.severidad,
             "query_id": str(finding.query_id) if finding.query_id is not None else None,
             "table_name": finding.table_name,
+            "database_name": finding.database_name,
             # default=str por si algun valor no serializable se cuela en evidencia (ej. datetime)
             "evidencia": json.dumps(finding.evidencia, default=str),
             "explicacion": finding.explicacion,
@@ -48,9 +49,10 @@ def save_findings(engine: Engine, db_id: str | None, findings: list[Hallazgo]) -
             text(
                 """
                 INSERT INTO public.hallazgos
-                    (db_id, antipatron, severidad, query_id, table_name, evidencia, explicacion, recomendacion)
+                    (db_id, antipatron, severidad, query_id, table_name, database_name,
+                     evidencia, explicacion, recomendacion)
                 VALUES
-                    (:db_id, :antipatron, :severidad, :query_id, :table_name,
+                    (:db_id, :antipatron, :severidad, :query_id, :table_name, :database_name,
                      CAST(:evidencia AS JSONB), :explicacion, :recomendacion)
                 """
             ),

@@ -193,9 +193,9 @@ def load_contention_state(engine: Engine, db_id: str) -> ContentionState:
 # mismos (se recalcula contra la misma memoria): DO NOTHING.
 DEADLOCK_EVENT_INSERT = """
 INSERT INTO public.deadlock_events
-    (db_id, report_key, detected_at, source, complete, antipatron)
+    (db_id, report_key, detected_at, source, complete, antipatron, database_name)
 VALUES
-    (:db_id, :report_key, :detected_at, :source, :complete, :antipatron)
+    (:db_id, :report_key, :detected_at, :source, :complete, :antipatron, :database_name)
 ON CONFLICT (db_id, report_key) DO NOTHING
 """
 

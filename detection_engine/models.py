@@ -37,6 +37,9 @@ class Hallazgo:
     recomendacion: str
     query_id: QueryId | None = None
     table_name: str | None = None
+    # base donde ocurrio: en MySQL el schema, que no tiene por que ser el del
+    # registro (la conexion ve todo el servidor). None si no se sabe
+    database_name: str | None = None
 
 
 @dataclass
@@ -54,3 +57,6 @@ class DeadlockEvent:
     # patron (CT-01 a CT-04 o sin clasificar); None si no tiene ninguno o no
     # trae detalle
     antipatron: str | None = None
+    # base del abrazo (en MySQL el schema de lo que espera la victima); None
+    # en un encabezado sin detalle
+    database_name: str | None = None

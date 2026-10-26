@@ -41,3 +41,6 @@ CREATE TABLE IF NOT EXISTS public.deadlock_events (
 
 CREATE INDEX IF NOT EXISTS ix_deadlock_events_detected
     ON public.deadlock_events (db_id, detected_at);
+
+-- base del abrazo (en MySQL el schema); NULL en un encabezado sin detalle
+ALTER TABLE public.deadlock_events ADD COLUMN IF NOT EXISTS database_name TEXT;

@@ -135,7 +135,9 @@ def detect_deadlocks(
         info["count"] += 1
         info["last_seen_at"] = report.detected_at
         signatures[signature] = info
-        findings.append(patterns[antipatron].finding(report, signature, info, captured_at))
+        finding = patterns[antipatron].finding(report, signature, info, captured_at)
+        finding.database_name = report.database_name
+        findings.append(finding)
 
     if without_detail:
         logger.warning(
@@ -154,4 +156,5 @@ def _record(events: list[DeadlockEvent] | None, key: str, report, antipatron: st
             source=report.source,
             complete=report.complete,
             antipatron=antipatron,
+            database_name=report.database_name,
         ))

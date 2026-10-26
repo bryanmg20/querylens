@@ -13,7 +13,7 @@
 -- El detector inserta una fila por ventana mientras la regla dispare (no hay
 -- ciclo de vida de hallazgos, ver detection_engine/references/
 -- 001_ciclo_vida_hallazgos.md): se agrupan por (antipatron, query_id,
--- table_name) y de cada grupo queda la deteccion mas reciente, con cuantas
+-- database_name, table_name) y de cada grupo queda la deteccion mas reciente, con cuantas
 -- veces se detecto y entre que fechas.
 --
 -- calidad_deadlocks compara los abrazos mortales que conto el motor
@@ -28,23 +28,23 @@ WITH base AS (
     FROM registered_databases
     WHERE database_identifier = :'id'
 ), h AS (
-    SELECT id, antipatron, severidad, query_id, table_name, evidencia,
+    SELECT id, antipatron, severidad, query_id, table_name, database_name, evidencia,
            explicacion, recomendacion, detectado_en
     FROM public.hallazgos
     WHERE db_id = :'id'
       AND detectado_en >= :'from'::timestamptz
       AND detectado_en < :'until'::timestamptz + make_interval(secs => :'grace'::int)
 ), g AS (
-    SELECT DISTINCT ON (antipatron, query_id, table_name)
-           antipatron, severidad, table_name, query_id,
+    SELECT DISTINCT ON (antipatron, query_id, database_name, table_name)
+           antipatron, severidad, database_name, table_name, query_id,
            explicacion, recomendacion,
            CASE WHEN :'evidence'::boolean THEN evidencia END AS evidencia,
            count(*) OVER w AS veces,
            min(detectado_en) OVER w AS primera,
            max(detectado_en) OVER w AS ultima
     FROM h
-    WINDOW w AS (PARTITION BY antipatron, query_id, table_name)
-    ORDER BY antipatron, query_id, table_name, detectado_en DESC, id DESC
+    WINDOW w AS (PARTITION BY antipatron, query_id, database_name, table_name)
+    ORDER BY antipatron, query_id, database_name, table_name, detectado_en DESC, id DESC
 ), s AS (
     SELECT deadlocks_since_prev, counter_reset, log_bytes_since_prev,
            seconds_since_prev, log_window_overrun
