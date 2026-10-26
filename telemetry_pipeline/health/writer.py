@@ -5,7 +5,7 @@ motivo para no entregar el snapshot. Cada funcion publica atrapa y loguea.
 """
 import json
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import text
 from sqlalchemy.exc import ProgrammingError
@@ -100,6 +100,32 @@ VALUES
 ON CONFLICT (db_id, taken_at) DO NOTHING
 """
 
+# Abrazos que el motor conto y QueryLens no capturo, en la ultima hora: lo
+# mismo que calidad_deadlocks del reporte de la CLI (cli/share/report.sql). La
+# ventana termina MISSED_GRACE_S antes de la muestra, porque el detector guarda
+# el evento despues, por la cola. Los eventos se cortan por las muestras: el
+# delta de una cubre desde la anterior, asi que entran los de entre la muestra
+# previa a la primera de la ventana y la ultima.
+MISSED_WINDOW_S = 3600
+MISSED_GRACE_S = 120
+
+MISSED_DEADLOCKS_SELECT = """
+WITH s AS (
+    SELECT taken_at, deadlocks_since_prev, coalesce(seconds_since_prev, 0) AS seconds_since_prev
+    FROM pipeline_health.cycle_samples
+    WHERE db_id = :db_id
+      AND taken_at >= :since
+      AND taken_at < :until
+      AND deadlocks_since_prev IS NOT NULL
+)
+SELECT (SELECT sum(deadlocks_since_prev) FROM s) AS counted,
+       (SELECT count(*)
+        FROM public.deadlock_events e
+        WHERE e.db_id = :db_id
+          AND e.detected_at > (SELECT min(taken_at - make_interval(secs => seconds_since_prev)) FROM s)
+          AND e.detected_at <= (SELECT max(taken_at) FROM s)) AS captured
+"""
+
 _schema_warned = False
 
 
@@ -147,14 +173,14 @@ def _issue_rows(db_id: str, report: HealthReport) -> list[dict]:
     return rows
 
 
-def _record_sample(engine, db_id: str, report: HealthReport) -> None:
+def _record_sample(engine, db_id: str, report: HealthReport) -> bool:
     """Guarda la muestra del ciclo con sus diferencias contra la anterior. En
     su propia transaccion, antes que last_run: si la tabla falta (base sin
     migrar), last_run e issues se escriben igual. Un desborde de la ventana del
-    log queda ademas como issue de este mismo flush."""
+    log queda ademas como issue de este mismo flush. True si se guardo."""
     sample = report.cycle_sample
     if sample is None:
-        return
+        return False
     try:
         with engine.begin() as conn:
             prev = conn.execute(text(PREV_SAMPLE_SELECT), {
@@ -171,7 +197,7 @@ def _record_sample(engine, db_id: str, report: HealthReport) -> None:
             })
     except Exception as exc:
         _handle_error("sample", db_id, exc)
-        return
+        return False
     if derived["log_window_overrun"]:
         report.add(
             "LOG_WINDOW_OVERRUN", section="deadlocks",
@@ -179,12 +205,43 @@ def _record_sample(engine, db_id: str, report: HealthReport) -> None:
             seconds=round(derived["seconds_since_prev"], 1),
             window_bytes=cycle_sample.LOG_WINDOW_BYTES,
         )
+    return True
+
+
+def _check_missed(engine, db_id: str, report: HealthReport) -> None:
+    """DEADLOCKS_MISSED si en la ventana el motor conto mas abrazos que los
+    eventos que guardo el detector. Solo tras guardar la muestra del ciclo; si
+    la comparacion no se pudo hacer, el scope capture no se evalua y un issue
+    abierto sigue abierto."""
+    until = report.cycle_sample["taken_at"] - timedelta(seconds=MISSED_GRACE_S)
+    try:
+        with engine.begin() as conn:
+            row = conn.execute(text(MISSED_DEADLOCKS_SELECT), {
+                "db_id": db_id, "since": until - timedelta(seconds=MISSED_WINDOW_S), "until": until,
+            }).mappings().first()
+    except Exception as exc:
+        # deadlock_events la crea el detector al arrancar, y el pipeline la
+        # lee con el GRANT de service_roles.sql: sin una de las dos, la
+        # comparacion no corre pero el resto del flush si
+        logger.warning(f"health | missed | db_id={db_id} | {type(exc).__name__}: {str(exc)[:200]}")
+        return
+    report.checked("capture")
+    if row is None or row["counted"] is None:
+        # ningun ciclo de la ventana pudo comparar el contador con el anterior
+        return
+    counted, captured = int(row["counted"]), int(row["captured"] or 0)
+    if counted > captured:
+        report.add(
+            "DEADLOCKS_MISSED", section="deadlocks",
+            missed=counted - captured, counted=counted, captured=captured, window_s=MISSED_WINDOW_S,
+        )
 
 
 def flush(engine, db_id: str, report: HealthReport, started_at: datetime) -> None:
     """Muestra del ciclo, y last_run + upsert de issues + resolucion en una
     sola transaccion."""
-    _record_sample(engine, db_id, report)
+    if _record_sample(engine, db_id, report):
+        _check_missed(engine, db_id, report)
     try:
         with engine.begin() as conn:
             conn.execute(text(LAST_RUN_UPSERT), {

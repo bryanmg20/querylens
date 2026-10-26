@@ -76,5 +76,6 @@ SET ROLE ql_detector;
 RESET ROLE;
 
 GRANT SELECT ON public.hallazgos TO ql_api, ql_cli;
--- el reporte compara los abrazos capturados con el contador del motor
-GRANT SELECT ON public.deadlock_events TO ql_cli;
+-- el reporte y el health del pipeline (DEADLOCKS_MISSED) comparan los abrazos
+-- capturados con el contador del motor
+GRANT SELECT ON public.deadlock_events TO ql_cli, ql_pipeline;

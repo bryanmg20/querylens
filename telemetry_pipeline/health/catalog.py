@@ -231,6 +231,16 @@ CATALOG: dict[str, IssueDef] = {
         "otorga PROCESS al usuario de monitoreo y activa el contador con "
         "SET GLOBAL innodb_monitor_enable = 'lock_deadlocks';",
     ),
+    "DEADLOCKS_MISSED": IssueDef(
+        "capture", "config", DEGRADED,
+        "En la ultima hora el motor conto mas abrazos mortales que los que "
+        "QueryLens recibio: los que faltan no se analizaron.",
+        "Revisa en esta misma lista LOG_WINDOW_OVERRUN (el log crecio mas de lo "
+        "que se lee por ciclo) y DEADLOCK_REPORTS_PARTIAL (MySQL sin "
+        "innodb_print_all_deadlocks). Tambien se pierden los abrazos de un "
+        "monitoreo pausado o detenido mas de 2 minutos. querylens report da el "
+        "detalle por ventana.",
+    ),
     "LOG_WINDOW_OVERRUN": IssueDef(
         "collect", "config", DEGRADED,
         "El log de Postgres crecio entre dos ciclos mas de lo que QueryLens lee "

@@ -1,4 +1,5 @@
-"""writer: muestra del ciclo en pipeline_health.cycle_samples, sin base real."""
+"""writer: muestra del ciclo en pipeline_health.cycle_samples y abrazos
+perdidos (DEADLOCKS_MISSED), sin base real."""
 import json
 import logging
 from datetime import datetime, timedelta, timezone
@@ -46,6 +47,10 @@ class _Conn:
         self.engine.log.append((sql, params))
         if "cycle_samples" in sql and self.engine.samples_error is not None:
             raise self.engine.samples_error
+        if "public.deadlock_events" in sql:
+            if self.engine.missed_error is not None:
+                raise self.engine.missed_error
+            return _Result([self.engine.missed] if self.engine.missed is not None else [])
         if "FROM pipeline_health.cycle_samples" in sql and "SELECT" in sql:
             return _Result([self.engine.prev] if self.engine.prev is not None else [])
         return _Result()
@@ -63,10 +68,13 @@ class _Tx:
 
 
 class _Engine:
-    def __init__(self, prev=None, samples_error=None):
+    def __init__(self, prev=None, samples_error=None, missed=None, missed_error=None):
         self.log = []
         self.prev = prev
         self.samples_error = samples_error
+        # fila de MISSED_DEADLOCKS_SELECT: {"counted": ..., "captured": ...}
+        self.missed = missed
+        self.missed_error = missed_error
 
     def begin(self):
         return _Tx(self)
@@ -175,3 +183,66 @@ def test_purge_removes_old_samples_apart_from_issues():
     assert _sql(engine, "DELETE FROM pipeline_health.last_run")
     [(_, params)] = _sql(engine, "DELETE FROM pipeline_health.cycle_samples")
     assert params == {"days": 15}
+
+
+# ------------------------------------------------------- abrazos perdidos
+
+def _issues(engine):
+    rows = [row for _, rows in _sql(engine, "INSERT INTO pipeline_health.issues") for row in rows]
+    return {row["code"]: json.loads(row["params"]) for row in rows}
+
+
+def _resolved_scopes(engine):
+    [(_, params)] = _sql(engine, "SET resolved_at = now()")
+    return params["scopes"]
+
+
+def test_more_counted_than_captured_is_an_issue():
+    engine = _Engine(prev=_prev(), missed={"counted": 7, "captured": 4})
+    writer.flush(engine, "db_1", _report(), STARTED)
+
+    assert _issues(engine)["DEADLOCKS_MISSED"] == {
+        "count": 1, "missed": 3, "counted": 7, "captured": 4, "window_s": writer.MISSED_WINDOW_S,
+    }
+    assert "capture" in _resolved_scopes(engine)
+    [(_, last_run)] = _sql(engine, "pipeline_health.last_run")
+    assert last_run["status"] == "degraded"
+
+
+def test_missed_window_ends_before_the_sample_and_lasts_an_hour():
+    engine = _Engine(prev=_prev(), missed={"counted": 0, "captured": 0})
+    writer.flush(engine, "db_1", _report(), STARTED)
+
+    [(_, params)] = _sql(engine, "public.deadlock_events")
+    until = TAKEN - timedelta(seconds=writer.MISSED_GRACE_S)
+    assert params == {"db_id": "db_1", "since": until - timedelta(seconds=writer.MISSED_WINDOW_S), "until": until}
+
+
+@pytest.mark.parametrize("missed", [
+    {"counted": 4, "captured": 4},
+    # un borde de la ventana: mas eventos que lo contado no es una perdida
+    {"counted": 3, "captured": 4},
+    # ningun ciclo de la ventana pudo comparar el contador
+    {"counted": None, "captured": 0},
+])
+def test_nothing_missed_is_no_issue_and_resolves_an_open_one(missed):
+    engine = _Engine(prev=_prev(), missed=missed)
+    writer.flush(engine, "db_1", _report(), STARTED)
+
+    assert "DEADLOCKS_MISSED" not in _issues(engine)
+    # capture evaluado: un DEADLOCKS_MISSED abierto se resuelve
+    assert "capture" in _resolved_scopes(engine)
+
+
+def test_failed_comparison_keeps_an_open_issue_open(caplog):
+    # sin el GRANT SELECT sobre deadlock_events
+    error = ProgrammingError("x", {}, _PgError("permission denied for table deadlock_events", "42501"))
+    engine = _Engine(prev=_prev(), missed_error=error)
+    report = _report()
+    report.checked("collect")
+    with caplog.at_level(logging.WARNING, logger="health.writer"):
+        writer.flush(engine, "db_1", report, STARTED)
+
+    assert "DEADLOCKS_MISSED" not in _issues(engine)
+    assert "capture" not in _resolved_scopes(engine)
+    assert any("missed" in record.getMessage() for record in caplog.records)

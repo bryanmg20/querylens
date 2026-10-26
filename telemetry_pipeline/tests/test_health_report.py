@@ -7,7 +7,7 @@ from health.report import HealthReport
 
 pytestmark = pytest.mark.unit
 
-SCOPES = {"connection", "credentials", "collect", "preflight", "explain", "pipeline", "enqueue"}
+SCOPES = {"connection", "credentials", "collect", "preflight", "explain", "pipeline", "enqueue", "capture"}
 CATEGORIES = {"connection", "extension", "permission", "config", "version", "internal"}
 
 

@@ -237,7 +237,11 @@ run_engine(dialect, factory, db_id)                     main.py
     ExplainStage       errores agrupados por code con count (sin query_id) + NO_EXPLAINABLE_CANDIDATES
   validación / encolado → SNAPSHOT_VALIDATION_FAILED, PAYLOAD_TOO_LARGE (scope pipeline);
                        ENQUEUE_FAILED (scope enqueue: solo se resuelve en un ciclo que volvió a encolar)
-  finally: health_writer.flush(...)   una transacción: last_run + upsert issues + resolve
+  finally: health_writer.flush(...)   muestra del contador (cycle_samples) y, si se guardó,
+                       abrazos perdidos: en la última hora (terminada 2 min antes, por la cola
+                       del detector) el contador sumó más que los deadlock_events guardados →
+                       DEADLOCKS_MISSED (scope capture); después una transacción:
+                       last_run + upsert issues + resolve
 ```
 
 | Decisión | Implementación |
