@@ -1,0 +1,90 @@
+{
+ "base": {
+  "database_identifier": "db_adb30660",
+  "connection_name": "sandbox-mysql",
+  "engine": "mysql",
+  "database_name": "ql_demo"
+ },
+ "desde": "2026-10-25T23:09:45.569794-05:00",
+ "hasta": "2026-10-26T00:01:41.706093-05:00",
+ "generado": "2026-10-26T00:01:44.611973-05:00",
+ "resumen": {
+  "hallazgos": 4,
+  "detecciones": 40,
+  "por_severidad": {
+   "high": 4
+  },
+  "por_antipatron": {
+   "inconsistent_lock_order_deadlock": 2,
+   "lock_mode_conversion_deadlock": 1,
+   "range_contention_deadlock": 1
+  }
+ },
+ "calidad_deadlocks": {
+  "alcance": "servidor",
+  "hubo": 90,
+  "capturados": 60,
+  "con_detalle": 40,
+  "sin_detalle": 20,
+  "por_patron": {
+   "inconsistent_lock_order_deadlock": 21,
+   "lock_mode_conversion_deadlock": 2,
+   "range_contention_deadlock": 17
+  },
+  "perdidos": 30,
+  "capturados_de_mas": 0,
+  "reinicios_contador": 0,
+  "ciclos": 173,
+  "ciclos_con_desborde": 0,
+  "log_kb_s_promedio": null,
+  "log_kb_s_max": null,
+  "hueco_max_s": 150,
+  "huecos_largos": 10
+ },
+ "hallazgos": [
+  {
+   "antipatron": "inconsistent_lock_order_deadlock",
+   "severidad": "high",
+   "table_name": "ql_otra.ql_ct01_cuentas",
+   "query_id": null,
+   "explicacion": "2 transacciones formaron un abrazo mortal en ql_otra.ql_ct01_cuentas: cada una retenia en modo exclusivo lo que la otra pedia, porque tomaron los mismos recursos en orden opuesto. El motor lo resolvio revirtiendo la transaccion de la sesion 142616, que recibio un error de abrazo mortal y perdio su trabajo. Es la vez 10 que aparece este mismo patron.",
+   "recomendacion": "Imponer un orden de acceso unico sobre ql_otra.ql_ct01_cuentas: toda transaccion que modifique varias filas o tablas debe tomarlas en el mismo orden (por ejemplo, por clave primaria ascendente), o bloquearlas todas al inicio con SELECT ... FOR UPDATE ordenado por esa clave. Mantener las transacciones cortas reduce la ventana del ciclo. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (error 1213).",
+   "veces": 10,
+   "primera": "2026-10-25T23:27:57.521367-05:00",
+   "ultima": "2026-10-25T23:30:44.427828-05:00"
+  },
+  {
+   "antipatron": "inconsistent_lock_order_deadlock",
+   "severidad": "high",
+   "table_name": "ql_demo.ql_ct01_cuentas",
+   "query_id": null,
+   "explicacion": "2 transacciones formaron un abrazo mortal en ql_demo.ql_ct01_cuentas: cada una retenia en modo exclusivo lo que la otra pedia, porque tomaron los mismos recursos en orden opuesto. El motor lo resolvio revirtiendo la transaccion de la sesion 142493, que recibio un error de abrazo mortal y perdio su trabajo. Es la vez 11 que aparece este mismo patron.",
+   "recomendacion": "Imponer un orden de acceso unico sobre ql_demo.ql_ct01_cuentas: toda transaccion que modifique varias filas o tablas debe tomarlas en el mismo orden (por ejemplo, por clave primaria ascendente), o bloquearlas todas al inicio con SELECT ... FOR UPDATE ordenado por esa clave. Mantener las transacciones cortas reduce la ventana del ciclo. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (error 1213).",
+   "veces": 11,
+   "primera": "2026-10-25T23:09:55.329713-05:00",
+   "ultima": "2026-10-25T23:27:17.109111-05:00"
+  },
+  {
+   "antipatron": "lock_mode_conversion_deadlock",
+   "severidad": "high",
+   "table_name": "ql_demo.ql_ct02_cuentas",
+   "query_id": null,
+   "explicacion": "2 transacciones formaron un abrazo mortal en ql_demo.ql_ct02_cuentas: cada una tenia en modo compartido (FOR SHARE) la fila que despues quiso modificar, y ninguna podia pasar a exclusivo mientras la otra mantuviera su bloqueo compartido. El motor lo resolvio revirtiendo la transaccion de la sesion 142468, que recibio un error de abrazo mortal y perdio su trabajo. Es la vez 12 que aparece este mismo patron.",
+   "recomendacion": "Si la transaccion lee la fila antes de modificarla, pedirla desde el inicio en modo exclusivo con SELECT ... FOR UPDATE en lugar de FOR SHARE, o hacer la verificacion en el WHERE del UPDATE (por ejemplo UPDATE ... WHERE id = ... AND saldo >= ...) para no leerla antes. El informe muestra la sentencia que esperaba; la lectura con FOR SHARE esta antes, en la misma transaccion. En MySQL el bloqueo compartido tambien lo toma un INSERT en una tabla hija sobre la fila padre (clave foranea), y cualquier SELECT con aislamiento SERIALIZABLE: en esos casos, bloquear antes la fila con SELECT ... FOR UPDATE. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (error 1213).",
+   "veces": 2,
+   "primera": "2026-10-25T23:25:46.109138-05:00",
+   "ultima": "2026-10-25T23:26:26.52981-05:00"
+  },
+  {
+   "antipatron": "range_contention_deadlock",
+   "severidad": "high",
+   "table_name": "ql_demo.ql_ct03_reservas",
+   "query_id": null,
+   "explicacion": "2 transacciones formaron un abrazo mortal en ql_demo.ql_ct03_reservas por contencion de rango: todas quisieron insertar en el hueco antes de un registro del indice PRIMARY, y ese hueco lo tenia bloqueado otra transaccion del ciclo (bloqueo de hueco o next-key). Los bloqueos de hueco son compatibles entre si, asi que varias transacciones pueden tener el mismo hueco a la vez, pero ninguna puede insertar en el mientras otra lo mantenga. El motor lo resolvio revirtiendo la transaccion de la sesion 142417, que recibio un error de abrazo mortal y perdio su trabajo. Es la vez 37 que aparece este mismo patron.",
+   "recomendacion": "El informe muestra la sentencia que esperaba (la insercion); el hueco lo bloqueo antes, en la misma transaccion, una lectura con FOR UPDATE o FOR SHARE, o un UPDATE/DELETE, que busco una clave que no existia o un rango. Si la transaccion verifica que la fila no existe y despues la inserta, reemplazar las dos sentencias por INSERT ... ON DUPLICATE KEY UPDATE o INSERT IGNORE, o insertar directamente y tratar el error de clave duplicada (1062). Si la verificacion no necesita proteger el rango, el aislamiento READ COMMITTED para esa transaccion evita los bloqueos de hueco en las busquedas. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (error 1213).",
+   "veces": 17,
+   "primera": "2026-10-25T23:13:07.612592-05:00",
+   "ultima": "2026-10-25T23:24:55.536702-05:00"
+  }
+ ]
+}

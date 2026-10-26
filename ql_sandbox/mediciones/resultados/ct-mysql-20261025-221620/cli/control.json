@@ -1,0 +1,37 @@
+{
+ "base": {
+  "database_identifier": "db_adb30660",
+  "connection_name": "sandbox-mysql",
+  "engine": "mysql",
+  "database_name": "ql_demo"
+ },
+ "desde": "2026-10-25T22:44:48.151282-05:00",
+ "hasta": "2026-10-25T23:09:41.818199-05:00",
+ "generado": "2026-10-25T23:09:44.958421-05:00",
+ "resumen": {
+  "hallazgos": 0,
+  "detecciones": 0,
+  "por_severidad": {},
+  "por_antipatron": {}
+ },
+ "calidad_deadlocks": {
+  "alcance": "servidor",
+  "hubo": 10,
+  "capturados": 10,
+  "con_detalle": 10,
+  "sin_detalle": 0,
+  "por_patron": {
+   "sin_patron": 10
+  },
+  "perdidos": 0,
+  "capturados_de_mas": 0,
+  "reinicios_contador": 0,
+  "ciclos": 149,
+  "ciclos_con_desborde": 0,
+  "log_kb_s_promedio": null,
+  "log_kb_s_max": null,
+  "hueco_max_s": 10,
+  "huecos_largos": 0
+ },
+ "hallazgos": []
+}

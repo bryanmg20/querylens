@@ -1,0 +1,1087 @@
+{
+ "meta": {
+  "run_id": "ct-postgres-20261025-192813",
+  "engine": "postgres",
+  "db_id": "db_f5af522f",
+  "reps": 1,
+  "started": "2026-10-26 00:28:17.670676+00",
+  "phases": [
+   {
+    "phase": "positivo",
+    "started": "2026-10-26 00:28:46.113391+00",
+    "counter_before": 3,
+    "finished": "2026-10-26 00:31:37.22159+00",
+    "counter_after": 6,
+    "cli_report": {
+     "alcance": "base",
+     "hubo": 3,
+     "capturados": 3,
+     "con_detalle": 3,
+     "sin_detalle": 0,
+     "por_patron": {
+      "inconsistent_lock_order_deadlock": 1,
+      "lock_mode_conversion_deadlock": 1,
+      "unclassified_deadlock": 1
+     },
+     "perdidos": 0,
+     "capturados_de_mas": 0,
+     "reinicios_contador": 0,
+     "ciclos": 16,
+     "ciclos_con_desborde": 0,
+     "log_kb_s_promedio": 0.1,
+     "log_kb_s_max": 0.7,
+     "hueco_max_s": 13,
+     "huecos_largos": 0
+    }
+   },
+   {
+    "phase": "control",
+    "started": "2026-10-26 00:31:40.69052+00",
+    "counter_before": 6,
+    "finished": "2026-10-26 00:34:12.432418+00",
+    "counter_after": 6,
+    "cli_report": {
+     "alcance": "base",
+     "hubo": 0,
+     "capturados": 0,
+     "con_detalle": 0,
+     "sin_detalle": 0,
+     "por_patron": {},
+     "perdidos": 0,
+     "capturados_de_mas": 0,
+     "reinicios_contador": 0,
+     "ciclos": 14,
+     "ciclos_con_desborde": 0,
+     "log_kb_s_promedio": 0.1,
+     "log_kb_s_max": 0.5,
+     "hueco_max_s": 13,
+     "huecos_largos": 0
+    }
+   },
+   {
+    "phase": "limite",
+    "started": "2026-10-26 00:34:15.743225+00",
+    "counter_before": 6,
+    "finished": "2026-10-26 00:42:06.499072+00",
+    "counter_after": 13,
+    "cli_report": {
+     "alcance": "base",
+     "hubo": 7,
+     "capturados": 5,
+     "con_detalle": 5,
+     "sin_detalle": 0,
+     "por_patron": {
+      "inconsistent_lock_order_deadlock": 3,
+      "lock_mode_conversion_deadlock": 1,
+      "unclassified_deadlock": 1
+     },
+     "perdidos": 2,
+     "capturados_de_mas": 0,
+     "reinicios_contador": 0,
+     "ciclos": 29,
+     "ciclos_con_desborde": 3,
+     "log_kb_s_promedio": 37.2,
+     "log_kb_s_max": 575.6,
+     "hueco_max_s": 163,
+     "huecos_largos": 1
+    }
+   },
+   {
+    "phase": "carga",
+    "started": "2026-10-26 00:42:09.995394+00",
+    "counter_before": 13,
+    "finished": "2026-10-26 00:45:02.925161+00",
+    "counter_after": 15,
+    "cli_report": {
+     "alcance": "base",
+     "hubo": 2,
+     "capturados": 2,
+     "con_detalle": 2,
+     "sin_detalle": 0,
+     "por_patron": {
+      "inconsistent_lock_order_deadlock": 1,
+      "lock_mode_conversion_deadlock": 1
+     },
+     "perdidos": 0,
+     "capturados_de_mas": 0,
+     "reinicios_contador": 0,
+     "ciclos": 16,
+     "ciclos_con_desborde": 0,
+     "log_kb_s_promedio": 3.2,
+     "log_kb_s_max": 4.1,
+     "hueco_max_s": 13,
+     "huecos_largos": 0
+    }
+   }
+  ],
+  "spacing_s": 14,
+  "event_timeout_s": 40,
+  "finished": "2026-10-26 00:45:07.031794+00"
+ },
+ "summary": {
+  "casos": [
+   {
+    "phase": "positivo",
+    "case": "ct01",
+    "kind": "deadlock",
+    "expect": "inconsistent_lock_order_deadlock",
+    "note": null,
+    "no_deadlock": null,
+    "reps": 1,
+    "engine_delta": 1,
+    "abrazos": 1,
+    "capturados": 1,
+    "con_detalle": 1,
+    "correctos": 1,
+    "tasa": 1.0,
+    "ic95": [
+     0.2065,
+     1.0
+    ],
+    "hallazgos": {
+     "inconsistent_lock_order_deadlock": 1
+    },
+    "sin_hallazgo": 0,
+    "patron_evento": {
+     "inconsistent_lock_order_deadlock": 1
+    },
+    "latencia_s": {
+     "n": 1,
+     "mediana": 1.8,
+     "max": 1.8,
+     "min": 1.8
+    },
+    "guardado_s": {
+     "n": 1,
+     "mediana": 3.1,
+     "max": 3.1,
+     "min": 3.1
+    },
+    "m4_ok": 1,
+    "evidencia_ok": 1,
+    "evidencia_n": 1
+   },
+   {
+    "phase": "positivo",
+    "case": "ct02",
+    "kind": "deadlock",
+    "expect": "lock_mode_conversion_deadlock",
+    "note": null,
+    "no_deadlock": null,
+    "reps": 1,
+    "engine_delta": 1,
+    "abrazos": 1,
+    "capturados": 1,
+    "con_detalle": 1,
+    "correctos": 1,
+    "tasa": 1.0,
+    "ic95": [
+     0.2065,
+     1.0
+    ],
+    "hallazgos": {
+     "lock_mode_conversion_deadlock": 1
+    },
+    "sin_hallazgo": 0,
+    "patron_evento": {
+     "lock_mode_conversion_deadlock": 1
+    },
+    "latencia_s": {
+     "n": 1,
+     "mediana": 3.6,
+     "max": 3.6,
+     "min": 3.6
+    },
+    "guardado_s": {
+     "n": 1,
+     "mediana": 5.1,
+     "max": 5.1,
+     "min": 5.1
+    },
+    "m4_ok": 1,
+    "evidencia_ok": 1,
+    "evidencia_n": 1
+   },
+   {
+    "phase": "positivo",
+    "case": "ct02_prepared",
+    "kind": "deadlock",
+    "expect": "unclassified_deadlock",
+    "note": "sentencias preparadas: el log no trae los valores",
+    "no_deadlock": null,
+    "reps": 1,
+    "engine_delta": 1,
+    "abrazos": 1,
+    "capturados": 1,
+    "con_detalle": 1,
+    "correctos": 1,
+    "tasa": 1.0,
+    "ic95": [
+     0.2065,
+     1.0
+    ],
+    "hallazgos": {
+     "unclassified_deadlock": 1
+    },
+    "sin_hallazgo": 0,
+    "patron_evento": {
+     "unclassified_deadlock": 1
+    },
+    "latencia_s": {
+     "n": 1,
+     "mediana": 5.4,
+     "max": 5.4,
+     "min": 5.4
+    },
+    "guardado_s": {
+     "n": 1,
+     "mediana": 7.1,
+     "max": 7.1,
+     "min": 7.1
+    },
+    "m4_ok": 1,
+    "evidencia_ok": 1,
+    "evidencia_n": 1
+   },
+   {
+    "phase": "positivo",
+    "case": "ct05",
+    "kind": "ct05",
+    "expect": "long_transaction_cascade",
+    "note": null,
+    "no_deadlock": null,
+    "reps": 1,
+    "engine_delta": 0,
+    "con_hallazgo": 1,
+    "correctos": 1,
+    "tasa": 1.0,
+    "ic95": [
+     0.2065,
+     1.0
+    ],
+    "latencia_s": {
+     "n": 1,
+     "mediana": 15.2,
+     "max": 15.2,
+     "min": 15.2
+    },
+    "guardado_s": {
+     "n": 1,
+     "mediana": 17.3,
+     "max": 17.3,
+     "min": 17.3
+    },
+    "m4_ok": 1,
+    "evidencia_ok": 1,
+    "evidencia_n": 1,
+    "duplicados": 0
+   },
+   {
+    "phase": "control",
+    "case": "ct05_raiz_corta",
+    "kind": "ct05",
+    "expect": null,
+    "note": "la raiz no llega a 30 s",
+    "no_deadlock": null,
+    "reps": 1,
+    "engine_delta": 0,
+    "con_hallazgo": 0,
+    "correctos": 1,
+    "tasa": 1.0,
+    "ic95": [
+     0.2065,
+     1.0
+    ],
+    "latencia_s": null,
+    "guardado_s": null,
+    "m4_ok": 0,
+    "evidencia_ok": 0,
+    "evidencia_n": 0,
+    "duplicados": 0
+   },
+   {
+    "phase": "control",
+    "case": "ct05_una_espera",
+    "kind": "ct05",
+    "expect": null,
+    "note": "una sola sesion bloqueada (la regla pide >= 2); espera sin abrazo",
+    "no_deadlock": null,
+    "reps": 1,
+    "engine_delta": 0,
+    "con_hallazgo": 0,
+    "correctos": 1,
+    "tasa": 1.0,
+    "ic95": [
+     0.2065,
+     1.0
+    ],
+    "latencia_s": null,
+    "guardado_s": null,
+    "m4_ok": 0,
+    "evidencia_ok": 0,
+    "evidencia_n": 0,
+    "duplicados": 0
+   },
+   {
+    "phase": "limite",
+    "case": "ct01_prepared",
+    "kind": "deadlock",
+    "expect": "unclassified_deadlock",
+    "note": "sentencias preparadas: el log no trae los valores",
+    "no_deadlock": null,
+    "reps": 1,
+    "engine_delta": 1,
+    "abrazos": 1,
+    "capturados": 1,
+    "con_detalle": 1,
+    "correctos": 1,
+    "tasa": 1.0,
+    "ic95": [
+     0.2065,
+     1.0
+    ],
+    "hallazgos": {
+     "unclassified_deadlock": 1
+    },
+    "sin_hallazgo": 0,
+    "patron_evento": {
+     "unclassified_deadlock": 1
+    },
+    "latencia_s": {
+     "n": 1,
+     "mediana": 5.9,
+     "max": 5.9,
+     "min": 5.9
+    },
+    "guardado_s": {
+     "n": 1,
+     "mediana": 12.6,
+     "max": 12.6,
+     "min": 12.6
+    },
+    "m4_ok": 1,
+    "evidencia_ok": 1,
+    "evidencia_n": 1
+   },
+   {
+    "phase": "limite",
+    "case": "ct01_tres",
+    "kind": "deadlock",
+    "expect": "inconsistent_lock_order_deadlock",
+    "note": "ciclo de 3 transacciones",
+    "no_deadlock": null,
+    "reps": 1,
+    "engine_delta": 1,
+    "abrazos": 1,
+    "capturados": 1,
+    "con_detalle": 1,
+    "correctos": 1,
+    "tasa": 1.0,
+    "ic95": [
+     0.2065,
+     1.0
+    ],
+    "hallazgos": {
+     "inconsistent_lock_order_deadlock": 1
+    },
+    "sin_hallazgo": 0,
+    "patron_evento": {
+     "inconsistent_lock_order_deadlock": 1
+    },
+    "latencia_s": {
+     "n": 1,
+     "mediana": 7.1,
+     "max": 7.1,
+     "min": 7.1
+    },
+    "guardado_s": {
+     "n": 1,
+     "mediana": 11.4,
+     "max": 11.4,
+     "min": 11.4
+    },
+    "m4_ok": 1,
+    "evidencia_ok": 1,
+    "evidencia_n": 1
+   },
+   {
+    "phase": "limite",
+    "case": "rafaga",
+    "kind": "burst",
+    "expect": "?",
+    "note": "dos abrazos a la vez, en el mismo ciclo",
+    "no_deadlock": null,
+    "reps": 1,
+    "engine_delta": 2,
+    "abrazos": 2,
+    "capturados": 2,
+    "con_detalle": 2,
+    "con_hallazgo_correcto": 2,
+    "mal_clasificados": 0,
+    "por_repeticion": [
+     "2/2 capt., 2 con detalle, 2 hallazgos"
+    ],
+    "latencia_s": {
+     "n": 2,
+     "mediana": 11.6,
+     "max": 11.6,
+     "min": 11.6
+    }
+   },
+   {
+    "phase": "limite",
+    "case": "otra_base",
+    "kind": "deadlock",
+    "expect": null,
+    "note": "abrazo en otra base del mismo servidor: no es de la base monitoreada",
+    "no_deadlock": null,
+    "reps": 1,
+    "engine_delta": 0,
+    "abrazos": 1,
+    "capturados": 0,
+    "con_detalle": 0,
+    "correctos": 1,
+    "tasa": 1.0,
+    "ic95": [
+     0.2065,
+     1.0
+    ],
+    "hallazgos": {},
+    "sin_hallazgo": 1,
+    "patron_evento": {},
+    "latencia_s": null,
+    "guardado_s": null,
+    "m4_ok": 0,
+    "evidencia_ok": 0,
+    "evidencia_n": 0
+   },
+   {
+    "phase": "limite",
+    "case": "desborde_log",
+    "kind": "flood",
+    "expect": "?",
+    "note": "~400 KB/s de log durante 30 s (> 2 MB por ciclo)",
+    "no_deadlock": null,
+    "reps": 1,
+    "engine_delta": 1,
+    "abrazos": 1,
+    "capturados": 0,
+    "con_detalle": 0,
+    "correctos": null,
+    "tasa": null,
+    "ic95": null,
+    "hallazgos": {},
+    "sin_hallazgo": 1,
+    "patron_evento": {},
+    "latencia_s": null,
+    "guardado_s": null,
+    "m4_ok": 0,
+    "evidencia_ok": 0,
+    "evidencia_n": 0,
+    "issue": "LOG_WINDOW_OVERRUN",
+    "issue_visto": true
+   },
+   {
+    "phase": "limite",
+    "case": "terse",
+    "kind": "deadlock",
+    "expect": "?",
+    "note": "log_error_verbosity = terse",
+    "no_deadlock": null,
+    "reps": 1,
+    "engine_delta": 1,
+    "abrazos": 1,
+    "capturados": 1,
+    "con_detalle": 1,
+    "correctos": null,
+    "tasa": null,
+    "ic95": null,
+    "hallazgos": {
+     "inconsistent_lock_order_deadlock": 1
+    },
+    "sin_hallazgo": 0,
+    "patron_evento": {
+     "inconsistent_lock_order_deadlock": 1
+    },
+    "latencia_s": {
+     "n": 1,
+     "mediana": 2.5,
+     "max": 2.5,
+     "min": 2.5
+    },
+    "guardado_s": {
+     "n": 1,
+     "mediana": 3.3,
+     "max": 3.3,
+     "min": 3.3
+    },
+    "m4_ok": 1,
+    "evidencia_ok": 0,
+    "evidencia_n": 0,
+    "issue": "DEADLOCK_REPORTS_PARTIAL",
+    "issue_visto": true
+   },
+   {
+    "phase": "limite",
+    "case": "pausa",
+    "kind": "pause",
+    "expect": null,
+    "note": "monitoreo pausado 135 s (> 120 s de ventana)",
+    "no_deadlock": null,
+    "reps": 1,
+    "engine_delta": 1,
+    "abrazos": 1,
+    "capturados": 0,
+    "con_detalle": 0,
+    "correctos": 1,
+    "tasa": 1.0,
+    "ic95": [
+     0.2065,
+     1.0
+    ],
+    "hallazgos": {},
+    "sin_hallazgo": 1,
+    "patron_evento": {},
+    "latencia_s": null,
+    "guardado_s": null,
+    "m4_ok": 0,
+    "evidencia_ok": 0,
+    "evidencia_n": 0
+   },
+   {
+    "phase": "carga",
+    "case": "ct01",
+    "kind": "deadlock",
+    "expect": "inconsistent_lock_order_deadlock",
+    "note": null,
+    "no_deadlock": null,
+    "reps": 1,
+    "engine_delta": 1,
+    "abrazos": 1,
+    "capturados": 1,
+    "con_detalle": 1,
+    "correctos": 1,
+    "tasa": 1.0,
+    "ic95": [
+     0.2065,
+     1.0
+    ],
+    "hallazgos": {
+     "inconsistent_lock_order_deadlock": 1
+    },
+    "sin_hallazgo": 0,
+    "patron_evento": {
+     "inconsistent_lock_order_deadlock": 1
+    },
+    "latencia_s": {
+     "n": 1,
+     "mediana": 10.9,
+     "max": 10.9,
+     "min": 10.9
+    },
+    "guardado_s": {
+     "n": 1,
+     "mediana": 13.2,
+     "max": 13.2,
+     "min": 13.2
+    },
+    "m4_ok": 1,
+    "evidencia_ok": 1,
+    "evidencia_n": 1
+   },
+   {
+    "phase": "carga",
+    "case": "ct02",
+    "kind": "deadlock",
+    "expect": "lock_mode_conversion_deadlock",
+    "note": null,
+    "no_deadlock": null,
+    "reps": 1,
+    "engine_delta": 1,
+    "abrazos": 1,
+    "capturados": 1,
+    "con_detalle": 1,
+    "correctos": 1,
+    "tasa": 1.0,
+    "ic95": [
+     0.2065,
+     1.0
+    ],
+    "hallazgos": {
+     "lock_mode_conversion_deadlock": 1
+    },
+    "sin_hallazgo": 0,
+    "patron_evento": {
+     "lock_mode_conversion_deadlock": 1
+    },
+    "latencia_s": {
+     "n": 1,
+     "mediana": 0.0,
+     "max": 0.0,
+     "min": 0.0
+    },
+    "guardado_s": {
+     "n": 1,
+     "mediana": 2.5,
+     "max": 2.5,
+     "min": 2.5
+    },
+    "m4_ok": 1,
+    "evidencia_ok": 1,
+    "evidencia_n": 1
+   },
+   {
+    "phase": "carga",
+    "case": "ct05",
+    "kind": "ct05",
+    "expect": "long_transaction_cascade",
+    "note": null,
+    "no_deadlock": null,
+    "reps": 1,
+    "engine_delta": 0,
+    "con_hallazgo": 1,
+    "correctos": 1,
+    "tasa": 1.0,
+    "ic95": [
+     0.2065,
+     1.0
+    ],
+    "latencia_s": {
+     "n": 1,
+     "mediana": 19.7,
+     "max": 19.7,
+     "min": 19.7
+    },
+    "guardado_s": {
+     "n": 1,
+     "mediana": 22.8,
+     "max": 22.8,
+     "min": 22.8
+    },
+    "m4_ok": 1,
+    "evidencia_ok": 1,
+    "evidencia_n": 1,
+    "duplicados": 0
+   }
+  ],
+  "fases": [
+   {
+    "phase": "positivo",
+    "motor_conto": 3,
+    "capturados_verdad": 3,
+    "cli_hubo": 3,
+    "cli_capturados": 3,
+    "cli_perdidos": 0,
+    "cli_capturados_de_mas": 0,
+    "cli_sin_detalle": 0,
+    "cli_ciclos": 16,
+    "cli_ciclos_con_desborde": 0,
+    "cli_huecos_largos": 0,
+    "cli_hueco_max_s": 13,
+    "cli_log_kb_s_max": 0.7,
+    "cli_alcance": "base",
+    "cli_hubo_coincide": true
+   },
+   {
+    "phase": "control",
+    "motor_conto": 0,
+    "capturados_verdad": 0,
+    "cli_hubo": 0,
+    "cli_capturados": 0,
+    "cli_perdidos": 0,
+    "cli_capturados_de_mas": 0,
+    "cli_sin_detalle": 0,
+    "cli_ciclos": 14,
+    "cli_ciclos_con_desborde": 0,
+    "cli_huecos_largos": 0,
+    "cli_hueco_max_s": 13,
+    "cli_log_kb_s_max": 0.5,
+    "cli_alcance": "base",
+    "cli_hubo_coincide": true
+   },
+   {
+    "phase": "limite",
+    "motor_conto": 7,
+    "capturados_verdad": 5,
+    "cli_hubo": 7,
+    "cli_capturados": 5,
+    "cli_perdidos": 2,
+    "cli_capturados_de_mas": 0,
+    "cli_sin_detalle": 0,
+    "cli_ciclos": 29,
+    "cli_ciclos_con_desborde": 3,
+    "cli_huecos_largos": 1,
+    "cli_hueco_max_s": 163,
+    "cli_log_kb_s_max": 575.6,
+    "cli_alcance": "base",
+    "cli_hubo_coincide": true
+   },
+   {
+    "phase": "carga",
+    "motor_conto": 2,
+    "capturados_verdad": 2,
+    "cli_hubo": 2,
+    "cli_capturados": 2,
+    "cli_perdidos": 0,
+    "cli_capturados_de_mas": 0,
+    "cli_sin_detalle": 0,
+    "cli_ciclos": 16,
+    "cli_ciclos_con_desborde": 0,
+    "cli_huecos_largos": 0,
+    "cli_hueco_max_s": 13,
+    "cli_log_kb_s_max": 4.1,
+    "cli_alcance": "base",
+    "cli_hubo_coincide": true
+   }
+  ],
+  "hallazgos_sin_corrida": []
+ },
+ "results": [
+  {
+   "case": "ct01",
+   "phase": "positivo",
+   "rep": 1,
+   "kind": "deadlock",
+   "engine_delta": 1,
+   "deadlock": true,
+   "captured": true,
+   "complete": true,
+   "event_antipatron": "inconsistent_lock_order_deadlock",
+   "event_source": "postgres_log",
+   "finding": "inconsistent_lock_order_deadlock",
+   "correct": true,
+   "delay_s": 1.8,
+   "saved_delay_s": 3.1,
+   "m4_ok": true,
+   "evidence_ok": true,
+   "severity": "medium"
+  },
+  {
+   "case": "ct02",
+   "phase": "positivo",
+   "rep": 1,
+   "kind": "deadlock",
+   "engine_delta": 1,
+   "deadlock": true,
+   "captured": true,
+   "complete": true,
+   "event_antipatron": "lock_mode_conversion_deadlock",
+   "event_source": "postgres_log",
+   "finding": "lock_mode_conversion_deadlock",
+   "correct": true,
+   "delay_s": 3.6,
+   "saved_delay_s": 5.1,
+   "m4_ok": true,
+   "evidence_ok": true,
+   "severity": "medium"
+  },
+  {
+   "case": "ct02_prepared",
+   "phase": "positivo",
+   "rep": 1,
+   "kind": "deadlock",
+   "engine_delta": 1,
+   "deadlock": true,
+   "captured": true,
+   "complete": true,
+   "event_antipatron": "unclassified_deadlock",
+   "event_source": "postgres_log",
+   "finding": "unclassified_deadlock",
+   "correct": true,
+   "delay_s": 5.4,
+   "saved_delay_s": 7.1,
+   "m4_ok": true,
+   "evidence_ok": true,
+   "severity": "medium"
+  },
+  {
+   "case": "ct05",
+   "phase": "positivo",
+   "rep": 1,
+   "kind": "ct05",
+   "engine_delta": 0,
+   "deadlock": false,
+   "root_pid": 3907,
+   "finding": "long_transaction_cascade",
+   "findings_for_root": 1,
+   "correct": true,
+   "delay_s": 15.2,
+   "saved_delay_s": 17.3,
+   "m4_ok": true,
+   "evidence_ok": true,
+   "blocked_count": 5,
+   "severity": "high"
+  },
+  {
+   "case": "ct05_raiz_corta",
+   "phase": "control",
+   "rep": 1,
+   "kind": "ct05",
+   "engine_delta": 0,
+   "deadlock": false,
+   "root_pid": 4128,
+   "finding": null,
+   "findings_for_root": 0,
+   "correct": true,
+   "delay_s": null,
+   "saved_delay_s": null,
+   "m4_ok": null,
+   "evidence_ok": null,
+   "blocked_count": null,
+   "severity": null
+  },
+  {
+   "case": "ct05_una_espera",
+   "phase": "control",
+   "rep": 1,
+   "kind": "ct05",
+   "engine_delta": 0,
+   "deadlock": false,
+   "root_pid": 4221,
+   "finding": null,
+   "findings_for_root": 0,
+   "correct": true,
+   "delay_s": null,
+   "saved_delay_s": null,
+   "m4_ok": null,
+   "evidence_ok": null,
+   "blocked_count": null,
+   "severity": null
+  },
+  {
+   "case": "ct01_prepared",
+   "phase": "limite",
+   "rep": 1,
+   "kind": "deadlock",
+   "engine_delta": 1,
+   "deadlock": true,
+   "captured": true,
+   "complete": true,
+   "event_antipatron": "unclassified_deadlock",
+   "event_source": "postgres_log",
+   "finding": "unclassified_deadlock",
+   "correct": true,
+   "delay_s": 5.9,
+   "saved_delay_s": 12.6,
+   "m4_ok": true,
+   "evidence_ok": true,
+   "severity": "medium"
+  },
+  {
+   "case": "ct01_tres",
+   "phase": "limite",
+   "rep": 1,
+   "kind": "deadlock",
+   "engine_delta": 1,
+   "deadlock": true,
+   "captured": true,
+   "complete": true,
+   "event_antipatron": "inconsistent_lock_order_deadlock",
+   "event_source": "postgres_log",
+   "finding": "inconsistent_lock_order_deadlock",
+   "correct": true,
+   "delay_s": 7.1,
+   "saved_delay_s": 11.4,
+   "m4_ok": true,
+   "evidence_ok": true,
+   "severity": "medium"
+  },
+  {
+   "case": "rafaga",
+   "phase": "limite",
+   "rep": 1,
+   "kind": "burst",
+   "engine_delta": 2,
+   "members": [
+    {
+     "deadlock": true,
+     "captured": true,
+     "complete": true,
+     "event_antipatron": "inconsistent_lock_order_deadlock",
+     "event_source": "postgres_log",
+     "finding": "inconsistent_lock_order_deadlock",
+     "correct": true,
+     "delay_s": 11.6,
+     "saved_delay_s": 16.1,
+     "m4_ok": true,
+     "evidence_ok": true,
+     "severity": "high",
+     "expect": "inconsistent_lock_order_deadlock"
+    },
+    {
+     "deadlock": true,
+     "captured": true,
+     "complete": true,
+     "event_antipatron": "lock_mode_conversion_deadlock",
+     "event_source": "postgres_log",
+     "finding": "lock_mode_conversion_deadlock",
+     "correct": true,
+     "delay_s": 11.6,
+     "saved_delay_s": 16.1,
+     "m4_ok": true,
+     "evidence_ok": true,
+     "severity": "medium",
+     "expect": "lock_mode_conversion_deadlock"
+    }
+   ]
+  },
+  {
+   "case": "otra_base",
+   "phase": "limite",
+   "rep": 1,
+   "kind": "deadlock",
+   "engine_delta": 0,
+   "deadlock": true,
+   "captured": false,
+   "complete": false,
+   "event_antipatron": null,
+   "event_source": null,
+   "finding": null,
+   "correct": true,
+   "delay_s": null,
+   "saved_delay_s": null,
+   "m4_ok": null,
+   "evidence_ok": null,
+   "severity": null
+  },
+  {
+   "case": "desborde_log",
+   "phase": "limite",
+   "rep": 1,
+   "kind": "flood",
+   "engine_delta": 1,
+   "deadlock": true,
+   "captured": false,
+   "complete": false,
+   "event_antipatron": null,
+   "event_source": null,
+   "finding": null,
+   "correct": null,
+   "delay_s": null,
+   "saved_delay_s": null,
+   "m4_ok": null,
+   "evidence_ok": null,
+   "severity": null
+  },
+  {
+   "case": "terse",
+   "phase": "limite",
+   "rep": 1,
+   "kind": "deadlock",
+   "engine_delta": 1,
+   "deadlock": true,
+   "captured": true,
+   "complete": true,
+   "event_antipatron": "inconsistent_lock_order_deadlock",
+   "event_source": "postgres_log",
+   "finding": "inconsistent_lock_order_deadlock",
+   "correct": null,
+   "delay_s": 2.5,
+   "saved_delay_s": 3.3,
+   "m4_ok": true,
+   "evidence_ok": null,
+   "severity": "high"
+  },
+  {
+   "case": "pausa",
+   "phase": "limite",
+   "rep": 1,
+   "kind": "pause",
+   "engine_delta": 1,
+   "deadlock": true,
+   "captured": false,
+   "complete": false,
+   "event_antipatron": null,
+   "event_source": null,
+   "finding": null,
+   "correct": true,
+   "delay_s": null,
+   "saved_delay_s": null,
+   "m4_ok": null,
+   "evidence_ok": null,
+   "severity": null
+  },
+  {
+   "case": "ct01",
+   "phase": "carga",
+   "rep": 1,
+   "kind": "deadlock",
+   "engine_delta": 1,
+   "deadlock": true,
+   "captured": true,
+   "complete": true,
+   "event_antipatron": "inconsistent_lock_order_deadlock",
+   "event_source": "postgres_log",
+   "finding": "inconsistent_lock_order_deadlock",
+   "correct": true,
+   "delay_s": 10.9,
+   "saved_delay_s": 13.2,
+   "m4_ok": true,
+   "evidence_ok": true,
+   "severity": "high"
+  },
+  {
+   "case": "ct02",
+   "phase": "carga",
+   "rep": 1,
+   "kind": "deadlock",
+   "engine_delta": 1,
+   "deadlock": true,
+   "captured": true,
+   "complete": true,
+   "event_antipatron": "lock_mode_conversion_deadlock",
+   "event_source": "postgres_log",
+   "finding": "lock_mode_conversion_deadlock",
+   "correct": true,
+   "delay_s": 0.0,
+   "saved_delay_s": 2.5,
+   "m4_ok": true,
+   "evidence_ok": true,
+   "severity": "high"
+  },
+  {
+   "case": "ct05",
+   "phase": "carga",
+   "rep": 1,
+   "kind": "ct05",
+   "engine_delta": 0,
+   "deadlock": false,
+   "root_pid": 6124,
+   "finding": "long_transaction_cascade",
+   "findings_for_root": 1,
+   "correct": true,
+   "delay_s": 19.7,
+   "saved_delay_s": 22.8,
+   "m4_ok": true,
+   "evidence_ok": true,
+   "blocked_count": 5,
+   "severity": "high"
+  }
+ ],
+ "issues": [
+  {
+   "code": "LOG_WINDOW_OVERRUN",
+   "section": "deadlocks",
+   "first_seen": "2026-10-26T00:36:46.302345+00:00",
+   "last_seen": "2026-10-26T00:37:08.973191+00:00",
+   "resolved_at": "2026-10-26T00:37:18.987315+00:00",
+   "occurrences": 3
+  },
+  {
+   "code": "DEADLOCK_REPORTS_PARTIAL",
+   "section": "deadlocks",
+   "first_seen": "2026-10-26T00:38:04.284643+00:00",
+   "last_seen": "2026-10-26T00:38:14.281083+00:00",
+   "resolved_at": "2026-10-26T00:40:57.81297+00:00",
+   "occurrences": 2
+  },
+  {
+   "code": "STATS_RECENTLY_RESET",
+   "section": "",
+   "first_seen": "2026-10-26T00:18:37.174027+00:00",
+   "last_seen": "2026-10-26T00:51:38.291781+00:00",
+   "resolved_at": "2026-10-26T00:51:50.445233+00:00",
+   "occurrences": 171
+  }
+ ]
+}

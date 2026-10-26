@@ -1,0 +1,35 @@
+{
+ "base": {
+  "database_identifier": "db_12f68137",
+  "connection_name": "sandbox-pg",
+  "engine": "postgresql",
+  "database_name": "ql_demo"
+ },
+ "desde": "2026-10-25T22:38:47.435482-05:00",
+ "hasta": "2026-10-25T22:57:47.30589-05:00",
+ "generado": "2026-10-25T22:57:50.45046-05:00",
+ "resumen": {
+  "hallazgos": 0,
+  "detecciones": 0,
+  "por_severidad": {},
+  "por_antipatron": {}
+ },
+ "calidad_deadlocks": {
+  "alcance": "base",
+  "hubo": 0,
+  "capturados": 0,
+  "con_detalle": 0,
+  "sin_detalle": 0,
+  "por_patron": {},
+  "perdidos": 0,
+  "capturados_de_mas": 0,
+  "reinicios_contador": 0,
+  "ciclos": 114,
+  "ciclos_con_desborde": 0,
+  "log_kb_s_promedio": 0.1,
+  "log_kb_s_max": 0.6,
+  "hueco_max_s": 10,
+  "huecos_largos": 0
+ },
+ "hallazgos": []
+}

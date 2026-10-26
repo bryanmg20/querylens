@@ -1,0 +1,117 @@
+{
+ "base": {
+  "database_identifier": "db_adb30660",
+  "connection_name": "sandbox-mysql",
+  "engine": "mysql",
+  "database_name": "ql_demo"
+ },
+ "desde": "2026-10-26T00:01:45.259736-05:00",
+ "hasta": "2026-10-26T00:26:59.254887-05:00",
+ "generado": "2026-10-26T00:27:02.133637-05:00",
+ "resumen": {
+  "hallazgos": 6,
+  "detecciones": 199,
+  "por_severidad": {
+   "high": 5,
+   "low": 1
+  },
+  "por_antipatron": {
+   "disk_spill": 1,
+   "inconsistent_lock_order_deadlock": 1,
+   "lock_amplification_deadlock": 1,
+   "lock_mode_conversion_deadlock": 1,
+   "long_transaction_cascade": 1,
+   "range_contention_deadlock": 1
+  }
+ },
+ "calidad_deadlocks": {
+  "alcance": "servidor",
+  "hubo": 40,
+  "capturados": 40,
+  "con_detalle": 40,
+  "sin_detalle": 0,
+  "por_patron": {
+   "inconsistent_lock_order_deadlock": 10,
+   "lock_amplification_deadlock": 10,
+   "lock_mode_conversion_deadlock": 10,
+   "range_contention_deadlock": 10
+  },
+  "perdidos": 0,
+  "capturados_de_mas": 0,
+  "reinicios_contador": 0,
+  "ciclos": 151,
+  "ciclos_con_desborde": 0,
+  "log_kb_s_promedio": null,
+  "log_kb_s_max": null,
+  "hueco_max_s": 10,
+  "huecos_largos": 0
+ },
+ "hallazgos": [
+  {
+   "antipatron": "inconsistent_lock_order_deadlock",
+   "severidad": "high",
+   "table_name": "ql_demo.ql_ct01_cuentas",
+   "query_id": null,
+   "explicacion": "2 transacciones formaron un abrazo mortal en ql_demo.ql_ct01_cuentas: cada una retenia en modo exclusivo lo que la otra pedia, porque tomaron los mismos recursos en orden opuesto. El motor lo resolvio revirtiendo la transaccion de la sesion 146514, que recibio un error de abrazo mortal y perdio su trabajo. Es la vez 21 que aparece este mismo patron.",
+   "recomendacion": "Imponer un orden de acceso unico sobre ql_demo.ql_ct01_cuentas: toda transaccion que modifique varias filas o tablas debe tomarlas en el mismo orden (por ejemplo, por clave primaria ascendente), o bloquearlas todas al inicio con SELECT ... FOR UPDATE ordenado por esa clave. Mantener las transacciones cortas reduce la ventana del ciclo. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (error 1213).",
+   "veces": 10,
+   "primera": "2026-10-26T00:02:18.116654-05:00",
+   "ultima": "2026-10-26T00:04:54.487442-05:00"
+  },
+  {
+   "antipatron": "lock_amplification_deadlock",
+   "severidad": "high",
+   "table_name": "ql_demo.ql_ct04_pedidos",
+   "query_id": null,
+   "explicacion": "2 transacciones formaron un abrazo mortal en ql_demo.ql_ct04_pedidos. La sesion 155470 ejecutaba un UPDATE sobre ql_demo.ql_ct04_pedidos que filtra por cliente, y ningun indice de la tabla empieza por esas columnas: InnoDB recorrio la tabla y dejo bloqueadas 150 filas para modificar 3. Con tantas filas retenidas, cualquier otra transaccion que toque la tabla puede cerrar un ciclo con ella, aunque modifique filas distintas. El motor lo resolvio revirtiendo la transaccion de la sesion 155462, que recibio un error de abrazo mortal y perdio su trabajo. Es la vez 20 que aparece este mismo patron.",
+   "recomendacion": "Crear un indice que empiece por las columnas del WHERE: CREATE INDEX ON ql_ct04_pedidos (cliente). Con el indice, la sentencia bloquea solo las filas que modifica. Es el indice ausente de AP-04 en una sentencia que modifica en lugar de leer. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (error 1213).",
+   "veces": 10,
+   "primera": "2026-10-26T00:11:24.821535-05:00",
+   "ultima": "2026-10-26T00:14:07.097354-05:00"
+  },
+  {
+   "antipatron": "lock_mode_conversion_deadlock",
+   "severidad": "high",
+   "table_name": "ql_demo.ql_ct02_cuentas",
+   "query_id": null,
+   "explicacion": "2 transacciones formaron un abrazo mortal en ql_demo.ql_ct02_cuentas: cada una tenia en modo compartido (FOR SHARE) la fila que despues quiso modificar, y ninguna podia pasar a exclusivo mientras la otra mantuviera su bloqueo compartido. El motor lo resolvio revirtiendo la transaccion de la sesion 149574, que recibio un error de abrazo mortal y perdio su trabajo. Es la vez 22 que aparece este mismo patron.",
+   "recomendacion": "Si la transaccion lee la fila antes de modificarla, pedirla desde el inicio en modo exclusivo con SELECT ... FOR UPDATE en lugar de FOR SHARE, o hacer la verificacion en el WHERE del UPDATE (por ejemplo UPDATE ... WHERE id = ... AND saldo >= ...) para no leerla antes. El informe muestra la sentencia que esperaba; la lectura con FOR SHARE esta antes, en la misma transaccion. En MySQL el bloqueo compartido tambien lo toma un INSERT en una tabla hija sobre la fila padre (clave foranea), y cualquier SELECT con aislamiento SERIALIZABLE: en esos casos, bloquear antes la fila con SELECT ... FOR UPDATE. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (error 1213).",
+   "veces": 10,
+   "primera": "2026-10-26T00:05:14.714455-05:00",
+   "ultima": "2026-10-26T00:08:06.951963-05:00"
+  },
+  {
+   "antipatron": "long_transaction_cascade",
+   "severidad": "high",
+   "table_name": "ql_ct05_cuentas",
+   "query_id": "ql_demo/f4ef30517054439b284861b288545dcdc663900f92d07fb474c1844d8f03d79a",
+   "explicacion": "La transaccion de la sesion 166618 lleva 49 s abierta y retiene bloqueos que tienen esperando a 5 sesiones (>= 5 s cada una). No es un abrazo mortal: el motor no lo resuelve solo y las sesiones siguen esperando hasta que la raiz termine o salte un timeout. La raiz esta 'idle in transaction': no ejecuta nada, la aplicacion abrio la transaccion y no la cerro.",
+   "recomendacion": "Inmediato: terminar la sesion raiz 166618 (Postgres: SELECT pg_terminate_backend(166618); MySQL: KILL 166618). De fondo: transacciones cortas, sin trabajo externo (llamadas HTTP, esperas del usuario) entre BEGIN y COMMIT; partir los lotes grandes. Red de seguridad: lock_timeout y statement_timeout en Postgres, innodb_lock_wait_timeout mas bajo en MySQL. Revisar que todos los caminos de error hagan COMMIT o ROLLBACK antes de devolver la conexion al pool; en Postgres, idle_in_transaction_session_timeout corta estas sesiones.",
+   "veces": 10,
+   "primera": "2026-10-26T00:15:07.871845-05:00",
+   "ultima": "2026-10-26T00:26:06.224285-05:00"
+  },
+  {
+   "antipatron": "range_contention_deadlock",
+   "severidad": "high",
+   "table_name": "ql_demo.ql_ct03_reservas",
+   "query_id": null,
+   "explicacion": "2 transacciones formaron un abrazo mortal en ql_demo.ql_ct03_reservas por contencion de rango: todas quisieron insertar en el hueco antes de un registro del indice PRIMARY, y ese hueco lo tenia bloqueado otra transaccion del ciclo (bloqueo de hueco o next-key). Los bloqueos de hueco son compatibles entre si, asi que varias transacciones pueden tener el mismo hueco a la vez, pero ninguna puede insertar en el mientras otra lo mantenga. El motor lo resolvio revirtiendo la transaccion de la sesion 152579, que recibio un error de abrazo mortal y perdio su trabajo. Es la vez 47 que aparece este mismo patron.",
+   "recomendacion": "El informe muestra la sentencia que esperaba (la insercion); el hueco lo bloqueo antes, en la misma transaccion, una lectura con FOR UPDATE o FOR SHARE, o un UPDATE/DELETE, que busco una clave que no existia o un rango. Si la transaccion verifica que la fila no existe y despues la inserta, reemplazar las dos sentencias por INSERT ... ON DUPLICATE KEY UPDATE o INSERT IGNORE, o insertar directamente y tratar el error de clave duplicada (1062). Si la verificacion no necesita proteger el rango, el aislamiento READ COMMITTED para esa transaccion evita los bloqueos de hueco en las busquedas. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (error 1213).",
+   "veces": 10,
+   "primera": "2026-10-26T00:08:27.212565-05:00",
+   "ultima": "2026-10-26T00:11:04.512585-05:00"
+  },
+  {
+   "antipatron": "disk_spill",
+   "severidad": "low",
+   "table_name": "sbtest1",
+   "query_id": "ql_demo/d6431f200291c19f481376073ee77aaa488b28737a86ecbcbe07fd1a5c09e217",
+   "explicacion": "En la ultima ventana la consulta ordeno filas usando el disco: el ordenamiento no cupo en el buffer de ordenamiento, asi que se escribio por partes en archivos temporales y despues se mezclo, lo que aumenta la latencia y la presion de I/O.",
+   "recomendacion": "Evaluar un indice que entregue las filas ya ordenadas por las columnas del ORDER BY, reducir las filas que se ordenan (filtros, LIMIT) o, si el ordenamiento es inevitable, aumentar sort_buffer_size solo en la sesion que lo necesita.",
+   "veces": 149,
+   "primera": "2026-10-26T00:01:57.743473-05:00",
+   "ultima": "2026-10-26T00:26:36.581307-05:00"
+  }
+ ]
+}

@@ -1,0 +1,79 @@
+{
+ "base": {
+  "database_identifier": "db_12f68137",
+  "connection_name": "sandbox-pg",
+  "engine": "postgresql",
+  "database_name": "ql_demo"
+ },
+ "desde": "2026-10-25T22:57:51.065017-05:00",
+ "hasta": "2026-10-26T00:05:20.266834-05:00",
+ "generado": "2026-10-26T00:05:23.145127-05:00",
+ "resumen": {
+  "hallazgos": 3,
+  "detecciones": 53,
+  "por_severidad": {
+   "high": 3
+  },
+  "por_antipatron": {
+   "inconsistent_lock_order_deadlock": 1,
+   "lock_mode_conversion_deadlock": 1,
+   "unclassified_deadlock": 1
+  }
+ },
+ "calidad_deadlocks": {
+  "alcance": "base",
+  "hubo": 70,
+  "capturados": 53,
+  "con_detalle": 53,
+  "sin_detalle": 0,
+  "por_patron": {
+   "inconsistent_lock_order_deadlock": 33,
+   "lock_mode_conversion_deadlock": 10,
+   "unclassified_deadlock": 10
+  },
+  "perdidos": 17,
+  "capturados_de_mas": 0,
+  "reinicios_contador": 0,
+  "ciclos": 267,
+  "ciclos_con_desborde": 34,
+  "log_kb_s_promedio": 42.8,
+  "log_kb_s_max": 579.9,
+  "hueco_max_s": 150,
+  "huecos_largos": 10
+ },
+ "hallazgos": [
+  {
+   "antipatron": "inconsistent_lock_order_deadlock",
+   "severidad": "high",
+   "table_name": "ql_ct01_cuentas",
+   "query_id": "1693770756014189287",
+   "explicacion": "2 transacciones formaron un abrazo mortal en ql_ct01_cuentas: cada una retenia lo que la otra pedia, porque tomaron los mismos recursos en orden opuesto. El motor lo resolvio revirtiendo la transaccion de la sesion 116385, que recibio un error de abrazo mortal y perdio su trabajo. Es la vez 33 que aparece este mismo patron.",
+   "recomendacion": "Imponer un orden de acceso unico sobre ql_ct01_cuentas: toda transaccion que modifique varias filas o tablas debe tomarlas en el mismo orden (por ejemplo, por clave primaria ascendente), o bloquearlas todas al inicio con SELECT ... FOR UPDATE ordenado por esa clave. Mantener las transacciones cortas reduce la ventana del ciclo. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (SQLSTATE 40P01).",
+   "veces": 33,
+   "primera": "2026-10-25T23:01:14.274782-05:00",
+   "ultima": "2026-10-25T23:34:26.097915-05:00"
+  },
+  {
+   "antipatron": "lock_mode_conversion_deadlock",
+   "severidad": "high",
+   "table_name": "ql_ct02_cuentas",
+   "query_id": "5789138390230365579",
+   "explicacion": "2 transacciones formaron un abrazo mortal en ql_ct02_cuentas: todas pidieron modificar la misma fila y cada una esperaba a la otra. Eso solo ocurre si ya la tenian bloqueada en modo compartido (por ejemplo, con FOR SHARE) y quisieron pasar a exclusivo. El motor lo resolvio revirtiendo la transaccion de la sesion 113273, que recibio un error de abrazo mortal y perdio su trabajo. Es la vez 20 que aparece este mismo patron.",
+   "recomendacion": "Si la transaccion lee la fila antes de modificarla, pedirla desde el inicio en modo exclusivo con SELECT ... FOR UPDATE en lugar de FOR SHARE, o hacer la verificacion en el WHERE del UPDATE (por ejemplo UPDATE ... WHERE id = ... AND saldo >= ...) para no leerla antes. El informe muestra la sentencia que esperaba; la lectura con FOR SHARE esta antes, en la misma transaccion. En Postgres un INSERT en una tabla hija bloquea la fila padre con FOR KEY SHARE: choca con un DELETE o un cambio de clave de esa fila en otra transaccion. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (SQLSTATE 40P01).",
+   "veces": 10,
+   "primera": "2026-10-25T23:04:16.398313-05:00",
+   "ultima": "2026-10-25T23:10:56.008138-05:00"
+  },
+  {
+   "antipatron": "unclassified_deadlock",
+   "severidad": "high",
+   "table_name": "ql_ct01_cuentas",
+   "query_id": "8096490356495409114",
+   "explicacion": "2 transacciones formaron un abrazo mortal en ql_ct01_cuentas. El motor lo resolvio revirtiendo la transaccion de la sesion 111813, que recibio un error de abrazo mortal y perdio su trabajo. El informe no identifica que recurso esperaba cada una, asi que no se puede saber si tomaron las mismas filas en orden opuesto (CT-01) o si leyeron la misma fila en modo compartido y despues quisieron modificarla (CT-02). Es la vez 10 que aparece este mismo patron.",
+   "recomendacion": "Un arreglo que cubre los dos casos: al inicio de la transaccion, bloquear todas las filas que va a modificar con SELECT ... FOR UPDATE, ordenadas por clave primaria. Para saber cual fue, revisar que hace antes esa transaccion sobre ql_ct01_cuentas: si lee la misma fila con FOR SHARE, es conversion de modo (CT-02); si modifica varias filas en un orden que depende de los datos, es orden inconsistente (CT-01). Si no queda claro, activar log_lock_waits en el servidor (registra la fila de las esperas largas), o registrar por un tiempo acotado las sentencias del rol de la aplicacion (ALTER ROLE ... SET log_statement = 'all'), que muestra la lectura previa y sus valores; esto ultimo deja datos reales en el log del servidor. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (SQLSTATE 40P01).",
+   "veces": 10,
+   "primera": "2026-10-25T22:58:07.064426-05:00",
+   "ultima": "2026-10-25T23:00:59.055243-05:00"
+  }
+ ]
+}

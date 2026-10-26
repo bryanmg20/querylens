@@ -1,4 +1,6 @@
-# Medición de detección: AP-07, AP-01 y AP-06
+# Medición de detección: AP-07, AP-01 y AP-06 (y CT-01 a CT-05)
+
+La contención (CT-01 a CT-05) tiene su propio banco, `measure_ct.py`: ver [Contención](#contención-ct-01-a-ct-05) al final.
 
 Mide cuántos casos detecta cada antipatrón cuando hay **muchas consultas distintas a la vez**, no un solo escenario. Por cada antipatrón y motor:
 
@@ -83,3 +85,56 @@ El `query_id` de cada caso lo calcula el propio motor: `EXPLAIN (VERBOSE)` → `
 - **Positivos detectados / positivos** es la cifra principal (meta ≥ 90 %), con su intervalo de confianza de Wilson al 95 %.
 - **Detección entre los verificados** descuenta los positivos en los que la patología no llegó a ocurrir según los contadores (por ejemplo, un AP-01 cuya degradación quedó por debajo de +1 ms): ahí el fallo es del caso, no del detector.
 - **Controles marcados**: falsos positivos. En AP-07, un control que de verdad derramó (por la memoria compartida de MySQL) se informa aparte y no cuenta como falso positivo.
+
+## Contención: CT-01 a CT-05
+
+`measure_ct.py` corre los escenarios de `ql_sandbox/scripts/<motor>/simulate_ct0*.sh` varias veces y compara lo que de verdad pasó con lo que QueryLens vio. A diferencia de las mediciones de antipatrones, no toma snapshots a mano: registra la base del sandbox con el CLI (`querylens add`, conexión `sandbox-pg` o `sandbox-mysql`) y deja que el servicio `pipeline` recolecte cada 10 s. Así se mide también lo que escribe `pipeline_health` (`cycle_samples`, `issues`) y el reporte del CLI.
+
+```bash
+# desde la raiz del repo, con el sandbox y el compose de la raiz levantados
+python ql_sandbox/mediciones/measure_ct.py --engine postgres            # 10 repeticiones por caso
+python ql_sandbox/mediciones/measure_ct.py --engine mysql --smoke       # 2 repeticiones
+python ql_sandbox/mediciones/measure_ct.py --engine mysql --cases ct01,rafaga --reps 3
+python ql_sandbox/mediciones/measure_ct.py --reevaluar ct-mysql-20261026-001500
+```
+
+Los dos motores se pueden correr a la vez, en dos procesos. Cada corrida deja `resultados/ct-<motor>-<fecha>/`:
+
+| Archivo | Contenido |
+|---|---|
+| `truth.json` | la verdad de cada repetición: salida del script, pid, víctima y contador del motor antes y después. Se escribe en cada repetición: `--reevaluar` parte de acá |
+| `results.json` | evaluación por repetición y resumen por caso y por fase |
+| `reporte.md` | tablas por fase, calidad de captura según el CLI y corridas con un resultado distinto del esperado |
+| `cli/<fase>.json` | `querylens report --format json` de la ventana de cada fase |
+| `cli/health.txt` | `querylens health` al terminar |
+
+### Casos
+
+| Fase | Postgres | MySQL | Qué se espera |
+|---|---|---|---|
+| positivo | `ct01`, `ct02`, `ct02_prepared`, `ct05` | `ct01`, `ct02`, `ct03`, `ct03_end`, `ct04`, `ct05` | el hallazgo del patrón (con `MODE=prepared`, `unclassified_deadlock`) |
+| control | `ct05_raiz_corta`, `ct05_una_espera` | `ct04_indice`, `ct04_for_update`, `ct05_raiz_corta`, `ct05_una_espera` | ningún hallazgo |
+| límite | `ct01_prepared`, `ct01_tres`, `rafaga`, `otra_base`, `desborde_log`, `terse`, `pausa` | `ct01_tres`, `rafaga`, `rafaga_sin_print_all`, `otro_schema`, `pausa` | ver abajo |
+| carga | `ct01`, `ct02`, `ct05` | `ct01` a `ct05` | lo mismo que en positivo, con `continuous_load.sh` de fondo |
+
+Casos límite:
+
+- `ct01_tres`: ciclo de 3 transacciones (`SESSIONS=3`).
+- `ct01_prepared` (PG): `PREPARE`/`EXECUTE`. El log no trae los valores, así que debería salir `unclassified_deadlock`.
+- `rafaga`: 2 (PG) o 3 (MySQL) escenarios a la vez, en el mismo ciclo. En MySQL, `INNODB STATUS` guarda solo el último: los demás llegan sin detalle desde `error_log`.
+- `rafaga_sin_print_all` (MySQL): lo mismo con `innodb_print_all_deadlocks = OFF`. `error_log` no recibe los encabezados y el CLI tendría que mostrar los perdidos.
+- `otra_base` (PG) y `otro_schema` (MySQL): abrazo en `ql_otra`. En PG no es de la base monitoreada. En MySQL, InnoDB no separa por schema: es informativo.
+- `desborde_log` (PG): ~400 KB/s de `RAISE WARNING` durante 30 s, más que los 2 MB por ciclo que lee `PgLogTail`. Se espera `LOG_WINDOW_OVERRUN`.
+- `terse` (PG): `log_error_verbosity = terse`. Se espera `DEADLOCK_REPORTS_PARTIAL`.
+- `pausa`: `querylens pause` durante 135 s, más que los 120 s de ventana de `DeadlocksStage`. El abrazo se pierde y el CLI tendría que contarlo en `perdidos` y `huecos_largos`.
+
+Los ajustes del servidor (`terse`, `innodb_print_all_deadlocks`) y la base `ql_otra` se restauran al terminar, aunque la corrida falle.
+
+### Cómo se cuenta
+
+- **Abrazo**: el script terminó con una víctima (`deadlock detected` o `ERROR 1213`).
+- **Capturado**: hay una fila en `public.deadlock_events`, por la clave `detected_at|pid de la víctima`. Si llegó sin detalle, cuenta el primer evento sin detalle de la ventana del escenario.
+- **Correcto**: el hallazgo con el mismo conjunto de pid del ciclo es del patrón esperado. En los controles, que no haya hallazgo. En CT-05 se busca por el pid de la raíz.
+- **Latencia (M4)**: `detection_delay_s` de la evidencia (≤ 15 s). En CT-05, la antigüedad de la raíz en el snapshot del hallazgo menos 30 s (≤ 45 s). *Guardado* suma la cola y el detector: `detectado_en` menos el mismo instante.
+- **Evidencia**: CT-01 con el tamaño del ciclo y la tabla, CT-03 con el hueco en la posición esperada, CT-04 con `related_antipattern = AP-04` y `CREATE INDEX … (cliente)`, y CT-05 con todas las sesiones bloqueadas.
+- **CLI**: por fase, `hubo` de `calidad_deadlocks` contra el contador leído directo del motor, y `capturados` contra los eventos.

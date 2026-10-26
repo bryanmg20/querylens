@@ -19,8 +19,15 @@
 # veces dentro del mismo ciclo del pipeline (10 s), el primero llega sin
 # detalle y no se clasifica. Dejar al menos un ciclo entre corridas.
 #
-# Esperado: hallazgo lock_amplification_deadlock con el ciclo de dos
-# transacciones (los id de conexion que se imprimen abajo), la tabla
+# Controles (VARIANT):
+#   index: la misma carga sobre ql_ct04_pedidos_idx, que tiene indice sobre
+#     cliente. Cada UPDATE bloquea solo sus filas y no hay abrazo.
+#   for_update: la sesion 2 recorre la tabla con SELECT ... FOR UPDATE en vez
+#     de UPDATE. Hay abrazo, pero no modifica filas (undo_log_entries = 0):
+#     no es CT-04 y se recuerda sin hallazgo (issue #48).
+#
+# Esperado (VARIANT=scan, por defecto): hallazgo lock_amplification_deadlock
+# con el ciclo de dos transacciones (los id de conexion que se imprimen abajo), la tabla
 # ql_demo.ql_ct04_pedidos, la sesion 2 con unas 150 filas bloqueadas para 3
 # modificadas, y la recomendacion CREATE INDEX ON ql_ct04_pedidos (cliente),
 # a mas tardar 15 s despues del abrazo (metrica M4).
@@ -28,11 +35,22 @@
 # USO
 #   docker exec ql_sysbench bash /scripts/mysql/simulate_ct04_deadlock_no_index_mysql.sh
 #   PAUSE_SECONDS=3 docker exec -e PAUSE_SECONDS ql_sysbench bash /scripts/mysql/simulate_ct04_deadlock_no_index_mysql.sh
+#   VARIANT=index docker exec -e VARIANT ql_sysbench bash /scripts/mysql/simulate_ct04_deadlock_no_index_mysql.sh
 # ============================================================
 
 set -euo pipefail
 
 PAUSE_SECONDS="${PAUSE_SECONDS:-2}"
+VARIANT="${VARIANT:-scan}"
+
+case "$VARIANT" in
+  scan | for_update) TABLE=ql_ct04_pedidos; INDEX="" ;;
+  index) TABLE=ql_ct04_pedidos_idx; INDEX=", INDEX ix_cliente (cliente)" ;;
+  *)
+    echo "[CT-04/mysql] VARIANT debe ser scan, index o for_update, no '$VARIANT'" >&2
+    exit 2
+    ;;
+esac
 
 MYSQL=(
   mysql
@@ -48,12 +66,12 @@ MYSQL=(
 # Tabla propia: la carga de sysbench no la toca, asi que el unico ciclo es el
 # del escenario. Sin indice sobre cliente: es justamente el caso.
 "${MYSQL[@]}" --execute="
-  CREATE TABLE IF NOT EXISTS ql_ct04_pedidos (
+  CREATE TABLE IF NOT EXISTS ${TABLE} (
     id INT PRIMARY KEY,
     cliente INT NOT NULL,
-    estado VARCHAR(10) NOT NULL
+    estado VARCHAR(10) NOT NULL${INDEX}
   ) ENGINE=InnoDB;
-  INSERT IGNORE INTO ql_ct04_pedidos
+  INSERT IGNORE INTO ${TABLE}
     WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 200)
     SELECT i, i % 50, 'nuevo' FROM n;
 " 2>/dev/null
@@ -66,10 +84,10 @@ session_1() {
   {
     echo "SELECT CONNECTION_ID();"
     echo "START TRANSACTION;"
-    echo "UPDATE ql_ct04_pedidos SET estado = 'pagado' WHERE id = 150;"
+    echo "UPDATE ${TABLE} SET estado = 'pagado' WHERE id = 150;"
     sleep "$PAUSE_SECONDS"
     # recorre desde el pedido 1, que ya tiene la sesion 2
-    echo "UPDATE ql_ct04_pedidos SET estado = 'enviado' WHERE cliente = 3;"
+    echo "UPDATE ${TABLE} SET estado = 'enviado' WHERE cliente = 3;"
     sleep 1
     echo "ROLLBACK;"
   } | "${MYSQL[@]}" --unbuffered >"$OUT_1" 2>&1 || true
@@ -80,7 +98,11 @@ session_2() {
     echo "SELECT CONNECTION_ID();"
     echo "START TRANSACTION;"
     # recorre la tabla: bloquea los pedidos 1 a 149 y espera el 150
-    echo "UPDATE ql_ct04_pedidos SET estado = 'anulado' WHERE cliente = 7;"
+    if [ "$VARIANT" = "for_update" ]; then
+      echo "SELECT id FROM ${TABLE} WHERE cliente = 7 FOR UPDATE;"
+    else
+      echo "UPDATE ${TABLE} SET estado = 'anulado' WHERE cliente = 7;"
+    fi
     sleep "$PAUSE_SECONDS"
     echo "ROLLBACK;"
   } | "${MYSQL[@]}" --unbuffered >"$OUT_2" 2>&1 || true
@@ -92,8 +114,14 @@ sleep 0.5
 session_2 &
 
 sleep 1
+echo "[CT-04/mysql] VARIANT=$VARIANT"
 echo "[CT-04/mysql] sesion 1 id=$(head -n 1 "$OUT_1"): UPDATE del pedido 150 y despues UPDATE por cliente"
-echo "[CT-04/mysql] sesion 2 id=$(head -n 1 "$OUT_2"): UPDATE por cliente (sin indice: recorre la tabla)"
+case "$VARIANT" in
+  scan) WHAT="UPDATE por cliente (sin indice: recorre la tabla)" ;;
+  for_update) WHAT="SELECT ... FOR UPDATE por cliente (sin indice: recorre la tabla)" ;;
+  index) WHAT="UPDATE por cliente (con indice: solo sus filas)" ;;
+esac
+echo "[CT-04/mysql] sesion 2 id=$(head -n 1 "$OUT_2"): $WHAT"
 wait
 
 AT=$(date +%s)
