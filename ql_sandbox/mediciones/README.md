@@ -90,6 +90,15 @@ El `query_id` de cada caso lo calcula el propio motor: `EXPLAIN (VERBOSE)` → `
 
 `measure_ct.py` corre los escenarios de `ql_sandbox/scripts/<motor>/simulate_ct0*.sh` varias veces y compara lo que de verdad pasó con lo que QueryLens vio. A diferencia de las mediciones de antipatrones, no toma snapshots a mano: registra la base del sandbox con el CLI (`querylens add`, conexión `sandbox-pg` o `sandbox-mysql`) y deja que el servicio `pipeline` recolecte cada 10 s. Así se mide también lo que escribe `pipeline_health` (`cycle_samples`, `issues`) y el reporte del CLI.
 
+Corrida completa en un solo comando: levanta el sandbox, pone al día las imágenes del stack (`pipeline`, `detection-engine` y la CLI) y corre los dos motores en paralelo. Con 10 repeticiones tarda unas 2 h.
+
+```bash
+bash ql_sandbox/mediciones/run_ct.sh            # 10 repeticiones por caso, Postgres y MySQL
+bash ql_sandbox/mediciones/run_ct.sh 5 postgres # 5 repeticiones, un solo motor
+```
+
+Por partes:
+
 ```bash
 # desde la raiz del repo, con el sandbox y el compose de la raiz levantados
 python ql_sandbox/mediciones/measure_ct.py --engine postgres            # 10 repeticiones por caso
