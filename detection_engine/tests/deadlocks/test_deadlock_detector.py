@@ -165,6 +165,32 @@ def test_header_without_detail_of_a_report_already_seen_is_not_counted():
     assert after.seen == memory.seen
 
 
+def test_report_seen_with_header_time_is_not_new_without_header():
+    # MySQL: el primer ciclo trae el encabezado de error_log y el informe sale
+    # con su hora; en el siguiente innodb_print_all_deadlocks esta apagado y
+    # el mismo informe llega con la hora de INNODB STATUS, sin fracciones
+    events = []
+    _, memory = detect_deadlocks(snapshot(mysql_ct01()), T0, DeadlockMemory(), events)
+    without_header = mysql_ct01(detected_at="2026-10-22 00:59:26.000000")
+    findings, after = detect_deadlocks(snapshot(without_header), T0 + timedelta(seconds=10), memory, events)
+    assert findings == []
+    assert len(events) == 1
+    assert after.seen == memory.seen
+
+    # y al reves: primero sin encabezado, despues con el
+    _, memory = detect_deadlocks(snapshot(without_header), T0, DeadlockMemory())
+    findings, _ = detect_deadlocks(snapshot(mysql_ct01()), T0 + timedelta(seconds=10), memory)
+    assert findings == []
+
+
+def test_same_victim_with_two_exact_times_is_two_reports():
+    # la misma conexion reintenta y vuelve a ser victima un segundo despues
+    _, memory = detect_deadlocks(snapshot(mysql_ct01()), T0, DeadlockMemory())
+    retry = mysql_ct01(detected_at="2026-10-22 00:59:27.502113")
+    findings, _ = detect_deadlocks(snapshot(retry), T0 + timedelta(seconds=10), memory)
+    assert len(findings) == 1
+
+
 def test_incomplete_and_unmatched_reports_are_remembered_without_finding():
     incomplete = {"detected_at": "2026-10-22 00:59:20.100000", "source": "mysql_error_log", "complete": False}
     # ampliacion de bloqueos con un indice que la sentencia podia usar: ningun patron

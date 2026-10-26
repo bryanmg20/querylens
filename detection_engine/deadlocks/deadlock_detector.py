@@ -6,10 +6,11 @@ Cada abrazo se informa una vez: el mismo informe llega en varios snapshots
 Los que no son de ningun patron (por ejemplo una ampliacion de bloqueos con
 un indice que la sentencia podria usar) se recuerdan sin hallazgo.
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from querylens_contract import SnapshotPayload
 
+from anti_patterns.statement_history import parse_instant
 from logger import get_logger
 from models import DeadlockEvent, Hallazgo
 
@@ -25,6 +26,13 @@ from .cycles import deadlock_signature
 from .state import DeadlockMemory
 
 logger = get_logger(__name__)
+
+# DeadlocksStage pone en un informe de INNODB STATUS la hora de su encabezado
+# de error_log (con microsegundos) si lo encuentra a menos de 2 s, y si no la
+# de INNODB STATUS (sin fracciones). El mismo informe puede llegar con una en
+# un ciclo y con la otra en el siguiente (innodb_print_all_deadlocks apagado
+# entre ambos): con la misma victima y a menos de esto es el mismo abrazo.
+_SECOND_PRECISION_TOLERANCE = timedelta(seconds=2)
 
 # (regla, modulo con ANTIPATRON y finding), en orden: las reglas se excluyen
 # entre si, el orden solo fija cual se prueba primero. Cada regla recibe el
@@ -59,10 +67,30 @@ def report_key(report) -> str:
 
 def _already_seen(report, seen: dict[str, str]) -> bool:
     if report.complete:
-        return report_key(report) in seen
+        return report_key(report) in seen or _seen_with_other_precision(report, seen)
     # Encabezado de MySQL sin detalle: el mismo abrazo pudo llegar completo
     # en un snapshot anterior (INNODB STATUS todavia lo tenia), con victima
     return report.detected_at in seen or any(key.startswith(f"{report.detected_at}|") for key in seen)
+
+
+def _seen_with_other_precision(report, seen: dict[str, str]) -> bool:
+    key = report_key(report)
+    if report.source != "innodb_status" or "|" not in key:
+        return False
+    instant = parse_instant(report.detected_at)
+    if instant is None:
+        return False
+    victim = key.split("|", 1)[1]
+    for seen_key in seen:
+        seen_at, _, seen_victim = seen_key.partition("|")
+        other = parse_instant(seen_at)
+        if seen_victim != victim or other is None:
+            continue
+        # solo si una de las dos es de INNODB STATUS: dos abrazos de la misma
+        # victima con horas exactas distintas son dos abrazos
+        if (instant.microsecond == 0 or other.microsecond == 0) and abs(instant - other) <= _SECOND_PRECISION_TOLERANCE:
+            return True
+    return False
 
 
 def detect_deadlocks(
