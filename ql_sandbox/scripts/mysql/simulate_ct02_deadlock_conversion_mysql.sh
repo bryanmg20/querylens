@@ -9,6 +9,10 @@
 # (la victima recibe ERROR 1213) y deja el informe en SHOW ENGINE INNODB
 # STATUS, de donde lo lee DeadlocksStage.
 #
+# MODE=prepared manda las sentencias como PREPARE ... FROM y EXECUTE ...
+# USING, con los valores aparte (?): el informe de InnoDB no las necesita, la
+# fila de cada bloqueo es su direccion fisica (space:page:heap).
+#
 # INNODB STATUS guarda solo el ultimo abrazo: si se corre el escenario dos
 # veces dentro del mismo ciclo del pipeline (10 s), el primero llega sin
 # detalle y no se clasifica. Dejar al menos un ciclo entre corridas.
@@ -22,11 +26,21 @@
 # USO
 #   docker exec ql_sysbench bash /scripts/mysql/simulate_ct02_deadlock_conversion_mysql.sh
 #   PAUSE_SECONDS=3 docker exec -e PAUSE_SECONDS ql_sysbench bash /scripts/mysql/simulate_ct02_deadlock_conversion_mysql.sh
+#   MODE=prepared docker exec -e MODE ql_sysbench bash /scripts/mysql/simulate_ct02_deadlock_conversion_mysql.sh
 # ============================================================
 
 set -euo pipefail
 
 PAUSE_SECONDS="${PAUSE_SECONDS:-2}"
+MODE="${MODE:-literal}"
+
+case "$MODE" in
+  literal | prepared) ;;
+  *)
+    echo "[CT-02/mysql] MODE debe ser literal o prepared, no '$MODE'" >&2
+    exit 2
+    ;;
+esac
 
 MYSQL=(
   mysql
@@ -54,11 +68,23 @@ trap 'rm -f "$OUT_1" "$OUT_2"' EXIT
 session() {
   {
     echo "SELECT CONNECTION_ID();"
+    if [ "$MODE" = "prepared" ]; then
+      echo "PREPARE leer FROM 'SELECT saldo FROM ql_ct02_cuentas WHERE id = ? FOR SHARE';"
+      echo "PREPARE descontar FROM 'UPDATE ql_ct02_cuentas SET saldo = saldo - ? WHERE id = ?';"
+    fi
     echo "START TRANSACTION;"
-    echo "SELECT saldo FROM ql_ct02_cuentas WHERE id = 1 FOR SHARE;"
+    if [ "$MODE" = "prepared" ]; then
+      echo "SET @fila = 1; EXECUTE leer USING @fila;"
+    else
+      echo "SELECT saldo FROM ql_ct02_cuentas WHERE id = 1 FOR SHARE;"
+    fi
     # la aplicacion "verifica que alcanza" mientras las dos tienen el S
     sleep "$PAUSE_SECONDS"
-    echo "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = 1;"
+    if [ "$MODE" = "prepared" ]; then
+      echo "SET @monto = $1, @fila = 1; EXECUTE descontar USING @monto, @fila;"
+    else
+      echo "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = 1;"
+    fi
     sleep 1
     echo "ROLLBACK;"
   } | "${MYSQL[@]}" --unbuffered >"$2" 2>&1 || true
@@ -70,6 +96,7 @@ sleep 0.5
 session 2 "$OUT_2" &
 
 sleep 1
+echo "[CT-02/mysql] MODE=$MODE"
 echo "[CT-02/mysql] sesion 1 id=$(head -n 1 "$OUT_1"): FOR SHARE de la fila 1 y despues UPDATE"
 echo "[CT-02/mysql] sesion 2 id=$(head -n 1 "$OUT_2"): FOR SHARE de la fila 1 y despues UPDATE"
 wait

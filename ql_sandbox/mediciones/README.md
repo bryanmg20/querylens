@@ -112,15 +112,20 @@ Los dos motores se pueden correr a la vez, en dos procesos. Cada corrida deja `r
 
 | Fase | Postgres | MySQL | Qué se espera |
 |---|---|---|---|
-| positivo | `ct01`, `ct02`, `ct02_prepared`, `ct05` | `ct01`, `ct02`, `ct03`, `ct03_end`, `ct04`, `ct05` | el hallazgo del patrón (con `MODE=prepared`, `unclassified_deadlock`) |
+| positivo | `ct01`, `ct02`, `ct01_bind`, `ct02_bind`, `ct05` | `ct01`, `ct02`, `ct01_prepared`, `ct02_prepared`, `ct03`, `ct03_end`, `ct04`, `ct05` | el hallazgo del patrón |
 | control | `ct05_raiz_corta`, `ct05_una_espera` | `ct04_indice`, `ct04_for_update`, `ct05_raiz_corta`, `ct05_una_espera` | ningún hallazgo |
-| límite | `ct01_prepared`, `ct01_tres`, `rafaga`, `otra_base`, `desborde_log`, `terse`, `pausa` | `ct01_tres`, `rafaga`, `rafaga_sin_print_all`, `otro_schema`, `pausa` | ver abajo |
+| límite | `ct01_bind_rapido`, `ct02_bind_rapido`, `ct01_tres`, `ct01_tres_bind`, `ct01_tres_bind_rapido`, `sin_unica`, `sin_unica_rapido`, `dos_tablas`, `dos_schemas`, `particionada`, `rafaga`, `otra_base`, `desborde_log`, `terse`, `pausa` | `ct01_tres`, `rafaga`, `rafaga_sin_print_all`, `otro_schema`, `pausa` | ver abajo |
 | carga | `ct01`, `ct02`, `ct05` | `ct01` a `ct05` | lo mismo que en positivo, con `continuous_load.sh` de fondo |
 
 Casos límite:
 
 - `ct01_tres`: ciclo de 3 transacciones (`SESSIONS=3`).
-- `ct01_prepared` (PG): `PREPARE`/`EXECUTE`. El log no trae los valores, así que debería salir `unclassified_deadlock`.
+- Valores aparte en PG (`MODE=bind`: `\bind` de psql, el mismo protocolo extendido que psycopg 3 o JDBC; el log trae `$1`). La fila de cada espera sale del ctid: el de la víctima de su CONTEXT, el de las demás de su aviso `still waiting` (`log_lock_waits`), que solo escriben si esperaron más que `deadlock_timeout` (1 s) antes de que se cerrara el ciclo.
+  - `ct01_bind`, `ct02_bind`, `ct01_tres_bind`: esperas separadas por 1,5 s (`GAP=1.5`). Se espera el patrón.
+  - `ct01_bind_rapido`, `ct02_bind_rapido`, `ct01_tres_bind_rapido`: separadas por 0,5 s. Queda solo el ctid de la víctima: `unclassified_deadlock`.
+  - `sin_unica`, `sin_unica_rapido`: valores escritos, pero el `WHERE` no cubre un índice único. Con 1,5 s, CT-01 por el ctid; con 0,5 s, `unclassified_deadlock`.
+  - `dos_tablas`, `dos_schemas`, `particionada`: filas con el mismo ctid en tablas, schemas o particiones distintas. Se espera CT-01, no CT-02.
+- `ct01_prepared`, `ct02_prepared` (MySQL): `PREPARE ... FROM` / `EXECUTE ... USING`. El informe de InnoDB identifica cada registro por su dirección (space:page:heap), así que se espera el patrón. `PREPARE` de SQL no es el protocolo binario de un driver: INNODB STATUS muestra la sentencia con los valores sustituidos, pero la clasificación no la lee.
 - `rafaga`: 2 (PG) o 3 (MySQL) escenarios a la vez, en el mismo ciclo. En MySQL, `INNODB STATUS` guarda solo el último: los demás llegan sin detalle desde `error_log`.
 - `rafaga_sin_print_all` (MySQL): lo mismo con `innodb_print_all_deadlocks = OFF`. `error_log` no recibe los encabezados y el CLI tendría que mostrar los perdidos.
 - `otra_base` (PG) y `otro_schema` (MySQL): abrazo en `ql_otra`. En PG no es de la base monitoreada. En MySQL, InnoDB no separa por schema: es informativo.

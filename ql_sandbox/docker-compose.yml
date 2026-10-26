@@ -120,10 +120,14 @@ services:
         condition: service_healthy
     volumes:
       - ./scripts:/scripts
+    # psql 17 del repositorio de PostgreSQL (bookworm trae el 15): MODE=bind de
+    # los escenarios usa \bind, que existe desde psql 16.
     command: >
       bash -c "
         apt-get update &&
-        apt-get install -y --no-install-recommends sysbench default-mysql-client postgresql-client &&
+        apt-get install -y --no-install-recommends sysbench default-mysql-client postgresql-common ca-certificates curl &&
+        /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y &&
+        apt-get install -y --no-install-recommends postgresql-client-17 &&
         tail -f /dev/null
       "
     networks:

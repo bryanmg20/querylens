@@ -11,6 +11,10 @@
 # SESSIONS=3 cierra el ciclo con tres sesiones: la i toma la fila i y pide la
 # siguiente, y la ultima pide la fila 1.
 #
+# MODE=prepared manda las sentencias como PREPARE ... FROM y EXECUTE ...
+# USING, con los valores aparte (?): el informe de InnoDB no las necesita, la
+# fila de cada bloqueo es su direccion fisica (space:page:heap).
+#
 # DBNAME corre el escenario en otro schema del mismo servidor (tiene que
 # existir y app_user necesita permisos en el). InnoDB no separa por schema ni
 # el informe ni el contador lock_deadlocks.
@@ -29,6 +33,7 @@
 #   docker exec ql_sysbench bash /scripts/mysql/simulate_ct01_deadlock_order_mysql.sh
 #   PAUSE_SECONDS=3 docker exec -e PAUSE_SECONDS ql_sysbench bash /scripts/mysql/simulate_ct01_deadlock_order_mysql.sh
 #   SESSIONS=3 docker exec -e SESSIONS ql_sysbench bash /scripts/mysql/simulate_ct01_deadlock_order_mysql.sh
+#   MODE=prepared docker exec -e MODE ql_sysbench bash /scripts/mysql/simulate_ct01_deadlock_order_mysql.sh
 # ============================================================
 
 set -euo pipefail
@@ -36,6 +41,15 @@ set -euo pipefail
 PAUSE_SECONDS="${PAUSE_SECONDS:-2}"
 SESSIONS="${SESSIONS:-2}"
 DBNAME="${DBNAME:-ql_demo}"
+MODE="${MODE:-literal}"
+
+case "$MODE" in
+  literal | prepared) ;;
+  *)
+    echo "[CT-01/mysql] MODE debe ser literal o prepared, no '$MODE'" >&2
+    exit 2
+    ;;
+esac
 
 case "$SESSIONS" in
   2 | 3) ;;
@@ -73,10 +87,21 @@ trap 'rm -f "${OUTS[@]}"' EXIT
 session() {
   {
     echo "SELECT CONNECTION_ID();"
+    if [ "$MODE" = "prepared" ]; then
+      echo "PREPARE mover FROM 'UPDATE ql_ct01_cuentas SET saldo = saldo + ? WHERE id = ?';"
+    fi
     echo "START TRANSACTION;"
-    echo "UPDATE ql_ct01_cuentas SET saldo = saldo - 10 WHERE id = $1;"
+    if [ "$MODE" = "prepared" ]; then
+      echo "SET @monto = -10, @fila = $1; EXECUTE mover USING @monto, @fila;"
+    else
+      echo "UPDATE ql_ct01_cuentas SET saldo = saldo - 10 WHERE id = $1;"
+    fi
     sleep "$PAUSE_SECONDS"
-    echo "UPDATE ql_ct01_cuentas SET saldo = saldo + 10 WHERE id = $2;"
+    if [ "$MODE" = "prepared" ]; then
+      echo "SET @monto = 10, @fila = $2; EXECUTE mover USING @monto, @fila;"
+    else
+      echo "UPDATE ql_ct01_cuentas SET saldo = saldo + 10 WHERE id = $2;"
+    fi
     sleep 1
     echo "ROLLBACK;"
   } | "${MYSQL[@]}" --unbuffered >"$3" 2>&1 || true
@@ -90,7 +115,7 @@ for i in $(seq 1 "$SESSIONS"); do
 done
 
 sleep 1
-echo "[CT-01/mysql] SESSIONS=$SESSIONS DBNAME=$DBNAME"
+echo "[CT-01/mysql] MODE=$MODE SESSIONS=$SESSIONS DBNAME=$DBNAME"
 for i in $(seq 1 "$SESSIONS"); do
   echo "[CT-01/mysql] sesion $i id=$(head -n 1 "${OUTS[$(( i - 1 ))]}"): fila $i y despues fila $(( i % SESSIONS + 1 ))"
 done

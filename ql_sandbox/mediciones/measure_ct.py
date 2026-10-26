@@ -107,15 +107,35 @@ CASES = {
     "postgres": [
         case("ct01", "positivo", "deadlock", CT01_PG, CT01),
         case("ct02", "positivo", "deadlock", CT02_PG, CT02),
-        case("ct02_prepared", "positivo", "deadlock", CT02_PG, UNCLASSIFIED, {"MODE": "prepared"},
-             note="sentencias preparadas: el log no trae los valores"),
+        # con los valores aparte, la fila de cada espera sale de su ctid: hace
+        # falta que la otra sesion espere mas que deadlock_timeout (GAP)
+        case("ct01_bind", "positivo", "deadlock", CT01_PG, CT01, {"MODE": "bind", "GAP": "1.5"},
+             note="valores aparte ($1) y esperas a 1,5 s: la fila sale del ctid"),
+        case("ct02_bind", "positivo", "deadlock", CT02_PG, CT02, {"MODE": "bind", "GAP": "1.5"},
+             note="valores aparte ($1) y esperas a 1,5 s: la fila sale del ctid"),
         case("ct05", "positivo", "ct05", CT05_PG, CASCADE, CT05_ENV),
         case("ct05_raiz_corta", "control", "ct05", CT05_PG, None, {"HOLD_SECONDS": "25", "WAITERS": "5"},
              note="la raiz no llega a 30 s"),
         case("ct05_una_espera", "control", "ct05", CT05_PG, None, {"HOLD_SECONDS": "60", "WAITERS": "1"},
              note="una sola sesion bloqueada (la regla pide >= 2); espera sin abrazo"),
-        case("ct01_prepared", "limite", "deadlock", CT01_PG, UNCLASSIFIED, {"MODE": "prepared"},
-             note="sentencias preparadas: el log no trae los valores"),
+        case("ct01_bind_rapido", "limite", "deadlock", CT01_PG, UNCLASSIFIED, {"MODE": "bind"},
+             note="valores aparte ($1) y esperas a 0,5 s: solo el ctid de la victima"),
+        case("ct02_bind_rapido", "limite", "deadlock", CT02_PG, UNCLASSIFIED, {"MODE": "bind"},
+             note="valores aparte ($1) y esperas a 0,5 s: solo el ctid de la victima"),
+        case("ct01_tres_bind", "limite", "deadlock", CT01_PG, CT01, {"MODE": "bind", "GAP": "1.5", "SESSIONS": "3"},
+             note="ciclo de 3 con valores aparte y esperas a 1,5 s"),
+        case("ct01_tres_bind_rapido", "limite", "deadlock", CT01_PG, UNCLASSIFIED, {"MODE": "bind", "SESSIONS": "3"},
+             note="ciclo de 3 con valores aparte y esperas a 0,5 s"),
+        case("sin_unica", "limite", "deadlock", CT01_PG, CT01, {"VARIANT": "sin_unica", "GAP": "1.5"},
+             note="WHERE sin indice unico, esperas a 1,5 s: los valores no alcanzan, el ctid si"),
+        case("sin_unica_rapido", "limite", "deadlock", CT01_PG, UNCLASSIFIED, {"VARIANT": "sin_unica"},
+             note="WHERE sin indice unico, esperas a 0,5 s"),
+        case("dos_tablas", "limite", "deadlock", CT01_PG, CT01, {"VARIANT": "dos_tablas", "MODE": "bind", "GAP": "1.5"},
+             note="la fila id=1 de dos tablas: mismo ctid, otra relacion"),
+        case("dos_schemas", "limite", "deadlock", CT01_PG, CT01, {"VARIANT": "dos_schemas", "MODE": "bind", "GAP": "1.5"},
+             note="la misma tabla en dos schemas: mismo nombre y ctid, el schema sale de la sentencia"),
+        case("particionada", "limite", "deadlock", CT01_PG, CT01, {"VARIANT": "particionada", "MODE": "bind", "GAP": "1.5"},
+             note="filas en particiones distintas: mismo ctid"),
         case("ct01_tres", "limite", "deadlock", CT01_PG, CT01, {"SESSIONS": "3"}, note="ciclo de 3 transacciones"),
         case("rafaga", "limite", "burst", None, "?", parts=[(CT01_PG, {}, CT01), (CT02_PG, {}, CT02)],
              note="dos abrazos a la vez, en el mismo ciclo"),
@@ -134,6 +154,10 @@ CASES = {
     "mysql": [
         case("ct01", "positivo", "deadlock", CT01_MY, CT01),
         case("ct02", "positivo", "deadlock", CT02_MY, CT02),
+        case("ct01_prepared", "positivo", "deadlock", CT01_MY, CT01, {"MODE": "prepared"},
+             note="PREPARE/EXECUTE: la fila sale del registro del informe, no de la sentencia"),
+        case("ct02_prepared", "positivo", "deadlock", CT02_MY, CT02, {"MODE": "prepared"},
+             note="PREPARE/EXECUTE: la fila sale del registro del informe, no de la sentencia"),
         case("ct03", "positivo", "deadlock", CT03_MY, CT03),
         case("ct03_end", "positivo", "deadlock", CT03_MY, CT03, {"GAP": "end"}, note="hueco al final del indice"),
         case("ct04", "positivo", "deadlock", CT04_MY, CT04),
@@ -590,6 +614,15 @@ def match_deadlock(occurrence, events, findings, used_events, used_findings):
     return event, finding
 
 
+# Tablas que tiene que nombrar el hallazgo de cada VARIANT del escenario CT-01
+# de Postgres (en particionada, la particion o la tabla padre).
+CT01_TABLES = {
+    "sin_unica": ["ql_ct01_sin_unica"],
+    "dos_tablas": ["ql_ct01_a", "ql_ct01_b"],
+    "particionada": ["ql_ct01_part"],
+}
+
+
 def evidence_ok(expect, finding, occurrence):
     """Lo que el informe dice que el hallazgo tiene que traer, por patron."""
     if finding is None or finding["antipatron"] != expect:
@@ -597,7 +630,8 @@ def evidence_ok(expect, finding, occurrence):
     ev, env = finding["evidencia"], occurrence.get("env", {})
     tables = " ".join(ev.get("tables") or [])
     if expect == CT01:
-        return ev.get("cycle_size") == int(env.get("SESSIONS", 2)) and "ql_ct01_cuentas" in tables
+        expected = CT01_TABLES.get(env.get("VARIANT", "cuentas"), ["ql_ct01_cuentas"])
+        return ev.get("cycle_size") == int(env.get("SESSIONS", 2)) and all(table in tables for table in expected)
     if expect == CT02:
         return "ql_ct02_cuentas" in tables
     if expect == CT03:
