@@ -74,6 +74,26 @@ def test_known_holds_without_targets_are_unclassified():
     assert classify(report(raw)) == UNCLASSIFIED
 
 
+def test_rows_from_the_ctid_classify_like_rows_from_the_literals():
+    assert classify(report(pg_ct01(targets_source="ctid"))) == CT01
+    assert classify(report(pg_ct02(targets_source="ctid"))) == CT02
+
+
+def test_rows_from_the_ctid_are_noted_in_the_evidence():
+    for raw, antipatron in ((pg_ct01(targets_source="ctid"), CT01), (pg_ct02(targets_source="ctid"), CT02)):
+        (finding,), _ = detect_deadlocks(snapshot(raw), T0, DeadlockMemory())
+        assert finding.antipatron == antipatron
+        limitations = finding.evidencia["limitations"]
+        assert len(limitations) == 2
+        assert "ctid" in limitations[-1]
+        assert finding.evidencia["transactions"][0]["waits_for"]["targets_source"] == "ctid"
+
+
+def test_rows_from_the_literals_add_no_ctid_note():
+    (finding,), _ = detect_deadlocks(snapshot(pg_ct01()), T0, DeadlockMemory())
+    assert not any("ctid" in limitation for limitation in finding.evidencia["limitations"])
+
+
 def test_classification_does_not_depend_on_the_engine():
     for raw in (mysql_ct01(), mysql_ct02(), mysql_ct03(), mysql_ct04(), pg_ct01(), pg_ct02(), pg_report()):
         assert classify(report(scrambled(raw))) == classify(report(raw))

@@ -211,6 +211,17 @@ CATALOG: dict[str, IssueDef] = {
         "error o mas bajo. MySQL 8.0.22 o superior con "
         "SET PERSIST innodb_print_all_deadlocks = ON; SET PERSIST log_error_verbosity = 3;",
     ),
+    "DEADLOCK_ROW_WAITS_UNLOGGED": IssueDef(
+        "collect", "config", INFO,
+        "Postgres no registra las esperas de bloqueo (log_lock_waits = off): "
+        "si la aplicacion manda los valores de la consulta aparte ($1), como "
+        "la mayoria de los drivers y ORM, un abrazo mortal se registra sin "
+        "saber si fue por orden inconsistente (CT-01) o por conversion de "
+        "modo (CT-02).",
+        "ALTER SYSTEM SET log_lock_waits = on; SELECT pg_reload_conf(); Aun "
+        "asi solo se distinguen los abrazos cuyas esperas empezaron con mas "
+        "de deadlock_timeout (1 s por defecto) de diferencia.",
+    ),
     # ---------- calidad de la captura (EngineCountersStage, writer) ----------
     "DEADLOCK_COUNTER_UNAVAILABLE": IssueDef(
         "collect", "config", INFO,

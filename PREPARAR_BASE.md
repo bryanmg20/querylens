@@ -53,6 +53,7 @@ Después, `sudo systemctl reload postgresql`, o reiniciar si cambió `listen_add
 | `log_destination` | agrega `jsonlog` | Log JSON que QueryLens lee |
 | `log_filename` / `log_truncate_on_rotation` / `log_rotation_age` | `postgresql-%a.log` / `on` / `1d` | Solo si el servidor no escribía archivos de log: un archivo por día de la semana, que se reutiliza |
 | `log_error_verbosity` / `log_min_messages` | `default` / `warning` | Solo si estaban en `terse` o más alto que `error`: los abrazos mortales necesitan el detalle |
+| `log_lock_waits` | `on` | La fila que espera cada sesión de un abrazo mortal cuando la aplicación manda los valores aparte (`$1`) |
 
 Las listas (`*_preload_libraries`, `log_destination`) se completan; lo que ya tenían se conserva. Por base, el script crea la extensión `pg_stat_statements`, el esquema `querylens` con las funciones `log_files()` y `read_log()` (solo leen archivos `.json` del directorio de logs) y le da `CONNECT` a `querylens_monitor`. El rol tiene `pg_monitor`: lee estadísticas, no datos. En la tabla `querylens.setup_changes` queda anotado cada cambio con el valor de antes, para poder deshacerlo.
 

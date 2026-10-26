@@ -188,6 +188,15 @@ FROM (VALUES ('log_error_verbosity', 'default', ARRAY['terse']),
 JOIN ql_next USING (name)
 WHERE value = ANY(bad) \gexec
 
+-- Esperas de fila: con log_lock_waits, una sesion que espera mas que
+-- deadlock_timeout escribe que fila espera ("still waiting"). Es lo que
+-- distingue CT-01 de CT-02 cuando la sentencia manda sus valores aparte ($1).
+SELECT pg_temp.ql_record(name, NULL, target),
+       format('ALTER SYSTEM SET %I = %L', name, target)
+FROM (VALUES ('log_lock_waits', 'on')) AS t(name, target)
+JOIN ql_next USING (name)
+WHERE value <> target \gexec
+
 -- La recarga llega a esta sesion por senal: la pausa le da tiempo antes de
 -- leer pg_settings en el chequeo final.
 SELECT pg_reload_conf(), pg_sleep(1) \gset
@@ -294,7 +303,8 @@ WHERE (name = 'shared_preload_libraries' AND NOT 'pg_stat_statements' = ANY(pg_t
    OR (name = 'logging_collector' AND setting <> 'on')
    OR (name = 'log_destination' AND NOT 'jsonlog' = ANY(pg_temp.ql_list(setting)))
    OR (name = 'log_error_verbosity' AND setting = 'terse')
-   OR (name = 'log_min_messages' AND setting IN ('log', 'fatal', 'panic'));
+   OR (name = 'log_min_messages' AND setting IN ('log', 'fatal', 'panic'))
+   OR (name = 'log_lock_waits' AND setting <> 'on');
 
 SELECT count(*) FILTER (WHERE source = 'command line') > 0 AS ql_overridden,
        string_agg(name, ', ' ORDER BY name) FILTER (WHERE source = 'command line') AS ql_overridden_names,

@@ -60,10 +60,14 @@ run_engine(dialect, connection_factory, db_id)                  main.py
   │     │     Postgres: el log no dice qué fila espera cada proceso. Si la sentencia
   │     │       trae sus valores escritos y cubren un índice único (pg_index), las
   │     │       filas se etiquetan "row 1", "row 2"… dentro del informe (misma
-  │     │       etiqueta = misma fila); con $1 quedan sin identificar (targets None)
+  │     │       etiqueta = misma fila). Si no, con log_lock_waits: el ctid de la
+  │     │       fila que esperaba cada proceso (la víctima en su CONTEXT, las demás
+  │     │       en su aviso "still waiting" del mismo pid y transacción) → mismas
+  │     │       etiquetas, targets_source "ctid". Sin ninguno: targets None
   │     │     stats["deadlocks"] = [DeadlockReport]
   │     │     sin fuente → rollback, DEADLOCK_REPORTS_UNAVAILABLE
   │     │     fuente parcial → DEADLOCK_REPORTS_PARTIAL
+  │     │     log_lock_waits = off (PG) → DEADLOCK_ROW_WAITS_UNLOGGED
   │     │
   │     ├─ (2) CandidatesStage.execute(stats)                stages/candidates.py
   │     │     stats = collector.preprocess_statements(stats) → hook por motor (MySQL calcula

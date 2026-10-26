@@ -3,7 +3,10 @@
 Los fixtures de golden/deadlocks/ se capturaron contra ql_mysql (8.0.46) y
 ql_postgres (17) con la inyeccion de la Tabla 3: dos sesiones actualizan las
 filas 1 y 2 en orden opuesto (CT-01), y dos sesiones leen la fila 1 con FOR
-SHARE y luego la actualizan (CT-02). Los de CT-03 y CT-04 son solo de MySQL:
+SHARE y luego la actualizan (CT-02). postgres_still_waiting.jsonl es lo mismo
+desde psycopg 3 (parametros aparte: $1 en el log) con log_lock_waits y 1,5 s
+entre las dos esperas, mas un CT-01 entre ql_qa.ql_cmp_cuentas y
+ql_qb.ql_cmp_cuentas; la hora esta corrida a la de los otros fixtures. Los de CT-03 y CT-04 son solo de MySQL:
 dos sesiones bloquean con FOR UPDATE una clave inexistente del mismo hueco y
 despues la insertan (entre dos filas y al final del indice), y un UPDATE sin
 indice que recorre la tabla choca con otro que tiene una de sus filas.
@@ -21,6 +24,7 @@ from stages.deadlock_reports import (
     parse_innodb_status,
     parse_postgres_deadlock,
     pg_row_key,
+    pg_still_waiting_xid,
     statement_lock_mode,
     statement_table,
 )
@@ -36,6 +40,14 @@ def _innodb(name):
 
 def _pg_records():
     return [json.loads(line) for line in (GOLDEN / "postgres_40p01.jsonl").read_text().splitlines()]
+
+
+def _pg_waiting_records():
+    """Los 40P01 de postgres_still_waiting.jsonl y sus avisos por (pid, xid)."""
+    records = [json.loads(line) for line in (GOLDEN / "postgres_still_waiting.jsonl").read_text().splitlines()]
+    deadlocks = [record for record in records if record.get("state_code") == "40P01"]
+    still = {(record["pid"], pg_still_waiting_xid(record)): record for record in records if pg_still_waiting_xid(record)}
+    return deadlocks, still
 
 
 def _no_raw_data(report):
@@ -341,6 +353,8 @@ def test_postgres_ct01_from_the_server_log():
         # del CONTEXT, que solo describe a la victima
         "table_name": "ql_ct01_cuentas",
         "row_key": {"schema": None, "table": "ql_ct01_cuentas", "values": {"id": "v1"}, "role": "ql_user"},
+        # la fila por su direccion: de su CONTEXT
+        "row_ctid": {"schema": None, "table": "ql_ct01_cuentas", "ctid": "0,2", "role": "ql_user"},
     }
     assert victim["blocked_by"] == [797]
     # el log no dice que mantiene cada proceso
@@ -369,6 +383,91 @@ def test_postgres_ct02_looks_the_same_as_ct01():
     ct01, ct02 = (parse_postgres_deadlock(record) for record in _pg_records())
     shape = lambda report: [(t["waits_for"]["lock_type"], t["waits_for"]["lock_mode"]) for t in report["transactions"]]
     assert shape(ct01) == shape(ct02)
+
+
+def _ctids(report):
+    return [
+        (trx["waits_for"]["row_ctid"]["schema"], trx["waits_for"]["row_ctid"]["table"], trx["waits_for"]["row_ctid"]["ctid"])
+        if "row_ctid" in trx["waits_for"] else None
+        for trx in report["transactions"]
+    ]
+
+
+def test_postgres_rows_of_parameterized_statements_come_from_the_ctids():
+    (ct01, ct02, schemas), still = _pg_waiting_records()
+
+    reports = [parse_postgres_deadlock(record, still) for record in (ct01, ct02, schemas)]
+
+    # la victima por su CONTEXT, la otra por su aviso "still waiting"
+    assert _ctids(reports[0]) == [(None, "ql_ct01_cuentas", "0,1"), (None, "ql_ct01_cuentas", "0,2")]
+    assert _ctids(reports[1]) == [(None, "ql_ct02_cuentas", "0,1"), (None, "ql_ct02_cuentas", "0,1")]
+    # mismo nombre y ctid en dos esquemas: el esquema sale de cada sentencia
+    assert _ctids(reports[2]) == [("ql_qa", "ql_cmp_cuentas", "0,1"), ("ql_qb", "ql_cmp_cuentas", "0,1")]
+    for report in reports:
+        # con $1 no hay valores de donde sacar la fila
+        assert all("row_key" not in trx["waits_for"] for trx in report["transactions"])
+        DeadlockReport.model_validate({**report, "detected_at": "2026-10-22 00:46:02.502"})
+
+
+def test_postgres_without_the_waiting_notice_only_the_victim_has_a_ctid():
+    (ct01, _, _), _ = _pg_waiting_records()
+    assert _ctids(parse_postgres_deadlock(ct01)) == [(None, "ql_ct01_cuentas", "0,1"), None]
+
+
+def test_postgres_waiting_notice_of_another_transaction_is_not_used():
+    (ct01, _, _), still = _pg_waiting_records()
+    (key,) = [key for key in still if key[0] == 1712]
+    moved = {(key[0], "1"): still[key]}
+    assert _ctids(parse_postgres_deadlock(ct01, moved))[1] is None
+
+
+@pytest.mark.parametrize("context, row", [
+    ('while updating tuple (0,2) in relation "t"', (None, "t", "0,2")),
+    ('while deleting tuple (3,14) in relation "t"', (None, "t", "3,14")),
+    ('while locking tuple (0,7) in relation "t"', (None, "t", "0,7")),
+    ('while updating tuple (0,2) in relation "Mi ""T"""', (None, 'Mi "T"', "0,2")),
+    # otra version de la fila, o la fila con la que choca un indice: no es la que espera
+    ('while locking updated version of tuple (0,9) in relation "t"', None),
+    ('while checking uniqueness of tuple (0,1) in relation "t"', None),
+    ('while inserting index tuple (0,1) in relation "t"', None),
+    (None, None),
+])
+def test_postgres_victim_row_from_its_context(context, row):
+    record = {
+        "timestamp": "2026-10-22 00:46:05.000 UTC", "pid": 10, "dbname": "ql_demo", "user": "app",
+        "state_code": "40P01", "context": context,
+        "detail": (
+            "Process 10 waits for ShareLock on transaction 2; blocked by process 11.\n"
+            "Process 11 waits for ShareLock on transaction 1; blocked by process 10.\n"
+            "Process 10: UPDATE t SET a = $1 WHERE id = $2\n"
+            "Process 11: UPDATE t SET a = $1 WHERE id = $2"
+        ),
+    }
+    assert _ctids(parse_postgres_deadlock(record))[0] == row
+
+
+def test_postgres_schema_of_a_partition_is_not_taken_from_its_parent():
+    record = {
+        "timestamp": "2026-10-22 00:46:05.000 UTC", "pid": 10, "dbname": "ql_demo", "user": "app",
+        "state_code": "40P01", "context": 'while updating tuple (0,1) in relation "pedidos_2026"',
+        "detail": (
+            "Process 10 waits for ShareLock on transaction 2; blocked by process 11.\n"
+            "Process 11 waits for ShareLock on transaction 1; blocked by process 10.\n"
+            "Process 10: UPDATE ventas.pedidos SET a = $1 WHERE id = $2\n"
+            "Process 11: UPDATE ventas.pedidos SET a = $1 WHERE id = $2"
+        ),
+    }
+    assert _ctids(parse_postgres_deadlock(record))[0] == (None, "pedidos_2026", "0,1")
+
+
+@pytest.mark.parametrize("message, xid", [
+    ("process 1712 still waiting for ShareLock on transaction 87242 after 1000.142 ms", "87242"),
+    ("process 1713 detected deadlock while waiting for ShareLock on transaction 87241 after 1000.1 ms", None),
+    ("process 9 still waiting for ExclusiveLock on tuple (0,1) of relation 16384 of database 5 after 1000.1 ms", None),
+    ("checkpoint complete", None),
+])
+def test_pg_still_waiting_xid(message, xid):
+    assert pg_still_waiting_xid({"message": message}) == xid
 
 
 def test_postgres_tuple_and_relation_waits_keep_the_oid_for_the_stage():

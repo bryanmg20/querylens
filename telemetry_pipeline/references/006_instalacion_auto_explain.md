@@ -53,9 +53,19 @@ SHOW log_directory;               -- 'log' = relativo al directorio de datos
 SHOW compute_query_id;            -- auto basta si pg_stat_statements está cargado
 SHOW log_min_messages;            -- error o más bajo (default: warning): los abrazos mortales son errores
 SHOW log_error_verbosity;         -- default o verbose; terse quita el DETAIL que trae el ciclo
+SHOW log_lock_waits;              -- on: la fila que espera cada sesión de un abrazo (default: off)
 ```
 
 Las mismas funciones del Paso 4 le sirven a QueryLens para leer los informes de abrazo mortal (`deadlock detected`) que Postgres escribe en el log. Con `log_min_messages` y `log_error_verbosity` en sus valores por defecto no hay nada que cambiar.
+
+El informe no dice qué fila esperaba cada sesión; QueryLens la saca de los valores escritos en la sentencia (`WHERE id = 1`). Si la aplicación los manda aparte (`WHERE id = $1`: psycopg 3, JDBC, node-postgres, la mayoría de los ORM), la saca del aviso `still waiting` que Postgres escribe con `log_lock_waits = on` cuando una sesión espera más que `deadlock_timeout`. Sin ese aviso el abrazo se registra igual, pero sin distinguir CT-01 de CT-02. Es dinámico:
+
+```sql
+ALTER SYSTEM SET log_lock_waits = on;
+SELECT pg_reload_conf();
+```
+
+Escribe una línea por cada espera de bloqueo que pasa de `deadlock_timeout` (1 s por defecto), no solo de los abrazos.
 
 ## Paso 2 — Activar auto_explain y el log JSON
 

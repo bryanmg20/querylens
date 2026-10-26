@@ -145,15 +145,17 @@ def index_row(columns, name="PRIMARY", table="ql_ct04_pedidos", schema="ql_demo"
     }
 
 
-def pg_report(rows=(None, None), detected_at=PG_DETECTED):
+def pg_report(rows=(None, None), detected_at=PG_DETECTED, targets_source="row_key"):
     """Como lo deja el stage: la fila se pide en X (es un UPDATE) y no se sabe
     que mantiene cada proceso (holds None). rows son las etiquetas de fila
-    que salen de los literales ("row 1"), o None si la sentencia no los trae."""
+    que salen de los literales ("row 1") o del ctid de cada espera
+    (targets_source="ctid"), o None si no se sabe."""
     def waits(xid, row):
         return {
             "mode": "X",
             "scope": "row",
             "targets": [row] if row else None,
+            "targets_source": targets_source if row else None,
             "lock_mode": "ShareLock",
             "lock_type": "transactionid",
             "resources": [f"transaction {xid}"],

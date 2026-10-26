@@ -78,6 +78,7 @@ def _pg_conn(counter=None, files=FILES):
         ("querylens.read_log", lambda p: [{"chunk": memoryview(b"")}]),
         ("current_setting('log_error_verbosity')", lambda p: [{
             "log_error_verbosity": "default", "log_min_messages": "warning",
+            "log_lock_waits": "on", "deadlock_timeout": "1s",
             "database_name": "ql_demo", "now_utc": PG_NOW,
         }]),
     ])

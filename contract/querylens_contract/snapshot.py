@@ -196,6 +196,11 @@ class DeadlockLock(BaseModel):
     # elemento. Solo se compara dentro del mismo informe. None si el motor no
     # lo identifica: Postgres espera la transaccion duena de la fila, no la fila.
     targets: list[str] | None = None
+    # De donde salio la fila de targets cuando el motor no la nombra
+    # (Postgres): row_key, de los valores de la sentencia que cubren un indice
+    # unico; ctid, de la direccion de la fila que el log da para cada espera
+    # (log_lock_waits). None si targets viene del motor o no hay.
+    targets_source: Literal["row_key", "ctid"] | None = None
 
     # MySQL: record | table. Postgres: el tipo de objeto sobre el que espera
     # (transactionid, tuple, relation, ...).

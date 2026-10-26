@@ -11,6 +11,8 @@ services:
     # auto_explain + log JSON con rotacion semanal: lo que pide
     # telemetry_pipeline/references/006_instalacion_auto_explain.md (Pasos 2-3).
     # Las funciones de lectura del log las crea el servicio postgres_setup.
+    # log_lock_waits: la fila que espera cada sesion de un abrazo cuando la
+    # sentencia manda sus valores aparte ($1); ver guia 006.
     command: >
       postgres
         -c shared_preload_libraries=pg_stat_statements,auto_explain
@@ -18,6 +20,7 @@ services:
         -c pg_stat_statements.max=10000
         -c track_activity_query_size=4096
         -c deadlock_timeout=1s
+        -c log_lock_waits=on
         -c shared_buffers=16MB
         -c auto_explain.log_min_duration=50ms
         -c auto_explain.log_analyze=off

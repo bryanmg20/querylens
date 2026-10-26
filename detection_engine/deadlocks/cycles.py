@@ -28,6 +28,14 @@ GAP_HOLD_SCOPES = {"gap", "row+gap"}
 # CT-02, pero la causa y la recomendacion son otras.
 _LOCK_AMPLIFICATION_RATIO = 10
 
+# Cuando la fila de cada espera no sale de los valores de la sentencia sino
+# de su direccion fisica en el log (Postgres con log_lock_waits).
+_TARGETS_FROM_CTID = (
+    "La fila de cada espera sale de su direccion fisica (ctid) en el aviso "
+    "de espera del log, no de los valores de la sentencia: dice si las "
+    "transacciones esperaban la misma fila o filas distintas, pero no cual."
+)
+
 # Severidad: un abrazo aislado lo resuelve el motor y la aplicacion reintenta;
 # el mismo patron repetido es un defecto de diseño que ya cuesta transacciones
 # revertidas. 3 es el valor inicial a calibrar.
@@ -210,6 +218,8 @@ def evidence(
         "detection_delay_s": round((captured_at - detected_at).total_seconds(), 1) if detected_at else None,
         "captured_at": captured_at.isoformat(),
     }
+    if any(trx.waits_for and trx.waits_for.targets_source == "ctid" for trx in report.transactions):
+        limitations = [*limitations, _TARGETS_FROM_CTID]
     if limitations:
         data["limitations"] = limitations
     return data
