@@ -15,3 +15,6 @@ graphify-out/
 # directorio si (.gitkeep), para que Docker no lo cree como root.
 reports/*
 !reports/.gitkeep
+# Resultados de las mediciones del sandbox: quedan solo en local. Los
+# scripts de ql_sandbox/mediciones crean la carpeta al correr.
+ql_sandbox/mediciones/resultados/
