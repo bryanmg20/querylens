@@ -100,8 +100,16 @@ CATALOG: dict[str, IssueDef] = {
     ),
     "PG_VERSION_UNSUPPORTED": IssueDef(
         "preflight", "version", BLOCKING,
-        "La version de PostgreSQL es anterior a la minima soportada por QueryLens (17).",
-        "Actualiza el servidor a PostgreSQL 17 o superior.",
+        "La version de PostgreSQL es anterior a la minima soportada por QueryLens (15).",
+        "Actualiza el servidor a PostgreSQL 17 o superior (15 como minimo).",
+    ),
+    "PG_VERSION_LIMITED": IssueDef(
+        "preflight", "version", INFO,
+        "La version de PostgreSQL es anterior a la 17: QueryLens funciona, pero algunas "
+        "detecciones tienen menos datos. En 16 falta pg_stat_statements.stats_since: una "
+        "query nueva se mide desde su segundo ciclo. En 15 faltan ademas EXPLAIN (GENERIC_PLAN), "
+        "asi que los planes solo llegan de auto_explain, y last_idx_scan.",
+        "Para usar todas las detecciones, actualiza el servidor a PostgreSQL 17 o superior.",
     ),
     "STATEMENTS_EVICTING": IssueDef(
         "preflight", "config", INFO,

@@ -13,7 +13,7 @@ QueryLens se instala **dentro de la red del cliente**, en el mismo servidor de l
 
 - Linux con Docker y Compose v2.17 o superior (`docker compose version`).
 - Acceso de administrador a la base que se va a monitorear, una sola vez, para prepararla (paso 2).
-- PostgreSQL 17 o superior, o MySQL 8.0.18 o superior.
+- PostgreSQL 15 o superior, o MySQL 8.0.18 o superior (8.0 y 8.4 LTS). En PostgreSQL 15 y 16 QueryLens funciona con menos detecciones y `querylens health` avisa con `PG_VERSION_LIMITED`; el detalle por versión está en [Versiones soportadas](telemetry_pipeline/PIPELINE_FLOW.md#versiones-soportadas-de-las-bases-monitoreadas).
 
 ## 2. Preparar la base a monitorear (DBA)
 

@@ -90,9 +90,28 @@ def test_healthy_postgres_reports_nothing_and_marks_scope():
 
 
 def test_postgres_thresholds():
-    report = _run(_pg_conn(version_num=160004, track_counts="off", recently_reset=True))
+    report = _run(_pg_conn(version_num=140011, track_counts="off", recently_reset=True))
     assert _codes(report) == {"PG_VERSION_UNSUPPORTED", "TRACK_COUNTS_OFF", "STATS_RECENTLY_RESET"}
-    assert report.issues[("PG_VERSION_UNSUPPORTED", "")]["server_version_num"] == 160004
+    assert report.issues[("PG_VERSION_UNSUPPORTED", "")]["server_version_num"] == 140011
+
+
+@pytest.mark.parametrize("version_num, missing", [
+    (160004, ["pg_stat_statements.stats_since"]),
+    (150019, ["pg_stat_statements.stats_since", "EXPLAIN (GENERIC_PLAN)", "pg_stat_user_indexes.last_idx_scan"]),
+])
+def test_postgres_15_and_16_are_limited_not_blocking(version_num, missing):
+    report = _run(_pg_conn(version_num=version_num))
+    assert _codes(report) == {"PG_VERSION_LIMITED"}
+    params = report.issues[("PG_VERSION_LIMITED", "")]
+    assert (params["server_version_num"], params["missing"]) == (version_num, missing)
+    assert report.facts["pg_version_num"] == version_num
+
+
+@pytest.mark.parametrize("version_num", [170002, 180001, 190000])
+def test_postgres_17_and_later_report_no_version_issue(version_num):
+    report = _run(_pg_conn(version_num=version_num))
+    assert _codes(report) == set()
+    assert report.facts["pg_version_num"] == version_num
 
 
 # ---------- STATEMENTS_EVICTING: delta de dealloc entre preflights ----------

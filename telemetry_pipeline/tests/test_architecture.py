@@ -20,6 +20,25 @@ pytestmark = pytest.mark.contract
 
 
 class TestCollectorsStrategy:
+    @pytest.mark.parametrize("version_num, epoch, last_scan", [
+        (None, "stats_since AS", "last_idx_scan AS"),
+        (190000, "stats_since AS", "last_idx_scan AS"),
+        (170002, "stats_since AS", "last_idx_scan AS"),
+        (160004, "NULL::timestamptz AS counters_epoch", "last_idx_scan AS"),
+        (150019, "NULL::timestamptz AS counters_epoch", "NULL::timestamptz AS last_index_scan"),
+    ])
+    def test_postgres_queries_follow_server_version(self, version_num, epoch, last_scan):
+        collector = Postgres_Collector(engine=None)
+        collector.use_server_version(version_num)
+        assert epoch in collector.queries["statements"]
+        assert last_scan in collector.queries["indexes"]
+
+    def test_mysql_queries_ignore_server_version(self):
+        collector = Mysql_Collector(engine=None)
+        before = dict(collector.queries)
+        collector.use_server_version(150019)
+        assert collector.queries == before
+
     def test_both_collectors_implement_base(self):
         assert issubclass(Mysql_Collector, DB_Engine_Collector)
         assert issubclass(Postgres_Collector, DB_Engine_Collector)

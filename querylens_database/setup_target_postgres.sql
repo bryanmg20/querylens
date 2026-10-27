@@ -16,8 +16,10 @@
 --     que Postgres lee al arrancar (shared_preload_libraries,
 --     logging_collector, pg_stat_statements.max, track_activity_query_size).
 --
--- Requiere PostgreSQL 17 o superior autoadministrado (en RDS, Cloud SQL o
--- Azure no hay superusuario real ni acceso a los archivos de log).
+-- Requiere PostgreSQL 15 o superior autoadministrado (en RDS, Cloud SQL o
+-- Azure no hay superusuario real ni acceso a los archivos de log). En 15 y 16
+-- QueryLens funciona con menos datos (PIPELINE_FLOW.md, "Versiones
+-- soportadas"); con 17 o superior tiene todas las detecciones.
 \set ON_ERROR_STOP on
 \set QUIET on
 SET client_min_messages = warning;
@@ -27,10 +29,10 @@ SET client_min_messages = warning;
 -- libreria sin cargar, queda como un parametro sin efecto.
 SET pg_stat_statements.track = 'none';
 
-SELECT current_setting('server_version_num')::int >= 170000 AS version_ok \gset
+SELECT current_setting('server_version_num')::int >= 150000 AS version_ok \gset
 \if :version_ok
 \else
-    \echo 'QueryLens necesita PostgreSQL 17 o superior.'
+    \echo 'QueryLens necesita PostgreSQL 15 o superior (17 o superior para todas las detecciones).'
     \quit
 \endif
 
@@ -106,6 +108,17 @@ LANGUAGE sql AS $$
                   added, set_to)
 $$;
 
+-- SET de sesion para un parametro de pg_stat_statements que este servidor
+-- todavia no reconoce (libreria sin cargar): en PG 15 y 16, ALTER SYSTEM solo
+-- acepta un parametro de extension si ya existe en la sesion. NULL si no hace
+-- falta (\gexec salta los NULL).
+CREATE FUNCTION pg_temp.ql_placeholder(param text, target text) RETURNS text
+LANGUAGE sql AS $$
+    SELECT format('SET %I = %L', param, target)
+    WHERE param LIKE 'pg_stat_statements.%'
+      AND NOT EXISTS (SELECT FROM pg_settings WHERE name = param)
+$$;
+
 -- Agrega lib a la lista de libraries (ALTER SYSTEM SET x = 'a', 'b': con
 -- 'a,b' quedaria como un solo nombre). NULL si ya estaba.
 CREATE FUNCTION pg_temp.ql_add_library(param text, lib text) RETURNS text
@@ -138,9 +151,11 @@ WHERE stmt IS NOT NULL \gexec
 LOAD 'auto_explain';
 
 -- Valores minimos: solo se suben si estan por debajo. Los de
--- pg_stat_statements se aceptan aunque la libreria aun no este cargada
--- (PG 17 permite ALTER SYSTEM sobre parametros que no reconoce).
+-- pg_stat_statements se aceptan aunque la libreria aun no este cargada: PG 17
+-- permite ALTER SYSTEM sobre parametros que no reconoce, y en 15 y 16 el SET
+-- de la sesion los crea antes (sin la libreria no figuran en pg_settings).
 SELECT pg_temp.ql_record(name, NULL, target::text),
+       pg_temp.ql_placeholder(name, target::text),
        format('ALTER SYSTEM SET %I = %L', name, target)
 FROM (VALUES ('pg_stat_statements.max', 10000),
              ('track_activity_query_size', 4096)) AS t(name, target)
@@ -150,6 +165,7 @@ WHERE coalesce(nullif(regexp_replace(value, '\D', '', 'g'), '')::bigint, 0) < ta
 -- Valores fijos que necesita QueryLens. track = all: el banco de pruebas del
 -- detector se calibro asi (sentencias dentro de funciones incluidas).
 SELECT pg_temp.ql_record(name, NULL, target),
+       pg_temp.ql_placeholder(name, target),
        format('ALTER SYSTEM SET %I = %L', name, target)
 FROM (VALUES ('pg_stat_statements.track', 'all'),
              ('track_counts', 'on'),

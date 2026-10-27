@@ -49,9 +49,17 @@ WHERE NAME IN ('global_instrumentation', 'thread_instrumentation',
 # llegan por un ROLE): sin PROCESS la seccion active_queries falla con errno
 # 1227 al leer innodb_trx, y classify lo reporta desde el resultado real.
 
-# Minimo soportado (PIPELINE_FLOW, "Versiones soportadas"): STATEMENTS_QUERY
-# lee pg_stat_statements.stats_since, que existe desde PG 17.
-PG_MIN_VERSION_NUM = 170000
+# Versiones soportadas (PIPELINE_FLOW): desde PG 15, que trae jsonlog (de ahi
+# salen los abrazos y los planes de auto_explain). Por debajo de 17 faltan
+# datos y el ciclo sigue sin ellos (el collector cambia las consultas):
+# stats_since es de PG 17, EXPLAIN (GENERIC_PLAN) y last_idx_scan de PG 16.
+PG_MIN_VERSION_NUM = 150000
+PG_FULL_VERSION_NUM = 170000
+PG_MISSING_BEFORE = (
+    (170000, "pg_stat_statements.stats_since"),
+    (160000, "EXPLAIN (GENERIC_PLAN)"),
+    (160000, "pg_stat_user_indexes.last_idx_scan"),
+)
 
 
 @dataclass
@@ -116,10 +124,14 @@ def check_postgres(conn, previous: dict | None = None) -> PreflightResult:
     if settings is not None:
         result.engine_version = settings.get("version")
         version_num = settings.get("version_num")
-        if version_num is not None and int(version_num) < PG_MIN_VERSION_NUM:
-            result.issues.append(
-                ("PG_VERSION_UNSUPPORTED", {"server_version_num": int(version_num)})
-            )
+        if version_num is not None:
+            version_num = int(version_num)
+            result.facts["pg_version_num"] = version_num
+            if version_num < PG_MIN_VERSION_NUM:
+                result.issues.append(("PG_VERSION_UNSUPPORTED", {"server_version_num": version_num}))
+            elif version_num < PG_FULL_VERSION_NUM:
+                missing = [name for since, name in PG_MISSING_BEFORE if version_num < since]
+                result.issues.append(("PG_VERSION_LIMITED", {"server_version_num": version_num, "missing": missing}))
         if settings.get("track_counts") == "off":
             result.issues.append(("TRACK_COUNTS_OFF", {}))
 

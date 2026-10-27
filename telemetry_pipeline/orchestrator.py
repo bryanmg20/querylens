@@ -48,6 +48,9 @@ class Orchestrator:
         stats: Stats = {}
         with self._connect() as conn:
             self.preflight.execute(conn)
+            # Las consultas de la version del servidor: en PG < 17 faltan
+            # columnas de STATEMENTS_QUERY e INDEXES_QUERY.
+            self.collector.use_server_version(self.report.facts.get("pg_version_num"))
             self.collect.execute(stats, conn)
             # Antes de normalize/redact: esos stages reemplazan el texto de las
             # queries y el sintoma '<insufficient privilege>' se perderia.

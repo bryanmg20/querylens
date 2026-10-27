@@ -4,12 +4,24 @@ Pipeline agentless de telemetría: captura métricas de `pg_stat_statements` (Po
 
 ## Versiones soportadas de las bases monitoreadas
 
-| Motor | Mínimo | Por qué |
-|-------|--------|---------|
-| PostgreSQL | **17** | `STATEMENTS_QUERY` lee `pg_stat_statements.stats_since` (PG 17+). Verificado en PG 16.15: esa sección falla en cada ciclo (`column "stats_since" does not exist`) y el snapshot sale sin `statements`, candidatos ni planes. (`last_idx_scan` es PG 16+ y `EXPLAIN (GENERIC_PLAN)` PG 16+, ambos cubiertos por el mínimo.) |
-| MySQL | **8.0** | `performance_schema.data_locks`/`data_lock_waits` (8.0.1+) y `QUERY_SAMPLE_TEXT` (8.0.3+). MySQL 5.7 y MariaDB no están soportados. |
+| Motor | Versiones | Mínimo | Por qué el mínimo |
+|-------|-----------|--------|-------------------|
+| PostgreSQL | 15, 16, **17**, 18, 19 | **15** | `jsonlog` (PG 15+): de ahí salen los abrazos mortales y los planes de `auto_explain`. Por debajo, el preflight corta con `PG_VERSION_UNSUPPORTED` (blocking). |
+| MySQL | **8.0**, 8.4 LTS | **8.0** | `performance_schema.data_locks`/`data_lock_waits` (8.0.1+) y `QUERY_SAMPLE_TEXT` (8.0.3+). MySQL 5.7 y MariaDB no están soportados. |
 
-Decisión (2026-10-08): el foco es PostgreSQL 17+ y MySQL 8; sandbox y CI corren exactamente esas versiones. Un target más viejo no rompe el ciclo (la sección que falla queda en `None` y se loguea como `collect_telemetry` ERROR), pero el snapshot sale degradado.
+En negrita, la combinación de referencia (sandbox sin profile, mediciones de #49). PostgreSQL 19 se probó como release candidate (`19rc1`).
+
+Qué cambia por versión de PostgreSQL (el collector elige las consultas con la versión que lee el preflight, `Postgres_Collector.use_server_version`):
+
+| Dato | Desde | Sin él (15, 16) |
+|------|-------|-----------------|
+| `pg_stat_statements.stats_since` | 17 | `counters_epoch` llega `NULL`. Una query que aparece entre dos snapshots se mide desde el segundo (`disk_spill`, `cardinality_misestimate` y `n_plus_one` la ven un ciclo después); un reinicio de contadores se sigue detectando por el delta negativo. |
+| `EXPLAIN (GENERIC_PLAN)` | 16 | En 15 no se intenta: un candidato tiene plan solo si `auto_explain` lo registró (ejecución de más de 50 ms en la ventana leída). Las detecciones que leen el plan (`missing_index`, `avoidable_full_scan`, `non_sargable_predicate`, `cardinality_misestimate` y el uso de índices de `unused_index`) corren solo sobre esos candidatos. |
+| `pg_stat_user_indexes.last_idx_scan` | 16 | En 15 `last_index_scan` llega `NULL`, como en MySQL: un índice sin uso se reconoce solo por `idx_scan = 0`. |
+
+En 15 y 16 el ciclo termina `ok` y `querylens health` muestra `PG_VERSION_LIMITED` (info) con la lista de lo que falta (`missing`). Que esos casos no se detecten en 15 y 16 es lo esperado, no un error. Los abrazos mortales (CT-01, CT-02) y CT-05 se detectan igual en todas las versiones.
+
+Verificado (2026-10-27) con la suite de integración (`telemetry_pipeline/ci/load.py` + `pytest -m integration`) y `ql_sandbox/mediciones/measure_ct.py` contra los profiles del sandbox (`pg15`, `pg16`, `pg18`, `pg19`, `mysql84`; ver `ql_sandbox/instruction.md`). El CI corre la suite de integración en una matriz que cubre cada versión al menos una vez (`.github/workflows/pipeline.yml`, job `integration`).
 
 ## Flujo de extremo a extremo
 
@@ -300,7 +312,7 @@ Los tests de arquitectura son **contratos estructurales**: validan "qué interfa
 - La asimetría es propia de cada motor, no una inconsistencia: `pg_stat_statements.query` ya viene normalizado con `$1` y `EXPLAIN (GENERIC_PLAN)` lo convierte en plan. `DIGEST_TEXT` de MySQL trae `?`, que no produce plan; `QUERY_SAMPLE_TEXT` trae la consulta con valores reales, que sí lo produce.
 - El ciclo del runner por defecto es de **10 s** (`interval_from_env()`, pensado para pruebas/sandbox). Para producción la cadencia prevista es de **30–60 s** (decisión de deploy, sin tocar código): cada vuelta emite un snapshot por base, así que el intervalo es la palanca directa de volumen de la cola (ver la fila "No guarda estado entre ciclos").
 - La transacción del target se maneja en dos tiempos: el **collect** la cierra con `commit()` al terminar (no retiene snapshot/vacuum de Postgres ni MVCC de MySQL durante el resto del ciclo), y cada **EXPLAIN** corre en su propia **transacción corta** (`BEGIN → SET LOCAL/USE → EXPLAIN → COMMIT`; rollback en fallo; el `USE` de MySQL es estado de sesión y sobrevive al commit). Ver `references/004_decisiones_contrato.md` (M-12).
-- `EXPLAIN (GENERIC_PLAN)` existe desde PostgreSQL 16, pero el mínimo soportado es **17** (ver "Versiones soportadas"): en PG 16 ya falla antes la sección `statements`. Si un EXPLAIN falla, la excepción se captura por consulta, se hace `rollback` y el candidato queda fuera de `canonic_explains` sin abortar el ciclo. Un caso conocido: si la query normalizada solo pasa parámetros a una función u operador con varias versiones (`generate_series($1, $2)`, `$1 + $2`), `GENERIC_PLAN` no puede elegir sin los tipos (SQLSTATE `42725`/`42P18`). Se reporta como `EXPLAIN_PARAM_TYPES_AMBIGUOUS` (info, se loguea en INFO), no como `EXPLAIN_FAILED` (degraded): la query sigue en `pg_stat_statements` y fallaría en cada ciclo, y como degraded dejaría la base degradada para siempre. Su plan llega por `auto_explain` si alguna ejecución pasa del umbral.
+- `EXPLAIN (GENERIC_PLAN)` existe desde PostgreSQL 16. En PG 15 `ExplainStage` no lo intenta: el candidato tiene plan solo si `auto_explain` lo registró (ver "Versiones soportadas"), y no se reporta `NO_EXPLAINABLE_CANDIDATES` por eso. Si un EXPLAIN falla, la excepción se captura por consulta, se hace `rollback` y el candidato queda fuera de `canonic_explains` sin abortar el ciclo. Un caso conocido: si la query normalizada solo pasa parámetros a una función u operador con varias versiones (`generate_series($1, $2)`, `$1 + $2`), `GENERIC_PLAN` no puede elegir sin los tipos (SQLSTATE `42725`/`42P18`). Se reporta como `EXPLAIN_PARAM_TYPES_AMBIGUOUS` (info, se loguea en INFO), no como `EXPLAIN_FAILED` (degraded): la query sigue en `pg_stat_statements` y fallaría en cada ciclo, y como degraded dejaría la base degradada para siempre. Su plan llega por `auto_explain` si alguna ejecución pasa del umbral.
 - `explain_source` viaja en `canonic_explains` para que el consumidor sepa con qué fidelidad se obtuvo el plan: `"auto_explain"` (Postgres, plan que `auto_explain` registró de una ejecución real), `"generic"` (Postgres, plan sin valores concretos) o `"sample"` (MySQL, plan de una ejecución real).
 - En Postgres el plan de `auto_explain` tiene prioridad sobre `GENERIC_PLAN`. Solo se encuentra si la query pasó de `auto_explain.log_min_duration` (50 ms en la guía 006) dentro de la ventana leída: cada ciclo relee los últimos 2 MB del log, sin guardar offsets entre ciclos. Una query rápida, o lenta pero fuera de esa ventana, sigue con el plan genérico. El cruce por `query_id` no se mezcla con las queries del propio monitor: los candidatos ya las excluyen en `STATEMENTS_QUERY`.
 - El plan de `auto_explain` trae los literales de la ejecución en `Filter`/`Index Cond`/`Join Filter`/`Hash Cond`/`Merge Cond`. `redact_postgres_plan_predicate` los reemplaza por `$n` sobre el texto de Postgres (no por sqlglot) y se lleva el cast pegado al literal, para que el predicado tenga el formato del plan genérico: `(c <> 'abc'::bpchar)` → `(c <> $1)`, igual que el genérico `(c ~~ $1)`. Los casts sobre columnas (`(c)::text`) salen igual en ambos planes y se conservan.

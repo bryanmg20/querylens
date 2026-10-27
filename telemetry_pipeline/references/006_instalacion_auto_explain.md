@@ -12,7 +12,7 @@ Funciona con cualquier driver de la aplicación (JDBC, Go, Node, .NET, Rails, Py
 
 | Requisito | Por qué |
 |-----------|---------|
-| PostgreSQL 17 o superior | Mínimo soportado por el pipeline. El formato `jsonlog` existe desde la 15 |
+| PostgreSQL 15 o superior | El formato `jsonlog` existe desde la 15. Con 17 o superior el pipeline tiene todas las detecciones (`PIPELINE_FLOW.md`, "Versiones soportadas") |
 | Postgres **self-hosted** (servidor propio, VM o contenedor) | El script crea funciones que leen archivos del servidor y necesita un **superusuario real**. RDS, Aurora, Cloud SQL y Azure no lo permiten |
 | Acceso como superusuario (por ejemplo `postgres`) | Solo para ejecutar el script una vez |
 | Poder reiniciar Postgres una vez | Solo si `logging_collector` está en `off` (es el caso del sandbox) |

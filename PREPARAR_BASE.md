@@ -6,7 +6,7 @@ Después, con ese usuario, se registra la base en QueryLens con `querylens add` 
 
 | | PostgreSQL | MySQL |
 |---|---|---|
-| Versión mínima | 17 | 8.0.18 (8.0.22 o superior para los informes completos de abrazo mortal) |
+| Versión mínima | 15 (17 o superior para todas las detecciones; ver [Versiones soportadas](telemetry_pipeline/PIPELINE_FLOW.md#versiones-soportadas-de-las-bases-monitoreadas)) | 8.0.18 (8.0.22 o superior para los informes completos de abrazo mortal); 8.4 LTS también |
 | Script | [`setup_target_postgres.sql`](querylens_database/setup_target_postgres.sql) | [`setup_target_mysql.sql`](querylens_database/setup_target_mysql.sql) |
 | Para deshacerlo | [`teardown_target_postgres.sql`](querylens_database/teardown_target_postgres.sql) | [`teardown_target_mysql.sql`](querylens_database/teardown_target_mysql.sql) |
 | Quién lo corre | Un superusuario (`postgres`) | Un administrador (`root`) |
