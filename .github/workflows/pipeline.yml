@@ -162,9 +162,24 @@ jobs:
   integration:
     # Corre en cada push (merge a cualquier rama), despues de unit.
     # Sin gate a develop: si algo falla aqui, no hay merge limpio.
+    #
+    # Una corrida por version soportada (#82, PIPELINE_FLOW "Versiones
+    # soportadas"): cada Postgres de 15 a 19 y cada MySQL (8.0, 8.4) al menos
+    # una vez. 17 + 8.0 es la combinacion de referencia. PostgreSQL 19 va como
+    # release candidate hasta que salga la version estable.
+    name: integration (pg ${{ matrix.pg }}, mysql ${{ matrix.mysql }})
     needs: unit
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { pg: "17", mysql: "8.0" }
+          - { pg: "15", mysql: "8.4" }
+          - { pg: "16", mysql: "8.0" }
+          - { pg: "18", mysql: "8.4" }
+          - { pg: "19rc1", mysql: "8.4" }
 
     # Imagenes oficiales desde mirror.gcr.io (espejo de Docker Hub de Google,
     # sin autenticacion). Docker Hub y public.ecr.aws limitan las descargas
@@ -172,7 +187,7 @@ jobs:
     # fallaron con toomanyrequests.
     services:
       telemetry-postgres:
-        image: mirror.gcr.io/library/postgres:17
+        image: mirror.gcr.io/library/postgres:${{ matrix.pg }}
         env:
           POSTGRES_USER: querylens_monitor
           POSTGRES_PASSWORD: monitor_pass
@@ -186,7 +201,7 @@ jobs:
           --health-retries 10
 
       telemetry-mysql:
-        image: mirror.gcr.io/library/mysql:8.0
+        image: mirror.gcr.io/library/mysql:${{ matrix.mysql }}
         env:
           MYSQL_ROOT_PASSWORD: ql_root
           MYSQL_DATABASE: ql_demo
@@ -381,5 +396,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: report-integration
+          name: report-integration-pg${{ matrix.pg }}-mysql${{ matrix.mysql }}
           path: report-integration.xml
