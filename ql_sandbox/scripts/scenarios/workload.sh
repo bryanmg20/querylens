@@ -101,9 +101,9 @@ produce() {
 
 if [ "$ENGINE" = "postgres" ]; then
   export PGPASSWORD=ql_pass
-  produce | psql --host=postgres --port=5432 --username=ql_user --dbname=ql_demo \
+  produce | psql --host="${PG_HOST:-postgres}" --port=5432 --username=ql_user --dbname=ql_demo \
     --no-psqlrc --quiet --output=/dev/null --set=ql_scn_workload=1
 else
-  produce | mysql --host=mysql --port=3306 --user=app_user --password=app_pass \
+  produce | mysql --host="${MYSQL_HOST:-mysql}" --port=3306 --user=app_user --password=app_pass \
     --database=ql_demo --force --prompt=ql_scn_workload >/dev/null 2>&1
 fi

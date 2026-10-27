@@ -16,7 +16,7 @@ export MYSQL_PWD=app_pass
 
 MYSQL=(
   mysql
-  --host=mysql
+  --host="${MYSQL_HOST:-mysql}"
   --port=3306
   --user=app_user
   --database=ql_demo

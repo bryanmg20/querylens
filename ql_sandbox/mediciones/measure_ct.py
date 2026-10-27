@@ -13,6 +13,7 @@ USO (desde la raiz del repo; solo libreria estandar)
   python ql_sandbox/mediciones/measure_ct.py --engine postgres
   python ql_sandbox/mediciones/measure_ct.py --engine mysql --smoke          # 2 repeticiones
   python ql_sandbox/mediciones/measure_ct.py --engine mysql --cases ct01,rafaga
+  python ql_sandbox/mediciones/measure_ct.py --engine postgres --pg-version 15   # profile pg15 arriba
   python ql_sandbox/mediciones/measure_ct.py --reevaluar ct-mysql-20261026-001500
 
 Ver README.md (seccion CT): casos, criterios y lectura del reporte.
@@ -27,6 +28,7 @@ import threading
 import time
 from datetime import UTC, datetime, timedelta
 
+import measure as measure_lib  # measure() de este modulo tapa el nombre
 from measure import (
     RESULTS_DIR,
     ROOT,
@@ -46,6 +48,17 @@ CONNECTION = {
     "postgres": ("sandbox-pg", "postgresql", "5432"),
     "mysql": ("sandbox-mysql", "mysql", "3307"),
 }
+# Version del motor (--pg-version, --mysql-version): servicio de
+# ql_sandbox/docker-compose.yml y puerto publicado. 17 y 8.0 son postgres y
+# mysql; las demas se levantan con su profile (pg15, pg16, pg18, pg19, mysql84).
+VERSIONS = {
+    "postgres": {"17": ("postgres", "5432"), "15": ("postgres15", "5415"), "16": ("postgres16", "5416"),
+                 "18": ("postgres18", "5418"), "19": ("postgres19", "5419")},
+    "mysql": {"8.0": ("mysql", "3307"), "8.4": ("mysql84", "3384")},
+}
+DEFAULT_VERSION = {"postgres": "17", "mysql": "8.0"}
+# host de la version en ql_network: los escenarios lo leen de PG_HOST / MYSQL_HOST
+SCENARIO_ENV = {}
 
 CASCADE = "long_transaction_cascade"
 UNCLASSIFIED = "unclassified_deadlock"
@@ -221,6 +234,31 @@ def engine_counter(engine):
     return int(out.strip().splitlines()[-1])
 
 
+def use_version(engine, version):
+    """Apunta la medicion a otra version del sandbox: el contenedor donde se
+    lee el contador, el host de los escenarios y la conexion que se registra
+    (otro puerto, otra base en QueryLens). Devuelve el sufijo del run_id."""
+    global PG_CONTAINER
+    service, port = VERSIONS[engine][version]
+    if version == DEFAULT_VERSION[engine]:
+        return ""
+    name, auth_engine, _ = CONNECTION[engine]
+    CONNECTION[engine] = (f"{name}-{version}", auth_engine, port)
+    if engine == "postgres":
+        PG_CONTAINER = f"ql_{service}"
+        SCENARIO_ENV["PG_HOST"] = service
+    else:
+        measure_lib.MYSQL_CONTAINER = f"ql_{service}"
+        SCENARIO_ENV["MYSQL_HOST"] = service
+    return version.replace(".", "")
+
+
+def server_version(engine):
+    if engine == "postgres":
+        return pg_sandbox("SHOW server_version;")
+    return mysql_root("SELECT VERSION();").strip().splitlines()[-1]
+
+
 def cli(*args, input_text=None):
     return run(["docker", "compose", "-f", str(ROOT / "docker-compose.yml"), "run", "--rm", "-T", "cli", *args],
                input_text=input_text)
@@ -247,7 +285,7 @@ def monitoring_enabled(db_id):
 def scenario(script, env):
     """Corre un script del sandbox y devuelve (codigo de salida, stdout+stderr)."""
     cmd = ["docker", "exec"]
-    for key, value in env.items():
+    for key, value in {**SCENARIO_ENV, **env}.items():
         cmd += ["-e", f"{key}={value}"]
     cmd += [SYSBENCH, "bash", f"/scripts/{script}"]
     started = time.monotonic()
@@ -327,7 +365,8 @@ def drop_other_database(engine):
 
 
 def start_load(engine):
-    run(["docker", "exec", "-d", SYSBENCH, "bash", "/scripts/continuous_load.sh", engine, "0"])
+    host = [arg for key, value in SCENARIO_ENV.items() for arg in ("-e", f"{key}={value}")]
+    run(["docker", "exec", "-d", *host, SYSBENCH, "bash", "/scripts/continuous_load.sh", engine, "0"])
     log(f"{engine} | carga de fondo iniciada (continuous_load.sh {engine})")
 
 
@@ -465,21 +504,25 @@ RUNNERS = {"deadlock": run_deadlock, "ct05": run_cascade, "flood": run_flood, "p
 # ------------------------------------------------------------------ una corrida
 
 def measure(engine, args):
-    run_id = f"ct-{engine}-{datetime.now().strftime('%Y%m%d-%H%M%S')}{'-smoke' if args.smoke else ''}"
+    version = args.pg_version if engine == "postgres" else args.mysql_version
+    suffix = use_version(engine, version)
+    run_id = f"ct-{engine}{suffix}-{datetime.now().strftime('%Y%m%d-%H%M%S')}{'-smoke' if args.smoke else ''}"
     out = RESULTS_DIR / run_id
     (out / "cli").mkdir(parents=True, exist_ok=True)
     reps = 2 if args.smoke else args.reps
     wanted = set(args.cases.split(",")) if args.cases else None
     phases = args.phases.split(",") if args.phases else PHASES
     cases = [c for c in CASES[engine] if c["phase"] in phases and (wanted is None or c["name"] in wanted)]
-    log(f"===== CT | {engine} | {run_id} | {len(cases)} casos x {reps} repeticiones =====")
+    version = server_version(engine)
+    log(f"===== CT | {engine} {version} | {run_id} | {len(cases)} casos x {reps} repeticiones =====")
 
     db_id = register(engine)
     was_enabled = monitoring_enabled(db_id)
     if not was_enabled:
         cli("resume", db_id)
     log(f"{engine} | base registrada por el CLI: {db_id}")
-    meta = {"run_id": run_id, "engine": engine, "db_id": db_id, "reps": reps, "started": ql_now(),
+    meta = {"run_id": run_id, "engine": engine, "version": version, "db_id": db_id, "reps": reps,
+            "started": ql_now(),
             "phases": [], "spacing_s": SPACING_S, "event_timeout_s": EVENT_TIMEOUT_S}
     truth = {"meta": meta, "runs": []}
 
@@ -857,7 +900,7 @@ def fmt_rate(entry):
 
 
 def markdown(engine, meta, summary, results):
-    lines = [f"# Contención CT-01 a CT-05 — {engine}", "",
+    lines = [f"# Contención CT-01 a CT-05 — {engine} {meta.get('version', '')}".rstrip(), "",
              f"Corrida `{meta['run_id']}` · base `{meta['db_id']}` (registrada con `querylens add`) · "
              f"{meta['reps']} repeticiones por caso · inicio {meta['started']} · fin {meta.get('finished')}", "",
              "Latencia: `detection_delay_s` del hallazgo (snapshot − abrazo, reloj del motor); en CT-05, antigüedad "
@@ -950,6 +993,10 @@ def main():
     parser.add_argument("--engine", choices=["postgres", "mysql", "both"], default="postgres")
     parser.add_argument("--reps", type=int, default=10, help="repeticiones por caso")
     parser.add_argument("--smoke", action="store_true", help="prueba corta: 2 repeticiones")
+    parser.add_argument("--pg-version", choices=sorted(VERSIONS["postgres"]), default=DEFAULT_VERSION["postgres"],
+                        help="version de Postgres del sandbox (otra que 17: levantar antes su profile)")
+    parser.add_argument("--mysql-version", choices=sorted(VERSIONS["mysql"]), default=DEFAULT_VERSION["mysql"],
+                        help="version de MySQL del sandbox (8.4: profile mysql84)")
     parser.add_argument("--cases", help="solo estos casos, separados por coma (p. ej. ct01,rafaga)")
     parser.add_argument("--phases", help=f"solo estas fases, separadas por coma ({','.join(PHASES)})")
     parser.add_argument("--reevaluar", metavar="CORRIDA",

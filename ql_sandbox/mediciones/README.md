@@ -95,7 +95,13 @@ Corrida completa en un solo comando: levanta el sandbox, pone al día las imáge
 ```bash
 bash ql_sandbox/mediciones/run_ct.sh            # 10 repeticiones por caso, Postgres y MySQL
 bash ql_sandbox/mediciones/run_ct.sh 5 postgres # 5 repeticiones, un solo motor
+PG_VERSION=15 MYSQL_VERSION=8.4 bash ql_sandbox/mediciones/run_ct.sh 2   # otras versiones
 ```
+
+`PG_VERSION` (17 por defecto; 15, 16, 18, 19) y `MYSQL_VERSION` (8.0; 8.4) eligen la versión del
+sandbox: el script levanta su profile y `measure_ct.py` apunta a ella con `--pg-version` /
+`--mysql-version`. Cada versión se registra como otra base en QueryLens y deja su carpeta como
+`ct-postgres15-<fecha>` o `ct-mysql84-<fecha>`.
 
 Por partes:
 
@@ -104,6 +110,7 @@ Por partes:
 python ql_sandbox/mediciones/measure_ct.py --engine postgres            # 10 repeticiones por caso
 python ql_sandbox/mediciones/measure_ct.py --engine mysql --smoke       # 2 repeticiones
 python ql_sandbox/mediciones/measure_ct.py --engine mysql --cases ct01,rafaga --reps 3
+python ql_sandbox/mediciones/measure_ct.py --engine postgres --pg-version 18   # con el profile pg18 arriba
 python ql_sandbox/mediciones/measure_ct.py --reevaluar ct-mysql-20261026-001500
 ```
 

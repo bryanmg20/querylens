@@ -28,7 +28,7 @@ export PGPASSWORD=ql_pass
 
 POSTGRES=(
   psql
-  --host=postgres
+  --host="${PG_HOST:-postgres}"
   --port=5432
   --username=ql_user
   --dbname=ql_demo
