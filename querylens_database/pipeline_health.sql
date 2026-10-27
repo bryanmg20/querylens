@@ -72,8 +72,9 @@ CREATE TABLE IF NOT EXISTS pipeline_health.cycle_samples (
     -- valor acumulado del contador del motor; NULL si no se pudo leer
     -- (PG: pg_stat_database.deadlocks, MySQL: INNODB_METRICS lock_deadlocks)
     engine_deadlocks     BIGINT,
-    -- PG: stats_reset|arranque del postmaster; si cambia, el contador volvio
-    -- a cero. MySQL: NULL (un reinicio se ve porque el contador baja)
+    -- PG: stats_reset ('' si nunca se reseteo); si cambia, el contador volvio
+    -- a cero. Filas viejas: stats_reset|arranque del postmaster, y solo cuenta
+    -- stats_reset. MySQL: NULL (un reinicio se ve porque el contador baja)
     counter_epoch        TEXT,
     -- [{name, size}] de los archivos .json del log (solo PG)
     log_files            JSONB,

@@ -15,9 +15,16 @@ def deadlocks_since(prev_value, prev_epoch, value, epoch) -> tuple[int | None, b
     es una cota inferior de lo que paso entre las dos muestras."""
     if value is None or prev_value is None:
         return None, False
-    if epoch != prev_epoch or value < prev_value:
+    if _reset_mark(epoch) != _reset_mark(prev_epoch) or value < prev_value:
         return value, True
     return value - prev_value, False
+
+
+def _reset_mark(epoch: str | None) -> str | None:
+    """stats_reset de la epoca. Las muestras guardadas antes la escribian como
+    'stats_reset|arranque del postmaster': el arranque no cuenta, porque un
+    reinicio limpio de Postgres no pone el contador en cero."""
+    return epoch.split("|", 1)[0] if epoch is not None else None
 
 
 def log_bytes_since(prev_files: list[dict] | None, files: list[dict] | None) -> int | None:

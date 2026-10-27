@@ -5,9 +5,10 @@ este stage lee cuantos abrazos conto el motor. La diferencia entre los dos, en
 la ventana del reporte, son los abrazos que QueryLens no vio (cli/share/report.sql).
 
 Postgres: pg_stat_database.deadlocks de la base de la conexion, que es la
-misma por la que DeadlocksStage filtra los informes. stats_reset y el arranque
-del postmaster forman la epoca del contador: si cambia, el contador volvio a
-cero. Ademas el listado de los archivos del log (PgLogTail, sin otra consulta):
+misma por la que DeadlocksStage filtra los informes. stats_reset es la epoca
+del contador: si cambia, el contador volvio a cero. El arranque del postmaster
+no entra: desde PG 15 las estadisticas sobreviven a un apagado limpio, y tras
+un crash se descartan y el contador baja, que deadlocks_since ya ve. Ademas el listado de los archivos del log (PgLogTail, sin otra consulta):
 el writer lo compara con el del ciclo anterior y sabe cuantos bytes se
 escribieron entre ciclos. Si fueron mas que LOG_WINDOW_BYTES, la lectura de
 este ciclo no alcanzo al final de la anterior y lo del medio no se leyo.
@@ -34,7 +35,7 @@ logger = get_logger(__name__)
 
 PG_DEADLOCKS_SQL = """
 SELECT deadlocks,
-       coalesce(stats_reset::text, '') || '|' || pg_postmaster_start_time()::text AS counter_epoch
+       coalesce(stats_reset::text, '') AS counter_epoch
 FROM pg_stat_database
 WHERE datname = current_database()
 """

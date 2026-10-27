@@ -54,8 +54,8 @@ _SCHEMA_RESOLVER = [
 ]
 
 _ROWS_BY_SQL = {
-    # EngineCountersStage: antes de pg_postmaster_start_time, que su SQL tambien lee
-    "pg_stat_database": [{"deadlocks": 3, "counter_epoch": "|2026-01-01 09:00:00+00"}],
+    # EngineCountersStage
+    "pg_stat_database": [{"deadlocks": 3, "counter_epoch": ""}],
     "pg_stat_statements": _STATEMENTS,
     "pg_stat_user_indexes": [
         {

@@ -32,7 +32,23 @@ def test_counter_that_goes_down_was_reset():
 
 
 def test_new_epoch_is_a_reset_even_if_the_counter_grew():
-    assert deadlocks_since(10, "r1|s", 15, "r2|s") == (15, True)
+    assert deadlocks_since(10, "r1", 15, "r2") == (15, True)
+
+
+def test_clean_postgres_restart_is_not_a_reset():
+    # desde PG 15 las estadisticas sobreviven al apagado limpio: el contador
+    # sigue donde estaba y no hay abrazos nuevos
+    assert deadlocks_since(336, "", 336, "") == (0, False)
+
+
+def test_sample_saved_with_the_postmaster_start_compares_only_stats_reset():
+    # muestras de antes: 'stats_reset|arranque'; la nueva trae solo stats_reset
+    assert deadlocks_since(336, "|2026-10-26 20:18:15+00", 336, "") == (0, False)
+    assert deadlocks_since(336, "r1|2026-10-26 20:18:15+00", 340, "r2") == (340, True)
+
+
+def test_crash_discards_the_stats_and_the_counter_goes_down():
+    assert deadlocks_since(336, "", 0, "") == (0, True)
 
 
 @pytest.mark.parametrize("prev,value", [(None, 3), (3, None), (None, None)])

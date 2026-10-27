@@ -71,7 +71,7 @@ FILES = [
 
 
 def _pg_conn(counter=None, files=FILES):
-    counter = counter if counter is not None else [{"deadlocks": 7, "counter_epoch": "|2026-10-25 08:00:00+00"}]
+    counter = counter if counter is not None else [{"deadlocks": 7, "counter_epoch": "2026-10-25 08:00:00+00"}]
     return _Conn([
         ("pg_stat_database", lambda p: counter),
         ("querylens.log_files()", lambda p: files),
@@ -94,7 +94,7 @@ def test_postgres_sample_has_counter_epoch_and_log_files():
     report = _run("postgres", _pg_conn())
     sample = report.cycle_sample
     assert sample["engine_deadlocks"] == 7
-    assert sample["counter_epoch"] == "|2026-10-25 08:00:00+00"
+    assert sample["counter_epoch"] == "2026-10-25 08:00:00+00"
     assert sample["log_files"] == [
         {"name": "postgresql-Sun.json", "size": 4096},
         {"name": "postgresql-Sat.json", "size": 100},
