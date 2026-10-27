@@ -72,7 +72,8 @@ PATTERN = {
 }
 
 # Metrica M4 (Tabla 3): CT-01 a CT-04 <= 15 s desde el abrazo; CT-05 <= 45 s
-# desde que la raiz cumple 30 s.
+# desde que la raiz cumple 30 s. Hasta que el hallazgo esta guardado
+# (detectado_en), que es cuando el usuario lo ve, no hasta el snapshot.
 M4_DEADLOCK_S = 15
 M4_CASCADE_S = 45
 CASCADE_MIN_AGE_S = 30
@@ -704,7 +705,7 @@ def evaluate_deadlock(spec, occurrence, events, findings, used_events, used_find
         "correct": None if expect == "?" else got == expect,
         "delay_s": delay,
         "saved_delay_s": saved,
-        "m4_ok": None if delay is None else delay <= M4_DEADLOCK_S,
+        "m4_ok": None if saved is None else saved <= M4_DEADLOCK_S,
         "evidence_ok": evidence_ok(expect, finding, occurrence),
         "severity": finding["severidad"] if finding else None,
     }
@@ -732,7 +733,7 @@ def evaluate_cascade(spec, run_, findings):
         "correct": (finding is not None) == (spec["expect"] == CASCADE),
         "delay_s": delay,
         "saved_delay_s": saved,
-        "m4_ok": None if delay is None else delay <= M4_CASCADE_S,
+        "m4_ok": None if saved is None else saved <= M4_CASCADE_S,
         "evidence_ok": (ev.get("blocked_count") == waiters) if finding else None,
         "blocked_count": ev.get("blocked_count"),
         "severity": finding["severidad"] if finding else None,
@@ -905,7 +906,7 @@ def markdown(engine, meta, summary, results):
              f"{meta['reps']} repeticiones por caso · inicio {meta['started']} · fin {meta.get('finished')}", "",
              "Latencia: `detection_delay_s` del hallazgo (snapshot − abrazo, reloj del motor); en CT-05, antigüedad "
              "de la raíz en el snapshot del hallazgo − 30 s. *Guardado*: `detectado_en` − el mismo instante, con la "
-             "cola y el detector. Valores mediana / máximo en s.", ""]
+             "cola y el detector. M4 se cuenta con *Guardado*. Valores mediana / máximo en s.", ""]
     for phase in PHASES:
         entries = [e for e in summary["casos"] if e["phase"] == phase]
         if not entries:

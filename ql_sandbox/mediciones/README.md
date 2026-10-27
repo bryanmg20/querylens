@@ -156,6 +156,7 @@ Los ajustes del servidor (`terse`, `innodb_print_all_deadlocks`) y la base `ql_o
 - **Abrazo**: el script terminó con una víctima (`deadlock detected` o `ERROR 1213`).
 - **Capturado**: hay una fila en `public.deadlock_events`, por la clave `detected_at|pid de la víctima`. Si llegó sin detalle, cuenta el primer evento sin detalle de la ventana del escenario.
 - **Correcto**: el hallazgo con el mismo conjunto de pid del ciclo es del patrón esperado. En los controles, que no haya hallazgo. En CT-05 se busca por el pid de la raíz.
-- **Latencia (M4)**: `detection_delay_s` de la evidencia (≤ 15 s). En CT-05, la antigüedad de la raíz en el snapshot del hallazgo menos 30 s (≤ 45 s). *Guardado* suma la cola y el detector: `detectado_en` menos el mismo instante.
+- **Latencia**: `detection_delay_s` de la evidencia, hasta el snapshot. En CT-05, la antigüedad de la raíz en el snapshot del hallazgo menos 30 s.
+- **M4 (*Guardado*)**: hasta que el hallazgo está en `public.hallazgos`, con la cola y el detector: `detectado_en` menos el instante del abrazo (≤ 15 s). En CT-05, menos el instante en que la raíz cumplió 30 s (≤ 45 s). Es lo que ve el usuario y coincide con la definición de `detection_engine/references/001_ciclo_vida_hallazgos.md`.
 - **Evidencia**: CT-01 con el tamaño del ciclo y la tabla, CT-03 con el hueco en la posición esperada, CT-04 con `related_antipattern = AP-04` y `CREATE INDEX … (cliente)`, y CT-05 con todas las sesiones bloqueadas.
 - **CLI**: por fase, `hubo` de `calidad_deadlocks` contra el contador leído directo del motor, y `capturados` contra los eventos.
