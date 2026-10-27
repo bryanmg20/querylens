@@ -296,10 +296,14 @@ jobs:
 
       - name: Postgres de telemetry con pg_stat_statements y rol monitor
         # shared_preload_libraries solo aplica tras reiniciar: se deja escrito en
-        # postgresql.auto.conf y se reinicia el contenedor de servicios.
+        # postgresql.auto.conf y se reinicia el contenedor de servicios. En PG 15
+        # y 16 ALTER SYSTEM rechaza pg_stat_statements.* con la libreria sin
+        # cargar: el SET de la sesion crea antes el parametro.
         run: |
           docker exec -i "${{ job.services.telemetry-postgres.id }}" \
             psql -U querylens_monitor -d ql_demo -v ON_ERROR_STOP=1 <<'SQL'
+          SET pg_stat_statements.track = 'all';
+          SET pg_stat_statements.max = '10000';
           ALTER SYSTEM SET shared_preload_libraries = 'pg_stat_statements';
           ALTER SYSTEM SET pg_stat_statements.track = 'all';
           ALTER SYSTEM SET pg_stat_statements.max = '10000';
