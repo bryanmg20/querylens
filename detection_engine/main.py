@@ -27,7 +27,8 @@ from logger import get_logger
 logger = get_logger(__name__)
 
 QUEUE_NAME = "analyze_job" # Cola de la que el Telemetry Pipeline publica los snapshots a analizar
-POLL_INTERVAL_SECONDS = 5 # Tiempo de espera si la cola esta vacia
+POLL_INTERVAL_SECONDS = 5 # Cuanto espera cada lectura un mensaje nuevo si la cola esta vacia
+POLL_CHECK_MS = 100 # Cada cuanto mira la cola mientras espera: el mensaje se toma apenas llega
 VISIBILITY_TIMEOUT_SECONDS = 30 # Tiempo que el mensaje queda oculto mientras se procesa
 MAX_RECONNECT_BACKOFF_SECONDS = 60 # Tope de espera entre reintentos con la base caida
 
@@ -40,14 +41,24 @@ def beat() -> None:
         Path(heartbeat_file).touch()
 
 
-# Lee el siguiente mensaje disponible en la cola sin eliminarlo
-def read_next_job(engine: Engine) -> dict | None:
+# Lee el siguiente mensaje disponible en la cola sin eliminarlo. Con wait,
+# espera hasta POLL_INTERVAL_SECONDS a que llegue uno: dormir entre lecturas
+# sumaba hasta 5 s entre que el pipeline encolaba y el hallazgo quedaba
+# guardado, y con eso un abrazo pasaba de los 15 s de M4.
+def read_next_job(engine: Engine, wait: bool = True) -> dict | None:
     with engine.begin() as conn:
         # El mensaje queda invisible por VISIBILITY_TIMEOUT_SECONDS para que otro consumidor no lo tome mientras se procesa
-        result = conn.execute(
-            text("SELECT * FROM pgmq.read(:queue, :vt, :qty)"),
-            {"queue": QUEUE_NAME, "vt": VISIBILITY_TIMEOUT_SECONDS, "qty": 1},
-        )
+        if wait:
+            result = conn.execute(
+                text("SELECT * FROM pgmq.read_with_poll(:queue, :vt, :qty, :max_poll, :check_ms)"),
+                {"queue": QUEUE_NAME, "vt": VISIBILITY_TIMEOUT_SECONDS, "qty": 1,
+                 "max_poll": POLL_INTERVAL_SECONDS, "check_ms": POLL_CHECK_MS},
+            )
+        else:
+            result = conn.execute(
+                text("SELECT * FROM pgmq.read(:queue, :vt, :qty)"),
+                {"queue": QUEUE_NAME, "vt": VISIBILITY_TIMEOUT_SECONDS, "qty": 1},
+            )
         row = result.mappings().first()
 
     return dict(row) if row else None
@@ -149,7 +160,7 @@ def main(oneshot: bool = False) -> None:
         while True:
             # Lee el siguiente mensaje disponible en la cola
             try:
-                job = read_next_job(engine)
+                job = read_next_job(engine, wait=not oneshot)
             except OperationalError as error:
                 # Base caida o reiniciandose: esperar (doblando, con tope) y
                 # reintentar, en vez de terminar el proceso
@@ -165,13 +176,12 @@ def main(oneshot: bool = False) -> None:
             backoff = POLL_INTERVAL_SECONDS
             beat()
 
-            # Sin mensajes: esperar y volver a preguntar
+            # Sin mensajes: la lectura ya espero, se vuelve a preguntar
             if job is None:
                 # oneshot: cortar el loop en vez de seguir esperando mensajes
                 if oneshot:
                     logger.info("No hay mensajes disponibles en '%s'.", QUEUE_NAME)
                     return
-                time.sleep(POLL_INTERVAL_SECONDS)
                 continue
 
             try:

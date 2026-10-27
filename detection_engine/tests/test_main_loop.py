@@ -1,6 +1,7 @@
 """Loop de main: la base caida no termina el proceso y el heartbeat solo se
 toca cuando la cola responde. Sin base real: la conexion, el DDL y la cola se
-parchean, y time.sleep corta el loop cuando ya se vio lo que importa."""
+parchean; time.sleep, o la lectura cuando se acaban las respuestas, corta el
+loop cuando ya se vio lo que importa."""
 from unittest import mock
 
 import pytest
@@ -10,7 +11,7 @@ import main
 
 
 class _Stop(Exception):
-    """Lo lanza el sleep falso para salir del while True."""
+    """Lo lanzan el sleep y la lectura falsos para salir del while True."""
 
 
 @pytest.fixture
@@ -26,7 +27,7 @@ def loop(monkeypatch):
             if len(sleeps) >= stop_after_sleeps:
                 raise _Stop
 
-        monkeypatch.setattr(main, "read_next_job", mock.MagicMock(side_effect=reads))
+        monkeypatch.setattr(main, "read_next_job", mock.MagicMock(side_effect=[*reads, _Stop()]))
         monkeypatch.setattr(main.time, "sleep", fake_sleep)
         with pytest.raises(_Stop):
             main.main()
@@ -42,8 +43,35 @@ def _caida():
 def test_base_caida_reintenta_con_backoff_en_vez_de_terminar(loop):
     sleeps = loop([_caida(), _caida(), _caida(), None], stop_after_sleeps=4)
 
-    # 5 -> 10 -> 20 y, con la base de vuelta, la espera normal de la cola vacia
-    assert sleeps == [5, 10, 20, main.POLL_INTERVAL_SECONDS]
+    # 5 -> 10 -> 20 y, con la base de vuelta, la cola vacia no duerme: la
+    # lectura ya espero el mensaje
+    assert sleeps == [5, 10, 20]
+
+
+def test_la_cola_vacia_no_duerme_y_el_backoff_vuelve_a_empezar(loop):
+    sleeps = loop([_caida(), None, None, _caida()], stop_after_sleeps=3)
+
+    assert sleeps == [5, 5]
+
+
+def test_el_loop_espera_el_mensaje_en_la_lectura(loop):
+    loop([None], stop_after_sleeps=1)
+
+    assert main.read_next_job.call_args_list[0].kwargs == {"wait": True}
+
+
+def test_read_next_job_espera_con_read_with_poll_y_oneshot_no():
+    engine = mock.MagicMock()
+    conn = engine.begin.return_value.__enter__.return_value
+    conn.execute.return_value.mappings.return_value.first.return_value = None
+
+    main.read_next_job(engine)
+    sql, params = conn.execute.call_args.args
+    assert "pgmq.read_with_poll" in str(sql)
+    assert params["max_poll"] == main.POLL_INTERVAL_SECONDS and params["check_ms"] == main.POLL_CHECK_MS
+
+    main.read_next_job(engine, wait=False)
+    assert "pgmq.read(" in str(conn.execute.call_args.args[0])
 
 
 def test_el_backoff_tiene_tope(loop):
