@@ -1,0 +1,19 @@
+# Ignore de detection_engine/Dockerfile. El contexto del build es la raiz del
+# repo, y Docker solo lee el .dockerignore de la raiz del contexto o el
+# <Dockerfile>.dockerignore junto al Dockerfile (este): un
+# detection_engine/.dockerignore no se aplica. Rutas relativas a la raiz.
+#
+# Lista blanca: solo lo que el Dockerfile copia. Asi no viajan venv/,
+# frontend/node_modules, graphify-out/, el .env ni los logs locales.
+*
+!detection_engine/
+!contract/
+!querylens_database/
+
+detection_engine/logs/
+detection_engine/venv/
+contract/*.egg-info/
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+**/.env

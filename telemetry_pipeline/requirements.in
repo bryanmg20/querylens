@@ -1,0 +1,17 @@
+# Dependencias directas del pipeline. El lock que instalan las imagenes y el
+# CI es requirements.txt (versiones exactas con hashes): se regenera con
+# scripts/lock_requirements.sh, nunca a mano.
+#
+# Rango: desde la version con la que corre la suite hasta la proxima mayor.
+# Un release mayor (pydantic, sqlalchemy, sqlglot) puede cambiar la
+# validacion o el parseo: se sube a mano, con la suite verde.
+#
+# psycopg2-binary trae su propia libpq: la imagen no compila nada, asi que el
+# build no depende de los paquetes de Debian del dia.
+sqlalchemy>=2.1.4,<3
+psycopg2-binary>=2.9.13,<3
+pymysql>=1.2.3,<2
+sqlglot>=30.22.0,<31
+python-dotenv>=1.2.4,<2
+pydantic>=2.14.0,<3
+cryptography>=50.0.2,<51

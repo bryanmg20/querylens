@@ -34,8 +34,8 @@ fi
 
 export PGPASSWORD=ql_pass
 
-PSQL=(psql --host=postgres --port=5432 --username=ql_user --dbname=ql_demo --no-psqlrc --quiet --tuples-only --command)
-MYSQL=(mysql --host=mysql --port=3306 --user=app_user --password=app_pass --database=ql_demo --batch --skip-column-names -e)
+PSQL=(psql --host="${PG_HOST:-postgres}" --port=5432 --username=ql_user --dbname=ql_demo --no-psqlrc --quiet --tuples-only --command)
+MYSQL=(mysql --host="${MYSQL_HOST:-mysql}" --port=3306 --user=app_user --password=app_pass --database=ql_demo --batch --skip-column-names -e)
 
 run_pg() {
   [[ "$ENGINE" == "both" || "$ENGINE" == "postgres" ]] || return 0
@@ -49,7 +49,7 @@ run_my() {
 
 echo ">>> Resetting stats windows..."
 "${PSQL[@]}" "SELECT pg_stat_statements_reset();" >/dev/null
-mysql --host=mysql --port=3306 --user=root --password=ql_root \
+mysql --host="${MYSQL_HOST:-mysql}" --port=3306 --user=root --password=ql_root \
   -e "TRUNCATE TABLE performance_schema.events_statements_summary_by_digest;" >/dev/null
 
 QUERIES=(

@@ -7,6 +7,7 @@ reintenta (el hallazgo no llego a guardarse), se recalcula contra la misma
 muestra previa y sale el mismo resultado.
 """
 import json
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -15,6 +16,7 @@ from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from anti_patterns.statement_history import parse_instant
+from models import DeadlockEvent
 
 _SCHEMA_PATH = Path(__file__).resolve().parent.parent.parent / "querylens_database" / "contention_state.sql"
 
@@ -187,8 +189,33 @@ def load_contention_state(engine: Engine, db_id: str) -> ContentionState:
     )
 
 
-def save_contention_state(engine: Engine, db_id: str, state: ContentionState) -> None:
+# Un abrazo por informe unico. El mismo job reintentado vuelve a traer los
+# mismos (se recalcula contra la misma memoria): DO NOTHING.
+DEADLOCK_EVENT_INSERT = """
+INSERT INTO public.deadlock_events
+    (db_id, report_key, detected_at, source, complete, antipatron, database_name)
+VALUES
+    (:db_id, :report_key, :detected_at, :source, :complete, :antipatron, :database_name)
+ON CONFLICT (db_id, report_key) DO NOTHING
+"""
+
+
+def save_contention_state(
+    engine: Engine, db_id: str, state: ContentionState, events: Sequence[DeadlockEvent] = ()
+) -> None:
+    """El estado y los abrazos nuevos en la misma transaccion: un abrazo esta
+    en deadlock_events si y solo si la memoria lo da por visto."""
     with engine.begin() as conn:
+        if events:
+            conn.execute(
+                text(DEADLOCK_EVENT_INSERT),
+                # detected_at llega en UTC sin zona: con la zona, no depende del
+                # TimeZone de la sesion
+                [
+                    {**asdict(event), "db_id": db_id, "detected_at": parse_instant(event.detected_at)}
+                    for event in events
+                ],
+            )
         conn.execute(
             text(
                 """

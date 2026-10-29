@@ -12,6 +12,29 @@ Esto hace tres cosas:
    (`sysbench`, `mysql`, `psql`) y se queda esperando
 3. Deja los logs de queries en los bind mounts locales (ver abajo)
 
+### Otras versiones del motor
+
+PostgreSQL 15, 16, 18 y 19 y MySQL 8.4 tienen su propio servicio, cada uno con
+su profile; `docker compose up -d` sin profile levanta solo 17 y 8.0, como
+siempre:
+
+```bash
+docker compose --profile pg15 up -d      # ql_postgres15, puerto 5415
+docker compose --profile mysql84 up -d   # ql_mysql84, puerto 3384
+```
+
+| Profile | Servicio | Puerto en el host |
+|---|---|---|
+| `pg15` | `postgres15` | 5415 |
+| `pg16` | `postgres16` | 5416 |
+| `pg18` | `postgres18` | 5418 |
+| `pg19` | `postgres19` (release candidate, `PG19_TAG`) | 5419 |
+| `mysql84` | `mysql84` | 3384 |
+
+Los scripts de `scripts/` apuntan a otra versión con `PG_HOST` o `MYSQL_HOST`
+(el nombre del servicio), por ejemplo
+`docker exec -e PG_HOST=postgres15 ql_sysbench bash /scripts/postgres/simulate_ct01_deadlock_order_postgres.sh`.
+
 **Los datos y la carga no se crean solos:** `scripts/run.sh` se ejecuta a mano
 (ver siguiente sección).
 

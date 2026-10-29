@@ -85,6 +85,11 @@ class ExplainStage:
         # literales de la ejecucion: se sacan de stats ya, no viajan.
         logged_plans = stats.pop("auto_explain_plans", None) or {}
         failures = 0
+        # EXPLAIN (GENERIC_PLAN) es de PG 16: en 15 solo quedan los planes de
+        # auto_explain (el preflight ya avisa con PG_VERSION_LIMITED).
+        version_num = self.report.facts.get("pg_version_num")
+        generic_plan = version_num is None or version_num >= 160000
+        skipped_by_version = 0
 
         try:
             for query in stats.get("top_impact_queries", []):
@@ -123,6 +128,9 @@ class ExplainStage:
                         "explain_source": "auto_explain",
                         "plan": logged_plans[query_id],
                     })
+                    continue
+                if dialect == "postgres" and not generic_plan:
+                    skipped_by_version += 1
                     continue
 
                 context_sql = self._schema_context_sql(
@@ -197,7 +205,7 @@ class ExplainStage:
         # Hubo candidatos y ninguno dio plan sin que nada fallara: todos se
         # filtraron (DML, multi-statement). Es informativo, no un error.
         had_candidates = stats.get("top_impact_queries") or stats.get("non_explainable_candidates")
-        if had_candidates and not stats["query_explain"] and not failures:
+        if had_candidates and not stats["query_explain"] and not failures and not skipped_by_version:
             self.report.add("NO_EXPLAINABLE_CANDIDATES")
         self.report.checked("explain")
 

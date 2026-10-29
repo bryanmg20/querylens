@@ -4,7 +4,7 @@ set -euo pipefail
 
 MYSQL=(
   mysql
-  --host=mysql
+  --host="${MYSQL_HOST:-mysql}"
   --port=3306
   --user=app_user
   --password=app_pass

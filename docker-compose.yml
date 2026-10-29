@@ -1,16 +1,36 @@
+# Nombre fijo del proyecto: sin el, compose lo saca de la carpeta y un clon en
+# otra ruta (querylens-main/) crea volumenes y redes distintos
+# (querylens-main_pgdata). Variables en .env (ver .env.example).
+name: querylens
+
+# Logs de cada contenedor con tope (json-file sin opciones crece sin limite y
+# con restart: unless-stopped puede llenar el disco del servidor): 3 archivos
+# de 10 MB por servicio.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   postgres:
-    image: ghcr.io/pgmq/pg17-pgmq:latest
-    container_name: querylens_db
+    # Version fija (tag + digest): con :latest un pull puede traer otro pgmq
+    # u otro Postgres sin aviso. Para actualizar, cambiar ambos y probar la
+    # cola (init.sql, service_roles.sql).
+    image: ghcr.io/pgmq/pg17-pgmq:v1.13.0@sha256:1ce7c40f588a08cfad14bc2b228eb35db98270163e27308cec109762b8120c85
     environment:
-      POSTGRES_USER: ${QUERYLENS_USER}
-      POSTGRES_PASSWORD: ${QUERYLENS_PASSWORD}
-      POSTGRES_DB: ${QUERYLENS_DB}
-    ports:
-      - "${DB_PORT}:5432"
+      POSTGRES_USER: ${QUERYLENS_USER:?falta en .env}
+      POSTGRES_PASSWORD: ${QUERYLENS_PASSWORD:?falta en .env}
+      POSTGRES_DB: ${QUERYLENS_DB:?falta en .env}
+    # Sin puerto publicado: los servicios usan postgres:5432 por la red
+    # interna. Los tests corren en el servicio tests (misma red) y psql manual
+    # con docker compose exec postgres psql.
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./querylens_database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      # 01_: el initdb corre en orden alfabetico y "init.sql" quedaba despues
+      # de los 02-04 (CODE_REVIEW.md B-3). Los roles por servicio no van aqui:
+      # los aplica db-roles en cada arranque.
+      - ./querylens_database/init.sql:/docker-entrypoint-initdb.d/01_init.sql
       - ./querylens_database/registered_databases.sql:/docker-entrypoint-initdb.d/02_registered_databases.sql
       # Salud del pipeline (lo escribe el servicio pipeline, lo lee la API).
       - ./querylens_database/pipeline_health.sql:/docker-entrypoint-initdb.d/03_pipeline_health.sql
@@ -18,73 +38,219 @@ services:
       # crea al arrancar, para volumenes que ya existian antes de este archivo.
       - ./querylens_database/contention_state.sql:/docker-entrypoint-initdb.d/04_contention_state.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${QUERYLENS_USER} -d ${QUERYLENS_DB}"]
+      # -h 127.0.0.1 (TCP): durante el initdb el servidor temporal solo
+      # escucha en el socket, asi que no se reporta sano antes de tiempo y
+      # db-roles (que entra por TCP) no lo encuentra a medio iniciar.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U ${QUERYLENS_USER:?falta en .env} -d ${QUERYLENS_DB:?falta en .env}"]
       interval: 5s
       timeout: 5s
       retries: 10
       start_period: 5s
+    # Techo de CPU y memoria en cada servicio: QueryLens puede correr en el
+    # mismo servidor que la base monitoreada y no debe quitarle recursos. En
+    # reposo cada servicio usa 5-75 MiB; los limites dejan margen para picos.
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1g
+    logging: *default-logging
+    networks: [backend]
     restart: unless-stopped
+
+  db-roles:
+    # Un solo uso por arranque: aplica los roles por servicio
+    # (querylens_database/service_roles.sql, idempotente) y termina. Los
+    # servicios que entran con esos roles esperan a que salga bien. Asi un
+    # volumen anterior a los roles o una contrasena cambiada en el .env se
+    # corrigen solos en el siguiente up.
+    image: ghcr.io/pgmq/pg17-pgmq:v1.13.0@sha256:1ce7c40f588a08cfad14bc2b228eb35db98270163e27308cec109762b8120c85
+    entrypoint: ["sh", "/querylens_database/apply_service_roles.sh"]
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+      PGUSER: ${QUERYLENS_USER:?falta en .env}
+      PGPASSWORD: ${QUERYLENS_PASSWORD:?falta en .env}
+      PGDATABASE: ${QUERYLENS_DB:?falta en .env}
+      QL_AUTH_DB_PASSWORD: ${QL_AUTH_DB_PASSWORD:?falta en .env}
+      QL_API_DB_PASSWORD: ${QL_API_DB_PASSWORD:?falta en .env}
+      QL_PIPELINE_DB_PASSWORD: ${QL_PIPELINE_DB_PASSWORD:?falta en .env}
+      QL_DETECTOR_DB_PASSWORD: ${QL_DETECTOR_DB_PASSWORD:?falta en .env}
+      QL_CLI_DB_PASSWORD: ${QL_CLI_DB_PASSWORD:?falta en .env}
+    # El script y los DDL del detection_engine que crea como ql_detector.
+    volumes:
+      - ./querylens_database:/querylens_database:ro
+    logging: *default-logging
+    networks: [backend]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
 
   auth-service:
     build:
       context: ./auth_service
-    container_name: querylens_auth_service
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
-      QUERYLENS_DB: ${QUERYLENS_DB}
-      QUERYLENS_USER: ${QUERYLENS_USER}
-      QUERYLENS_PASSWORD: ${QUERYLENS_PASSWORD}
-      AUTH_ENCRYPTION_KEY: ${AUTH_ENCRYPTION_KEY}
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      QUERYLENS_DB: ${QUERYLENS_DB:?falta en .env}
+      # Rol propio (querylens_database/service_roles.sql), no el superusuario.
+      QUERYLENS_USER: ql_auth
+      QUERYLENS_PASSWORD: ${QL_AUTH_DB_PASSWORD:?falta en .env}
+      AUTH_ENCRYPTION_KEY: ${AUTH_ENCRYPTION_KEY:?falta en .env}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?falta en .env}
       JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-480}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      # Vacio: el navegador llama por nginx desde el mismo origen y no hace
+      # falta CORS. Solo se llena si un front corre fuera de nginx (p. ej.
+      # npm run dev en otro puerto).
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      # Prefijo con el que nginx expone el servicio (lo quita antes de
+      # reenviar). Uvicorn lo lee como --root-path; sin el, /auth/docs pide
+      # /openapi.json en vez de /auth/openapi.json.
+      UVICORN_ROOT_PATH: /auth
     extra_hosts:
       # Permite usar "host.docker.internal" para registrar bases de datos que
       # corren directamente en la maquina del cliente (fuera de Docker),
       # tanto en Docker Desktop (Win/Mac, ya lo resuelve por defecto) como en
       # Linux nativo (donde requiere esta entrada explicita).
       - "host.docker.internal:host-gateway"
-    ports:
-      - "${AUTH_SERVICE_PORT:-8000}:8000"
+    # Sin puerto publicado: se llega por nginx en /auth/.
+    healthcheck:
+      # La imagen no trae curl: urlopen falla (exit 1) con cualquier no-2xx.
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256m
+    logging: *default-logging
+    # edge: nginx lo alcanza; backend: la base.
+    networks: [edge, backend]
     depends_on:
       postgres:
         condition: service_healthy
+      db-roles:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   api-rest:
+    # Perfil "ui" (con frontend y nginx): solo sirve a la interfaz. Sin el
+    # perfil, up deja el modo headless (monitoreo + scheduler) y la
+    # administracion va por el CLI. Con interfaz:
+    #   docker compose --profile ui up -d
+    profiles: ["ui"]
     build:
       context: ./api_rest
-    container_name: querylens_api_rest
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
-      QUERYLENS_DB: ${QUERYLENS_DB}
-      QUERYLENS_USER: ${QUERYLENS_USER}
-      QUERYLENS_PASSWORD: ${QUERYLENS_PASSWORD}
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
-    ports:
-      - "${API_REST_PORT:-8001}:8001"
+      QUERYLENS_DB: ${QUERYLENS_DB:?falta en .env}
+      # Rol de solo lectura (querylens_database/service_roles.sql).
+      QUERYLENS_USER: ql_api
+      QUERYLENS_PASSWORD: ${QL_API_DB_PASSWORD:?falta en .env}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?falta en .env}
+      # Vacio por lo mismo que en auth-service.
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      # Prefijo de nginx, igual que en auth-service.
+      UVICORN_ROOT_PATH: /api
+    # Sin puerto publicado: se llega por nginx en /api/.
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256m
+    logging: *default-logging
+    networks: [edge, backend]
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+      db-roles:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   frontend:
+    profiles: ["ui"]
     build:
       context: ./frontend
+      # Rutas relativas al origen de nginx (mismo origen, sin CORS). Next las
+      # fija en el bundle durante el build: si cambian, reconstruir frontend.
       args:
-        NEXT_PUBLIC_AUTH_SERVICE_URL: ${NEXT_PUBLIC_AUTH_SERVICE_URL:-http://localhost:8000}
-        NEXT_PUBLIC_API_REST_URL: ${NEXT_PUBLIC_API_REST_URL:-http://localhost:8001}
-    container_name: querylens_frontend
+        NEXT_PUBLIC_AUTH_SERVICE_URL: ${NEXT_PUBLIC_AUTH_SERVICE_URL:-/auth}
+        NEXT_PUBLIC_API_REST_URL: ${NEXT_PUBLIC_API_REST_URL:-/api}
+    # NEXT_PUBLIC_* van solo en args: en runtime no cambian el bundle.
     environment:
-      NEXT_PUBLIC_AUTH_SERVICE_URL: ${NEXT_PUBLIC_AUTH_SERVICE_URL:-http://localhost:8000}
-      NEXT_PUBLIC_API_REST_URL: ${NEXT_PUBLIC_API_REST_URL:-http://localhost:8001}
-    ports:
-      - "${FRONTEND_PORT:-3000}:3000"
+      # El server.js standalone escucha en $HOSTNAME, que Docker llena con el
+      # id del contenedor (solo su IP de red): 0.0.0.0 incluye 127.0.0.1 para
+      # el healthcheck.
+      HOSTNAME: 0.0.0.0
+    # Sin puerto publicado: se llega por nginx en /.
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256m
+    logging: *default-logging
+    # Solo edge: el navegador llama a las APIs por nginx; el frontend no
+    # necesita la base.
+    networks: [edge]
     depends_on:
       - auth-service
       - api-rest
+    restart: unless-stopped
+
+  nginx:
+    # Punto de entrada unico (nginx/nginx.conf): / al frontend, /auth/ al
+    # auth-service y /api/ a la api-rest. Perfil "ui", como lo que tiene
+    # detras: en modo headless no se publica ningun puerto.
+    profiles: ["ui"]
+    # Rama stable (1.27 era mainline y ya no recibe parches), con digest.
+    image: nginx:1.30-alpine@sha256:47928bf67eb62a1863cb08d9ecb52d3e704304ba614eaee17884204677702951
+    ports:
+      # Solo 127.0.0.1: POST /auth/databases y /auth/databases/test-connection
+      # no piden autenticacion, y abiertos a la red cualquiera registraria
+      # bases o usaria test-connection para sondear hosts internos. Para
+      # entrar desde otra maquina, un tunel SSH (ssh -L 8080:127.0.0.1:8080).
+      - "127.0.0.1:${NGINX_PORT:-8080}:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    healthcheck:
+      # /healthz responde nginx mismo, sin depender del frontend.
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 64m
+    logging: *default-logging
+    networks: [edge]
+    # Cuando nginx arranca, lo que hay detras ya responde.
+    depends_on:
+      frontend:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      api-rest:
+        condition: service_healthy
     restart: unless-stopped
 
   pipeline:
@@ -97,16 +263,15 @@ services:
       # contexto; el Dockerfile lo copia con COPY --from=contract.
       additional_contexts:
         contract: ./contract
-    container_name: querylens_pipeline
     environment:
-      # La cola vive en el servicio postgres de esta red: 5432 AQUI dentro,
-      # no ${DB_PORT} (que es el puerto publicado en el host).
+      # La cola vive en el servicio postgres de esta red: 5432 AQUI dentro.
       DB_HOST: postgres
       DB_PORT: 5432
-      QUERYLENS_DB: ${QUERYLENS_DB}
-      QUERYLENS_USER: ${QUERYLENS_USER}
-      QUERYLENS_PASSWORD: ${QUERYLENS_PASSWORD}
-      AUTH_ENCRYPTION_KEY: ${AUTH_ENCRYPTION_KEY}
+      QUERYLENS_DB: ${QUERYLENS_DB:?falta en .env}
+      # Rol propio (querylens_database/service_roles.sql), no el superusuario.
+      QUERYLENS_USER: ql_pipeline
+      QUERYLENS_PASSWORD: ${QL_PIPELINE_DB_PASSWORD:?falta en .env}
+      AUTH_ENCRYPTION_KEY: ${AUTH_ENCRYPTION_KEY:?falta en .env}
       EXTRACT_INTERVAL_S: ${EXTRACT_INTERVAL_S:-10}
       # Nivel de log del daemon (DEBUG/INFO/WARNING/ERROR). DEBUG habilita la
       # linea de tamano de payload de main._log_payload_size.
@@ -116,21 +281,34 @@ services:
       HEALTH_PREFLIGHT_TTL_S: ${HEALTH_PREFLIGHT_TTL_S:-300}
       HEALTH_PURGE_INTERVAL_S: ${HEALTH_PURGE_INTERVAL_S:-3600}
       HEALTH_RETENTION_DAYS: ${HEALTH_RETENTION_DAYS:-15}
-      # Solo los usa la entrada main_sandbox.py (no el runner): el sandbox
-      # publica 5432/3307 en el host, de ahi host.docker.internal.
-      MONITOR_PG_HOST: host.docker.internal
-      MONITOR_PG_PORT: 5432
-      MONITOR_MY_HOST: host.docker.internal
-      MONITOR_MY_PORT: 3307
+      # runner.py lo toca tras cada ciclo que termina bien.
+      HEARTBEAT_FILE: /tmp/heartbeat
+    healthcheck:
+      # Sano si hubo un ciclo bueno en los ultimos 180 s: cubre un ciclo largo
+      # (EXPLAINs) y el backoff maximo de 60 s; un ciclo que falla no late.
+      test: ["CMD", "python", "-c", "import os, sys, time; sys.exit(time.time() - os.path.getmtime('/tmp/heartbeat') > 180)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
     extra_hosts:
       # Las bases registradas apuntan a host.docker.internal cuando corren en
       # la maquina del cliente (mismo motivo que auth-service).
       - "host.docker.internal:host-gateway"
     volumes:
       - pipeline_logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 768m
+    logging: *default-logging
+    networks: [backend]
     depends_on:
       postgres:
         condition: service_healthy
+      db-roles:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   detection-engine:
@@ -142,19 +320,171 @@ services:
     build:
       context: .
       dockerfile: detection_engine/Dockerfile
-    container_name: querylens_detection_engine
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
-      QUERYLENS_DB: ${QUERYLENS_DB}
-      QUERYLENS_USER: ${QUERYLENS_USER}
-      QUERYLENS_PASSWORD: ${QUERYLENS_PASSWORD}
+      QUERYLENS_DB: ${QUERYLENS_DB:?falta en .env}
+      # Rol propio (querylens_database/service_roles.sql), dueno de sus tablas.
+      QUERYLENS_USER: ql_detector
+      QUERYLENS_PASSWORD: ${QL_DETECTOR_DB_PASSWORD:?falta en .env}
+      # main.py lo toca cada vez que la cola responde.
+      HEARTBEAT_FILE: /tmp/heartbeat
+    healthcheck:
+      # Sano si la cola respondio en los ultimos 120 s (sondea cada 5 s; un
+      # job largo o la base caida dejan de renovarlo).
+      test: ["CMD", "python", "-c", "import os, sys, time; sys.exit(time.time() - os.path.getmtime('/tmp/heartbeat') > 120)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     volumes:
       - detection_engine_logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1g
+    logging: *default-logging
+    networks: [backend]
     depends_on:
       postgres:
         condition: service_healthy
+      db-roles:
+        condition: service_completed_successfully
     restart: unless-stopped
+
+  scheduler:
+    # Ventanas de recoleccion (cli/querylens.sh scheduler): cada
+    # SCHEDULER_INTERVAL_S enciende monitoring_enabled de las bases cuyo
+    # collect_from llego, lo apaga al llegar collect_until y, pasado
+    # REPORT_GRACE_S (el detector procesa en diferido por la cola), escribe el
+    # reporte de hallazgos en ./reports. Todo el estado vive en
+    # registered_databases: un reinicio no pierde ventanas.
+    build:
+      context: ./cli
+    command: ["scheduler"]
+    environment: &cli-environment
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: ${QUERYLENS_DB:?falta en .env}
+      # Rol propio (querylens_database/service_roles.sql): lee bases sin sus
+      # credenciales, hallazgos y salud; cambia monitoreo y ventana.
+      PGUSER: ql_cli
+      PGPASSWORD: ${QL_CLI_DB_PASSWORD:?falta en .env}
+      # Zona en que se escriben y se muestran las horas de la ventana y de los
+      # reportes (TZ para date, PGTZ para la sesion de psql).
+      TZ: ${QL_TZ:-America/Bogota}
+      PGTZ: ${QL_TZ:-America/Bogota}
+      AUTH_URL: http://auth-service:8000
+      REPORTS_DIR: /reports
+      REPORT_FORMAT: ${REPORT_FORMAT:-md}
+      SCHEDULER_INTERVAL_S: ${SCHEDULER_INTERVAL_S:-60}
+      REPORT_GRACE_S: ${REPORT_GRACE_S:-300}
+      HEARTBEAT_FILE: /tmp/heartbeat
+    # Mismo uid que el dueno del repo: los reportes (modo 600) quedan legibles
+    # para el en el host, sin sudo. ./reports existe en el repo (.gitkeep): si
+    # Docker lo creara, seria de root y este uid no podria escribir.
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    volumes:
+      - ./reports:/reports
+    healthcheck:
+      # Sano si hubo una vuelta buena en los ultimos 3 min (SCHEDULER_INTERVAL_S
+      # de 60 s por defecto); una vuelta que falla no late.
+      test: ["CMD-SHELL", "test -n \"$$(find /tmp/heartbeat -mmin -3 2>/dev/null)\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 64m
+    logging: *default-logging
+    networks: [backend]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-roles:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  cli:
+    # Administracion en modo headless, bajo demanda (perfil "cli": up no lo
+    # levanta; run no necesita --profile):
+    #   docker compose run --rm cli              # menu
+    #   docker compose run --rm cli list         # subcomandos (scripts, cron)
+    # Registra y prueba bases por el auth-service (cifra las credenciales) y
+    # lee/cambia lo demas en la base con el rol ql_cli.
+    profiles: ["cli"]
+    build:
+      context: ./cli
+    environment: *cli-environment
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    volumes:
+      - ./reports:/reports
+    stdin_open: true
+    tty: true
+    logging: *default-logging
+    networks: [backend]
+    # auth-service ya espera a db-roles; repetirlo aqui volveria a correr
+    # db-roles en cada run.
+    depends_on:
+      auth-service:
+        condition: service_healthy
+
+  tests:
+    # Suites de telemetry_pipeline y detection_engine dentro de la red de
+    # compose (test_runner/run.sh): llegan a postgres:5432 sin puerto
+    # publicado. Perfil "test": up no lo levanta; se corre con
+    #   docker compose run --rm tests
+    # Tambien es donde corre la entrada del sandbox (main_sandbox.py, el par
+    # fijo postgres/mysql de ql_sandbox), que el servicio pipeline no usa:
+    #   docker compose run --rm -w /repo/telemetry_pipeline tests python main_sandbox.py
+    profiles: ["test"]
+    build:
+      context: ./test_runner
+      additional_contexts:
+        pipeline: ./telemetry_pipeline
+        detector: ./detection_engine
+        contract: ./contract
+    environment:
+      # Base propia en el mismo servidor (run.sh la crea): los tests de
+      # integracion escriben en registered_databases y en la cola.
+      DB_HOST: postgres
+      DB_PORT: 5432
+      QUERYLENS_DB: ${QL_TEST_DB:-ql_test}
+      QUERYLENS_USER: ${QUERYLENS_USER:?falta en .env}
+      QUERYLENS_PASSWORD: ${QUERYLENS_PASSWORD:?falta en .env}
+      AUTH_ENCRYPTION_KEY: ${AUTH_ENCRYPTION_KEY:?falta en .env}
+      # Targets del sandbox (ql_sandbox), publicados en el host como hoy.
+      MONITOR_PG_HOST: host.docker.internal
+      MONITOR_PG_PORT: 5432
+      MONITOR_MY_HOST: host.docker.internal
+      MONITOR_MY_PORT: 3307
+      # El codigo montado tiene prioridad sobre la copia instalada del
+      # contrato; sin cache de pytest ni .pyc en el repo.
+      PYTHONPATH: /repo/contract
+      PYTEST_ADDOPTS: -p no:cacheprovider
+      HOME: /tmp
+    # Mismo uid que el dueno del repo, para que los logs que escriben los
+    # tests no queden de root.
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - .:/repo
+    networks: [backend]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+networks:
+  # Lo que atiende al navegador: nginx y los servicios a los que reenvia.
+  edge:
+  # La base y quienes la usan. No es internal: pipeline y auth-service salen
+  # a las bases monitoreadas (host.docker.internal, red del cliente).
+  backend:
 
 volumes:
   pgdata:

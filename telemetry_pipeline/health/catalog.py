@@ -100,8 +100,16 @@ CATALOG: dict[str, IssueDef] = {
     ),
     "PG_VERSION_UNSUPPORTED": IssueDef(
         "preflight", "version", BLOCKING,
-        "La version de PostgreSQL es anterior a la minima soportada por QueryLens (17).",
-        "Actualiza el servidor a PostgreSQL 17 o superior.",
+        "La version de PostgreSQL es anterior a la minima soportada por QueryLens (15).",
+        "Actualiza el servidor a PostgreSQL 17 o superior (15 como minimo).",
+    ),
+    "PG_VERSION_LIMITED": IssueDef(
+        "preflight", "version", INFO,
+        "La version de PostgreSQL es anterior a la 17: QueryLens funciona, pero algunas "
+        "detecciones tienen menos datos. En 16 falta pg_stat_statements.stats_since: una "
+        "query nueva se mide desde su segundo ciclo. En 15 faltan ademas EXPLAIN (GENERIC_PLAN), "
+        "asi que los planes solo llegan de auto_explain, y last_idx_scan.",
+        "Para usar todas las detecciones, actualiza el servidor a PostgreSQL 17 o superior.",
     ),
     "STATEMENTS_EVICTING": IssueDef(
         "preflight", "config", INFO,
@@ -210,6 +218,44 @@ CATALOG: dict[str, IssueDef] = {
         "Postgres: log_error_verbosity distinto de terse y log_min_messages en "
         "error o mas bajo. MySQL 8.0.22 o superior con "
         "SET PERSIST innodb_print_all_deadlocks = ON; SET PERSIST log_error_verbosity = 3;",
+    ),
+    "DEADLOCK_ROW_WAITS_UNLOGGED": IssueDef(
+        "collect", "config", INFO,
+        "Postgres no registra las esperas de bloqueo (log_lock_waits = off): "
+        "si la aplicacion manda los valores de la consulta aparte ($1), como "
+        "la mayoria de los drivers y ORM, un abrazo mortal se registra sin "
+        "saber si fue por orden inconsistente (CT-01) o por conversion de "
+        "modo (CT-02).",
+        "ALTER SYSTEM SET log_lock_waits = on; SELECT pg_reload_conf(); Aun "
+        "asi solo se distinguen los abrazos cuyas esperas empezaron con mas "
+        "de deadlock_timeout (1 s por defecto) de diferencia.",
+    ),
+    # ---------- calidad de la captura (EngineCountersStage, writer) ----------
+    "DEADLOCK_COUNTER_UNAVAILABLE": IssueDef(
+        "collect", "config", INFO,
+        "No se pudo leer el contador de abrazos mortales del motor: el reporte "
+        "no puede decir cuantos abrazos hubo ni cuantos se perdieron.",
+        "Postgres: el usuario de monitoreo necesita leer pg_stat_database. MySQL: "
+        "otorga PROCESS al usuario de monitoreo y activa el contador con "
+        "SET GLOBAL innodb_monitor_enable = 'lock_deadlocks';",
+    ),
+    "DEADLOCKS_MISSED": IssueDef(
+        "capture", "config", DEGRADED,
+        "En la ultima hora el motor conto mas abrazos mortales que los que "
+        "QueryLens recibio: los que faltan no se analizaron.",
+        "Revisa en esta misma lista LOG_WINDOW_OVERRUN (el log crecio mas de lo "
+        "que se lee por ciclo) y DEADLOCK_REPORTS_PARTIAL (MySQL sin "
+        "innodb_print_all_deadlocks). Tambien se pierden los abrazos de un "
+        "monitoreo pausado o detenido mas de 2 minutos. querylens report da el "
+        "detalle por ventana.",
+    ),
+    "LOG_WINDOW_OVERRUN": IssueDef(
+        "collect", "config", DEGRADED,
+        "El log de Postgres crecio entre dos ciclos mas de lo que QueryLens lee "
+        "por ciclo: los abrazos mortales y los planes de auto_explain escritos "
+        "en ese tramo no se leyeron.",
+        "Baja el volumen del log: sube auto_explain.log_min_duration y revisa "
+        "log_statement, log_min_duration_statement y log_connections.",
     ),
     # ---------- pipeline interno ----------
     "SNAPSHOT_VALIDATION_FAILED": IssueDef(

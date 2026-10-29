@@ -61,8 +61,21 @@ def ql():
 # ---------- PostgreSQL: capa de recoleccion ----------
 
 
-def test_collect_returns_every_declared_section(pg):
+def _pg_version_num(pg):
+    with pg.connect() as conn:
+        return int(conn.execute(text("SELECT current_setting('server_version_num')")).scalar())
+
+
+def _pg_collector(pg):
+    """El collector con las consultas de la version del motor, como lo deja
+    el orchestrator despues del preflight."""
     collector = Postgres_Collector(engine=pg)
+    collector.use_server_version(_pg_version_num(pg))
+    return collector
+
+
+def test_collect_returns_every_declared_section(pg):
+    collector = _pg_collector(pg)
     with pg.connect() as conn:
         stats = CollectStage(collector).execute({}, conn)
     assert set(stats) == set(collector.queries)
@@ -79,7 +92,7 @@ def test_statements_exclude_the_monitoring_user_itself(pg):
     el test signifique algo hay que comparar contra la vista SIN filtro: si el
     monitor ya no aparece ahi, no hay nada que excluir y el test pasa por vacuio.
     """
-    collector = Postgres_Collector(engine=pg)
+    collector = _pg_collector(pg)
     with pg.connect() as conn:
         session_oid = conn.execute(text(
             "SELECT oid FROM pg_roles WHERE rolname = session_user"
@@ -107,7 +120,7 @@ def test_statements_exclude_the_monitoring_user_itself(pg):
 
 
 def test_schema_resolver_maps_the_demo_user_to_a_real_schema(pg):
-    collector = Postgres_Collector(engine=pg)
+    collector = _pg_collector(pg)
     with pg.connect() as conn:
         stats = CollectStage(collector).execute({}, conn)
     rows = stats["schema_resolver"]
@@ -122,7 +135,9 @@ def test_schema_resolver_maps_the_demo_user_to_a_real_schema(pg):
 
 
 def test_generic_plan_explain_is_supported_by_the_engine(pg):
-    collector = Postgres_Collector(engine=pg)
+    if _pg_version_num(pg) < 160000:
+        pytest.skip("EXPLAIN (GENERIC_PLAN) es de PG 16: en 15 los planes llegan solo de auto_explain")
+    collector = _pg_collector(pg)
     with pg.connect() as conn:
         rows = conn.execute(text(collector.queries["statements"])).mappings().all()
     # Misma puerta que ExplainStage: el rol monitor es de solo lectura, asi que

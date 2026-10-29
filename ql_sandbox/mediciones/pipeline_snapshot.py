@@ -2,7 +2,7 @@
 
 Igual que ql_sandbox/scenarios/pipeline_one_engine.py, pero con el db_id como
 argumento: cada corrida tiene su propia historia (statement_samples) y sus
-propios hallazgos. measure.py lo copia al contenedor querylens_pipeline:
+propios hallazgos. measure.py lo copia al servicio pipeline del compose:
 
   python /tmp/pipeline_snapshot.py <postgres|mysql> <db_id>
 

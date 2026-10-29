@@ -55,7 +55,7 @@ echo ""
 echo ">>> [PostgreSQL] Cleaning up previous data..."
 sysbench oltp_read_write \
   --db-driver=pgsql \
-  --pgsql-host=postgres \
+  --pgsql-host="${PG_HOST:-postgres}" \
   --pgsql-port=5432 \
   --pgsql-user=ql_user \
   --pgsql-password=ql_pass \
@@ -68,7 +68,7 @@ echo ""
 echo ">>> [PostgreSQL] Creating tables and data..."
 sysbench oltp_read_write \
   --db-driver=pgsql \
-  --pgsql-host=postgres \
+  --pgsql-host="${PG_HOST:-postgres}" \
   --pgsql-port=5432 \
   --pgsql-user=ql_user \
   --pgsql-password=ql_pass \
@@ -81,7 +81,7 @@ echo ""
 echo ">>> [PostgreSQL] Injecting load ($DURATION seconds)..."
 sysbench oltp_read_write \
   --db-driver=pgsql \
-  --pgsql-host=postgres \
+  --pgsql-host="${PG_HOST:-postgres}" \
   --pgsql-port=5432 \
   --pgsql-user=ql_user \
   --pgsql-password=ql_pass \
@@ -103,7 +103,7 @@ echo ""
 echo ">>> [MySQL] Cleaning up previous data..."
 sysbench oltp_read_write \
   --db-driver=mysql \
-  --mysql-host=mysql \
+  --mysql-host="${MYSQL_HOST:-mysql}" \
   --mysql-port=3306 \
   --mysql-user=app_user \
   --mysql-password=app_pass \
@@ -117,7 +117,7 @@ echo ""
 echo ">>> [MySQL] Creating tables and data..."
 sysbench oltp_read_write \
   --db-driver=mysql \
-  --mysql-host=mysql \
+  --mysql-host="${MYSQL_HOST:-mysql}" \
   --mysql-port=3306 \
   --mysql-user=app_user \
   --mysql-password=app_pass \
@@ -131,7 +131,7 @@ echo ""
 echo ">>> [MySQL] Injecting load ($DURATION seconds)..."
 sysbench oltp_read_write \
   --db-driver=mysql \
-  --mysql-host=mysql \
+  --mysql-host="${MYSQL_HOST:-mysql}" \
   --mysql-port=3306 \
   --mysql-user=app_user \
   --mysql-password=app_pass \

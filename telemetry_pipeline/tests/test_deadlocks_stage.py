@@ -114,6 +114,8 @@ def _pg_conn(files, settings=None, relations=(), fail=None, tables=(CUENTAS,), u
     settings = {
         "log_error_verbosity": "default",
         "log_min_messages": "warning",
+        "log_lock_waits": "on",
+        "deadlock_timeout": "1s",
         "database_name": "ql_demo",
         "now_utc": PG_NOW.replace(tzinfo=None),
         **(settings or {}),
@@ -340,6 +342,10 @@ def _targets(report):
     return [trx["waits_for"]["targets"] for trx in report["transactions"]]
 
 
+def _sources(report):
+    return [trx["waits_for"].get("targets_source") for trx in report["transactions"]]
+
+
 def test_postgres_rows_are_labeled_from_the_literals_of_the_statements():
     ct01, ct02 = _pg_records()
     conn = _pg_conn([("postgresql-Thu.json", _pg_log(ct01, ct02), PG_NOW)])
@@ -349,8 +355,10 @@ def test_postgres_rows_are_labeled_from_the_literals_of_the_statements():
     # CT-01: id=2 e id=1, filas distintas. CT-02: id=1 las dos
     assert _targets(first) == [["row 1"], ["row 2"]]
     assert _targets(second) == [["row 1"], ["row 1"]]
+    assert _sources(first) == _sources(second) == ["row_key", "row_key"]
+    for report in (first, second):
+        assert all(not {"row_key", "row_ctid"} & trx["waits_for"].keys() for trx in report["transactions"])
     dumped = json.dumps([first, second])
-    assert "row_key" not in dumped
     for literal in ("id=1", "id=2", "saldo=saldo", '"v1"'):
         assert literal not in dumped, literal
 
@@ -520,6 +528,95 @@ def test_postgres_row_deadlocks_outside_the_connected_database_are_dropped(dbnam
 
     assert _run("postgres", conn) == []
     assert not any("pg_catalog.pg_index" in sql for sql in conn.sent)
+
+
+# ------------------------------------------------- filas por ctid (log_lock_waits)
+
+def _waiting_lines():
+    return [json.loads(line) for line in (GOLDEN / "postgres_still_waiting.jsonl").read_text().splitlines()]
+
+
+CT02_TABLE = {"schema_name": "public", "table_name": "ql_ct02_cuentas", "table_oid": 16400}
+QA = {"schema_name": "ql_qa", "table_name": "ql_cmp_cuentas", "table_oid": 16500}
+QB = {"schema_name": "ql_qb", "table_name": "ql_cmp_cuentas", "table_oid": 16510}
+
+
+def test_postgres_parameterized_rows_are_labeled_from_the_ctids():
+    conn = _pg_conn([("postgresql-Thu.json", _pg_log(*_waiting_lines()), PG_NOW)], tables=(CUENTAS, CT02_TABLE, QA, QB))
+
+    ct01, ct02, schemas = _run("postgres", conn)
+
+    assert _targets(ct01) == [["row 1"], ["row 2"]]
+    assert _targets(ct02) == [["row 1"], ["row 1"]]
+    # (0,1) en las dos, pero de tablas distintas
+    assert _targets(schemas) == [["row 1"], ["row 2"]]
+    for report in (ct01, ct02, schemas):
+        assert _sources(report) == ["ctid", "ctid"]
+        assert "row_ctid" not in json.dumps(report)
+    # sin valores en las sentencias no hay indice que buscar
+    assert not any("pg_catalog.pg_index" in sql for sql in conn.sent)
+
+
+def test_postgres_without_the_waiting_notices_rows_stay_unknown():
+    deadlocks = [line for line in _waiting_lines() if line.get("state_code") == "40P01"]
+    conn = _pg_conn([("postgresql-Thu.json", _pg_log(*deadlocks), PG_NOW)], tables=(CUENTAS, CT02_TABLE, QA, QB))
+
+    for report in _run("postgres", conn):
+        assert _targets(report) == [None, None]
+        assert _sources(report) == [None, None]
+
+
+def test_postgres_literals_without_a_unique_key_fall_back_to_the_ctids():
+    ct01, _ = _pg_records()
+    # el aviso de 797 mientras esperaba a 790 (transaccion 67256)
+    waiting = {
+        "timestamp": "2026-10-22 00:46:00.669 UTC", "pid": 797, "dbname": "ql_demo", "error_severity": "LOG",
+        "message": "process 797 still waiting for ShareLock on transaction 67256 after 1000.106 ms",
+        "context": 'while updating tuple (0,1) in relation "ql_ct01_cuentas"',
+    }
+    conn = _pg_conn([("postgresql-Thu.json", _pg_log(waiting, ct01), PG_NOW)], unique_keys=())
+
+    (report,) = _run("postgres", conn)
+
+    assert _targets(report) == [["row 1"], ["row 2"]]
+    assert _sources(report) == ["ctid", "ctid"]
+
+
+def test_postgres_latest_waiting_notice_of_a_process_wins():
+    lines = _waiting_lines()[:3]
+    older = {**lines[0], "timestamp": "2026-10-22 00:45:50.000 UTC",
+             "context": 'while updating tuple (0,1) in relation "ql_ct01_cuentas"'}
+    # la vieja despues en el archivo: no gana por orden sino por hora
+    conn = _pg_conn([("postgresql-Thu.json", _pg_log(*lines, older), PG_NOW)])
+
+    (report,) = _run("postgres", conn)
+
+    assert _targets(report) == [["row 1"], ["row 2"]]
+
+
+def test_postgres_ambiguous_context_table_is_not_labeled():
+    # ql_ct01_cuentas en dos esquemas, sentencias sin esquema y un search_path que no decide
+    conn = _pg_conn(
+        [("postgresql-Thu.json", _pg_log(*_waiting_lines()[:3]), PG_NOW)],
+        tables=(CUENTAS, VENTAS), paths={"ql_user": {**_NO_PATHS, "role_only": "search_path=otro"}},
+    )
+
+    (report,) = _run("postgres", conn)
+
+    assert _targets(report) == [None, None]
+
+
+def test_postgres_without_log_lock_waits_is_reported():
+    report = HealthReport()
+    conn = _pg_conn([], settings={"log_lock_waits": "off"})
+    assert _run("postgres", conn, report) == []
+    assert report.has("DEADLOCK_ROW_WAITS_UNLOGGED")
+
+
+def test_postgres_with_log_lock_waits_reports_nothing_about_it():
+    report = HealthReport()
+    assert _run("postgres", _pg_conn([]), report) == []
+    assert not report.has("DEADLOCK_ROW_WAITS_UNLOGGED")
 
 
 def test_postgres_terse_verbosity_is_reported_as_partial():

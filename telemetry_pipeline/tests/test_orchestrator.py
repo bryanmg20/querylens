@@ -54,6 +54,8 @@ _SCHEMA_RESOLVER = [
 ]
 
 _ROWS_BY_SQL = {
+    # EngineCountersStage
+    "pg_stat_database": [{"deadlocks": 3, "counter_epoch": ""}],
     "pg_stat_statements": _STATEMENTS,
     "pg_stat_user_indexes": [
         {
@@ -118,10 +120,13 @@ _ROWS_BY_SQL = {
     ],
     "resolved_schema": _SCHEMA_RESOLVER,
     "EXPLAIN (GENERIC_PLAN, FORMAT JSON)": [{"QUERY PLAN": _EXPLAIN_PLAN}],
-    # DeadlocksStage: servidor con la configuracion por defecto y sin logs
+    # DeadlocksStage: servidor con la configuracion por defecto mas
+    # log_lock_waits (lo que deja setup_target_postgres.sql) y sin logs
     "current_setting('log_error_verbosity')": [{
         "log_error_verbosity": "default",
         "log_min_messages": "warning",
+        "log_lock_waits": "on",
+        "deadlock_timeout": "1s",
         "database_name": "ql_demo",
         "now_utc": datetime(2026, 1, 1, 12, 0, 30),
     }],

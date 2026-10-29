@@ -23,8 +23,10 @@ _WHY_UNKNOWN = {
     "postgres_log": (
         "Postgres no informa que fila espera cada proceso, solo la transaccion "
         "que la tiene. La fila se identifica por los valores de la sentencia, "
-        "y solo cuando vienen escritos en ella y cubren una clave unica: con "
-        "sentencias preparadas ($1) no hay de donde sacarla."
+        "cuando vienen escritos en ella y cubren una clave unica, o por el "
+        "aviso que Postgres escribe con log_lock_waits si una sesion espera "
+        "mas que deadlock_timeout: con sentencias preparadas ($1) y esperas "
+        "que empezaron casi juntas no hay de donde sacarla."
     ),
 }
 _WHY_UNKNOWN_DEFAULT = "El informe no identifica el recurso que esperaba cada transaccion."
@@ -32,7 +34,9 @@ _WHY_UNKNOWN_DEFAULT = "El informe no identifica el recurso que esperaba cada tr
 _DIAGNOSIS = {
     "postgres_log": (
         "Si no queda claro, activar log_lock_waits en el servidor (registra la "
-        "fila de las esperas largas), o registrar por un tiempo acotado las "
+        "fila de las esperas largas, y con eso QueryLens distingue los abrazos "
+        "cuyas esperas empezaron con mas de deadlock_timeout de diferencia), "
+        "o registrar por un tiempo acotado las "
         "sentencias del rol de la aplicacion (ALTER ROLE ... SET log_statement "
         "= 'all'), que muestra la lectura previa y sus valores; esto ultimo deja "
         "datos reales en el log del servidor."

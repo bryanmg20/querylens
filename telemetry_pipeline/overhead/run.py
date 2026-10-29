@@ -49,7 +49,9 @@ SETTLE_S = 5.0
 WARMUP_S = 60.0
 GAP_S = 1.0
 STRESS_CADENCE_S = 2.0
-EXTERNAL_PIPELINE_CONTAINER = "querylens_pipeline"
+# Servicio del compose de la raiz (sin container_name fijo: se busca por la
+# etiqueta de compose, en cualquier proyecto).
+EXTERNAL_PIPELINE_SERVICE = "pipeline"
 MONITOR_FACTORIES = {"postgres": get_connection_postgres, "mysql": get_connection_mysql}
 # Los consumers que exige el pipeline (health/preflight.MY_CONSUMERS).
 MY_REQUIRED_CONSUMERS = ("global_instrumentation", "thread_instrumentation",
@@ -58,10 +60,11 @@ MY_REQUIRED_CONSUMERS = ("global_instrumentation", "thread_instrumentation",
 
 # --- preflight -------------------------------------------------------------------
 
-def _docker_running(name):
+def _compose_service_running(service):
     try:
         out = subprocess.run(
-            ["docker", "ps", "--filter", f"name=^{name}$", "--filter", "status=running", "-q"],
+            ["docker", "ps", "--filter", f"label=com.docker.compose.service={service}",
+             "--filter", "status=running", "-q"],
             capture_output=True, text=True, timeout=15,
         ).stdout
     except Exception:
@@ -111,9 +114,9 @@ def _check_mysql(errors, degraded):
 
 def preflight(engines, allow_degraded, allow_external):
     errors, degraded, warnings = [], [], []
-    if _docker_running(EXTERNAL_PIPELINE_CONTAINER):
-        msg = (f"el contenedor {EXTERNAL_PIPELINE_CONTAINER} esta extrayendo: ensucia los "
-               f"bloques de carga sola (docker stop {EXTERNAL_PIPELINE_CONTAINER})")
+    if _compose_service_running(EXTERNAL_PIPELINE_SERVICE):
+        msg = (f"el servicio {EXTERNAL_PIPELINE_SERVICE} del compose esta extrayendo: ensucia los "
+               f"bloques de carga sola (docker compose stop {EXTERNAL_PIPELINE_SERVICE})")
         if allow_external:
             warnings.append(msg)
         else:

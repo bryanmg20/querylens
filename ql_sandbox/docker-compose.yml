@@ -11,6 +11,8 @@ services:
     # auto_explain + log JSON con rotacion semanal: lo que pide
     # telemetry_pipeline/references/006_instalacion_auto_explain.md (Pasos 2-3).
     # Las funciones de lectura del log las crea el servicio postgres_setup.
+    # log_lock_waits: la fila que espera cada sesion de un abrazo cuando la
+    # sentencia manda sus valores aparte ($1); ver guia 006.
     command: >
       postgres
         -c shared_preload_libraries=pg_stat_statements,auto_explain
@@ -18,6 +20,7 @@ services:
         -c pg_stat_statements.max=10000
         -c track_activity_query_size=4096
         -c deadlock_timeout=1s
+        -c log_lock_waits=on
         -c shared_buffers=16MB
         -c auto_explain.log_min_duration=50ms
         -c auto_explain.log_analyze=off
@@ -117,18 +120,236 @@ services:
         condition: service_healthy
     volumes:
       - ./scripts:/scripts
+    # psql 17 del repositorio de PostgreSQL (bookworm trae el 15): MODE=bind de
+    # los escenarios usa \bind, que existe desde psql 16.
     command: >
       bash -c "
         apt-get update &&
-        apt-get install -y --no-install-recommends sysbench default-mysql-client postgresql-client &&
+        apt-get install -y --no-install-recommends sysbench default-mysql-client postgresql-common ca-certificates curl &&
+        /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y &&
+        apt-get install -y --no-install-recommends postgresql-client-17 &&
         tail -f /dev/null
       "
+    networks:
+      - ql_network
+
+  # ---------------------------------------------------------------- versiones
+  # Otras versiones del motor para la compatibilidad (#82). postgres (17) y
+  # mysql (8.0) de arriba siguen siendo los de siempre; cada version de aqui se
+  # levanta aparte con su profile y tiene su contenedor, puerto y volumen:
+  #   docker compose --profile pg15 up -d       # ql_postgres15 en 5415
+  #   docker compose --profile mysql84 up -d    # ql_mysql84 en 3384
+  # Los escenarios de ql_sysbench apuntan a una con PG_HOST / MYSQL_HOST
+  # (postgres15, mysql84...); measure_ct.py lo hace con --version.
+  # Misma configuracion que postgres (17) y mysql (8.0); desde PG 18 la imagen
+  # guarda los datos en /var/lib/postgresql/<version>/docker, por eso el
+  # volumen va en /var/lib/postgresql.
+
+  postgres15:
+    image: postgres:15
+    container_name: ql_postgres15
+    profiles: ["pg15"]
+    environment: &postgres_env
+      POSTGRES_USER: ql_user
+      POSTGRES_PASSWORD: ql_pass
+      POSTGRES_DB: ql_demo
+    ports:
+      - "5415:5432"
+    command: &postgres_command >
+      postgres
+        -c shared_preload_libraries=pg_stat_statements,auto_explain
+        -c pg_stat_statements.track=all
+        -c pg_stat_statements.max=10000
+        -c track_activity_query_size=4096
+        -c deadlock_timeout=1s
+        -c log_lock_waits=on
+        -c shared_buffers=16MB
+        -c auto_explain.log_min_duration=50ms
+        -c auto_explain.log_analyze=off
+        -c auto_explain.log_format=json
+        -c logging_collector=on
+        -c log_destination=stderr,jsonlog
+        -c log_filename=postgresql-%a.log
+        -c log_truncate_on_rotation=on
+        -c log_rotation_age=1d
+    volumes:
+      - ./init/init_postgres.sql:/docker-entrypoint-initdb.d/init_postgres.sql
+      - postgres15_data:/var/lib/postgresql/data
+    healthcheck: &postgres_healthcheck
+      test: ["CMD-SHELL", "pg_isready -U ql_user -d ql_demo"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ql_network
+
+  # Lo mismo que postgres_setup, contra la version de PGHOST.
+  postgres15_setup:
+    image: postgres:17
+    container_name: ql_postgres15_setup
+    profiles: ["pg15"]
+    depends_on:
+      postgres15:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres15
+      PGPASSWORD: ql_pass
+    volumes: &postgres_setup_volumes
+      - ./init/auto_explain_postgres.sql:/setup/auto_explain_postgres.sql:ro
+    entrypoint: ["sh", "-c"]
+    command: &postgres_setup_command
+      - |
+        until psql -U ql_user -d ql_demo -tAc "SELECT 1 FROM pg_roles WHERE rolname = 'querylens_monitor'" 2>/dev/null | grep -q 1; do
+          sleep 1
+        done
+        psql -U ql_user -d ql_demo -v ON_ERROR_STOP=1 -q -f /setup/auto_explain_postgres.sql
+    restart: "no"
+    networks:
+      - ql_network
+
+  postgres16:
+    image: postgres:16
+    container_name: ql_postgres16
+    profiles: ["pg16"]
+    environment: *postgres_env
+    ports:
+      - "5416:5432"
+    command: *postgres_command
+    volumes:
+      - ./init/init_postgres.sql:/docker-entrypoint-initdb.d/init_postgres.sql
+      - postgres16_data:/var/lib/postgresql/data
+    healthcheck: *postgres_healthcheck
+    networks:
+      - ql_network
+
+  postgres16_setup:
+    image: postgres:17
+    container_name: ql_postgres16_setup
+    profiles: ["pg16"]
+    depends_on:
+      postgres16:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres16
+      PGPASSWORD: ql_pass
+    volumes: *postgres_setup_volumes
+    entrypoint: ["sh", "-c"]
+    command: *postgres_setup_command
+    restart: "no"
+    networks:
+      - ql_network
+
+  postgres18:
+    image: postgres:18
+    container_name: ql_postgres18
+    profiles: ["pg18"]
+    environment: *postgres_env
+    ports:
+      - "5418:5432"
+    command: *postgres_command
+    volumes:
+      - ./init/init_postgres.sql:/docker-entrypoint-initdb.d/init_postgres.sql
+      - postgres18_data:/var/lib/postgresql
+    healthcheck: *postgres_healthcheck
+    networks:
+      - ql_network
+
+  postgres18_setup:
+    image: postgres:17
+    container_name: ql_postgres18_setup
+    profiles: ["pg18"]
+    depends_on:
+      postgres18:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres18
+      PGPASSWORD: ql_pass
+    volumes: *postgres_setup_volumes
+    entrypoint: ["sh", "-c"]
+    command: *postgres_setup_command
+    restart: "no"
+    networks:
+      - ql_network
+
+  # PostgreSQL 19 todavia no tiene version estable: release candidate, cambiable
+  # con PG19_TAG (p. ej. PG19_TAG=19 cuando salga).
+  postgres19:
+    image: postgres:${PG19_TAG:-19rc1}
+    container_name: ql_postgres19
+    profiles: ["pg19"]
+    environment: *postgres_env
+    ports:
+      - "5419:5432"
+    command: *postgres_command
+    volumes:
+      - ./init/init_postgres.sql:/docker-entrypoint-initdb.d/init_postgres.sql
+      - postgres19_data:/var/lib/postgresql
+    healthcheck: *postgres_healthcheck
+    networks:
+      - ql_network
+
+  postgres19_setup:
+    image: postgres:17
+    container_name: ql_postgres19_setup
+    profiles: ["pg19"]
+    depends_on:
+      postgres19:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres19
+      PGPASSWORD: ql_pass
+    volumes: *postgres_setup_volumes
+    entrypoint: ["sh", "-c"]
+    command: *postgres_setup_command
+    restart: "no"
+    networks:
+      - ql_network
+
+  mysql84:
+    image: mysql:8.4
+    container_name: ql_mysql84
+    profiles: ["mysql84"]
+    environment:
+      MYSQL_ROOT_PASSWORD: ql_root
+      MYSQL_DATABASE: ql_demo
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: app_pass
+    ports:
+      - "3384:3306"
+    command: >
+      --performance-schema=ON
+      --performance-schema-instrument='statement/%=ON'
+      --performance-schema-consumer-events-statements-history=ON
+      --performance-schema-consumer-events-statements-history-long=ON
+      --performance-schema-consumer-events-waits-current=ON
+      --max_connections=1000
+      --performance-schema-consumer-statements-digest=ON
+      --performance-schema-consumer-events-waits-current=ON
+      --performance-schema-consumer-events-waits-history=ON
+      --performance-schema-instrument='wait/io/table/sql/handler=ON'
+      --temptable_max_ram=1048576
+      --performance-schema-max-sql-text-length=${MYSQL_SQL_TEXT_LENGTH:-4096}
+      --innodb-print-all-deadlocks=ON
+      --log-error-verbosity=3
+    volumes:
+      - ./init/init_mysql.sql:/docker-entrypoint-initdb.d/init_mysql.sql
+      - mysql84_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pql_root"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
     networks:
       - ql_network
 
 volumes:
   postgres_data:
   mysql_data:
+  postgres15_data:
+  postgres16_data:
+  postgres18_data:
+  postgres19_data:
+  mysql84_data:
 
 networks:
   ql_network:

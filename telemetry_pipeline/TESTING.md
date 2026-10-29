@@ -11,7 +11,7 @@ Suite de tests del pipeline `telemetry_pipeline`: validación de contrato (model
 pip install -r telemetry_pipeline/requirements-dev.txt
 ```
 
-`requirements-dev.txt` incluye `-r requirements.txt` (runtime del pipeline) más `pytest`. No instales solo `requirements.txt` para testear: ahí no va pytest.
+`requirements-dev.txt` es el lock de `requirements-dev.in`: runtime del pipeline más `pytest` y `ruff`, con versiones exactas y hashes. No instales solo `requirements.txt` para testear: ahí no va pytest.
 
 La suite corre únicamente sobre fixtures locales (no necesita bases de datos ni PGMQ levantados para unit/contract). Los tests `integration` se saltan solos si los motores no están levantados.
 
@@ -61,11 +61,10 @@ python runner.py                       # Ctrl+C / SIGTERM para parar (ciclo limp
 
 # 3. El mismo daemon en contenedor (telemetry_pipeline/Dockerfile)
 docker compose up -d --build pipeline
-docker logs -f querylens_pipeline
 docker compose logs -f pipeline
 
 # 4. Verificar que no acumula conexiones abiertas (dispose por ciclo)
-docker exec querylens_db psql -U ql_user -d ql_demo \
+docker compose exec postgres psql -U ql_user -d ql_demo \
   -c "SELECT count(*) FROM pg_stat_activity WHERE datname = 'ql_demo';"
 ```
 
@@ -167,7 +166,7 @@ Hay dos puntos de entrada y no se mezclan:
 Ver qué va a extraer `main.py`:
 
 ```bash
-docker exec querylens_db psql -U ql_user -d ql_demo \
+docker compose exec postgres psql -U ql_user -d ql_demo \
   -c "SELECT database_identifier, engine, is_active, connection_name FROM registered_databases;"
 ```
 
@@ -213,11 +212,11 @@ El informe exige un sobrecosto **inferior al 5 %** sobre la métrica de rendimie
 **Medición vigente: v2** (`python -m overhead.run`). Método, perfiles, veredicto con intervalo de confianza y limitaciones: [`OVERHEAD_V2.md`](OVERHEAD_V2.md).
 
 ```bash
-docker stop querylens_pipeline        # el daemon del compose ensucia la ventana "carga sola"
+docker compose stop pipeline     # el daemon del compose ensucia la ventana "carga sola"
 cd telemetry_pipeline
 python -m overhead.run --profile quick                   # el arnés funciona (NO es evidencia)
 python -m overhead.run --profile serious --engine both   # evidencia (~1 h)
-docker start querylens_pipeline
+docker compose start pipeline
 ```
 
 Las subsecciones siguientes describen la **medición anterior** (`measure_overhead.py`), que se conserva sin cambios para comparar. Detalle completo: [`MEASURE_OVERHEAD.md`](MEASURE_OVERHEAD.md).
@@ -332,11 +331,22 @@ Los campos van en `null` cuando no hay dato; el script **no** rellena con ceros 
 - MySQL sin `digest` poblado: el tiempo del monitor va `null` (solo afecta fase B).
 - Requiere Docker con `ql_sysbench` (no corre en el CI de GitHub Actions). `scripts/` está montado en el contenedor, así que `continuous_load.sh` no requiere rebuild.
 
-## Por qué hay dos requirements
+## Por qué hay dos requirements (y dos archivos por cada uno)
 
 | Archivo | Para quién | Contenido |
 |---------|------------|-----------|
-| `requirements.txt` | Runtime (correr el pipeline en un servidor) | sqlalchemy, psycopg2, pymysql, sqlglot, python-dotenv, pydantic, cryptography, con rango `>=versión probada,<próxima mayor` |
-| `requirements-dev.txt` | Desarrollo (tests, lint) | `-r requirements.txt` + `pytest` + `ruff` |
+| `requirements.in` | Se edita a mano | Dependencias directas de runtime (sqlalchemy, psycopg2-binary, pymysql, sqlglot, python-dotenv, pydantic, cryptography), con rango `>=versión probada,<próxima mayor` |
+| `requirements.txt` | Runtime (imagen, servidor) | Lock generado: versiones exactas con hashes, transitivas incluidas |
+| `requirements-dev.in` | Se edita a mano | `-r requirements.in` + `pytest` + `ruff` |
+| `requirements-dev.txt` | Desarrollo (tests, lint, CI) | Lock generado de lo anterior |
 
 Pytest no vive en `requirements.txt` a propósito: un entorno que solo ejecuta el pipeline no debe instalar el runner de tests.
+
+Los `.txt` no se editan a mano. Tras cambiar un `.in`, regenerar todos los locks del repo y commitear `.in` y `.txt` juntos:
+
+```bash
+pip install uv
+sh scripts/lock_requirements.sh
+```
+
+Un paquete que ya está en el lock conserva su versión; para subir uno, agregar `--upgrade-package <paquete>` en el script o correr `uv pip compile` a mano con esa opción.

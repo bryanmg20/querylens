@@ -123,6 +123,12 @@ def _finding(
         lock.table_name for lock in locks if lock.table_name and lock.process_id == root.process_id
     })
     idle = root.session_state is not None and root.session_state.startswith("idle in transaction")
+    # la base de lo que se espera; la de la sesion raiz puede ser otra (MySQL
+    # sin USE la deja en NULL)
+    databases = sorted({
+        lock.database_name for lock in locks
+        if lock.database_name and not lock.is_granted and lock.process_id != root.process_id
+    })
 
     return Hallazgo(
         antipatron=ANTIPATRON,
@@ -171,6 +177,7 @@ def _finding(
         recomendacion=_recommendation(root.process_id, idle),
         query_id=root.query_id,
         table_name=", ".join(tables) if tables else None,
+        database_name=", ".join(databases) if databases else root.database_name,
     )
 
 

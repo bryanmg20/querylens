@@ -26,9 +26,26 @@ CREATE TABLE IF NOT EXISTS registered_databases (
     -- de disponibilidad), esta columna solo la cambia el usuario; el pipeline
     -- extrae unicamente las bases con is_active Y monitoring_enabled.
     monitoring_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    -- Ventana de recoleccion programada desde el CLI (cli/querylens.sh). NULL
+    -- en las dos = monitoreo continuo, sin ventana ni reporte automatico. El
+    -- servicio scheduler enciende monitoring_enabled al llegar collect_from
+    -- (y anota collect_started_at), lo apaga al llegar collect_until y, tras
+    -- un margen, escribe el reporte en reports/ y anota report_written_at.
+    collect_from TIMESTAMPTZ,
+    collect_until TIMESTAMPTZ,
+    collect_started_at TIMESTAMPTZ,
+    report_written_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Volumenes creados antes de la ventana: el initdb no vuelve a correr, asi que
+-- db-roles (service_roles.sql) aplica este archivo en cada up.
+ALTER TABLE registered_databases
+    ADD COLUMN IF NOT EXISTS collect_from TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS collect_until TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS collect_started_at TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS report_written_at TIMESTAMPTZ;
 
 CREATE INDEX IF NOT EXISTS idx_registered_databases_identifier
     ON registered_databases (database_identifier);

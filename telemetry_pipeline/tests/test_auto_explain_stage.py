@@ -364,6 +364,23 @@ def test_explain_falls_back_to_generic_without_logged_plans():
     assert {e["explain_source"] for e in stats["canonic_explains"]} == {"generic"}
 
 
+def test_postgres_15_explains_only_with_logged_plans():
+    # EXPLAIN (GENERIC_PLAN) es de PG 16: en 15 el candidato sin plan del log se
+    # salta, sin EXPLAIN ni NO_EXPLAINABLE_CANDIDATES (ya avisa PG_VERSION_LIMITED)
+    conn = _ExplainConn()
+    report = HealthReport()
+    report.facts["pg_version_num"] = 150019
+    stats = _explain_stats({111: {"Plan": _plan("(id < 2000)")}})
+    ExplainStage(_ExplainCollector(), report).execute(stats, conn)
+    assert [e["explain_source"] for e in stats["canonic_explains"]] == ["auto_explain"]
+    assert not [s for s in conn.sent if s.startswith("EXPLAIN")]
+
+    report = HealthReport()
+    report.facts["pg_version_num"] = 150019
+    ExplainStage(_ExplainCollector(), report).execute(_explain_stats({}), _ExplainConn())
+    assert not report.issues
+
+
 def test_logged_plans_never_stay_in_stats():
     stats = _explain_stats({111: {"Plan": _plan("(c = 'secreto'::text)")}})
     ExplainStage(_ExplainCollector()).execute(stats, _ExplainConn())

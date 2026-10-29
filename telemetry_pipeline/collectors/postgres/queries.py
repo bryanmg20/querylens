@@ -198,3 +198,16 @@ FROM normalized_paths usp
 JOIN all_relations t ON t.schema_name = usp.schema_name
 ORDER BY usp.user_id, usp.priority;
 """
+
+# Versiones anteriores a 17 (PIPELINE_FLOW, "Versiones soportadas"): las mismas
+# consultas con NULL en lo que la version no tiene. stats_since es de PG 17
+# (sin el, una query nueva se mide desde su segundo snapshot) y last_idx_scan
+# de PG 16 (sin el, un indice sin uso se reconoce solo por idx_scan = 0, como
+# en MySQL).
+STATEMENTS_QUERY_PG16 = STATEMENTS_QUERY.replace(
+    "stats_since AS counters_epoch", "NULL::timestamptz AS counters_epoch"
+)
+INDEXES_QUERY_PG15 = INDEXES_QUERY.replace(
+    "last_idx_scan AS last_index_scan", "NULL::timestamptz AS last_index_scan"
+)
+assert STATEMENTS_QUERY_PG16 != STATEMENTS_QUERY and INDEXES_QUERY_PG15 != INDEXES_QUERY

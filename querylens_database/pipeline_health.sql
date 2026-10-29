@@ -58,3 +58,37 @@ CREATE INDEX IF NOT EXISTS ix_issues_db_seen
 CREATE INDEX IF NOT EXISTS ix_issues_resolved
     ON pipeline_health.issues (resolved_at)
     WHERE resolved_at IS NOT NULL;
+
+-- Una fila por ciclo exitoso: lo que el motor conto y cuanto crecio el log.
+-- La escribe health/writer.py con la muestra de stages/engine_counters.py y
+-- las diferencias contra la fila anterior de la misma base. La lee
+-- cli/share/report.sql para comparar los abrazos mortales que hubo con los
+-- que QueryLens capturo (public.deadlock_events). La purga usa la misma
+-- retencion que issues.
+CREATE TABLE IF NOT EXISTS pipeline_health.cycle_samples (
+    db_id                TEXT NOT NULL,
+    -- reloj del pipeline al tomar la muestra
+    taken_at             TIMESTAMPTZ NOT NULL,
+    -- valor acumulado del contador del motor; NULL si no se pudo leer
+    -- (PG: pg_stat_database.deadlocks, MySQL: INNODB_METRICS lock_deadlocks)
+    engine_deadlocks     BIGINT,
+    -- PG: stats_reset ('' si nunca se reseteo); si cambia, el contador volvio
+    -- a cero. Filas viejas: stats_reset|arranque del postmaster, y solo cuenta
+    -- stats_reset. MySQL: NULL (un reinicio se ve porque el contador baja)
+    counter_epoch        TEXT,
+    -- [{name, size}] de los archivos .json del log (solo PG)
+    log_files            JSONB,
+    -- Diferencias contra la fila anterior; NULL en la primera o sin dato
+    deadlocks_since_prev BIGINT,
+    -- el contador volvio a cero entre las dos muestras: deadlocks_since_prev
+    -- es solo una cota inferior
+    counter_reset        BOOLEAN NOT NULL DEFAULT false,
+    log_bytes_since_prev BIGINT,
+    seconds_since_prev   DOUBLE PRECISION,
+    -- se escribieron mas bytes que los que se leen por ciclo (LOG_WINDOW_BYTES)
+    log_window_overrun   BOOLEAN,
+    PRIMARY KEY (db_id, taken_at)
+);
+
+CREATE INDEX IF NOT EXISTS ix_cycle_samples_taken
+    ON pipeline_health.cycle_samples (taken_at);

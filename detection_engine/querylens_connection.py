@@ -20,7 +20,9 @@ def get_connection_querylens_db() -> Engine:
 
         url = f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 
-        engine = create_engine(url)
+        # pool_pre_ping: si postgres se reinicio, la conexion vieja del pool se
+        # descarta al tomarla en vez de fallar la primera consulta
+        engine = create_engine(url, pool_pre_ping=True)
         return engine
 
     except SQLAlchemyError as e:

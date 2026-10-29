@@ -10,3 +10,6 @@ class DB_Engine_Collector:
 
     def mark_explainable(self, stats: Stats) -> Stats:
         return stats
+
+    def use_server_version(self, version_num: int | None) -> None:
+        """Ajusta las consultas a la version del servidor (la lee el preflight)."""

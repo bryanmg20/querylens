@@ -8,7 +8,7 @@ public.hallazgos si aparecio el hallazgo esperado. Al terminar detiene la
 carga y elimina la tabla.
 
 REQUISITOS
-  - Sandbox levantado (ql_sandbox: docker compose up -d) y querylens_db (raiz).
+  - Sandbox levantado (ql_sandbox: docker compose up -d) y el compose de la raiz.
   - venv creado en telemetry_pipeline/ y en detection_engine/.
   - Solo libreria estandar: se corre con cualquier python 3.10+.
 
@@ -19,8 +19,8 @@ USO (desde la raiz del repo)
   python ql_sandbox/scenarios/run_scenario.py all --engine both
   python ql_sandbox/scenarios/run_scenario.py n_plus_one --engine both --docker
 
-  --docker: el pipeline corre dentro del contenedor querylens_pipeline y los
-  snapshots los procesa el contenedor querylens_detection_engine (docker
+  --docker: el pipeline corre dentro del servicio pipeline del compose y los
+  snapshots los procesa el servicio detection-engine (docker
   compose de la raiz levantado, con la imagen al dia). Sirve cuando los venv
   locales no se pueden usar, p. ej. si Windows bloquea la DLL de psycopg2.
 
@@ -36,6 +36,7 @@ NOTA
 """
 
 import argparse
+import functools
 import json
 import os
 import subprocess
@@ -52,8 +53,6 @@ ENGINE_DIR = ROOT / "detection_engine"
 PG_CONTAINER = "ql_postgres"
 MYSQL_CONTAINER = "ql_mysql"
 LOAD_CONTAINER = "ql_sysbench"
-QUERYLENS_CONTAINER = "querylens_db"
-PIPELINE_CONTAINER = "querylens_pipeline"
 WORKLOAD_SCRIPT = "/scripts/scenarios/workload.sh"
 STOP_FILE = "/tmp/ql_scn_stop"
 
@@ -485,6 +484,16 @@ def run(
     return result.stdout
 
 
+@functools.cache
+def compose_container(service):
+    # Id del contenedor de <service> en el compose de la raiz. Sin container_name
+    # fijo el nombre depende del proyecto (docker compose -p, COMPOSE_PROJECT_NAME).
+    out = run(["docker", "compose", "-f", str(ROOT / "docker-compose.yml"), "ps", "-q", service]).strip()
+    if not out:
+        raise RuntimeError(f"el servicio {service} del compose de la raiz no esta corriendo")
+    return out
+
+
 def venv_python(project_dir: Path) -> str:
     for candidate in (project_dir / "venv" / "Scripts" / "python.exe", project_dir / "venv" / "bin" / "python"):
         if candidate.exists():
@@ -511,7 +520,7 @@ def exec_server_sql(engine: str, sql: str) -> None:
 
 def querylens_sql(sql: str) -> str:
     return run([
-        "docker", "exec", "-i", QUERYLENS_CONTAINER, "psql", "-U", "ql_user", "-d", "ql_demo", "-At",
+        "docker", "exec", "-i", compose_container("postgres"), "psql", "-U", "ql_user", "-d", "ql_demo", "-At",
     ], input_text=sql).strip()
 
 
@@ -575,8 +584,8 @@ def root_env() -> dict[str, str]:
 def run_pipeline(engine: str) -> None:
     if USE_DOCKER:
         # el contenedor ya trae las variables de conexion (MONITOR_*, QUERYLENS_*)
-        run(["docker", "cp", str(PIPELINE_ONE_ENGINE), f"{PIPELINE_CONTAINER}:/tmp/pipeline_one_engine.py"])
-        run(["docker", "exec", "-e", "QL_PIPELINE_DIR=/app", "-w", "/app", PIPELINE_CONTAINER,
+        run(["docker", "cp", str(PIPELINE_ONE_ENGINE), f"{compose_container('pipeline')}:/tmp/pipeline_one_engine.py"])
+        run(["docker", "exec", "-e", "QL_PIPELINE_DIR=/app", "-w", "/app", compose_container("pipeline"),
              "python", "/tmp/pipeline_one_engine.py", engine])
         return
     run([venv_python(PIPELINE_DIR), str(PIPELINE_ONE_ENGINE), engine], cwd=PIPELINE_DIR, env=root_env())
@@ -591,7 +600,7 @@ def drain_queue() -> int:
         while queue_length() and time.monotonic() < deadline:
             time.sleep(1)
         if queue_length():
-            log(f"Aviso: la cola no se vacio en {DOCKER_DRAIN_TIMEOUT_SECONDS}s; esta corriendo querylens_detection_engine?")
+            log(f"Aviso: la cola no se vacio en {DOCKER_DRAIN_TIMEOUT_SECONDS}s; esta corriendo el servicio detection-engine?")
         return pending
     # --oneshot procesa un mensaje por llamada; se repite hasta vaciar la cola
     processed = 0

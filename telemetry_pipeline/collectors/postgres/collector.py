@@ -9,7 +9,9 @@ from .queries import (
 SERVER_START_QUERY,
     COLUMNS_QUERY,
     SCHEMA_RESOLVER_QUERY,
-    FOREIGN_KEYS_QUERY
+    FOREIGN_KEYS_QUERY,
+    STATEMENTS_QUERY_PG16,
+    INDEXES_QUERY_PG15,
 )
 import stages.normalize as normalize
 from models.stats import Stats
@@ -32,6 +34,14 @@ class Postgres_Collector(DB_Engine_Collector):
                         "schema_resolver": SCHEMA_RESOLVER_QUERY,
                         "foreign_keys": FOREIGN_KEYS_QUERY
                         }
+
+    def use_server_version(self, version_num: int | None) -> None:
+        # Sin version (el preflight no pudo leerla) quedan las de PG 17: si la
+        # version no las tiene, falla la seccion y classify lo reporta.
+        if version_num is None:
+            return
+        self.queries["statements"] = STATEMENTS_QUERY if version_num >= 170000 else STATEMENTS_QUERY_PG16
+        self.queries["indexes"] = INDEXES_QUERY if version_num >= 160000 else INDEXES_QUERY_PG15
 
     def normalize_engine_artifacts(self, stats: Stats) -> Stats:
         normalize.normalize_active_query_timestamps(stats)

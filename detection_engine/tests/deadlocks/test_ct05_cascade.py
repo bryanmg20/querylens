@@ -273,3 +273,23 @@ def test_only_the_root_that_meets_the_rule_reports():
     findings, roots = _two_roots_samples(build)
     assert [f.evidencia["root"]["process_id"] for f in findings] == [100]
     assert {key[0] for key in roots} == {100}
+
+
+def _with_lock_databases(snap, root_db, waiter_db):
+    for lock in snap.locks:
+        lock.database_name = root_db if lock.process_id == 100 else waiter_db
+    return snap
+
+
+def test_finding_names_the_database_where_the_sessions_wait():
+    t1 = T0 + timedelta(seconds=10)
+    _, prev = detect_long_transaction_cascade(_with_lock_databases(_snapshot(T0), "ql_otra", "ql_otra"), T0, {})
+    findings, _ = detect_long_transaction_cascade(
+        _with_lock_databases(_snapshot(t1, root_age_s=50), "ql_otra", "ql_otra"), t1, prev
+    )
+    assert [f.database_name for f in findings] == ["ql_otra"]
+
+
+def test_finding_falls_back_to_the_root_session_database():
+    findings, _ = _two_samples()
+    assert findings and findings[0].database_name is None

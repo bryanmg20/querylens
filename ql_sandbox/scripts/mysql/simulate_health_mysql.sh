@@ -24,7 +24,7 @@ export MYSQL_PWD=ql_root
 
 MYSQL=(
   mysql
-  --host=mysql
+  --host="${MYSQL_HOST:-mysql}"
   --port=3306
   --user=root
   -e

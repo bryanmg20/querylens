@@ -24,6 +24,7 @@ import os
 import signal
 import threading
 import time
+from pathlib import Path
 
 from config.registered import _get_queue_engine, load_registered_targets
 from health import writer as health_writer
@@ -79,6 +80,13 @@ def _purge_health() -> None:
     health_writer.purge(_get_queue_engine())
 
 
+def _touch_heartbeat() -> None:
+    """Marca de vida para el healthcheck de docker-compose (HEARTBEAT_FILE)."""
+    heartbeat_file = os.getenv("HEARTBEAT_FILE")
+    if heartbeat_file:
+        Path(heartbeat_file).touch()
+
+
 class Runner:
     """Un ciclo por intervalo, sin solapes ni ticks atrasados."""
 
@@ -90,6 +98,7 @@ class Runner:
         clock=time.monotonic,
         purge=None,
         purge_interval=None,
+        heartbeat=None,
     ):
         self.interval = interval if interval is not None else interval_from_env()
         self.load = load if load is not None else load_registered_targets
@@ -103,6 +112,9 @@ class Runner:
         )
         # None = todavia no purgo: la primera purga corre en el primer ciclo.
         self._last_purge = None
+        # Se llama tras cada ciclo que termina bien (con o sin bases); un
+        # ciclo que falla no late. None = sin heartbeat (tests, usos embebidos).
+        self.heartbeat = heartbeat
         self.stop = threading.Event()
         self.backoff = self.interval
         # Objetivo activo del ciclo anterior; None = todavia no corrio ninguno.
@@ -155,6 +167,8 @@ class Runner:
             try:
                 self.cycle()
                 self.backoff = self.interval
+                if self.heartbeat is not None:
+                    self.heartbeat()
             except Exception as e:
                 wait_s = min(self.backoff, MAX_BACKOFF_S)
                 self.backoff = min(self.backoff * 2, MAX_BACKOFF_S)
@@ -190,6 +204,6 @@ def _install_signal_handlers(runner: Runner) -> None:
 
 
 if __name__ == "__main__":
-    runner = Runner(purge=_purge_health)
+    runner = Runner(purge=_purge_health, heartbeat=_touch_heartbeat)
     _install_signal_handlers(runner)
     runner.run_forever()

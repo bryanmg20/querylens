@@ -1,10 +1,11 @@
 # Imagen del pipeline: solo extrae de las bases registradas y encola en PGMQ.
 #
-# psycopg2 se compila contra libpq (no trae wheel), por eso el toolchain en la
-# misma capa: build-essential trae libc6-dev, sin el cual Python.h no encuentra
-# stdlib.h, y libpq5 queda como dependencia explicita para sobrevivir al purge.
-# El resto de los paquetes traen wheel.
-FROM python:3.11-slim
+# requirements.txt es un lock con hashes (scripts/lock_requirements.sh) y todo
+# trae wheel (psycopg2-binary incluye su libpq): sin apt ni compilador, el
+# build no depende del mirror de Debian del dia.
+# Tag + digest: el mismo build en cualquier maquina. Para actualizar,
+# cambiar el digest (docker buildx imagetools inspect python:3.11-slim).
+FROM python:3.11-slim@sha256:b7a9e5f6a93d6d4a31f129bbd4bdee69efccb6ded0fb230d78aafaf37af98377
 
 ENV PYTHONUNBUFFERED=1
 
@@ -12,17 +13,13 @@ WORKDIR /app
 
 COPY requirements.txt .
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends build-essential libpq-dev libpq5 \
-    && pip install --no-cache-dir -r requirements.txt \
-    && apt-get purge -y --auto-remove build-essential libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir --require-hashes -r requirements.txt
 
 # Contrato del snapshot (querylens_contract): viene del contexto adicional
 # "contract" de docker-compose, porque vive fuera de esta carpeta y lo comparte
-# con detection_engine.
+# con detection_engine. --no-deps: su pydantic ya vino del lock.
 COPY --from=contract . /contract
-RUN pip install --no-cache-dir /contract
+RUN pip install --no-cache-dir --no-deps /contract
 
 COPY . .
 

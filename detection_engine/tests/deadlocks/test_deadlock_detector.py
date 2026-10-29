@@ -74,6 +74,26 @@ def test_known_holds_without_targets_are_unclassified():
     assert classify(report(raw)) == UNCLASSIFIED
 
 
+def test_rows_from_the_ctid_classify_like_rows_from_the_literals():
+    assert classify(report(pg_ct01(targets_source="ctid"))) == CT01
+    assert classify(report(pg_ct02(targets_source="ctid"))) == CT02
+
+
+def test_rows_from_the_ctid_are_noted_in_the_evidence():
+    for raw, antipatron in ((pg_ct01(targets_source="ctid"), CT01), (pg_ct02(targets_source="ctid"), CT02)):
+        (finding,), _ = detect_deadlocks(snapshot(raw), T0, DeadlockMemory())
+        assert finding.antipatron == antipatron
+        limitations = finding.evidencia["limitations"]
+        assert len(limitations) == 2
+        assert "ctid" in limitations[-1]
+        assert finding.evidencia["transactions"][0]["waits_for"]["targets_source"] == "ctid"
+
+
+def test_rows_from_the_literals_add_no_ctid_note():
+    (finding,), _ = detect_deadlocks(snapshot(pg_ct01()), T0, DeadlockMemory())
+    assert not any("ctid" in limitation for limitation in finding.evidencia["limitations"])
+
+
 def test_classification_does_not_depend_on_the_engine():
     for raw in (mysql_ct01(), mysql_ct02(), mysql_ct03(), mysql_ct04(), pg_ct01(), pg_ct02(), pg_report()):
         assert classify(report(scrambled(raw))) == classify(report(raw))
@@ -165,6 +185,32 @@ def test_header_without_detail_of_a_report_already_seen_is_not_counted():
     assert after.seen == memory.seen
 
 
+def test_report_seen_with_header_time_is_not_new_without_header():
+    # MySQL: el primer ciclo trae el encabezado de error_log y el informe sale
+    # con su hora; en el siguiente innodb_print_all_deadlocks esta apagado y
+    # el mismo informe llega con la hora de INNODB STATUS, sin fracciones
+    events = []
+    _, memory = detect_deadlocks(snapshot(mysql_ct01()), T0, DeadlockMemory(), events)
+    without_header = mysql_ct01(detected_at="2026-10-22 00:59:26.000000")
+    findings, after = detect_deadlocks(snapshot(without_header), T0 + timedelta(seconds=10), memory, events)
+    assert findings == []
+    assert len(events) == 1
+    assert after.seen == memory.seen
+
+    # y al reves: primero sin encabezado, despues con el
+    _, memory = detect_deadlocks(snapshot(without_header), T0, DeadlockMemory())
+    findings, _ = detect_deadlocks(snapshot(mysql_ct01()), T0 + timedelta(seconds=10), memory)
+    assert findings == []
+
+
+def test_same_victim_with_two_exact_times_is_two_reports():
+    # la misma conexion reintenta y vuelve a ser victima un segundo despues
+    _, memory = detect_deadlocks(snapshot(mysql_ct01()), T0, DeadlockMemory())
+    retry = mysql_ct01(detected_at="2026-10-22 00:59:27.502113")
+    findings, _ = detect_deadlocks(snapshot(retry), T0 + timedelta(seconds=10), memory)
+    assert len(findings) == 1
+
+
 def test_incomplete_and_unmatched_reports_are_remembered_without_finding():
     incomplete = {"detected_at": "2026-10-22 00:59:20.100000", "source": "mysql_error_log", "complete": False}
     # ampliacion de bloqueos con un indice que la sentencia podia usar: ningun patron
@@ -216,3 +262,51 @@ def test_advance_without_deadlocks_keeps_the_memory():
     state = ContentionState().advance(T0, {}, memory)
     t1 = T0 + timedelta(seconds=10)
     assert state.advance(t1, {}).deadlocks == memory
+
+
+# ------------------------------------------------- eventos (deadlock_events)
+
+def test_every_new_report_is_an_event_with_or_without_finding():
+    incomplete = {"detected_at": "2026-10-22 00:59:20.100000", "source": "mysql_error_log", "complete": False}
+    unmatched = mysql_ct04(detected_at="2026-10-22 00:59:22.000000")
+    indexes = [index_row("id"), index_row("cliente", name="ix_cliente")]
+    events = []
+    findings, _ = detect_deadlocks(
+        snapshot(mysql_ct01(), unmatched, incomplete, indexes=indexes), T0, DeadlockMemory(), events
+    )
+    assert len(findings) == 1
+    # en orden de detected_at, como los procesa el detector
+    assert [(e.detected_at, e.source, e.complete, e.antipatron) for e in events] == [
+        ("2026-10-22 00:59:20.100000", "mysql_error_log", False, None),
+        ("2026-10-22 00:59:22.000000", "innodb_status", True, None),
+        (DETECTED, "innodb_status", True, CT01),
+    ]
+    assert events[2].report_key == f"{DETECTED}|265"
+
+
+def test_a_report_already_seen_is_not_a_new_event():
+    events = []
+    _, memory = detect_deadlocks(snapshot(mysql_ct01()), T0, DeadlockMemory(), events)
+    header = {"detected_at": DETECTED, "source": "mysql_error_log", "complete": False}
+    detect_deadlocks(snapshot(mysql_ct01(), header), T0 + timedelta(seconds=10), memory, events)
+    assert len(events) == 1
+
+
+# ------------------------------------------------- base del abrazo
+
+def test_finding_and_event_name_the_schema_of_the_deadlock_not_the_registered_one():
+    # MySQL: la conexion ve todo el servidor; el abrazo es de ql_otra aunque el
+    # registro diga ql_demo
+    raw = mysql_ct01()
+    raw["database_name"] = "ql_otra"
+    events = []
+    findings, _ = detect_deadlocks(snapshot(raw), T0, DeadlockMemory(), events)
+    assert [f.database_name for f in findings] == ["ql_otra"]
+    assert [e.database_name for e in events] == ["ql_otra"]
+
+
+def test_header_without_detail_has_no_database():
+    header = {"detected_at": DETECTED, "source": "mysql_error_log", "complete": False}
+    events = []
+    detect_deadlocks(snapshot(header), T0, DeadlockMemory(), events)
+    assert [e.database_name for e in events] == [None]

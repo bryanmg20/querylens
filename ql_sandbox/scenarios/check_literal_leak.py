@@ -16,7 +16,7 @@ Para que un 0 signifique algo, la prueba exige tres controles positivos:
      (m6_...), que no es un literal y si se guarda.
 
 REQUISITOS
-  - Sandbox levantado (ql_sandbox: docker compose up -d) y querylens_db (raiz).
+  - Sandbox levantado (ql_sandbox: docker compose up -d) y el compose de la raiz.
   - Un python con las dependencias de telemetry_pipeline y detection_engine.
 
 USO (desde la raiz del repo)

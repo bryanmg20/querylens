@@ -21,7 +21,7 @@ export PGOPTIONS="-c client_min_messages=warning"
 
 POSTGRES=(
   psql
-  --host=postgres
+  --host="${PG_HOST:-postgres}"
   --port=5432
   --username=ql_user
   --dbname=ql_demo

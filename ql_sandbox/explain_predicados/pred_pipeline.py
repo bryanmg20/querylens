@@ -1,5 +1,5 @@
 """Bateria de predicados por el pipeline REAL: carga desde ql_sysbench, snapshot
-con pipeline_one_engine.py dentro de querylens_pipeline y lectura del JSON que
+con pipeline_one_engine.py dentro del servicio pipeline y lectura del JSON que
 quedo en la cola (pgmq analyze_job de querylens_db).
 
 pred_battery.py llama al EXPLAIN y al normalizador directamente; este script
@@ -13,7 +13,7 @@ lotes de 8 casos y reinicia las estadisticas antes de cada lote
 (pg_stat_statements_reset / TRUNCATE de events_statements_summary_by_digest).
 
 Requisitos: sandbox (ql_postgres, ql_mysql, ql_sysbench) y compose de la raiz
-(querylens_pipeline, querylens_db, querylens_detection_engine) levantados.
+(servicios pipeline, postgres y detection-engine) levantados.
 
 USO (desde la raiz del repo)
   python ql_sandbox/explain_predicados/pred_pipeline.py [--engine postgres|mysql|both] [--seconds 30]
@@ -22,6 +22,7 @@ Salida: ql_sandbox/explain_predicados/snapshots_pipeline/<motor>_lote<N>.json
 (el mensaje encolado completo) y resumen.txt (predicados de cada scan).
 """
 import argparse
+import functools
 import ast
 import json
 import subprocess
@@ -35,8 +36,6 @@ OUT_DIR = HERE / "snapshots_pipeline"
 PIPELINE_ONE_ENGINE = ROOT / "ql_sandbox" / "scenarios" / "pipeline_one_engine.py"
 
 LOAD_CONTAINER = "ql_sysbench"
-PIPELINE_CONTAINER = "querylens_pipeline"
-QUERYLENS_CONTAINER = "querylens_db"
 STOP_FILE = "/tmp/ql_pred_stop"
 BATCH_SIZE = 8
 WORKERS = 2
@@ -52,6 +51,16 @@ def run(cmd, input_text=None, check=True) -> str:
     if check and result.returncode != 0:
         raise RuntimeError(f"{' '.join(cmd[:4])}... fallo: {result.stderr.strip()[:500]}")
     return result.stdout
+
+
+@functools.cache
+def compose_container(service):
+    # Id del contenedor de <service> en el compose de la raiz. Sin container_name
+    # fijo el nombre depende del proyecto (docker compose -p, COMPOSE_PROJECT_NAME).
+    out = run(["docker", "compose", "-f", str(ROOT / "docker-compose.yml"), "ps", "-q", service]).strip()
+    if not out:
+        raise RuntimeError(f"el servicio {service} del compose de la raiz no esta corriendo")
+    return out
 
 
 def load_battery():
@@ -88,7 +97,7 @@ def exec_engine_sql(engine: str, sql: str) -> str:
 
 
 def querylens_sql(sql: str) -> str:
-    return run(["docker", "exec", "-i", QUERYLENS_CONTAINER, "psql", "-U", "ql_user", "-d", "ql_demo", "-At"],
+    return run(["docker", "exec", "-i", compose_container("postgres"), "psql", "-U", "ql_user", "-d", "ql_demo", "-At"],
                input_text=sql).strip()
 
 
@@ -117,8 +126,8 @@ def stop_load() -> None:
 
 
 def run_pipeline(engine: str) -> int:
-    run(["docker", "cp", str(PIPELINE_ONE_ENGINE), f"{PIPELINE_CONTAINER}:/tmp/pipeline_one_engine.py"])
-    output = run(["docker", "exec", "-e", "QL_PIPELINE_DIR=/app", "-w", "/app", PIPELINE_CONTAINER,
+    run(["docker", "cp", str(PIPELINE_ONE_ENGINE), f"{compose_container('pipeline')}:/tmp/pipeline_one_engine.py"])
+    output = run(["docker", "exec", "-e", "QL_PIPELINE_DIR=/app", "-w", "/app", compose_container("pipeline"),
                   "python", "/tmp/pipeline_one_engine.py", engine])
     # "<motor> | db_id=... | encolado con ID: N"
     return int(output.strip().splitlines()[-1].rsplit(":", 1)[1])

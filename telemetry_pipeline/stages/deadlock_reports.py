@@ -16,7 +16,11 @@ Postgres (mensaje "deadlock detected" del log, state_code 40P01):
             Process 797: UPDATE ql_ct01_cuentas SET saldo=saldo+5 WHERE id=1;
     context while updating tuple (0,2) in relation "ql_ct01_cuentas"
 Solo dice que espera cada proceso, no que mantiene; la victima es el pid de
-la linea y CONTEXT da la tabla de su espera.
+la linea y CONTEXT da la tabla y la fila (ctid) de su espera. Con
+log_lock_waits, el ctid de las otras sale del aviso que escribieron mientras
+esperaban, del mismo pid y sobre la misma transaccion:
+    message process 797 still waiting for ShareLock on transaction 67256 after 1000.106 ms
+    context while updating tuple (0,1) in relation "ql_ct01_cuentas"
 
 MySQL (seccion LATEST DETECTED DEADLOCK de SHOW ENGINE INNODB STATUS): por
 transaccion, que mantiene y que espera, con indice, modo y registro.
@@ -48,6 +52,12 @@ _PG_TUPLE_RE = re.compile(r"^tuple \((\d+),(\d+)\) of relation (\d+)")
 _PG_RELATION_RE = re.compile(r"^relation (\d+)")
 _PG_TRANSACTION_RE = re.compile(r"^transaction (\d+)")
 _PG_CONTEXT_TABLE_RE = re.compile(r'tuple \(\d+,\d+\) in relation "((?:[^"]|"")+)"')
+# La fila que la sesion queria modificar o bloquear. Los otros contextos de
+# una espera de fila no sirven: "locking updated version of tuple" es otra
+# version de la misma fila (otro ctid), y los de indices o unicidad nombran
+# la fila con la que choca, no la que espera.
+_PG_CONTEXT_ROW_RE = re.compile(r'while (?:updating|deleting|locking) tuple \((\d+,\d+)\) in relation "((?:[^"]|"")+)"')
+_PG_STILL_WAITING_RE = re.compile(r"still waiting for \S+ on transaction (\d+) after ")
 _PG_OF_DATABASE_RE = re.compile(r" of database \d+$")
 
 # Modo comun de cada modo de pg_locks segun sobre que se pide. Los que no
@@ -77,15 +87,17 @@ _PG_FOR_UPDATE_RE = re.compile(r"\bFOR (NO KEY )?UPDATE\b")
 _PG_FOR_SHARE_RE = re.compile(r"\bFOR (KEY )?SHARE\b")
 
 
-def parse_postgres_deadlock(record: dict) -> dict:
+def parse_postgres_deadlock(record: dict, still_waiting: dict[tuple[int, str], dict] | None = None) -> dict:
     """Una linea jsonlog con state_code 40P01. detected_at queda con el
     timestamp crudo del log (en log_timezone): lo convierte el stage, que
     puede preguntarle al servidor por la zona.
 
     Las esperas sobre una relacion traen relation_oid: el stage lo resuelve a
     nombre con pg_class y lo quita. Las esperas de fila traen row_key cuando
-    la sentencia dice que fila toca: el stage lo convierte en targets y lo
-    quita."""
+    la sentencia dice que fila toca, y row_ctid cuando el log dice en que
+    ctid esperaba (la victima en su CONTEXT; las otras en su linea "still
+    waiting" de still_waiting, por (pid, transaccion esperada)): el stage los
+    convierte en targets y los quita."""
     waits: dict[int, dict] = {}
     statements: dict[int, str] = {}
     current = None
@@ -144,6 +156,15 @@ def parse_postgres_deadlock(record: dict) -> dict:
                 # el rol de la linea es el de la victima: para la otra se
                 # asume la misma aplicacion. Lo usa el stage para el search_path
                 lock["row_key"] = {**row_key, "role": record.get("user")}
+        if lock["lock_type"] == "transactionid":
+            if pid == victim:
+                context = record.get("context")
+            else:
+                xid = _PG_TRANSACTION_RE.match(wait["target"]).group(1)
+                context = ((still_waiting or {}).get((pid, xid)) or {}).get("context")
+            row_ctid = _pg_context_row(context, canonic)
+            if row_ctid is not None:
+                lock["row_ctid"] = {**row_ctid, "role": record.get("user")}
         report["transactions"].append({
             "process_id": pid,
             "transaction_id": str(record["txid"]) if pid == victim and record.get("txid") else None,
@@ -287,6 +308,29 @@ def _literal(node) -> str | None:
     return None
 
 
+def pg_still_waiting_xid(record: dict) -> str | None:
+    """Transaccion que esperaba el proceso de una linea "still waiting", o
+    None si la linea es otro mensaje o espera otra cosa (una relacion, una
+    tupla)."""
+    match = _PG_STILL_WAITING_RE.search(record.get("message") or "")
+    return match.group(1) if match else None
+
+
+def _pg_context_row(context: str | None, canonic_query: str | None) -> dict | None:
+    """Tabla y ctid de la fila que esperaba el proceso. El CONTEXT nombra la
+    tabla sin esquema: sale de la sentencia si la nombra calificada (la de
+    una particion no coincide y queda sin esquema)."""
+    match = _PG_CONTEXT_ROW_RE.search(context or "")
+    if not match:
+        return None
+    table = match.group(2).replace('""', '"')
+    target = _statement_target(canonic_query)
+    schema = None
+    if target is not None and target.args.get("db") and _pg_identifier(target.this) == table:
+        schema = _pg_identifier(target.args["db"])
+    return {"schema": schema, "table": table, "ctid": match.group(1)}
+
+
 def _pg_context_table(context: str | None) -> str | None:
     if not context:
         return None
@@ -297,6 +341,11 @@ def _pg_context_table(context: str | None) -> str | None:
 def statement_table(canonic_query: str | None) -> str | None:
     """Tabla que modifica o bloquea la sentencia: la del UPDATE/DELETE/INSERT,
     o la primera del FROM de un SELECT ... FOR UPDATE/SHARE."""
+    target = _statement_target(canonic_query)
+    return target.name if target is not None else None
+
+
+def _statement_target(canonic_query: str | None) -> exp.Table | None:
     if not canonic_query or canonic_query == "Not available":
         return None
     try:
@@ -309,7 +358,7 @@ def statement_table(canonic_query: str | None) -> str | None:
         target = target.this
     if not isinstance(target, exp.Table):
         target = ast.find(exp.Table)
-    return target.name if isinstance(target, exp.Table) and target.name else None
+    return target if isinstance(target, exp.Table) and target.name else None
 
 
 # ------------------------------------------------------------------- mysql

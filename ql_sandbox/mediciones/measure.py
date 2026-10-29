@@ -3,8 +3,8 @@ QUERYLENS — medicion de deteccion de AP-07, AP-01 y AP-06 con muchos casos.
 
 Por cada antipatron y motor corre ~100 consultas patologicas distintas (cada una
 con su propio query_id) y ~40 consultas sanas AL MISMO TIEMPO, toma un snapshot
-real cada 60 s (telemetry_pipeline en querylens_pipeline, detection_engine en
-querylens_detection_engine) y compara los hallazgos contra lo que de verdad paso
+real cada 60 s (telemetry_pipeline en el servicio pipeline, detection_engine en
+detection-engine) y compara los hallazgos contra lo que de verdad paso
 en cada ventana, reconstruido desde los snapshots archivados en PGMQ.
 
 USO (desde la raiz del repo; solo libreria estandar)
@@ -16,6 +16,7 @@ Ver README.md (metodo, criterios de validez y lectura del reporte).
 """
 
 import argparse
+import functools
 import json
 import math
 import subprocess
@@ -30,8 +31,6 @@ RESULTS_DIR = MED_DIR / "resultados"
 
 IMAGE = "querylens-pipeline"
 DRIVER = "ql_meas_driver"
-PIPELINE_CONTAINER = "querylens_pipeline"
-QUERYLENS_CONTAINER = "querylens_db"
 MYSQL_CONTAINER = "ql_mysql"
 
 ANTIPATRON = {"ap07": "disk_spill", "ap01": "baseline_degradation", "ap06": "n_plus_one"}
@@ -69,8 +68,18 @@ def run(cmd, input_text=None, check=True):
     return result.stdout
 
 
+@functools.cache
+def compose_container(service):
+    # Id del contenedor de <service> en el compose de la raiz. Sin container_name
+    # fijo el nombre depende del proyecto (docker compose -p, COMPOSE_PROJECT_NAME).
+    out = run(["docker", "compose", "-f", str(ROOT / "docker-compose.yml"), "ps", "-q", service]).strip()
+    if not out:
+        raise RuntimeError(f"el servicio {service} del compose de la raiz no esta corriendo")
+    return out
+
+
 def querylens_sql(sql):
-    return run(["docker", "exec", "-i", QUERYLENS_CONTAINER, "psql", "-U", "ql_user", "-d", "ql_demo", "-At",
+    return run(["docker", "exec", "-i", compose_container("postgres"), "psql", "-U", "ql_user", "-d", "ql_demo", "-At",
                 "-v", "ON_ERROR_STOP=1"], input_text=sql).strip()
 
 
@@ -109,7 +118,7 @@ def mysql_root(sql):
 
 
 def take_snapshot(engine, db_id):
-    output = run(["docker", "exec", "-w", "/app", PIPELINE_CONTAINER, "python", "/tmp/pipeline_snapshot.py",
+    output = run(["docker", "exec", "-w", "/app", compose_container("pipeline"), "python", "/tmp/pipeline_snapshot.py",
                   engine, db_id])
     for line in output.splitlines():
         if line.startswith("msg_id="):
@@ -497,9 +506,9 @@ def measure(med, engine, args):
     log(f"===== {NOMBRE[med]} | {engine} | {run_id} =====")
 
     if not wait_queue_empty(180):
-        raise RuntimeError("la cola analyze_job no se vacia: esta corriendo querylens_detection_engine?")
+        raise RuntimeError("la cola analyze_job no se vacia: esta corriendo el servicio detection-engine?")
     run(["docker", "rm", "-f", DRIVER], check=False)
-    run(["docker", "cp", str(MED_DIR / "pipeline_snapshot.py"), f"{PIPELINE_CONTAINER}:/tmp/pipeline_snapshot.py"])
+    run(["docker", "cp", str(MED_DIR / "pipeline_snapshot.py"), f"{compose_container('pipeline')}:/tmp/pipeline_snapshot.py"])
 
     cycles = []
     started = querylens_sql("SELECT now();")

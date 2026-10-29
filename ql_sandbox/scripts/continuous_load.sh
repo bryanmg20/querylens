@@ -33,8 +33,8 @@ fi
 
 export PGPASSWORD=ql_pass
 
-PSQL=(psql --host=postgres --port=5432 --username=ql_user --dbname=ql_demo --no-psqlrc --quiet --tuples-only --command)
-MYSQL=(mysql --host=mysql --port=3306 --user=app_user --password=app_pass --database=ql_demo --batch --skip-column-names -e)
+PSQL=(psql --host="${PG_HOST:-postgres}" --port=5432 --username=ql_user --dbname=ql_demo --no-psqlrc --quiet --tuples-only --command)
+MYSQL=(mysql --host="${MYSQL_HOST:-mysql}" --port=3306 --user=app_user --password=app_pass --database=ql_demo --batch --skip-column-names -e)
 
 METRICS=/tmp/ql_load_metrics.csv
 echo "ts_ms,engine,duration_ms,status" > "$METRICS"

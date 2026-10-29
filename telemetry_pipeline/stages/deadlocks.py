@@ -8,7 +8,9 @@ revertir la victima, y eso es lo que lee este stage.
 Postgres: las lineas "deadlock detected" (state_code 40P01) del log JSON, de
 la misma ventana que lee auto_explain (stages/pg_log.PgLogTail, una sola
 lectura por ciclo; guia references/006). Los errores van al log con la
-configuracion por defecto (log_min_messages=warning).
+configuracion por defecto (log_min_messages=warning). Con log_lock_waits,
+tambien los avisos "still waiting" de la misma ventana: dicen en que fila
+esperaba cada proceso que no fue la victima.
 
 MySQL: SHOW ENGINE INNODB STATUS trae el detalle, pero solo del ultimo abrazo.
 performance_schema.error_log trae el encabezado de cada uno (MY-012468, con
@@ -29,7 +31,12 @@ from sqlalchemy import text
 from health.report import HealthReport
 from logger import get_logger
 from models.stats import Stats
-from stages.deadlock_reports import parse_innodb_status, parse_innodb_timestamp, parse_postgres_deadlock
+from stages.deadlock_reports import (
+    parse_innodb_status,
+    parse_innodb_timestamp,
+    parse_postgres_deadlock,
+    pg_still_waiting_xid,
+)
 from stages.pg_log import PgLogTail
 
 logger = get_logger(__name__)
@@ -48,10 +55,15 @@ _MATCH_TOLERANCE = timedelta(seconds=2)
 
 # state_code es clave de primer nivel de la linea jsonlog: se filtra sin parsear.
 _PG_DEADLOCK_MARKER = b'"state_code":"40P01"'
+# El aviso de log_lock_waits es un LOG sin state_code propio: se filtra por
+# el texto del mensaje.
+_PG_STILL_WAITING_MARKER = b"still waiting for"
 
 PG_SETTINGS_SQL = """
 SELECT current_setting('log_error_verbosity') AS log_error_verbosity,
        current_setting('log_min_messages')    AS log_min_messages,
+       current_setting('log_lock_waits')      AS log_lock_waits,
+       current_setting('deadlock_timeout')    AS deadlock_timeout,
        current_database()                     AS database_name,
        now() AT TIME ZONE 'UTC'               AS now_utc
 """
@@ -191,12 +203,20 @@ class DeadlocksStage:
                 log_error_verbosity=settings["log_error_verbosity"],
                 log_min_messages=settings["log_min_messages"],
             )
+        if settings["log_lock_waits"] != "on":
+            # sin el aviso de cada espera, una sentencia con $1 no dice que
+            # fila esperaba: CT-01 y CT-02 no se distinguen
+            self.report.add(
+                "DEADLOCK_ROW_WAITS_UNLOGGED", section="deadlocks",
+                log_lock_waits=settings["log_lock_waits"],
+                deadlock_timeout=settings["deadlock_timeout"],
+            )
         since = to_naive_utc(settings["now_utc"]) - timedelta(seconds=LOOKBACK_S)
 
-        records = _pg_deadlock_records(log, conn, since)
+        records, still_waiting = _pg_deadlock_records(log, conn, since)
         if not records:
             return []
-        reports = [parse_postgres_deadlock(record) for record in records]
+        reports = [parse_postgres_deadlock(record, still_waiting) for record in records]
 
         raw = sorted({report["detected_at"] for report in reports if report["detected_at"]})
         utc = {
@@ -243,18 +263,28 @@ class DeadlocksStage:
                 lock["table_name"] = name["table_name"]
 
     def _label_pg_rows(self, conn, reports: list[dict]) -> None:
-        """row_key -> targets ("row 1", "row 2"...): dos esperas con la misma
-        etiqueta son sobre la misma fila. Se etiqueta un informe solo si todas
-        sus esperas son de fila y cada una identifica su fila por un indice
-        unico de una tabla que se pudo resolver; si no, targets queda en None
-        y el detector no adivina."""
+        """row_key o row_ctid -> targets ("row 1", "row 2"...): dos esperas con
+        la misma etiqueta son sobre la misma fila. Se etiqueta un informe solo
+        si todas sus esperas son de fila y cada una identifica su fila en una
+        tabla que se pudo resolver; si no, targets queda en None y el detector
+        no adivina.
+
+        Primero por los valores de las sentencias (row_key), si cubren un
+        indice unico. Si no alcanzan, por el ctid de cada espera (row_ctid):
+        dos esperas sobre el mismo ctid de la misma tabla son la misma fila.
+        Nunca mezclados en un informe: un "row 1" por clave y otro por ctid no
+        se comparan."""
         local = []
         for report in reports:
             locks = [trx["waits_for"] for trx in report["transactions"]]
             keys = [lock.pop("row_key", None) for lock in locks]
-            if keys and all(keys):
-                local.append((locks, keys))
-        names = sorted({key["table"] for _, keys in local for key in keys})
+            ctids = [lock.pop("row_ctid", None) for lock in locks]
+            keys = keys if keys and all(keys) else None
+            ctids = ctids if ctids and all(ctids) else None
+            if keys or ctids:
+                local.append((locks, keys, ctids))
+        refs = [ref for _, keys, ctids in local for ref in (keys or []) + (ctids or [])]
+        names = sorted({ref["table"] for ref in refs})
         if not names:
             return
 
@@ -263,37 +293,27 @@ class DeadlocksStage:
             candidates.setdefault(row["table_name"], []).append((row["schema_name"], int(row["table_oid"])))
         # el search_path solo hace falta para los nombres que estan en varios esquemas
         ambiguous_roles = sorted({
-            key["role"] for _, keys in local for key in keys
-            if key["schema"] is None and len(candidates.get(key["table"], [])) > 1 and key["role"]
+            ref["role"] for ref in refs
+            if ref["schema"] is None and len(candidates.get(ref["table"], [])) > 1 and ref["role"]
         })
         paths = {role: self._pg_search_path(conn, role) for role in ambiguous_roles}
 
-        resolved = [
-            (locks, keys, [_resolve_table(key, candidates.get(key["table"], []), paths.get(key["role"])) for key in keys])
-            for locks, keys in local
-        ]
-        oids = sorted({oid for _, _, table_oids in resolved for oid in table_oids if oid is not None})
-        if not oids:
-            return
-        unique: dict[int, list[tuple[int, list[str]]]] = {}
-        for row in conn.execute(PG_UNIQUE_KEYS_SQL.bindparams(oids=oids)).mappings():
-            unique.setdefault(int(row["table_oid"]), []).append((int(row["index_oid"]), list(row["columns"])))
+        def resolve(refs):
+            return [_resolve_table(ref, candidates.get(ref["table"], []), paths.get(ref["role"])) for ref in refs] if refs else None
 
-        for locks, keys, table_oids in resolved:
-            identities = [
-                _row_identity(key, oid, unique.get(oid, [])) if oid is not None else None
-                for key, oid in zip(keys, table_oids, strict=True)
-            ]
-            if not all(identities):
+        resolved = [(locks, keys, resolve(keys), ctids, resolve(ctids)) for locks, keys, ctids in local]
+        oids = sorted({oid for _, _, key_oids, _, _ in resolved for oid in key_oids or () if oid is not None})
+        unique: dict[int, list[tuple[int, list[str]]]] = {}
+        if oids:
+            for row in conn.execute(PG_UNIQUE_KEYS_SQL.bindparams(oids=oids)).mappings():
+                unique.setdefault(int(row["table_oid"]), []).append((int(row["index_oid"]), list(row["columns"])))
+
+        for locks, keys, key_oids, ctids, ctid_oids in resolved:
+            if keys and _label_rows(locks, _key_identities(keys, key_oids, unique), "row_key"):
                 continue
-            # la misma tabla por dos indices distintos (id = 1 y email = 'x')
-            # puede ser la misma fila: no se puede comparar
-            indexes = {}
-            if any(indexes.setdefault(table, index) != index for table, index, _ in identities):
-                continue
-            labels: dict[tuple, str] = {}
-            for lock, identity in zip(locks, identities, strict=True):
-                lock["targets"] = [labels.setdefault(identity, f"row {len(labels) + 1}")]
+            if ctids:
+                identities = [(oid, ref["ctid"]) if oid is not None else None for ref, oid in zip(ctids, ctid_oids, strict=True)]
+                _label_rows(locks, identities, "ctid")
 
     def _pg_search_path(self, conn, role: str) -> list[str]:
         row = next(iter(conn.execute(PG_ROLE_SEARCH_PATH_SQL.bindparams(role=role)).mappings()), None)
@@ -359,25 +379,41 @@ class DeadlocksStage:
             return []
 
 
-def _pg_deadlock_records(log: PgLogTail, conn, since: datetime) -> list[dict]:
-    """Un archivo que no cambio desde `since` no puede tener abrazos de la
-    ventana: ahi se corta, sin leer los mas viejos."""
+def _pg_deadlock_records(log: PgLogTail, conn, since: datetime) -> tuple[list[dict], dict[tuple[int, str], dict]]:
+    """Los 40P01 de la ventana y los avisos "still waiting" por (pid,
+    transaccion esperada). Un archivo que no cambio desde `since` no puede
+    tener abrazos de la ventana: ahi se corta, sin leer los mas viejos."""
     records = []
+    still_waiting: dict[tuple[int, str], dict] = {}
     for lines in log.files(conn, modified_since=since):
         for line in lines:
-            if _PG_DEADLOCK_MARKER not in line:
+            deadlock = _PG_DEADLOCK_MARKER in line
+            if not deadlock and _PG_STILL_WAITING_MARKER not in line:
                 continue
             try:
                 record = json.loads(line)
             except ValueError:
                 continue
-            if isinstance(record, dict) and record.get("state_code") == "40P01":
+            if not isinstance(record, dict):
+                continue
+            if deadlock and record.get("state_code") == "40P01":
                 records.append(record)
-    return records
+                continue
+            xid = pg_still_waiting_xid(record)
+            if xid is None or not isinstance(record.get("pid"), int):
+                continue
+            # el mismo pid pudo esperar dos veces la misma transaccion: la
+            # del abrazo es la ultima (la hora del log se compara como texto:
+            # misma zona y formato en todo el log)
+            key = (record["pid"], xid)
+            previous = still_waiting.get(key)
+            if previous is None or str(record.get("timestamp")) > str(previous.get("timestamp")):
+                still_waiting[key] = record
+    return records, still_waiting
 
 
 def _resolve_table(key: dict, candidates: list[tuple[str, int]], search_path: list[str] | None) -> int | None:
-    """OID de la tabla del row_key. Con esquema, ese; sin esquema, la unica
+    """OID de la tabla del row_key o row_ctid. Con esquema, ese; sin esquema, la unica
     con ese nombre o la primera del search_path de la aplicacion. Un SET
     search_path de la sesion de la aplicacion no queda en ningun catalogo: si
     el nombre esta en varios esquemas y el del rol no decide, no se resuelve."""
@@ -427,6 +463,30 @@ def search_path_schemas(value: str, role: str | None) -> list[str]:
         elif name:
             schemas.append(name)
     return schemas
+
+
+def _key_identities(keys: list[dict], table_oids: list[int | None], unique: dict[int, list]) -> list[tuple | None]:
+    identities = [
+        _row_identity(key, oid, unique.get(oid, [])) if oid is not None else None
+        for key, oid in zip(keys, table_oids, strict=True)
+    ]
+    # la misma tabla por dos indices distintos (id = 1 y email = 'x') puede
+    # ser la misma fila: no se puede comparar
+    indexes = {}
+    if all(identities) and any(indexes.setdefault(table, index) != index for table, index, _ in identities):
+        return [None] * len(identities)
+    return identities
+
+
+def _label_rows(locks: list[dict], identities: list[tuple | None], source: str) -> bool:
+    """targets de cada espera por su identidad, o nada si falta alguna."""
+    if not all(identities):
+        return False
+    labels: dict[tuple, str] = {}
+    for lock, identity in zip(locks, identities, strict=True):
+        lock["targets"] = [labels.setdefault(identity, f"row {len(labels) + 1}")]
+        lock["targets_source"] = source
+    return True
 
 
 def _row_identity(key: dict, table_oid: int, indexes: list[tuple[int, list[str]]]) -> tuple | None:
