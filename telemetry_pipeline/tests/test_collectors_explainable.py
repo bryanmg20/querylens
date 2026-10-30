@@ -90,6 +90,42 @@ class TestMysqlMarkExplainable:
         ]
 
 
+    def test_history_execution_is_attached_to_its_candidate(self):
+        collector = Mysql_Collector(engine=None)
+        stats = _candidates_with_samples(["select 1", "select 2"])
+        stats["statement_history"] = [
+            {"query_id": 1, "history_text": "select 2 /* ejecucion */", "history_rows_sent": 7},
+        ]
+        collector.mark_explainable(stats)
+        first, second = stats["top_impact_queries"]
+        assert "history_text" not in first
+        assert second["history_text"] == "select 2 /* ejecucion */"
+        assert second["history_rows_sent"] == 7
+
+    def test_history_alone_makes_the_candidate_ready(self):
+        collector = Mysql_Collector(engine=None)
+        stats = _candidates_with_samples([None])
+        stats["statement_history"] = [{"query_id": 0, "history_text": "select 0", "history_rows_sent": 1}]
+        collector.mark_explainable(stats)
+        assert stats["top_impact_queries"][0]["ready_for_explain"] is True
+
+    def test_blank_history_text_is_ignored(self):
+        collector = Mysql_Collector(engine=None)
+        stats = _candidates_with_samples([None])
+        stats["statement_history"] = [{"query_id": 0, "history_text": "  ", "history_rows_sent": 1}]
+        collector.mark_explainable(stats)
+        assert stats["top_impact_queries"][0]["ready_for_explain"] is False
+        assert "history_text" not in stats["top_impact_queries"][0]
+
+    def test_history_with_literals_does_not_stay_in_stats(self):
+        """Trae literales reales, como el sample: no puede llegar al snapshot."""
+        collector = Mysql_Collector(engine=None)
+        stats = _candidates_with_samples(["select 1"])
+        stats["statement_history"] = [{"query_id": 0, "history_text": "select 1", "history_rows_sent": 1}]
+        collector.mark_explainable(stats)
+        assert "statement_history" not in stats
+
+
 class TestMysqlCalculateStddevCoeff:
     def test_handles_none_statements(self):
         """C-1: calculate_stddev_coeff must not crash when stats['statements']=None."""
@@ -106,6 +142,17 @@ class TestStatementsQueryContract:
 
         assert "QUERY_SAMPLE_TEXT" in STATEMENTS_QUERY
         assert "AS query_sample_text" in STATEMENTS_QUERY
+
+    def test_mysql_history_query_keeps_one_finished_execution_per_digest(self):
+        from collectors.mysql.queries import STATEMENT_HISTORY_QUERY
+
+        assert "events_statements_history" in STATEMENT_HISTORY_QUERY
+        assert "AS history_text" in STATEMENT_HISTORY_QUERY
+        assert "AS history_rows_sent" in STATEMENT_HISTORY_QUERY
+        # la mas lenta de cada digest, y solo las que terminaron sin error
+        assert "ORDER BY TIMER_WAIT DESC" in STATEMENT_HISTORY_QUERY
+        assert "END_EVENT_ID IS NOT NULL" in STATEMENT_HISTORY_QUERY
+        assert "ERRORS = 0" in STATEMENT_HISTORY_QUERY
 
     def test_mysql_excludes_server_internal_digests(self):
         from collectors.mysql.queries import STATEMENTS_QUERY

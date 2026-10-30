@@ -64,6 +64,28 @@ WHERE t.table_schema NOT IN ('mysql', 'performance_schema', 'information_schema'
   AND t.table_type = 'BASE TABLE';
 """
 
+# La ejecucion mas lenta de cada digest entre las que siguen en
+# events_statements_history (las ultimas 10 de cada conexion abierta). Su texto
+# trae literales reales, como QUERY_SAMPLE_TEXT, y ademas sus ROWS_SENT: el
+# EXPLAIN de ese texto se puede comparar con lo que devolvio esa misma
+# ejecucion (AP-08). Igual que el sample, no sale de la memoria del ciclo.
+STATEMENT_HISTORY_QUERY = """
+SELECT
+    CONCAT(COALESCE(h.CURRENT_SCHEMA, ''), '/', h.DIGEST)   AS query_id,
+    h.SQL_TEXT                                              AS history_text,
+    CAST(h.ROWS_SENT AS SIGNED)                             AS history_rows_sent
+FROM (
+    SELECT CURRENT_SCHEMA, DIGEST, SQL_TEXT, ROWS_SENT,
+           ROW_NUMBER() OVER (PARTITION BY CURRENT_SCHEMA, DIGEST ORDER BY TIMER_WAIT DESC) AS position
+    FROM performance_schema.events_statements_history
+    WHERE DIGEST IS NOT NULL
+      AND SQL_TEXT IS NOT NULL
+      AND END_EVENT_ID IS NOT NULL
+      AND ERRORS = 0
+) h
+WHERE h.position = 1;
+"""
+
 STATEMENTS_QUERY = """
 SELECT
     # COALESCE: una sesion sin base por defecto deja SCHEMA_NAME NULL y
