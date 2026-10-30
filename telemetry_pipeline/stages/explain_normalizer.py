@@ -33,6 +33,7 @@ class PostgresExplainNormalizer:
                 "physical_operations": [],
                 "estimates": {
                     "total_cost": None,
+                    "actual_rows": None,
                 },
             }
 
@@ -170,6 +171,9 @@ class PostgresExplainNormalizer:
             estimates["total_cost"] = to_number(node["Total Cost"])
         if "Plan Rows" in node:
             estimates["output_rows"] = to_number(node["Plan Rows"])
+        # Solo los planes de auto_explain con log_analyze traen filas reales de
+        # esa ejecucion. Actual Rows es por vuelta: la raiz da una sola.
+        estimates["actual_rows"] = to_number(node["Actual Rows"]) if "Actual Rows" in node else None
         return estimates
 
     def _scan_operation(self, node, bitmap_heap=None):
@@ -322,12 +326,15 @@ class MysqlExplainNormalizer:
                 "estimates": {
                     "total_cost": None,
                     "output_rows": None,
+                    "actual_rows": None,
                 },
             }
 
             plan = explain.get("plan") or {}
             self._set_root_cost(plan, canonical_plan)
             canonical_plan["estimates"]["output_rows"] = self._get_output_rows(plan)
+            # filas que devolvio la ejecucion explicada (solo si salio del historial)
+            canonical_plan["estimates"]["actual_rows"] = to_number(explain.get("actual_rows"))
             self._walk_plan(plan, canonical_plan)
 
             canonic_explains.append({

@@ -90,6 +90,32 @@ def test_pg_output_rows_from_root_plan():
     assert stats["canonic_explains"][0]["canonical_plan"]["estimates"]["output_rows"] == 42
 
 
+def test_pg_actual_rows_from_root_of_logged_plan():
+    # auto_explain con log_analyze: la raiz trae las filas de esa ejecucion
+    plan = _pg_plan_tree(
+        "Aggregate",
+        [_pg_child("Seq Scan", **{"Plan Rows": 15000, "Actual Rows": 428571})],
+        **{"Plan Rows": 1, "Actual Rows": 1},
+    )
+    stats = {"query_explain": [{"query_id": 1, "explain_source": "auto_explain", "plan": plan}]}
+    EXPLAIN_NORMALIZERS["postgres"]().normalize(stats)
+    estimates = stats["canonic_explains"][0]["canonical_plan"]["estimates"]
+    assert estimates["output_rows"] == 1
+    assert estimates["actual_rows"] == 1
+
+
+def test_pg_actual_rows_none_without_analyze():
+    stats = {"query_explain": [{"query_id": 1, "plan": _pg_plan("Seq Scan")}]}
+    EXPLAIN_NORMALIZERS["postgres"]().normalize(stats)
+    assert stats["canonic_explains"][0]["canonical_plan"]["estimates"]["actual_rows"] is None
+
+
+def test_pg_actual_rows_none_on_empty_plan():
+    stats = {"query_explain": [{"query_id": 1, "plan": []}]}
+    EXPLAIN_NORMALIZERS["postgres"]().normalize(stats)
+    assert stats["canonic_explains"][0]["canonical_plan"]["estimates"]["actual_rows"] is None
+
+
 def test_pg_output_rows_none_when_missing():
     stats = {"query_explain": [{"query_id": 1, "plan": [{"Plan": {
         "Node Type": "Seq Scan", "Total Cost": 1.0, "Plans": [],
@@ -189,6 +215,24 @@ def test_mysql_total_cost():
     stats = {"query_explain": [{"query_id": 4, "plan": _mysql_table(_mysql_table_node("t"), query_cost=42.0)}]}
     EXPLAIN_NORMALIZERS["mysql"]().normalize(stats)
     assert stats["canonic_explains"][0]["canonical_plan"]["estimates"]["total_cost"] == 42.0
+
+
+def test_mysql_actual_rows_come_from_the_explained_execution():
+    stats = {"query_explain": [{
+        "query_id": 18, "explain_source": "history", "actual_rows": 7,
+        "plan": _mysql_table(_mysql_table_node("t", rows_produced_per_join=123)),
+    }]}
+    EXPLAIN_NORMALIZERS["mysql"]().normalize(stats)
+    estimates = stats["canonic_explains"][0]["canonical_plan"]["estimates"]
+    assert estimates["output_rows"] == 123
+    assert estimates["actual_rows"] == 7
+
+
+def test_mysql_actual_rows_none_for_the_sample():
+    stats = {"query_explain": [{"query_id": 18, "explain_source": "sample",
+                                "plan": _mysql_table(_mysql_table_node("t"))}]}
+    EXPLAIN_NORMALIZERS["mysql"]().normalize(stats)
+    assert stats["canonic_explains"][0]["canonical_plan"]["estimates"]["actual_rows"] is None
 
 
 def test_mysql_output_rows_from_single_table():
