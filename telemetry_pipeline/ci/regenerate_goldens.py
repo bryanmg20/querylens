@@ -146,6 +146,9 @@ def strip_internal_sample(rows):
     (y SnapshotPayload lo descarta del payload con extra='ignore')."""
     for row in rows or []:
         row.pop("query_sample_text", None)
+        # misma regla para la ejecucion de events_statements_history (MySQL)
+        row.pop("history_text", None)
+        row.pop("history_rows_sent", None)
 
 
 def main():
