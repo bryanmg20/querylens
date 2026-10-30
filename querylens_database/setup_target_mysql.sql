@@ -14,8 +14,8 @@
 --   * la primera vez muestra la contrasena generada para querylens_monitor
 --     (la que se ingresa en querylens add). Las siguientes no la cambia;
 --   * dice si hace falta reiniciar MySQL. Solo lo pide si cambio algo que
---     MySQL lee al arrancar (performance_schema y el largo del texto de las
---     consultas).
+--     MySQL lee al arrancar (performance_schema, el largo del texto de las
+--     consultas y el tamano del historial de sentencias).
 --
 -- Requiere MySQL 8.0.18 o superior (MariaDB no esta soportado); antes de la
 -- 8.0.22 no existe performance_schema.error_log y los informes de abrazo
@@ -43,6 +43,7 @@ SELECT g.VARIABLE_NAME, g.VARIABLE_VALUE, p.VARIABLE_VALUE
 FROM performance_schema.global_variables g
 LEFT JOIN performance_schema.persisted_variables p ON p.VARIABLE_NAME = g.VARIABLE_NAME
 WHERE g.VARIABLE_NAME IN ('performance_schema', 'performance_schema_max_sql_text_length',
+                          'performance_schema_events_statements_history_size',
                           'innodb_print_all_deadlocks', 'log_error_verbosity');
 
 -- ---------------------------------------------------------------------------
@@ -85,6 +86,14 @@ SET PERSIST_ONLY performance_schema = ON;
 -- llegan truncadas y no se puede obtener su plan. Solo se sube.
 SET @ql_sql_text = GREATEST(@@GLOBAL.performance_schema_max_sql_text_length, 4096);
 SET PERSIST_ONLY performance_schema_max_sql_text_length = @ql_sql_text;
+-- Historial de sentencias por conexion (events_statements_history): QueryLens
+-- explica una ejecucion que siga ahi y compara su estimacion con las filas que
+-- devolvio (AP-08). Con 10 (el valor por defecto) las consultas lentas y poco
+-- frecuentes casi nunca siguen ahi cuando la conexion ejecuta muchas otras; con
+-- 100 se encontraron entre el 50 y el 84 % de las veces
+-- (detection_engine/references/004_ap08_filas_misma_ejecucion.md). Solo se sube.
+SET @ql_history = GREATEST(@@GLOBAL.performance_schema_events_statements_history_size, 100);
+SET PERSIST_ONLY performance_schema_events_statements_history_size = @ql_history;
 
 -- ---------------------------------------------------------------------------
 -- 3. Configuracion dinamica (PERSIST: se aplica ya y queda para los
@@ -101,7 +110,8 @@ SET PERSIST log_error_verbosity = 3;
 UPDATE performance_schema.setup_consumers
 SET ENABLED = 'YES'
 WHERE NAME IN ('global_instrumentation', 'thread_instrumentation',
-               'statements_digest', 'events_statements_current')
+               'statements_digest', 'events_statements_current',
+               'events_statements_history')
   AND ENABLED <> 'YES';
 UPDATE performance_schema.setup_instruments
 SET ENABLED = 'YES', TIMED = 'YES'
@@ -121,7 +131,8 @@ SELECT CASE
                         FROM performance_schema.persisted_variables p
                         JOIN performance_schema.global_variables g USING (VARIABLE_NAME)
                         WHERE p.VARIABLE_NAME IN ('performance_schema',
-                                                  'performance_schema_max_sql_text_length')
+                                                  'performance_schema_max_sql_text_length',
+                                                  'performance_schema_events_statements_history_size')
                           AND p.VARIABLE_VALUE <> g.VARIABLE_VALUE) THEN
                'Falta un paso: reinicie MySQL para terminar, por ejemplo: sudo systemctl restart mysql. Despues no hace falta volver a correr este script.'
            ELSE
