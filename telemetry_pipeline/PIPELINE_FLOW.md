@@ -98,7 +98,11 @@ run_engine(dialect, connection_factory, db_id)                  main.py
   │     │                                           no mira active_queries; la decisión
   │     │                                           real es mark_explainable)
   │     │     collector.mark_explainable(stats)     → hook por motor: Postgres=True siempre,
-  │     │                                           MySQL=True si query_sample_text no está vacío
+  │     │                                           MySQL=True si hay sample o una ejecución en
+  │     │                                           events_statements_history (statement_history:
+  │     │                                           la más lenta de cada digest; history_text +
+  │     │                                           history_rows_sent quedan en el candidato y
+  │     │                                           statement_history sale de stats)
   │     │
   │     ├─ AutoExplainStage.execute(stats, conn)             stages/auto_explain.py
   │     │     solo Postgres y solo si hay candidatos con ready_for_explain.
@@ -113,20 +117,26 @@ run_engine(dialect, connection_factory, db_id)                  main.py
   │     │
   │     ├─ (3) ExplainStage.execute(stats, conn)             stages/explain.py
   │     │     solo para candidatos con ready_for_explain y cuyo texto a explicar
-  │     │     (query_text en PG, query_sample_text en MySQL) empieza por SELECT/WITH
+  │     │     (query_text en PG; en MySQL history_text, o query_sample_text si no hay)
+  │     │     empieza por SELECT/WITH
   │     │     plan de auto_explain del candidato si existe   → Postgres, sin EXPLAIN
   │     │                                           (explain_source "auto_explain")
   │     │     "EXPLAIN (GENERIC_PLAN, FORMAT JSON) <query>"  → Postgres sin plan en el log (PG17+ por el minimo soportado, placeholders $1)
-  │     │     "EXPLAIN FORMAT=JSON <query_sample_text>"     → MySQL (usa valores reales)
+  │     │     "EXPLAIN FORMAT=JSON <history_text>"          → MySQL con ejecución en el historial
+  │     │                                           (explain_source "history", actual_rows = ROWS_SENT)
+  │     │     "EXPLAIN FORMAT=JSON <query_sample_text>"     → MySQL sin ella (explain_source "sample")
   │     │     cada candidato corre en una transacción corta propia:
   │     │     BEGIN → SET LOCAL search_path / USE → EXPLAIN → COMMIT (M-12).
   │     │     rollback si falla; el USE de MySQL es estado de sesión y sobrevive.
-  │     │     stats["query_explain"] = [{query_id, explain_source, plan}]
+  │     │     stats["query_explain"] = [{query_id, explain_source, plan, actual_rows?}]
   │     │     EXPLAIN_NORMALIZERS[dialect]().normalize(stats)
   │     │       Postgres: _walk_plan sobre arbol JSON → logical_shape + physical_operations;
   │     │                 con explain_source "auto_explain" los predicados pasan por
   │     │                 redact_postgres_plan_predicate (literales → $n)
   │     │       MySQL:    _walk_plan sobre query_block → idem
+  │     │     estimates.actual_rows: filas de la misma ejecución del plan (Postgres: "Actual
+  │     │       Rows" de la raíz con auto_explain.log_analyze; MySQL: ROWS_SENT del historial);
+  │     │       None con GENERIC_PLAN o sample
   │     │     stats["canonic_explains"] = [{query_id, explain_source, canonical_plan}]
   │     │
   │     ├─ (4) NormalizeStage.execute(stats)                 stages/normalize.py
@@ -307,17 +317,17 @@ Los tests de arquitectura son **contratos estructurales**: validan "qué interfa
 - `query_id` es `Union[str, int, None]`: MySQL lo emite como `{schema}/{digest}` (string — el digest hex solo hubiera perdido una de cada par de filas con el mismo digest en dos schemas, que es la PK real de `events_statements_summary_by_digest`), Postgres como `queryid` bigint.
 - El `queryid` de Postgres es un hash a nivel instancia y **no incluye la base**: si dos bases del mismo servidor ejecutan la misma query, comparten `query_id`, y el dedupe por `query_id` de `select_candidates_to_explain` las colapsaría en un candidato. Aceptado como limitación (una base por target hace el caso improbable); el EXPLAIN de un candidato sin colisión que vive en otra base ya corre en una conexión dedicada a esa base. Ver `references/004_decisiones_contrato.md` (query_id).
 - Cada fila de `statements`, `locks` y `active_queries` lleva `database_name` (`str | None`): la recolección es server-wide (pg_stat_statements/pg_locks/pg_stat_activity y digests MySQL leen todo el servidor) y la atribución por fila permite saber de qué base vino cada cosa bajo un mismo `db_id`. Un candidato de Postgres de otra base se explica en una **conexión dedicada a esa base** (una conexión PG no cambia de base con `USE`); en MySQL el `USE {schema|database}` alcanza, y si no hay contexto de schema el candidato se salta (ver `references/004_decisiones_contrato.md`).
-- `ready_for_explain` es la puerta de entrada a `EXPLAIN`. `init_ready_for_explain` solo la inicializa en `False` y deduplica por `query_id`; la decisión real la toma `mark_explainable`, por motor: Postgres marca todo como listo porque `EXPLAIN (GENERIC_PLAN)` resuelve los placeholders `$1` sin conocer los valores; MySQL marca solo lo que tiene `QUERY_SAMPLE_TEXT`, porque su `EXPLAIN` necesita literales reales.
+- `ready_for_explain` es la puerta de entrada a `EXPLAIN`. `init_ready_for_explain` solo la inicializa en `False` y deduplica por `query_id`; la decisión real la toma `mark_explainable`, por motor: Postgres marca todo como listo porque `EXPLAIN (GENERIC_PLAN)` resuelve los placeholders `$1` sin conocer los valores; MySQL marca solo lo que tiene `QUERY_SAMPLE_TEXT` o una ejecución en `events_statements_history`, porque su `EXPLAIN` necesita literales reales.
 - Antes (`c730da1`) la explicación exigía que el `query_id` del candidato estuviera en `active_queries`, es decir que la query se estuviera ejecutando en ese instante. Ese cruce ya no aplica desde `93beb5e`: cada motor produce el plan por su vía nativa sin necesitar la query en vivo, así que `init_ready_for_explain` ya no lee `active_queries` (aunque el nombre y la firma los conserven).
 - La asimetría es propia de cada motor, no una inconsistencia: `pg_stat_statements.query` ya viene normalizado con `$1` y `EXPLAIN (GENERIC_PLAN)` lo convierte en plan. `DIGEST_TEXT` de MySQL trae `?`, que no produce plan; `QUERY_SAMPLE_TEXT` trae la consulta con valores reales, que sí lo produce.
 - El ciclo del runner por defecto es de **10 s** (`interval_from_env()`, pensado para pruebas/sandbox). Para producción la cadencia prevista es de **30–60 s** (decisión de deploy, sin tocar código): cada vuelta emite un snapshot por base, así que el intervalo es la palanca directa de volumen de la cola (ver la fila "No guarda estado entre ciclos").
 - La transacción del target se maneja en dos tiempos: el **collect** la cierra con `commit()` al terminar (no retiene snapshot/vacuum de Postgres ni MVCC de MySQL durante el resto del ciclo), y cada **EXPLAIN** corre en su propia **transacción corta** (`BEGIN → SET LOCAL/USE → EXPLAIN → COMMIT`; rollback en fallo; el `USE` de MySQL es estado de sesión y sobrevive al commit). Ver `references/004_decisiones_contrato.md` (M-12).
 - `EXPLAIN (GENERIC_PLAN)` existe desde PostgreSQL 16. En PG 15 `ExplainStage` no lo intenta: el candidato tiene plan solo si `auto_explain` lo registró (ver "Versiones soportadas"), y no se reporta `NO_EXPLAINABLE_CANDIDATES` por eso. Si un EXPLAIN falla, la excepción se captura por consulta, se hace `rollback` y el candidato queda fuera de `canonic_explains` sin abortar el ciclo. Un caso conocido: si la query normalizada solo pasa parámetros a una función u operador con varias versiones (`generate_series($1, $2)`, `$1 + $2`), `GENERIC_PLAN` no puede elegir sin los tipos (SQLSTATE `42725`/`42P18`). Se reporta como `EXPLAIN_PARAM_TYPES_AMBIGUOUS` (info, se loguea en INFO), no como `EXPLAIN_FAILED` (degraded): la query sigue en `pg_stat_statements` y fallaría en cada ciclo, y como degraded dejaría la base degradada para siempre. Su plan llega por `auto_explain` si alguna ejecución pasa del umbral.
-- `explain_source` viaja en `canonic_explains` para que el consumidor sepa con qué fidelidad se obtuvo el plan: `"auto_explain"` (Postgres, plan que `auto_explain` registró de una ejecución real), `"generic"` (Postgres, plan sin valores concretos) o `"sample"` (MySQL, plan de una ejecución real).
+- `explain_source` viaja en `canonic_explains` para que el consumidor sepa con qué fidelidad se obtuvo el plan: `"auto_explain"` (Postgres, plan que `auto_explain` registró de una ejecución real), `"generic"` (Postgres, plan sin valores concretos), `"history"` (MySQL, plan de una ejecución que sigue en `events_statements_history`, con sus filas reales en `estimates.actual_rows`) o `"sample"` (MySQL, plan de `QUERY_SAMPLE_TEXT` cuando no hay ninguna en el historial). `estimates.actual_rows` es lo que usa AP-08 (`detection_engine/references/004_ap08_filas_misma_ejecucion.md`).
 - En Postgres el plan de `auto_explain` tiene prioridad sobre `GENERIC_PLAN`. Solo se encuentra si la query pasó de `auto_explain.log_min_duration` (50 ms en la guía 006) dentro de la ventana leída: cada ciclo relee los últimos 2 MB del log, sin guardar offsets entre ciclos. Una query rápida, o lenta pero fuera de esa ventana, sigue con el plan genérico. El cruce por `query_id` no se mezcla con las queries del propio monitor: los candidatos ya las excluyen en `STATEMENTS_QUERY`.
 - El plan de `auto_explain` trae los literales de la ejecución en `Filter`/`Index Cond`/`Join Filter`/`Hash Cond`/`Merge Cond`. `redact_postgres_plan_predicate` los reemplaza por `$n` sobre el texto de Postgres (no por sqlglot) y se lleva el cast pegado al literal, para que el predicado tenga el formato del plan genérico: `(c <> 'abc'::bpchar)` → `(c <> $1)`, igual que el genérico `(c ~~ $1)`. Los casts sobre columnas (`(c)::text`) salen igual en ambos planes y se conservan.
 - `QUERY_SAMPLE_TEXT` se trunca a `performance_schema_max_digest_text_length` (1024 por defecto). Una consulta larga queda con SQL inválido: se trata igual que cualquier fallo de `EXPLAIN`, y aparece como no explicable.
-- `query_sample_text` es **flujo interno, no campo del contrato**: MySQL lo produce (`QUERY_SAMPLE_TEXT`, literales reales) y solo lo usan `mark_explainable` y el `EXPLAIN FORMAT=JSON <sample>` en memoria. El payload lo **descarta** (`extra="ignore"`; ver `references/004_decisiones_contrato.md`): la cola no debe conservar texto real de las queries — solo viajan los normalizados (`query_text` de Postgres con `$1`, `DIGEST_TEXT` de MySQL con `?`) y los predicados de plan de MySQL (`canonic_explains[*].predicate`), que `clean_mysql_explain_predicate_dynamic` redacta a `$n` (N-1) porque el plan se arma con la query real. El fix de M-10 que lo declaró en el contrato fue un error y quedó revertido; este requisito es la razón por la que el campo nunca estuvo en el contrato.
+- `query_sample_text`, `history_text` y `history_rows_sent` son **flujo interno, no campos del contrato**: MySQL los produce (`QUERY_SAMPLE_TEXT` y `SQL_TEXT` del historial, literales reales) y solo los usan `mark_explainable` y el `EXPLAIN FORMAT=JSON` en memoria; `statement_history` sale de `stats` en `mark_explainable`. El payload lo **descarta** (`extra="ignore"`; ver `references/004_decisiones_contrato.md`): la cola no debe conservar texto real de las queries — solo viajan los normalizados (`query_text` de Postgres con `$1`, `DIGEST_TEXT` de MySQL con `?`) y los predicados de plan de MySQL (`canonic_explains[*].predicate`), que `clean_mysql_explain_predicate_dynamic` redacta a `$n` (N-1) porque el plan se arma con la query real. El fix de M-10 que lo declaró en el contrato fue un error y quedó revertido; este requisito es la razón por la que el campo nunca estuvo en el contrato.
 - Los scripts que medían la mecánica basada en logs se descartaron; la justificación vive en `references/005_evaluacion_alternativas_query_real.md` (cobertura incompleta del slow log, permisos de FS, config del servidor, texto logueado ≠ texto planificado). La carpeta `research/` se eliminó del repo.
 - Se explica después de `CandidatesStage` y antes de `NormalizeStage`: el EXPLAIN usa el texto de estadísticas; la normalización (canonicalización) ocurre después.
 

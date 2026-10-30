@@ -235,7 +235,7 @@ Son límites de lo que el motor sabe o expone. Se declaran como limitaciones de 
 | MySQL estima con porcentajes fijos en columnas sin índice ni histograma, aun con el valor real | El motor no tiene información de esa columna; solo lo arregla el DBA creando un histograma o un índice |
 | `GENERIC_PLAN` de Postgres no conoce los valores | Es como funciona; las conversiones que agrega Postgres por el tipo del valor (`k = 5.0` → `(k)::numeric`) solo se ven en planes de auto_explain (≥ 50 ms) |
 | La estimación depende de la ejecución muestreada | auto_explain y la muestra de MySQL ven una sola ejecución (normalmente la más lenta); con datos desbalanceados el resultado cambia según cuál tocó |
-| Filas reales por tabla dentro de un join | Solo con ANALYZE (`auto_explain.log_analyze`), descartado por sobrecosto |
+| Filas reales por tabla dentro de un join | Postgres las trae desde 2026-10-29 (`auto_explain.log_analyze = on` con `log_timing = off`, costo no distinguible del ruido), pero MySQL solo da las filas finales de la ejecución (`ROWS_SENT`): para tratar igual a los dos motores el plan canónico lleva solo `estimates.actual_rows` de la salida (`detection_engine/references/004_ap08_filas_misma_ejecucion.md`) |
 | MySQL con `temptable_use_mmap = ON` no cuenta ciertas tablas temporales en disco | No se anota por consulta (solo `memory/temptable/physical_disk`, total del servidor) |
 
 ## Nota sobre el cast `varchar → text`
