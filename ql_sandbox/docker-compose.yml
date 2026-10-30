@@ -13,6 +13,8 @@ services:
     # Las funciones de lectura del log las crea el servicio postgres_setup.
     # log_lock_waits: la fila que espera cada sesion de un abrazo cuando la
     # sentencia manda sus valores aparte ($1); ver guia 006.
+    # log_analyze=on + log_timing=off: el plan del log trae las filas reales
+    # de esa ejecucion (AP-08); igual que setup_target_postgres.sql.
     command: >
       postgres
         -c shared_preload_libraries=pg_stat_statements,auto_explain
@@ -23,7 +25,8 @@ services:
         -c log_lock_waits=on
         -c shared_buffers=16MB
         -c auto_explain.log_min_duration=50ms
-        -c auto_explain.log_analyze=off
+        -c auto_explain.log_analyze=on
+        -c auto_explain.log_timing=off
         -c auto_explain.log_format=json
         -c logging_collector=on
         -c log_destination=stderr,jsonlog
@@ -84,6 +87,9 @@ services:
     # innodb_print_all_deadlocks + log_error_verbosity=3: cada abrazo mortal
     # llega a performance_schema.error_log (InnoDB lo escribe como Note, que
     # la verbosidad 2 descarta). Ambas son dinamicas: SET PERSIST en clientes.
+    # events-statements-history-size=100: ultimas sentencias por conexion, de
+    # donde el pipeline toma la ejecucion que explica (AP-08); igual que
+    # setup_target_mysql.sql. Es de arranque.
     command: >
       --performance-schema=ON
       --performance-schema-instrument='statement/%=ON'
@@ -97,6 +103,7 @@ services:
       --performance-schema-instrument='wait/io/table/sql/handler=ON'
       --temptable_max_ram=1048576
       --performance-schema-max-sql-text-length=${MYSQL_SQL_TEXT_LENGTH:-4096}
+      --performance-schema-events-statements-history-size=100
       --innodb-print-all-deadlocks=ON
       --log-error-verbosity=3
     volumes:
@@ -165,7 +172,8 @@ services:
         -c log_lock_waits=on
         -c shared_buffers=16MB
         -c auto_explain.log_min_duration=50ms
-        -c auto_explain.log_analyze=off
+        -c auto_explain.log_analyze=on
+        -c auto_explain.log_timing=off
         -c auto_explain.log_format=json
         -c logging_collector=on
         -c log_destination=stderr,jsonlog
@@ -329,6 +337,7 @@ services:
       --performance-schema-instrument='wait/io/table/sql/handler=ON'
       --temptable_max_ram=1048576
       --performance-schema-max-sql-text-length=${MYSQL_SQL_TEXT_LENGTH:-4096}
+      --performance-schema-events-statements-history-size=100
       --innodb-print-all-deadlocks=ON
       --log-error-verbosity=3
     volumes:
