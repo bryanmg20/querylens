@@ -14,14 +14,26 @@ logger = get_logger(__name__)
 
 
 # Regla AP-08 (SegundoInforme, Tabla 2), igual para ambos motores: se compara
-# la estimacion de filas de salida del EXPLAIN (output_rows del canonical_plan)
-# contra las filas por ejecucion REALES de la ultima ventana
-# (delta rows_returned / delta execution_count desde el snapshot anterior).
+# la estimacion de filas de salida del plan (estimates.output_rows) contra las
+# filas que devolvio LA MISMA EJECUCION de la que sale el plan
+# (estimates.actual_rows: Postgres, auto_explain con log_analyze; MySQL, la
+# ejecucion de events_statements_history que se explico).
 #   q-error = max(estimadas / reales, reales / estimadas) >= 10
 #   y el mayor de los dos valores >= 100 filas
 #
+# Antes se comparaba contra el promedio de la ventana, y eso daba falsos
+# positivos cuando la consulta recibe valores que devuelven cantidades de filas
+# muy distintas: el plan es de un valor y el promedio es de todos
+# (ql_sandbox/campana_cardinalidad_ap08). Sin actual_rows (plan generico de
+# Postgres, sample de MySQL) la consulta no se evalua en ese snapshot: no hay
+# respaldo con el promedio. Limitacion y opciones a evaluar en
+# references/004_ap08_filas_misma_ejecucion.md.
+#
+# La ventana se sigue midiendo solo para exigir que la consulta se haya
+# ejecutado desde el snapshot anterior (un plan viejo no repite el hallazgo).
+#
 # Limitacion declarada en el informe: solo se compara la salida final, no los
-# nodos intermedios, porque QueryLens no ejecuta EXPLAIN ANALYZE.
+# nodos intermedios (MySQL solo da las filas finales de la ejecucion).
 #
 # Exclusiones (se leen del canonic_query, no del plan: el EXPLAIN JSON de
 # MySQL 8.0 no tiene nodo LIMIT):
@@ -255,8 +267,8 @@ def _recommendation(candidate: StatementCandidate, columns_by_table: dict[str, l
     return " ".join(parts)
 
 
-# Detecta consultas cuya estimacion de filas del EXPLAIN difiere en al menos un
-# orden de magnitud de las filas que devolvieron en la ultima ventana
+# Detecta consultas cuya estimacion de filas del plan difiere en al menos un
+# orden de magnitud de las filas que devolvio esa misma ejecucion
 def detect_cardinality_misestimates(
     snapshot: SnapshotPayload,
     history: dict[str, StatementHistory] | None = None,
@@ -292,6 +304,12 @@ def detect_cardinality_misestimates(
         if _exclusion(select) is not None:
             continue
 
+        # filas de la misma ejecucion de la que sale el plan; sin ellas no se evalua
+        same_execution_rows = explain.canonical_plan.estimates.actual_rows
+        if same_execution_rows is None:
+            continue
+        actual_rows = float(same_execution_rows)
+
         query_id = str(candidate.query_id)
         # contadores desde statements (suma de filas repetidas); si el candidato
         # no aparece ahi, se usan los suyos
@@ -300,13 +318,12 @@ def detect_cardinality_misestimates(
             (candidate.execution_count or 0, candidate.rows_returned, candidate.counters_epoch),
         )
         epoch = _parse_instant(candidate.counters_epoch or epoch_raw)
+        # solo para exigir que se haya ejecutado desde el snapshot anterior
         window = _rows_window(
             calls, rows, epoch, history.get(query_id), previous_snapshot_at, captured_at,
         )
         if window is None:
             continue
-
-        actual_rows = window.rows / window.calls
         # como minimo 1 fila de cada lado: una consulta que no devolvio nada (o
         # una estimacion de 0) no puede dividir
         estimated_for_ratio = max(float(estimated_rows), 1.0)
@@ -341,23 +358,22 @@ def detect_cardinality_misestimates(
                     "schema_name": candidate.schema_name,
                     "tables": tables,
                     "filter_columns": columns_by_table,
-                    # estimacion del EXPLAIN: filas de salida de la consulta
+                    # estimacion del plan: filas de salida de la consulta
                     "estimated_rows": estimated_rows,
-                    # realidad en la ventana: filas por ejecucion
-                    "actual_rows_per_call": round(actual_rows, 2),
+                    # filas que devolvio la misma ejecucion de la que sale el plan
+                    "actual_rows": actual_rows,
                     "q_error": round(q_error, 2),
                     "direccion": direction,
+                    "explain_source": explain.explain_source,
                     "window_calls": window.calls,
-                    "window_rows": window.rows,
                     "query_new_in_window": window.new_query,
                 },
                 explicacion=(
-                    f"El optimizador estimo {estimated_rows:g} filas para esta consulta y en la ultima "
-                    f"ventana devolvio en promedio {actual_rows:,.0f} filas por ejecucion (q-error "
-                    f"{q_error:,.0f}, {direction}). Con una estimacion tan lejana el optimizador puede "
-                    "elegir un plan inadecuado, por ejemplo un nested loop pensado para pocas filas o "
-                    "una reserva de memoria insuficiente. Solo se compara la salida final de la consulta, "
-                    "no cada paso del plan, porque QueryLens no ejecuta EXPLAIN ANALYZE."
+                    f"El optimizador estimo {estimated_rows:g} filas para esta consulta y la misma "
+                    f"ejecucion devolvio {actual_rows:,.0f} (q-error {q_error:,.0f}, {direction}). "
+                    "Con una estimacion tan lejana el optimizador puede elegir un plan inadecuado, por "
+                    "ejemplo un nested loop pensado para pocas filas o una reserva de memoria "
+                    "insuficiente. Solo se compara la salida final de la consulta, no cada paso del plan."
                 ),
                 recomendacion=_recommendation(candidate, columns_by_table, tables),
                 query_id=candidate.query_id,
