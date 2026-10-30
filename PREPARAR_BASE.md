@@ -48,7 +48,8 @@ Después, `sudo systemctl reload postgresql`, o reiniciar si cambió `listen_add
 | `pg_stat_statements.track` | `all` | Incluye sentencias dentro de funciones |
 | `track_activity_query_size` | 4096 como mínimo | Texto completo de las consultas en curso (requiere reinicio) |
 | `track_counts` | `on` | Uso de tablas e índices |
-| `auto_explain.log_min_duration` / `log_format` / `log_analyze` | `50ms` / `json` / `off` | Registra el plan de lo que tarda 50 ms o más, sin volver a ejecutar nada |
+| `auto_explain.log_min_duration` / `log_format` | `50ms` / `json` | Registra el plan de lo que tarda 50 ms o más, sin volver a ejecutar nada |
+| `auto_explain.log_analyze` / `log_timing` | `on` / `off` | El plan registrado trae las filas que devolvió esa ejecución (sin medir tiempos por paso, que es lo caro). Postgres las cuenta mientras ejecuta las consultas de la aplicación; QueryLens no ejecuta nada |
 | `logging_collector` | `on` | Log en archivos (requiere reinicio si estaba apagado) |
 | `log_destination` | agrega `jsonlog` | Log JSON que QueryLens lee |
 | `log_filename` / `log_truncate_on_rotation` / `log_rotation_age` | `postgresql-%a.log` / `on` / `1d` | Solo si el servidor no escribía archivos de log: un archivo por día de la semana, que se reutiliza |
@@ -83,8 +84,9 @@ Si MySQL corre en el mismo servidor que QueryLens y fuera de Docker, el host a r
 |---|---|---|
 | `performance_schema` | `ON` | Estadísticas de consultas (viene activo por defecto; requiere reinicio si estaba apagado) |
 | `performance_schema_max_sql_text_length` | 4096 como mínimo | Texto completo de las consultas, para obtener su plan (requiere reinicio) |
+| `performance_schema_events_statements_history_size` | 100 como mínimo | Últimas sentencias de cada conexión: QueryLens explica una ejecución que siga ahí y compara su estimación con las filas que devolvió (con 10, el valor por defecto, las consultas lentas casi nunca siguen ahí). Requiere reinicio |
 | `innodb_print_all_deadlocks` / `log_error_verbosity` | `ON` / `3` | Cada abrazo mortal llega al log de errores |
-| Consumers `statements_digest`, `events_statements_current`, `global_instrumentation`, `thread_instrumentation` e instrumentos `statement/%` | activos | Vienen activos por defecto; el script los reactiva si alguien los apagó |
+| Consumers `statements_digest`, `events_statements_current`, `events_statements_history`, `global_instrumentation`, `thread_instrumentation` e instrumentos `statement/%` | activos | Vienen activos por defecto; el script los reactiva si alguien los apagó |
 
 La configuración queda con `SET PERSIST` en `mysqld-auto.cnf`, que gana sobre `my.cnf`. El valor de antes de cada variable queda anotado en la tabla `querylens.setup_changes` (una base `querylens` que solo usa el script), para poder deshacerlo. Los consumers no se persisten: si `my.cnf` los desactiva, hay que quitar esa línea. El usuario recibe `SELECT` sobre `performance_schema`, `PROCESS` (consultas en curso, bloqueos y abrazos mortales) y `SHOW VIEW` sobre la base, que le permite conectarse a ella y ver sus tablas e índices sin leer datos.
 
