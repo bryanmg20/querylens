@@ -164,13 +164,19 @@ WHERE coalesce(nullif(regexp_replace(value, '\D', '', 'g'), '')::bigint, 0) < ta
 
 -- Valores fijos que necesita QueryLens. track = all: el banco de pruebas del
 -- detector se calibro asi (sentencias dentro de funciones incluidas).
+-- log_analyze = on con log_timing = off: el plan del log trae las filas reales
+-- de esa ejecucion (AP-08 compara contra ellas). Postgres las cuenta mientras
+-- ejecuta las consultas de la aplicacion; QueryLens no ejecuta nada. Sin medir
+-- tiempos por nodo el costo no se distinguio del ruido
+-- (detection_engine/references/004_ap08_filas_misma_ejecucion.md).
 SELECT pg_temp.ql_record(name, NULL, target),
        pg_temp.ql_placeholder(name, target),
        format('ALTER SYSTEM SET %I = %L', name, target)
 FROM (VALUES ('pg_stat_statements.track', 'all'),
              ('track_counts', 'on'),
              ('auto_explain.log_min_duration', '50ms'),
-             ('auto_explain.log_analyze', 'off'),
+             ('auto_explain.log_analyze', 'on'),
+             ('auto_explain.log_timing', 'off'),
              ('auto_explain.log_format', 'json'),
              ('logging_collector', 'on')) AS t(name, target)
 LEFT JOIN ql_next USING (name)
@@ -316,6 +322,8 @@ WHERE (name = 'shared_preload_libraries' AND NOT 'pg_stat_statements' = ANY(pg_t
    OR (name = 'track_counts' AND setting <> 'on')
    OR (name = 'auto_explain.log_format' AND setting <> 'json')
    OR (name = 'auto_explain.log_min_duration' AND setting <> '50')
+   OR (name = 'auto_explain.log_analyze' AND setting <> 'on')
+   OR (name = 'auto_explain.log_timing' AND setting <> 'off')
    OR (name = 'logging_collector' AND setting <> 'on')
    OR (name = 'log_destination' AND NOT 'jsonlog' = ANY(pg_temp.ql_list(setting)))
    OR (name = 'log_error_verbosity' AND setting = 'terse')
