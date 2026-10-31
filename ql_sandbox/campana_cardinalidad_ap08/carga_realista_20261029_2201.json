@@ -1,0 +1,686 @@
+[
+ {
+  "snapshots": 62,
+  "candidatos_por_snapshot": 10.0,
+  "emparejados_por_snapshot": 5.0,
+  "por_consulta": {
+   "real06": {
+    "en_top": 62,
+    "history": 6,
+    "sample": 56,
+    "sin_plan": 0,
+    "media_ms": 2208.72,
+    "emparejado_pct": 9.7
+   },
+   "real07": {
+    "en_top": 62,
+    "history": 11,
+    "sample": 51,
+    "sin_plan": 0,
+    "media_ms": 2497.63,
+    "emparejado_pct": 17.7
+   },
+   "real08": {
+    "en_top": 62,
+    "history": 3,
+    "sample": 59,
+    "sin_plan": 0,
+    "media_ms": 2209.66,
+    "emparejado_pct": 4.8
+   },
+   "real09": {
+    "en_top": 62,
+    "history": 3,
+    "sample": 59,
+    "sin_plan": 0,
+    "media_ms": 2946.45,
+    "emparejado_pct": 4.8
+   },
+   "real10": {
+    "en_top": 62,
+    "history": 1,
+    "sample": 61,
+    "sin_plan": 0,
+    "media_ms": 3320.87,
+    "emparejado_pct": 1.6
+   },
+   "real01": {
+    "en_top": 62,
+    "history": 60,
+    "sample": 2,
+    "sin_plan": 0,
+    "media_ms": 1.5,
+    "emparejado_pct": 96.8
+   },
+   "real02": {
+    "en_top": 62,
+    "history": 60,
+    "sample": 2,
+    "sin_plan": 0,
+    "media_ms": 1.54,
+    "emparejado_pct": 96.8
+   },
+   "real04": {
+    "en_top": 62,
+    "history": 52,
+    "sample": 10,
+    "sin_plan": 0,
+    "media_ms": 3.56,
+    "emparejado_pct": 83.9
+   },
+   "real03": {
+    "en_top": 62,
+    "history": 59,
+    "sample": 3,
+    "sin_plan": 0,
+    "media_ms": 1.61,
+    "emparejado_pct": 95.2
+   },
+   "real05": {
+    "en_top": 62,
+    "history": 44,
+    "sample": 18,
+    "sin_plan": 0,
+    "media_ms": 2.72,
+    "emparejado_pct": 71.0
+   }
+  },
+  "detalle": [
+   {
+    "candidatos": 10,
+    "emparejados": 4
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 4
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 4
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 4
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 4
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 4
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 6
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 6
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 6
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 6
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 4
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 4
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 4
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 6
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 6
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 6
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 4
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 6
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 4
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 6
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 4
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 6
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 4
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 7
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 6
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 4
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 0
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 0
+   }
+  ],
+  "history_size": 10,
+  "relleno": {
+   "tipos": 200,
+   "proporcion": 0.85
+  }
+ },
+ {
+  "snapshots": 62,
+  "candidatos_por_snapshot": 10.0,
+  "emparejados_por_snapshot": 8.0,
+  "por_consulta": {
+   "real06": {
+    "en_top": 62,
+    "history": 52,
+    "sample": 10,
+    "sin_plan": 0,
+    "media_ms": 2228.31,
+    "emparejado_pct": 83.9
+   },
+   "real07": {
+    "en_top": 62,
+    "history": 43,
+    "sample": 19,
+    "sin_plan": 0,
+    "media_ms": 2526.15,
+    "emparejado_pct": 69.4
+   },
+   "real09": {
+    "en_top": 62,
+    "history": 29,
+    "sample": 33,
+    "sin_plan": 0,
+    "media_ms": 2833.4,
+    "emparejado_pct": 46.8
+   },
+   "real08": {
+    "en_top": 62,
+    "history": 31,
+    "sample": 31,
+    "sin_plan": 0,
+    "media_ms": 2232.24,
+    "emparejado_pct": 50.0
+   },
+   "real10": {
+    "en_top": 62,
+    "history": 8,
+    "sample": 54,
+    "sin_plan": 0,
+    "media_ms": 3375.23,
+    "emparejado_pct": 12.9
+   },
+   "real01": {
+    "en_top": 62,
+    "history": 60,
+    "sample": 2,
+    "sin_plan": 0,
+    "media_ms": 1.5,
+    "emparejado_pct": 96.8
+   },
+   "real02": {
+    "en_top": 62,
+    "history": 60,
+    "sample": 2,
+    "sin_plan": 0,
+    "media_ms": 1.54,
+    "emparejado_pct": 96.8
+   },
+   "real04": {
+    "en_top": 62,
+    "history": 60,
+    "sample": 2,
+    "sin_plan": 0,
+    "media_ms": 3.67,
+    "emparejado_pct": 96.8
+   },
+   "real03": {
+    "en_top": 62,
+    "history": 60,
+    "sample": 2,
+    "sin_plan": 0,
+    "media_ms": 1.59,
+    "emparejado_pct": 96.8
+   },
+   "real05": {
+    "en_top": 62,
+    "history": 60,
+    "sample": 2,
+    "sin_plan": 0,
+    "media_ms": 2.86,
+    "emparejado_pct": 96.8
+   }
+  },
+  "detalle": [
+   {
+    "candidatos": 10,
+    "emparejados": 9
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 6
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 8
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 7
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 8
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 8
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 7
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 9
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 7
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 9
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 7
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 8
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 9
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 7
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 7
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 8
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 9
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 6
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 9
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 6
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 5
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 8
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 7
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 7
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 7
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 7
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 7
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 7
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 9
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 8
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 9
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 8
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 8
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 8
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 7
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 9
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 10
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 8
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 7
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 8
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 8
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 7
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 9
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 8
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 8
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 7
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 9
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 8
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 8
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 6
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 6
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 7
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 7
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 9
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 8
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 9
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 7
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 8
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 8
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 8
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 0
+   },
+   {
+    "candidatos": 10,
+    "emparejados": 0
+   }
+  ],
+  "history_size": 100,
+  "relleno": {
+   "tipos": 200,
+   "proporcion": 0.85
+  }
+ }
+]

@@ -1,0 +1,213 @@
+{
+ "muestras": {
+  "oltp/off": [
+   {
+    "por_segundo": 772.19,
+    "p95_ms": 7.7
+   },
+   {
+    "por_segundo": 850.0,
+    "p95_ms": 6.09
+   },
+   {
+    "por_segundo": 761.05,
+    "p95_ms": 7.43
+   },
+   {
+    "por_segundo": 803.92,
+    "p95_ms": 6.79
+   }
+  ],
+  "oltp/analyze_sin_tiempo": [
+   {
+    "por_segundo": 878.19,
+    "p95_ms": 5.67
+   },
+   {
+    "por_segundo": 814.7,
+    "p95_ms": 6.21
+   },
+   {
+    "por_segundo": 810.09,
+    "p95_ms": 6.32
+   },
+   {
+    "por_segundo": 806.95,
+    "p95_ms": 6.32
+   }
+  ],
+  "oltp/analyze_con_tiempo": [
+   {
+    "por_segundo": 707.65,
+    "p95_ms": 10.46
+   },
+   {
+    "por_segundo": 803.56,
+    "p95_ms": 6.43
+   },
+   {
+    "por_segundo": 801.71,
+    "p95_ms": 6.55
+   },
+   {
+    "por_segundo": 807.79,
+    "p95_ms": 6.21
+   }
+  ],
+  "scan/off": [
+   {
+    "por_segundo": 28.666666666666668,
+    "media_ms": 127.33114177558149
+   },
+   {
+    "por_segundo": 31.533333333333335,
+    "media_ms": 114.90979289323467
+   },
+   {
+    "por_segundo": 32.3,
+    "media_ms": 112.21544520227042
+   },
+   {
+    "por_segundo": 32.766666666666666,
+    "media_ms": 110.38989116276694
+   }
+  ],
+  "scan/analyze_sin_tiempo": [
+   {
+    "por_segundo": 33.7,
+    "media_ms": 107.81884918100889
+   },
+   {
+    "por_segundo": 32.7,
+    "media_ms": 110.3933808124366
+   },
+   {
+    "por_segundo": 32.63333333333333,
+    "media_ms": 111.12188216649666
+   },
+   {
+    "por_segundo": 32.6,
+    "media_ms": 110.94042611860928
+   }
+  ],
+  "scan/analyze_con_tiempo": [
+   {
+    "por_segundo": 27.9,
+    "media_ms": 131.2795875961768
+   },
+   {
+    "por_segundo": 31.866666666666667,
+    "media_ms": 113.8437142374475
+   },
+   {
+    "por_segundo": 31.9,
+    "media_ms": 113.31814588401234
+   },
+   {
+    "por_segundo": 31.533333333333335,
+    "media_ms": 114.8469956141649
+   }
+  ],
+  "join/off": [
+   {
+    "por_segundo": 32.43333333333333,
+    "media_ms": 112.10907164748207
+   },
+   {
+    "por_segundo": 28.333333333333332,
+    "media_ms": 128.10958974235317
+   },
+   {
+    "por_segundo": 31.633333333333333,
+    "media_ms": 114.6439084077977
+   },
+   {
+    "por_segundo": 31.133333333333333,
+    "media_ms": 116.49898169914358
+   }
+  ],
+  "join/analyze_sin_tiempo": [
+   {
+    "por_segundo": 32.36666666666667,
+    "media_ms": 112.25939852111225
+   },
+   {
+    "por_segundo": 31.1,
+    "media_ms": 116.72448671489812
+   },
+   {
+    "por_segundo": 30.466666666666665,
+    "media_ms": 119.14718926258213
+   },
+   {
+    "por_segundo": 30.533333333333335,
+    "media_ms": 118.58217342358083
+   }
+  ],
+  "join/analyze_con_tiempo": [
+   {
+    "por_segundo": 29.333333333333332,
+    "media_ms": 124.55505737613623
+   },
+   {
+    "por_segundo": 27.766666666666666,
+    "media_ms": 131.31525833133264
+   },
+   {
+    "por_segundo": 29.666666666666668,
+    "media_ms": 122.76403233033702
+   },
+   {
+    "por_segundo": 30.466666666666665,
+    "media_ms": 119.36000940700214
+   }
+  ]
+ },
+ "resumen": {
+  "oltp/off": {
+   "por_segundo": 788.0550000000001,
+   "cambio_pct": 0.0,
+   "p95_ms": 7.109999999999999
+  },
+  "oltp/analyze_sin_tiempo": {
+   "por_segundo": 812.395,
+   "cambio_pct": 3.0886169112561834,
+   "p95_ms": 6.265000000000001
+  },
+  "oltp/analyze_con_tiempo": {
+   "por_segundo": 802.635,
+   "cambio_pct": 1.8501246740392392,
+   "p95_ms": 6.49
+  },
+  "scan/off": {
+   "por_segundo": 31.916666666666664,
+   "cambio_pct": 0.0,
+   "media_ms": 113.56261904775255
+  },
+  "scan/analyze_sin_tiempo": {
+   "por_segundo": 32.66666666666667,
+   "cambio_pct": 2.3498694516971503,
+   "media_ms": 110.66690346552295
+  },
+  "scan/analyze_con_tiempo": {
+   "por_segundo": 31.700000000000003,
+   "cambio_pct": -0.6788511749347095,
+   "media_ms": 114.34535492580619
+  },
+  "join/off": {
+   "por_segundo": 31.383333333333333,
+   "cambio_pct": 0.0,
+   "media_ms": 115.57144505347064
+  },
+  "join/analyze_sin_tiempo": {
+   "por_segundo": 30.81666666666667,
+   "cambio_pct": -1.8056293149229832,
+   "media_ms": 117.65333006923947
+  },
+  "join/analyze_con_tiempo": {
+   "por_segundo": 29.5,
+   "cambio_pct": -6.0010621348911295,
+   "media_ms": 123.65954485323662
+  }
+ }
+}
