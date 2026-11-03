@@ -340,18 +340,20 @@ SCENARIOS = {
             name="unused_index",
             descripcion=(
                 "AP-05: indice sobre pad que nadie consulta, duplicado exacto de k "
-                "(escenario del informe) e indice c cubierto por (c, k), con una "
-                "consulta WHERE k + 0 = ? que filtra la tabla sin usar ningun indice."
+                "(escenario del informe) e indice c cubierto por (c, k), con consultas "
+                "WHERE k = ? y WHERE c = ? AND k = ? que leen con k y con (c, k)."
             ),
             extra_setup=lambda engine: UNUSED_INDEX_SQL,
             # AP-05 asocia cada hallazgo a una query de top_impact_queries que corrio
-            # en el snapshot y filtra la tabla: sin carga no habria a quien asociarlo
-            workload="non_sargable",
+            # en el snapshot y filtra la tabla; ademas un indice solo es redundante si
+            # el que lo cubre tiene lecturas: la carga lee con k y con (c, k)
+            workload="unused_index",
             workers=4,
             expectations=[
                 Expectation(
                     "redundante: ql_scn_c es prefijo de ql_scn_c_k",
                     _unused("ql_scn_c", "redundante"),
+                    nota="el planificador tiene que elegir ql_scn_c_k para WHERE c = ? AND k = ?",
                 ),
                 Expectation(
                     "redundante: ql_scn_k_dup duplica a ql_scn_k (informe)",
@@ -364,6 +366,11 @@ SCENARIOS = {
                         "depende de DEFAULT_MIN_STATS_WINDOW en unused_index.py: el motor tiene "
                         "que llevar al menos ese tiempo encendido"
                     ),
+                ),
+                Expectation(
+                    "control: ql_scn_c_k (se lee) no sale como no usado",
+                    _unused("ql_scn_c_k", "no_usado"),
+                    absent=True,
                 ),
             ],
         ),
