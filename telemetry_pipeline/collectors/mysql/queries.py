@@ -15,27 +15,38 @@ SELECT
         GROUP_CONCAT(t.column_name ORDER BY t.seq_in_index SEPARATOR ', '),
         ')'
     )                                       AS index_ref,
-    # index_size_bytes es a nivel de TABLA, no de indice:
-    # information_schema.tables.index_length agrega el almacenamiento de todos
-    # los indices de la tabla, asi que se repite identico en cada fila de la
-    # misma tabla (verificado en vivo: PRIMARY y k_1 con el mismo 212992).
-    # No es el tamaño individual del indice; para eso no hay fuente directa.
-    CAST(st.index_length AS SIGNED)         AS index_size_bytes
+    # el tamaño de cada indice llega aparte (INDEX_SIZES_QUERY): index_length de
+    # information_schema.tables es la suma de todos los indices de la tabla
+    NULL                                    AS index_size_bytes
 FROM information_schema.statistics t
 LEFT JOIN performance_schema.table_io_waits_summary_by_index_usage io
        ON io.object_schema = t.table_schema
       AND io.object_name   = t.table_name
       AND io.index_name    = t.index_name
-LEFT JOIN information_schema.tables st
-       ON st.table_schema = t.table_schema
-      AND st.table_name   = t.table_name
 WHERE t.table_schema NOT IN ('mysql', 'performance_schema', 'information_schema', 'sys')
 GROUP BY
     t.table_schema,
     t.table_name,
     t.index_name,
-    io.COUNT_READ,
-    st.index_length;
+    io.COUNT_READ;
+"""
+
+
+# Tamaño de cada indice: paginas de la estadistica persistente de InnoDB por el
+# tamaño de pagina (verificado en vivo: sbtest1.k_1 212992, PRIMARY 2637824,
+# mientras index_length de la tabla daba 212992 para los dos). Va en su propia
+# seccion porque necesita SELECT sobre mysql.innodb_index_stats, que una
+# instalacion vieja no tiene: si falla, solo falta el tamaño, no los indices.
+# Una tabla particionada aparece como tabla#p#particion y no se cruza.
+INDEX_SIZES_QUERY = """
+SELECT
+    database_name                                       AS schema_name,
+    table_name                                          AS table_name,
+    index_name                                          AS index_name,
+    CAST(stat_value * @@innodb_page_size AS SIGNED)     AS index_size_bytes
+FROM mysql.innodb_index_stats
+WHERE stat_name = 'size'
+  AND database_name NOT IN ('mysql', 'performance_schema', 'information_schema', 'sys');
 """
 
 
@@ -210,7 +221,9 @@ SERVER_START_QUERY = """
 SELECT
     FROM_UNIXTIME(
         UNIX_TIMESTAMP() - variable_value
-    )                       AS server_start_time
+    )                       AS server_start_time,
+    # sin equivalente a stats_reset: un TRUNCATE de performance_schema no deja marca
+    NULL                    AS stats_reset_time
 FROM performance_schema.global_status
 WHERE variable_name = 'Uptime';
 """
