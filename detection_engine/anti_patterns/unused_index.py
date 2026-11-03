@@ -408,12 +408,55 @@ def _full_scan_entries_for_table(
     return candidates[0] if len(candidates) == 1 else []
 
 
+def _fk_only_backers(
+    snapshot: SnapshotPayload,
+    redundant_index_names: set[tuple[str | None, str, str]],
+) -> set[tuple[str, str, str]]:
+    # (schema, tabla, indice) de los indices que son el UNICO que respalda una
+    # FK: sus primeras columnas son las de la FK (en cualquier orden, que es lo
+    # que sirve para buscar las filas hijas). Los primarios y unicos tambien
+    # cuentan como respaldo. Los que ya salieron como redundantes en este
+    # snapshot no: la recomendacion es eliminarlos, y si se contaran, el
+    # duplicado que se conserva quedaria como no usado y se eliminarian los dos.
+    # Nombres en minuscula, igual que AP-06 (MySQL no distingue mayusculas).
+    fk_columns: dict[tuple[str, str, str], list] = {}
+    for row in snapshot.foreign_keys:
+        key = (row.schema_name.lower(), row.table_name.lower(), row.constraint_name)
+        fk_columns.setdefault(key, []).append(row)
+
+    indexes_by_table: dict[tuple[str, str], list[tuple]] = {}
+    for index in snapshot.indexes:
+        if (index.schema_name, index.table_name, index.index_name) in redundant_index_names:
+            continue
+        _, columns, _, is_partial = _parse_index_ref(index.index_ref)
+        # un indice parcial no tiene todas las filas: no sirve para la FK
+        if is_partial:
+            continue
+        lowered = [column.lower() if column else None for column in columns]
+        indexes_by_table.setdefault((index.schema_name.lower(), index.table_name.lower()), []).append(
+            (index, lowered)
+        )
+
+    only_backers: set[tuple[str, str, str]] = set()
+    for (schema, table, _), rows in fk_columns.items():
+        wanted = {row.column_name.lower() for row in rows}
+        backers = [
+            index
+            for index, columns in indexes_by_table.get((schema, table), [])
+            if len(columns) >= len(wanted) and set(columns[: len(wanted)]) == wanted
+        ]
+        if len(backers) == 1:
+            only_backers.add((backers[0].schema_name, backers[0].table_name, backers[0].index_name))
+    return only_backers
+
+
 def _detect_unused(
     snapshot: SnapshotPayload,
     used_index_keys: set[tuple[str | None, str, str]],
     traffic: dict[tuple[str | None, str], list[dict]],
     redundant_index_names: set[tuple[str | None, str, str]],
 ) -> list[Hallazgo]:
+    fk_only_backers = _fk_only_backers(snapshot, redundant_index_names)
     findings = []
     for index in snapshot.indexes:
         if index.index_scans != 0 or index.last_index_scan is not None:
@@ -433,6 +476,11 @@ def _detect_unused(
         # primarios y unicos se excluyen (informe, AP-05): garantizan que no se
         # repitan valores, asi que no se pueden eliminar aunque nadie los lea
         if is_unique:
+            continue
+        # por el mismo motivo, el unico indice que respalda una FK: MySQL no deja
+        # eliminarlo y en Postgres cada DELETE/UPDATE del padre recorreria la hija
+        # completa. Que no tenga lecturas solo dice que el padre no cambio aun
+        if (index.schema_name, index.table_name, index.index_name) in fk_only_backers:
             continue
         lead_column = columns[0] if columns else None
 

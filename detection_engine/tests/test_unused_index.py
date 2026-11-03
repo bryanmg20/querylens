@@ -36,7 +36,7 @@ def _scan(relation, index_name=None, table_name=None, access_method="index_scan"
 
 
 def _snapshot(indexes, operations, canonic_query="SELECT c FROM sbtest1 WHERE k = $1",
-              stats_reset_time=None, execution_count=50, schema="ql_demo"):
+              stats_reset_time=None, execution_count=50, schema="ql_demo", foreign_keys=()):
     statement = {
         "query_id": QUERY_ID, "query_text": "q", "schema_name": schema,
         "execution_count": execution_count, "rows_returned": 50, "total_time_ms": 100.0,
@@ -50,6 +50,7 @@ def _snapshot(indexes, operations, canonic_query="SELECT c FROM sbtest1 WHERE k 
     return SnapshotPayload.model_validate({
         "db_id": "db_test", "statements": [statement], "top_impact_queries": [statement],
         "locks": [], "active_queries": [], "indexes": indexes, "tables": [], "columns": columns,
+        "foreign_keys": list(foreign_keys),
         "server_start_timestamp": [{"server_start_time": SERVER_START, "stats_reset_time": stats_reset_time}],
         "canonic_explains": [{
             "query_id": QUERY_ID, "explain_source": "history",
@@ -152,6 +153,49 @@ def test_plan_of_a_query_without_schema_counts_in_any_schema():
     used = _used_index_keys(_snapshot(indexes, [_scan("sbtest1", "k_1", "sbtest1")], schema=None))
     assert _seen_in_plans(used, "ql_demo", "sbtest1", "k_1")
     assert _seen_in_plans(used, "ql_otro", "sbtest1", "k_1")
+
+
+def _fk(columns, table="sbtest1", name="fk_parent"):
+    return [
+        {"schema_name": "ql_demo", "table_name": table, "column_name": column,
+         "referenced_schema_name": "ql_demo", "referenced_table_name": "parent",
+         "referenced_column_name": column, "constraint_name": name, "position": position}
+        for position, column in enumerate(columns, start=1)
+    ]
+
+
+def test_the_only_index_backing_a_foreign_key_is_not_unused():
+    # MySQL no deja eliminarlo; en Postgres el DELETE del padre recorreria la hija
+    indexes = [_index("k_1", "k", 0)]
+    snapshot = _snapshot(indexes, [_scan("sbtest1", table_name="sbtest1", access_method="full_table_scan")],
+                         foreign_keys=_fk(["k"]))
+    assert _detect(snapshot) == []
+
+
+def test_a_foreign_key_backed_by_two_indexes_keeps_the_wider_one():
+    # k_1 es prefijo de idx_k_c: sale como redundante, e idx_k_c queda como el
+    # unico que respalda la FK, asi que no sale como no usado
+    indexes = [_index("k_1", "k", 0), _index("idx_k_c", "k, c", 0)]
+    snapshot = _snapshot(indexes, [_scan("sbtest1", table_name="sbtest1", access_method="full_table_scan")],
+                         foreign_keys=_fk(["k"]))
+    findings = _by_index(_detect(snapshot))
+    assert set(findings) == {("sbtest1", "k_1")}
+    assert findings[("sbtest1", "k_1")].evidencia["subtipo"] == "redundante"
+
+
+def test_a_duplicate_backing_a_foreign_key_leaves_the_kept_one():
+    indexes = [_index("k_1", "k", 0), _index("k_1_dup", "k", 0)]
+    snapshot = _snapshot(indexes, [_scan("sbtest1", table_name="sbtest1", access_method="full_table_scan")],
+                         foreign_keys=_fk(["k"]))
+    findings = _by_index(_detect(snapshot))
+    assert set(findings) == {("sbtest1", "k_1_dup")}
+
+
+def test_composite_foreign_key_matches_the_leading_columns_in_any_order():
+    indexes = [_index("idx_c_k", "c, k", 0), _index("idx_pad", "pad", 0)]
+    snapshot = _snapshot(indexes, [_scan("sbtest1", table_name="sbtest1", access_method="full_table_scan")],
+                         foreign_keys=_fk(["k", "c"]))
+    assert set(_by_index(_detect(snapshot))) == {("sbtest1", "idx_pad")}
 
 
 def test_recent_stats_reset_holds_unused_but_not_redundant():
