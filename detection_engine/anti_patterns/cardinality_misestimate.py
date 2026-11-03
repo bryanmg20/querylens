@@ -56,11 +56,11 @@ _HIGH_Q_ERROR = 100
 
 # Igual que AP-07: una query sin fila guardada cuyo counters_epoch esta a menos
 # de esto de la hora del snapshot empezo a contar dentro de la ventana, asi que
-# todo su acumulado es de esa ventana. Es el largo de la ventana del informe (60 s).
-# Limitacion / pendiente (la misma de AP-07): asume snapshots cada 60 s; con
-# otro intervalo, una query nueva que empezo hace mas de 60 s solo se reconoce
+# todo su acumulado es de esa ventana. Es el largo de la ventana (EXTRACT_INTERVAL_S, 10 s).
+# Limitacion (la misma de AP-07): asume snapshots cada 10 s; con otro
+# intervalo, una query nueva que empezo hace mas de 10 s solo se reconoce
 # si empezo despues del snapshot anterior.
-_NEW_QUERY_WINDOW = timedelta(seconds=60)
+_NEW_QUERY_WINDOW = timedelta(seconds=10)
 
 
 @dataclass

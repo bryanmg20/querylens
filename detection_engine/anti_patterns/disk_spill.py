@@ -27,22 +27,20 @@ from .table_aliases import resolve_table_aliases
 # passes si se contaron en todos los casos.
 
 # Severidad por el tiempo que la query consumio en la ventana (igual que AP-01):
-# se mide igual en ambos motores y es el impacto que usa el informe para priorizar
-_HIGH_WINDOW_MS = 60_000
-_MEDIUM_WINDOW_MS = 5_000
+# se mide igual en ambos motores y es el impacto que usa el informe para priorizar.
+# Con ventanas de 10 s, 10.000 ms es un nucleo ocupado toda la ventana.
+_HIGH_WINDOW_MS = 10_000
+_MEDIUM_WINDOW_MS = 1_000
 
 # Una query sin fila guardada cuyo counters_epoch esta a menos de esto de la hora
 # del snapshot empezo a contar dentro de la ventana: todo su acumulado es de esa
-# ventana. Es el largo de la ventana de evaluacion del informe (60 s).
-_NEW_QUERY_WINDOW = timedelta(seconds=60)
+# ventana. Es el largo de la ventana de evaluacion (EXTRACT_INTERVAL_S, 10 s).
+_NEW_QUERY_WINDOW = timedelta(seconds=10)
 
-# Limitacion / pendiente: _NEW_QUERY_WINDOW y los cortes de severidad asumen
-# snapshots cada 60 s. Con otro intervalo: una query nueva que empezo hace mas
-# de 60 s solo se reconoce por la otra condicion (empezo despues del snapshot
-# anterior), y los cortes de 60 s / 5 s de tiempo en la ventana se alcanzan mas
-# facil en ventanas largas. Por hacer: severidad como proporcion del tiempo
-# REAL de la ventana (con captured_at de la fila anterior) y, para la libreta
-# vacia, tomar el intervalo de snapshots de la configuracion.
+# Limitacion: _NEW_QUERY_WINDOW y los cortes de severidad asumen snapshots cada
+# 10 s. Con otro intervalo: una query nueva que empezo hace mas de 10 s solo se
+# reconoce por la otra condicion (empezo despues del snapshot anterior), y los
+# cortes de tiempo en la ventana cambian de significado.
 
 # unidad del indicador segun el motor, solo para la evidencia
 _UNIT_POSTGRES = "bloques_8kb"
