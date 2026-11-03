@@ -13,8 +13,14 @@ from .table_aliases import resolve_table_aliases
 logger = get_logger(__name__)
 
 # bajo esta ventana, index_scans == 0 no es confiable todavia. Es un timedelta
-# (no un numero de dias fijo) para poder acortarlo en pruebas sin esperar dias reales
-DEFAULT_MIN_STATS_WINDOW = timedelta(minutes=1)
+# (no un numero de dias fijo) para poder acortarlo en pruebas sin esperar dias reales.
+# 30 min es el minimo del informe.
+DEFAULT_MIN_STATS_WINDOW = timedelta(minutes=30)
+
+# Igual que AP-02/03/04: full_index_scan (MySQL `index`, Postgres Index Scan sin
+# Index Cond) recorre una entrada del indice por cada fila, como un full_table_scan.
+# Aca solo decide que query se elige como query_id, no si hay hallazgo.
+_FULL_SCAN_METHODS = ("full_table_scan", "full_index_scan")
 
 
 # Mismos artefactos internos que en non_sargable_predicate.py (SubPlan/InitPlan de
@@ -93,39 +99,83 @@ def _parse_index_ref(
     return method, columns, is_unique, is_partial
 
 
-def _stats_window_is_fresh(snapshot: SnapshotPayload, min_window: timedelta) -> bool:
-    # Si el servidor arranco hace menos de min_window, index_scans == 0 no prueba nada aun.
-    # Es la hora de arranque, no un reset de pg_stat_*: un pg_stat_reset() manual no se ve aqui.
+def _stats_window_is_fresh(
+    snapshot: SnapshotPayload,
+    min_window: timedelta,
+    captured_at: datetime | None = None,
+) -> bool:
+    # Si las estadisticas cuentan desde hace menos de min_window, index_scans == 0
+    # no prueba nada aun. El inicio es el mas reciente entre el arranque del
+    # servidor y el ultimo pg_stat_reset() (stats_reset, solo Postgres): desde
+    # PG 15 las estadisticas sobreviven a un apagado limpio, asi que el arranque
+    # solo hace esperar de mas, pero un reset sin el stats_reset pasaria como
+    # ventana larga con todos los indices en 0.
     if not snapshot.server_start_timestamp:
         return False
-    raw = snapshot.server_start_timestamp[0].server_start_time
-    if not raw:
+    row = snapshot.server_start_timestamp[0]
+    starts = [
+        instant
+        for instant in (_parse_instant(row.server_start_time), _parse_instant(row.stats_reset_time))
+        if instant is not None
+    ]
+    if not starts:
         return False
-    try:
-        reset_at = datetime.fromisoformat(raw)
-    except ValueError:
-        return False
-    if reset_at.tzinfo is None:
-        # llega como UTC naive en los dos motores (el pipeline lo normaliza)
-        reset_at = reset_at.replace(tzinfo=timezone.utc)
-    return datetime.now(timezone.utc) - reset_at < min_window
+    reference = _parse_instant(captured_at) or datetime.now(timezone.utc)
+    return reference - max(starts) < min_window
 
 
-def _used_index_names(snapshot: SnapshotPayload) -> set[str]:
-    # Indices citados por su nombre en algun plan real capturado: evidencia directa de uso.
-    return {
-        operation.index_name
-        for explain in snapshot.canonic_explains
-        for operation in explain.canonical_plan.physical_operations
-        if operation.index_name
+def _used_index_keys(snapshot: SnapshotPayload) -> set[tuple[str | None, str, str]]:
+    # (schema, tabla, indice) citados en algun plan capturado. Solo el de
+    # auto_explain es de una ejecucion; generic (Postgres) y history/sample (MySQL)
+    # son EXPLAIN sin ejecutar, pero de una consulta que corrio y para la que el
+    # planificador elige ese indice: se toma como uso, del lado de no reportar.
+    # El nombre solo no alcanza: en MySQL es por tabla (en sysbench todas las
+    # sbtestN tienen su k_1) y en los dos motores se repite entre schemas.
+    # table_name viene en Postgres; en MySQL se resuelve el alias con el
+    # canonic_query de la misma query. El schema es el de la query completa
+    # (candidate.schema_name), como en el resto del detector y en AP-02/03/04.
+    # Si ese schema no tiene la tabla con ese indice (query que lee una tabla de
+    # otro schema), se guarda sin schema: no se sabe cual es y se cuenta en todos.
+    # Limitacion: en un BitmapOr el plan solo deja el primer indice en index_name.
+    existing = {(index.schema_name, index.table_name, index.index_name) for index in snapshot.indexes}
+    candidates_by_id = {
+        candidate.query_id: candidate
+        for candidate in snapshot.top_impact_queries
+        if candidate.query_id is not None
     }
+    used: set[tuple[str | None, str, str]] = set()
+    for explain in snapshot.canonic_explains:
+        candidate = candidates_by_id.get(explain.query_id)
+        schema_name = candidate.schema_name if candidate is not None else None
+        alias_map = resolve_table_aliases(candidate.canonic_query if candidate is not None else None)
+        for operation in explain.canonical_plan.physical_operations:
+            if not operation.index_name or not operation.relation:
+                continue
+            real_table = operation.table_name or alias_map.get(operation.relation, operation.relation)
+            key = (schema_name, real_table, operation.index_name)
+            used.add(key if key in existing else (None, real_table, operation.index_name))
+    return used
+
+
+def _seen_in_plans(
+    used_index_keys: set[tuple[str | None, str, str]],
+    schema_name: str | None,
+    table_name: str,
+    index_name: str,
+) -> bool:
+    # Un plan de una query sin schema no dice de cual schema es el indice: cuenta
+    # como visto en cualquiera con esa tabla e indice, del lado de no reportar.
+    return (
+        (schema_name, table_name, index_name) in used_index_keys
+        or (None, table_name, index_name) in used_index_keys
+    )
 
 
 def _collect_query_traffic(
     snapshot: SnapshotPayload,
-) -> tuple[dict[tuple[str | None, str], list[dict]], set[tuple[str | None, str]]]:
-    # Un solo recorrido de top_impact_queries: que tablas tienen trafico real, y
-    # cuales full scans filtran por que columna (para priorizar "no usado" mas abajo).
+) -> dict[tuple[str | None, str], list[dict]]:
+    # Un solo recorrido de top_impact_queries: cuales full scans filtran por que
+    # columna (para priorizar "no usado" mas abajo).
     # Clave (schema_name, tabla): schema_name es el de la query completa
     # (candidate.schema_name), no por tabla individual dentro de ella.
     explains_by_query_id = {
@@ -134,7 +184,6 @@ def _collect_query_traffic(
         if explain.query_id is not None
     }
     full_scan_columns_by_table: dict[tuple[str | None, str], list[dict]] = {}
-    tables_with_traffic: set[tuple[str | None, str]] = set()
 
     for candidate in snapshot.top_impact_queries:
         explain = explains_by_query_id.get(candidate.query_id)
@@ -148,21 +197,18 @@ def _collect_query_traffic(
             relation = operation.relation
             if not relation:
                 continue
+            if operation.access_method not in _FULL_SCAN_METHODS:
+                continue
             # table_name: tabla real en Postgres (relation puede ser ql_pt_orders_1); None en MySQL
             real_table = operation.table_name or alias_map.get(relation, relation)
-            key = (candidate.schema_name, real_table)
-            tables_with_traffic.add(key)
-
-            if operation.access_method != "full_table_scan":
-                continue
-            full_scan_columns_by_table.setdefault(key, []).append({
+            full_scan_columns_by_table.setdefault((candidate.schema_name, real_table), []).append({
                 "query_id": candidate.query_id,
                 "columns": _predicate_columns(operation.predicate),
                 "execution_count": candidate.execution_count,
                 "mean_time_ms": candidate.mean_time_ms,
             })
 
-    return full_scan_columns_by_table, tables_with_traffic
+    return full_scan_columns_by_table
 
 
 # Misma conversion que statement_history.parse_instant; se duplica a proposito
@@ -298,7 +344,7 @@ def _collect_filter_traffic(
                 "query_id": candidate.query_id,
                 "query_text": candidate.query_text,
                 "filter_columns": filter_columns,
-                # el plan real recorre la tabla completa filtrando por esas columnas
+                # el plan capturado recorre la tabla completa filtrando por esas columnas
                 "full_scan_columns": full_scan_columns,
                 "window_calls": window_calls,
                 "window_time_ms": window_time_ms,
@@ -364,7 +410,7 @@ def _full_scan_entries_for_table(
 
 def _detect_unused(
     snapshot: SnapshotPayload,
-    used_index_names: set[str],
+    used_index_keys: set[tuple[str | None, str, str]],
     traffic: dict[tuple[str | None, str], list[dict]],
     redundant_index_names: set[tuple[str | None, str, str]],
 ) -> list[Hallazgo]:
@@ -373,6 +419,10 @@ def _detect_unused(
         if index.index_scans != 0 or index.last_index_scan is not None:
             continue
         if not index.table_name:
+            continue
+        # un plan capturado lo cita: se usa aunque el contador todavia no lo
+        # refleje (Postgres actualiza idx_scan con retraso)
+        if _seen_in_plans(used_index_keys, index.schema_name, index.table_name, index.index_name):
             continue
         # ya se reporta como redundante en este snapshot: es el diagnostico mas
         # preciso (dice cual indice lo cubre), no se repite como no usado
@@ -400,7 +450,7 @@ def _detect_unused(
 
         explicacion = (
             "El indice no registra usos: ni en el contador global (index_scans) ni citado "
-            "en ninguno de los planes reales capturados."
+            "en ninguno de los planes de ejecucion capturados."
         )
         if filters_by_lead:
             explicacion += (
@@ -426,7 +476,6 @@ def _detect_unused(
                     "index_scans": index.index_scans,
                     "last_index_scan": index.last_index_scan,
                     "index_size_bytes": index.index_size_bytes,
-                    "visto_en_planes_reales": index.index_name in used_index_names,
                     "queries_que_filtran_la_tabla": _queries_evidence(queries, lead_column),
                 },
                 explicacion=explicacion,
@@ -459,7 +508,7 @@ def _keeps_over(keeper, keeper_unique: bool, other, other_unique: bool) -> bool:
 
 def _detect_redundant(
     snapshot: SnapshotPayload,
-    used_index_names: set[str],
+    used_index_keys: set[tuple[str | None, str, str]],
     traffic: dict[tuple[str | None, str], list[dict]],
 ) -> list[Hallazgo]:
     # Estructural: agrupa por (schema, tabla) y compara columnas lider. Un indice
@@ -490,20 +539,19 @@ def _detect_redundant(
                 continue
 
             wider = None
-            wider_is_partial = False
             exact_duplicate = False
             for wide in indexes:
                 if wide is narrow:
                     continue
                 wide_method, wide_columns, wide_is_unique, wide_is_partial = _parse_index_ref(wide.index_ref)
-                if wide_method != narrow_method:
+                # un indice parcial (con WHERE) no cubre todas las filas de la
+                # tabla: no vuelve redundante a ningun otro
+                if wide_method != narrow_method or wide_is_partial:
                     continue
                 if (
                     wide_columns == narrow_columns
-                    # dos parciales con WHERE distintos no son duplicados, y el WHERE
-                    # no se compara: solo cuentan duplicados exactos sin WHERE
+                    # el WHERE no se compara: solo cuentan duplicados exactos sin WHERE
                     and not narrow_is_partial
-                    and not wide_is_partial
                     and _keeps_over(wide, wide_is_unique, narrow, is_unique)
                 ):
                     wider = wide
@@ -514,16 +562,12 @@ def _detect_redundant(
                     and wide_columns[: len(narrow_columns)] == narrow_columns
                 ):
                     wider = wide
-                    wider_is_partial = wide_is_partial
                     break
             if wider is None:
                 continue
 
             chosen, _ = _pick_query(queries, narrow_columns[0])
-            seen_in_use = narrow.index_name in used_index_names
-            # el WHERE de un indice parcial no se verifica contra la query: solo se
-            # avisa la ambiguedad, no se intenta resolver si de verdad aplica
-            partial_risk = narrow_is_partial or wider_is_partial
+            seen_in_use = _seen_in_plans(used_index_keys, schema_name, table_name, narrow.index_name)
 
             if exact_duplicate:
                 explicacion = (
@@ -538,7 +582,7 @@ def _detect_redundant(
                 )
             if seen_in_use:
                 explicacion += (
-                    " Sin embargo, el planificador si lo eligio en planes reales capturados "
+                    " Sin embargo, el planificador si lo eligio en planes de ejecucion capturados "
                     "(puede ser mas liviano para esas consultas); revisar antes de eliminar."
                 )
             if narrow_is_partial:
@@ -546,18 +590,12 @@ def _detect_redundant(
                     " Este indice es parcial (tiene WHERE): puede ser mucho mas chico y rapido "
                     "para esa condicion especifica que el indice ancho que lo 'cubre'."
                 )
-            if wider_is_partial:
-                explicacion += (
-                    " Ademas, el indice que lo cubre tambien es parcial: puede no cubrir todas "
-                    "las filas que este si cubre, confirmar las condiciones de ambos antes de "
-                    "asumir cobertura total."
-                )
 
             findings.append(
                 Hallazgo(
                     antipatron="unused_index",
-                    # con evidencia real de uso el hallazgo pesa mas (mismo criterio que
-                    # no_usado: mas evidencia de trafico real = mas severidad)
+                    # si un plan capturado lo usa, el hallazgo pesa mas (mismo criterio
+                    # que no_usado: mas evidencia de trafico = mas severidad)
                     severidad="medium" if seen_in_use else "low",
                     evidencia={
                         "subtipo": "redundante",
@@ -568,11 +606,11 @@ def _detect_redundant(
                         "index_ref": narrow.index_ref,
                         "cubierto_por": wider.index_name,
                         "cubierto_por_index_ref": wider.index_ref,
-                        "visto_en_planes_reales": seen_in_use,
+                        "visto_en_planes": seen_in_use,
                         "narrow_es_parcial": narrow_is_partial,
-                        "cubierto_por_es_parcial": wider_is_partial,
-                        # separado de la severidad: que tan seguro es actuar sobre el DROP
-                        "confianza_eliminar": "baja" if (seen_in_use or partial_risk) else "alta",
+                        # separado de la severidad: que tan seguro es actuar sobre el DROP.
+                        # El WHERE de un indice parcial no se verifica contra la query
+                        "confianza_eliminar": "baja" if (seen_in_use or narrow_is_partial) else "alta",
                         "queries_que_filtran_la_tabla": _queries_evidence(queries, narrow_columns[0]),
                     },
                     explicacion=explicacion,
@@ -593,19 +631,20 @@ def detect_unused_indexes(
     snapshot: SnapshotPayload,
     min_stats_window: timedelta = DEFAULT_MIN_STATS_WINDOW,
     history: dict[str, StatementHistory] | None = None,
+    captured_at: datetime | None = None,
 ) -> list[Hallazgo]:
     # Solo lee `history`: la fila nueva la guarda main.py despues de todos los detectores
-    used_index_names = _used_index_names(snapshot)
-    full_scan_columns_by_table, _ = _collect_query_traffic(snapshot)
+    used_index_keys = _used_index_keys(snapshot)
+    full_scan_columns_by_table = _collect_query_traffic(snapshot)
     traffic = _collect_filter_traffic(snapshot, history or {}, full_scan_columns_by_table)
 
-    findings = _detect_redundant(snapshot, used_index_names, traffic)
+    findings = _detect_redundant(snapshot, used_index_keys, traffic)
 
-    if _stats_window_is_fresh(snapshot, min_stats_window):
+    if _stats_window_is_fresh(snapshot, min_stats_window, captured_at):
         return findings  # "no usado" todavia no es confiable en este snapshot
 
     redundant_index_names = {
         (f.evidencia["schema_name"], f.evidencia["table_name"], f.evidencia["index_name"]) for f in findings
     }
-    findings += _detect_unused(snapshot, used_index_names, traffic, redundant_index_names)
+    findings += _detect_unused(snapshot, used_index_keys, traffic, redundant_index_names)
     return findings

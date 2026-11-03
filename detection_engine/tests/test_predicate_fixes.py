@@ -331,8 +331,7 @@ def test_d8_table_name_resolves_renamed_relation():
                          indexes=[_index("note")])
     assert [f.table_name for f in detect_non_sargable_predicates(snapshot, _history(PG_QUERY_ID, 30, 30), NOW)] == ["ql_pt_orders"]
 
-    _, tables_with_traffic = _collect_query_traffic(snapshot)
-    assert tables_with_traffic == {("public", "ql_pt_orders")}
+    assert set(_collect_query_traffic(snapshot)) == {("public", "ql_pt_orders")}
 
     full_scan = detect_avoidable_full_scans(
         snapshot, _history(PG_QUERY_ID, 30, rows_returned=30), datetime(2026, 10, 13, 10, 6, tzinfo=timezone.utc),

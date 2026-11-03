@@ -15,9 +15,8 @@ from .non_sargable_predicate import detect_non_sargable_predicates
 from .unused_index import DEFAULT_MIN_STATS_WINDOW, detect_unused_indexes
 
 
-# Reglas que corren cuando no se pide una puntual. Queda afuera hasta revisarla
-# contra el plan canonico unused_index (AP-05, usa el plan como evidencia de uso
-# de un indice). Se puede seguir corriendo por nombre con `rule`.
+# Reglas que corren cuando no se pide una puntual. Cualquiera se puede correr
+# por nombre con `rule`.
 ACTIVE_RULES = (
     "disk_spill",  # AP-07
     "baseline_degradation",  # AP-01
@@ -28,6 +27,7 @@ ACTIVE_RULES = (
     # filas de la misma ejecucion (references/004); bateria en
     # ql_sandbox/campana_cardinalidad_ap08
     "cardinality_misestimate",  # AP-08
+    "unused_index",  # AP-05
 )
 
 
@@ -71,6 +71,7 @@ def detect_all(
             current_snapshot,
             min_stats_window,
             history,
+            captured_at,
         ),
         "baseline_degradation": lambda current_snapshot: detect_baseline_degradation(
             current_snapshot,
