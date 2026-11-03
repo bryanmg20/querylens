@@ -172,15 +172,15 @@ def test_the_only_index_backing_a_foreign_key_is_not_unused():
     assert _detect(snapshot) == []
 
 
-def test_a_foreign_key_backed_by_two_indexes_keeps_the_wider_one():
-    # k_1 es prefijo de idx_k_c: sale como redundante, e idx_k_c queda como el
-    # unico que respalda la FK, asi que no sale como no usado
+def test_a_foreign_key_backed_by_two_unused_indexes_keeps_the_narrowest():
+    # ninguno tiene lecturas: (k) no sale como redundante de (k, c), se protege
+    # el mas angosto para la FK y (k, c) sale como no usado
     indexes = [_index("k_1", "k", 0), _index("idx_k_c", "k, c", 0)]
     snapshot = _snapshot(indexes, [_scan("sbtest1", table_name="sbtest1", access_method="full_table_scan")],
                          foreign_keys=_fk(["k"]))
     findings = _by_index(_detect(snapshot))
-    assert set(findings) == {("sbtest1", "k_1")}
-    assert findings[("sbtest1", "k_1")].evidencia["subtipo"] == "redundante"
+    assert set(findings) == {("sbtest1", "idx_k_c")}
+    assert findings[("sbtest1", "idx_k_c")].evidencia["subtipo"] == "no_usado"
 
 
 def test_a_duplicate_backing_a_foreign_key_leaves_the_kept_one():
@@ -189,6 +189,46 @@ def test_a_duplicate_backing_a_foreign_key_leaves_the_kept_one():
                          foreign_keys=_fk(["k"]))
     findings = _by_index(_detect(snapshot))
     assert set(findings) == {("sbtest1", "k_1_dup")}
+    assert findings[("sbtest1", "k_1_dup")].evidencia["subtipo"] == "no_usado"
+
+
+def test_redundant_requires_reads_on_the_index_that_covers_it():
+    # (c) se usa y (c, k) no: lo que sobra es (c, k), no (c)
+    indexes = [_index("idx_c", "c", 300), _index("idx_c_k", "c, k", 0)]
+    findings = _by_index(_detect(_snapshot(indexes, [_scan("sbtest1", "idx_c", "sbtest1")])))
+    assert set(findings) == {("sbtest1", "idx_c_k")}
+    assert findings[("sbtest1", "idx_c_k")].evidencia["subtipo"] == "no_usado"
+
+
+def test_two_unused_overlapping_indexes_are_both_unused_not_redundant():
+    indexes = [_index("idx_c", "c", 0), _index("idx_c_k", "c, k", 0)]
+    snapshot = _snapshot(indexes, [_scan("sbtest1", table_name="sbtest1", access_method="full_table_scan")])
+    findings = _by_index(_detect(snapshot))
+    assert {key: f.evidencia["subtipo"] for key, f in findings.items()} == {
+        ("sbtest1", "idx_c"): "no_usado",
+        ("sbtest1", "idx_c_k"): "no_usado",
+    }
+
+
+def test_fresh_stats_window_reports_redundant_without_looking_at_reads():
+    # los contadores recien empiezan: no dicen nada y "no usado" no se evalua
+    start = (CAPTURED_AT - timedelta(minutes=5)).strftime("%Y-%m-%d %H:%M:%S.%f")
+    indexes = [_index("idx_c", "c", 0), _index("idx_c_k", "c, k", 0)]
+    snapshot = _snapshot(indexes, [_scan("sbtest1", table_name="sbtest1", access_method="full_table_scan")])
+    snapshot.server_start_timestamp[0].server_start_time = start
+    finding, = _detect(snapshot)
+    assert finding.evidencia["index_name"] == "idx_c"
+    assert finding.evidencia["subtipo"] == "redundante"
+
+
+def test_duplicate_seen_in_a_plan_is_the_one_kept():
+    # los dos con el contador en 0, pero el plan ya usa k_2 (contador atrasado):
+    # se conserva k_2 aunque k_1 vaya primero por nombre
+    indexes = [_index("k_1", "k", 0), _index("k_2", "k", 0)]
+    finding, = _detect(_snapshot(indexes, [_scan("sbtest1", "k_2", "sbtest1")]))
+    assert finding.evidencia["index_name"] == "k_1"
+    assert finding.evidencia["subtipo"] == "redundante"
+    assert finding.evidencia["cubierto_por"] == "k_2"
 
 
 def test_composite_foreign_key_matches_the_leading_columns_in_any_order():

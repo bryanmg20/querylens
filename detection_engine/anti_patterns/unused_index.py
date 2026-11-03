@@ -408,17 +408,29 @@ def _full_scan_entries_for_table(
     return candidates[0] if len(candidates) == 1 else []
 
 
-def _fk_only_backers(
+def _has_reads(index, used_index_keys: set[tuple[str | None, str, str]]) -> bool:
+    # Lecturas en el contador, ultima lectura con fecha (PG 16+) o citado en un plan
+    return (
+        bool(index.index_scans)
+        or index.last_index_scan is not None
+        or _seen_in_plans(used_index_keys, index.schema_name, index.table_name, index.index_name)
+    )
+
+
+def _fk_protected_indexes(
     snapshot: SnapshotPayload,
     redundant_index_names: set[tuple[str | None, str, str]],
+    used_index_keys: set[tuple[str | None, str, str]],
 ) -> set[tuple[str, str, str]]:
-    # (schema, tabla, indice) de los indices que son el UNICO que respalda una
-    # FK: sus primeras columnas son las de la FK (en cualquier orden, que es lo
-    # que sirve para buscar las filas hijas). Los primarios y unicos tambien
-    # cuentan como respaldo. Los que ya salieron como redundantes en este
-    # snapshot no: la recomendacion es eliminarlos, y si se contaran, el
-    # duplicado que se conserva quedaria como no usado y se eliminarian los dos.
-    # Nombres en minuscula, igual que AP-06 (MySQL no distingue mayusculas).
+    # (schema, tabla, indice) que no se reportan como no usados porque la FK se
+    # quedaria sin indice. Un indice respalda una FK si sus primeras columnas son
+    # las de la FK (en cualquier orden, que es lo que sirve para buscar las filas
+    # hijas). Si uno de los que la respaldan es primario o unico, o tiene
+    # lecturas, ese se queda y los demas se pueden reportar. Si ninguno, se
+    # protege el mas angosto (el mas barato de mantener) y se reportan los demas.
+    # Los que ya salieron como redundantes en este snapshot no cuentan: la
+    # recomendacion es eliminarlos. Nombres en minuscula, igual que AP-06 (MySQL
+    # no distingue mayusculas).
     fk_columns: dict[tuple[str, str, str], list] = {}
     for row in snapshot.foreign_keys:
         key = (row.schema_name.lower(), row.table_name.lower(), row.constraint_name)
@@ -428,26 +440,28 @@ def _fk_only_backers(
     for index in snapshot.indexes:
         if (index.schema_name, index.table_name, index.index_name) in redundant_index_names:
             continue
-        _, columns, _, is_partial = _parse_index_ref(index.index_ref)
+        _, columns, is_unique, is_partial = _parse_index_ref(index.index_ref)
         # un indice parcial no tiene todas las filas: no sirve para la FK
         if is_partial:
             continue
         lowered = [column.lower() if column else None for column in columns]
         indexes_by_table.setdefault((index.schema_name.lower(), index.table_name.lower()), []).append(
-            (index, lowered)
+            (index, lowered, is_unique)
         )
 
-    only_backers: set[tuple[str, str, str]] = set()
+    protected: set[tuple[str, str, str]] = set()
     for (schema, table, _), rows in fk_columns.items():
         wanted = {row.column_name.lower() for row in rows}
         backers = [
-            index
-            for index, columns in indexes_by_table.get((schema, table), [])
+            (index, columns, is_unique)
+            for index, columns, is_unique in indexes_by_table.get((schema, table), [])
             if len(columns) >= len(wanted) and set(columns[: len(wanted)]) == wanted
         ]
-        if len(backers) == 1:
-            only_backers.add((backers[0].schema_name, backers[0].table_name, backers[0].index_name))
-    return only_backers
+        if not backers or any(is_unique or _has_reads(index, used_index_keys) for index, _, is_unique in backers):
+            continue
+        keeper, _, _ = min(backers, key=lambda backer: (len(backer[1]), backer[0].index_name))
+        protected.add((keeper.schema_name, keeper.table_name, keeper.index_name))
+    return protected
 
 
 def _detect_unused(
@@ -456,7 +470,7 @@ def _detect_unused(
     traffic: dict[tuple[str | None, str], list[dict]],
     redundant_index_names: set[tuple[str | None, str, str]],
 ) -> list[Hallazgo]:
-    fk_only_backers = _fk_only_backers(snapshot, redundant_index_names)
+    fk_protected = _fk_protected_indexes(snapshot, redundant_index_names, used_index_keys)
     findings = []
     for index in snapshot.indexes:
         if index.index_scans != 0 or index.last_index_scan is not None:
@@ -477,10 +491,10 @@ def _detect_unused(
         # repitan valores, asi que no se pueden eliminar aunque nadie los lea
         if is_unique:
             continue
-        # por el mismo motivo, el unico indice que respalda una FK: MySQL no deja
-        # eliminarlo y en Postgres cada DELETE/UPDATE del padre recorreria la hija
-        # completa. Que no tenga lecturas solo dice que el padre no cambio aun
-        if (index.schema_name, index.table_name, index.index_name) in fk_only_backers:
+        # por el mismo motivo, el indice que se queda respaldando una FK: MySQL no
+        # deja eliminarlo y en Postgres cada DELETE/UPDATE del padre recorreria la
+        # hija completa. Que no tenga lecturas solo dice que el padre no cambio aun
+        if (index.schema_name, index.table_name, index.index_name) in fk_protected:
             continue
         lead_column = columns[0] if columns else None
 
@@ -541,13 +555,19 @@ def _detect_unused(
     return findings
 
 
-def _keeps_over(keeper, keeper_unique: bool, other, other_unique: bool) -> bool:
+def _keeps_over(
+    keeper, keeper_unique: bool, keeper_reads: bool,
+    other, other_unique: bool, other_reads: bool,
+) -> bool:
     # Entre dos indices duplicados exactos, True si se conserva `keeper` y se
     # reporta `other`. Orden fijo para que nunca se reporten los dos: primero el
-    # unico (respalda una restriccion), despues el que tiene mas lecturas, y si
+    # unico (respalda una restriccion), despues el que tiene lecturas (contador o
+    # plan, por si el contador va atrasado), despues el de mas lecturas, y si
     # empatan el de nombre alfabeticamente menor.
     if keeper_unique != other_unique:
         return keeper_unique
+    if keeper_reads != other_reads:
+        return keeper_reads
     keeper_scans, other_scans = keeper.index_scans or 0, other.index_scans or 0
     if keeper_scans != other_scans:
         return keeper_scans > other_scans
@@ -558,10 +578,15 @@ def _detect_redundant(
     snapshot: SnapshotPayload,
     used_index_keys: set[tuple[str | None, str, str]],
     traffic: dict[tuple[str | None, str], list[dict]],
+    require_wider_reads: bool,
 ) -> list[Hallazgo]:
     # Estructural: agrupa por (schema, tabla) y compara columnas lider. Un indice
     # es redundante si sus columnas son un prefijo exacto de otro mas ancho, o si
     # es un duplicado exacto de otro (mismas columnas, mismo orden, mismo metodo).
+    # Con require_wider_reads (cuando se evalua "no usado"), el que lo cubre
+    # tiene que tener lecturas: si no, recomendar conservarlo es al reves (si el
+    # angosto se usa, lo que sobra es el ancho) y, si ninguno se usa, los dos
+    # salen como no usados en vez de un redundante y un no usado que se contradicen.
     # Cada IndexStat ya trae su propio schema_name, sin ambiguedad posible aca (a
     # diferencia del trafico de queries, esto no necesita fallback).
     by_table: dict[tuple[str | None, str], list] = {}
@@ -586,6 +611,7 @@ def _detect_redundant(
             if is_unique:
                 continue
 
+            narrow_reads = _has_reads(narrow, used_index_keys)
             wider = None
             exact_duplicate = False
             for wide in indexes:
@@ -596,11 +622,14 @@ def _detect_redundant(
                 # tabla: no vuelve redundante a ningun otro
                 if wide_method != narrow_method or wide_is_partial:
                     continue
+                wide_reads = _has_reads(wide, used_index_keys)
+                if require_wider_reads and not wide_reads:
+                    continue
                 if (
                     wide_columns == narrow_columns
                     # el WHERE no se compara: solo cuentan duplicados exactos sin WHERE
                     and not narrow_is_partial
-                    and _keeps_over(wide, wide_is_unique, narrow, is_unique)
+                    and _keeps_over(wide, wide_is_unique, wide_reads, narrow, is_unique, narrow_reads)
                 ):
                     wider = wide
                     exact_duplicate = True
@@ -686,9 +715,12 @@ def detect_unused_indexes(
     full_scan_columns_by_table = _collect_query_traffic(snapshot)
     traffic = _collect_filter_traffic(snapshot, history or {}, full_scan_columns_by_table)
 
-    findings = _detect_redundant(snapshot, used_index_keys, traffic)
+    # con la ventana recien empezada los contadores no dicen nada: el redundante
+    # no mira lecturas y "no usado" no se evalua (no hay con que contradecirse)
+    fresh = _stats_window_is_fresh(snapshot, min_stats_window, captured_at)
+    findings = _detect_redundant(snapshot, used_index_keys, traffic, require_wider_reads=not fresh)
 
-    if _stats_window_is_fresh(snapshot, min_stats_window, captured_at):
+    if fresh:
         return findings  # "no usado" todavia no es confiable en este snapshot
 
     redundant_index_names = {
