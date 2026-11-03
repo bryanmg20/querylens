@@ -5,6 +5,7 @@ import pytest
 from stages.normalize import (
     _to_number,
     clean_mysql_explain_predicate_dynamic,
+    merge_index_sizes,
     normalize_active_query_timestamps,
     normalize_blocking_pids,
     normalize_locks,
@@ -300,3 +301,29 @@ def test_clean_mysql_predicate_loose_formats(predicate, expected):
 )
 def test_clean_mysql_predicate_loose_formats_on_fallback_path(predicate, expected):
     assert clean_mysql_explain_predicate_dynamic(predicate) == expected
+
+
+def test_merge_index_sizes_copies_each_index_size():
+    stats = {
+        "indexes": [
+            {"schema_name": "ql_demo", "table_name": "sbtest1", "index_name": "PRIMARY", "index_size_bytes": None},
+            {"schema_name": "ql_demo", "table_name": "sbtest1", "index_name": "k_1", "index_size_bytes": None},
+        ],
+        "index_sizes": [
+            {"schema_name": "ql_demo", "table_name": "sbtest1", "index_name": "PRIMARY", "index_size_bytes": 2637824},
+            {"schema_name": "ql_demo", "table_name": "sbtest1", "index_name": "k_1", "index_size_bytes": 212992},
+        ],
+    }
+    merge_index_sizes(stats)
+    assert [i["index_size_bytes"] for i in stats["indexes"]] == [2637824, 212992]
+    assert "index_sizes" not in stats
+
+
+def test_merge_index_sizes_without_the_section_leaves_none():
+    # sin SELECT sobre mysql.innodb_index_stats la seccion llega en None
+    stats = {
+        "indexes": [{"schema_name": "ql_demo", "table_name": "sbtest1", "index_name": "k_1", "index_size_bytes": None}],
+        "index_sizes": None,
+    }
+    merge_index_sizes(stats)
+    assert stats["indexes"][0]["index_size_bytes"] is None

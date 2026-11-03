@@ -88,7 +88,7 @@ Si MySQL corre en el mismo servidor que QueryLens y fuera de Docker, el host a r
 | `innodb_print_all_deadlocks` / `log_error_verbosity` | `ON` / `3` | Cada abrazo mortal llega al log de errores |
 | Consumers `statements_digest`, `events_statements_current`, `events_statements_history`, `global_instrumentation`, `thread_instrumentation` e instrumentos `statement/%` | activos | Vienen activos por defecto; el script los reactiva si alguien los apagó |
 
-La configuración queda con `SET PERSIST` en `mysqld-auto.cnf`, que gana sobre `my.cnf`. El valor de antes de cada variable queda anotado en la tabla `querylens.setup_changes` (una base `querylens` que solo usa el script), para poder deshacerlo. Los consumers no se persisten: si `my.cnf` los desactiva, hay que quitar esa línea. El usuario recibe `SELECT` sobre `performance_schema`, `PROCESS` (consultas en curso, bloqueos y abrazos mortales) y `SHOW VIEW` sobre la base, que le permite conectarse a ella y ver sus tablas e índices sin leer datos.
+La configuración queda con `SET PERSIST` en `mysqld-auto.cnf`, que gana sobre `my.cnf`. El valor de antes de cada variable queda anotado en la tabla `querylens.setup_changes` (una base `querylens` que solo usa el script), para poder deshacerlo. Los consumers no se persisten: si `my.cnf` los desactiva, hay que quitar esa línea. El usuario recibe `SELECT` sobre `performance_schema`, `PROCESS` (consultas en curso, bloqueos y abrazos mortales), `SELECT` sobre `mysql.innodb_index_stats` (tamaño de cada índice) y `SHOW VIEW` sobre la base, que le permite conectarse a ella y ver sus tablas e índices sin leer datos.
 
 </details>
 

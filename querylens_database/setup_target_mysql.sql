@@ -57,6 +57,9 @@ WHERE g.VARIABLE_NAME IN ('performance_schema', 'performance_schema_max_sql_text
 CREATE USER IF NOT EXISTS 'querylens_monitor'@'%' IDENTIFIED BY RANDOM PASSWORD;
 GRANT SELECT ON performance_schema.* TO 'querylens_monitor'@'%';
 GRANT PROCESS ON *.* TO 'querylens_monitor'@'%';
+-- tamaño de cada indice (paginas de la estadistica persistente de InnoDB); no
+-- lee datos de las tablas
+GRANT SELECT ON mysql.innodb_index_stats TO 'querylens_monitor'@'%';
 
 -- SHOW VIEW sobre la base de la aplicacion: sin ningun permiso sobre ella el
 -- usuario no puede conectarse a esa base (QueryLens la prueba al registrarla)

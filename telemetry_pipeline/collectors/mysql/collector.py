@@ -1,6 +1,7 @@
 from collectors.base import DB_Engine_Collector
 from .queries import (
     INDEXES_QUERY,
+    INDEX_SIZES_QUERY,
     TABLES_QUERY,
     STATEMENTS_QUERY,
     STATEMENT_HISTORY_QUERY,
@@ -22,6 +23,7 @@ class Mysql_Collector(DB_Engine_Collector):
         self.source_dialect = "mysql"
         self.queries = {
                         "indexes": INDEXES_QUERY,
+                        "index_sizes": INDEX_SIZES_QUERY,
                         "tables": TABLES_QUERY,
                         "statements": STATEMENTS_QUERY,
                         "statement_history": STATEMENT_HISTORY_QUERY,
@@ -78,6 +80,7 @@ class Mysql_Collector(DB_Engine_Collector):
         return stats
 
     def normalize_engine_artifacts(self, stats: Stats) -> Stats:
+        normalize.merge_index_sizes(stats)
         normalize.normalize_locks(stats)
         normalize.normalize_blocking_pids(stats)
         normalize.normalize_predicate(stats)
