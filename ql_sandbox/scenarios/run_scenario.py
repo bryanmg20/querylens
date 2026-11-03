@@ -24,8 +24,12 @@ USO (desde la raiz del repo)
   compose de la raiz levantado, con la imagen al dia). Sirve cuando los venv
   locales no se pueden usar, p. ej. si Windows bloquea la DLL de psycopg2.
 
-  baseline_degradation tarda ~15 min: necesita 10 ventanas de 60 s de linea
-  base antes de eliminar el indice.
+  Los ciclos son de 10 s, como las ventanas del pipeline (EXTRACT_INTERVAL_S).
+  baseline_degradation tarda ~12 min por motor: necesita 60 ventanas de 10 s
+  de linea base antes de eliminar el indice.
+
+  --interval, --cycles, --warmup y --no-cut-snapshot cambian esos valores para
+  todos los escenarios de la corrida.
 
 NOTA
   En cada ciclo se toma el snapshot solo del motor del escenario, con un db_id
@@ -36,6 +40,7 @@ NOTA
 """
 
 import argparse
+import dataclasses
 import functools
 import json
 import os
@@ -231,9 +236,11 @@ class Scenario:
     expectations: list[Expectation]
     workload: str | None = None  # tipo de carga de workload.sh
     workers: int = 0
-    warmup_seconds: int = 20
-    interval_seconds: int = 30
-    max_cycles: int = 4
+    # ventanas de 10 s, como EXTRACT_INTERVAL_S del pipeline: los umbrales de
+    # los detectores cuentan por ventana. 12 ciclos = 2 min de observacion
+    warmup_seconds: int = 10
+    interval_seconds: int = 10
+    max_cycles: int = 12
     extra_setup: Callable[[str], str] | None = None
     # (ciclo despues del cual se inyecta, SQL por motor)
     inject_after_cycle: int | None = None
@@ -245,8 +252,9 @@ class Scenario:
     # Toma un snapshot antes de arrancar la carga y no cuenta sus hallazgos: la
     # primera ventana del escenario empieza despues de la preparacion. Sin el,
     # la primera ventana se mide desde el ultimo snapshot del escenario anterior
-    # e incluye lo que su carga ejecuto hasta detenerse.
-    cut_snapshot: bool = False
+    # e incluye lo que su carga ejecuto hasta detenerse, y no prueba una ventana
+    # de 10 s.
+    cut_snapshot: bool = True
 
 
 def _evidencia_text(finding: dict) -> str:
@@ -403,7 +411,6 @@ SCENARIOS = {
             workload="n_plus_one",
             workers=2,
             extra_setup=lambda engine: N_PLUS_ONE_SQL[engine],
-            cut_snapshot=True,
             expectations=[
                 Expectation(
                     "n_plus_one uno_a_muchos: ql_n1_orders WHERE customer_id = ?",
@@ -426,7 +433,6 @@ SCENARIOS = {
             workload="n_plus_one_control",
             workers=2,
             extra_setup=lambda engine: N_PLUS_ONE_SQL[engine],
-            cut_snapshot=True,
             expectations=[
                 Expectation(
                     "ningun n_plus_one sobre las tablas ql_n1_*",
@@ -443,12 +449,15 @@ SCENARIOS = {
             ),
             workload="point_lookup",
             workers=2,
-            warmup_seconds=10,
-            interval_seconds=60,
-            # ciclo 1 crea la fila, ciclos 2-11 juntan las 10 ventanas; desde el 12 ya puede opinar
-            inject_after_cycle=11,
+            # DEFAULT_BASELINE_WINDOW = 60 ventanas de 10 s. El snapshot de corte
+            # crea la fila y los ciclos 1-60 juntan las 60 ventanas; se deja uno
+            # de margen (en MySQL el digest sobrevive a la tabla recreada y la
+            # fila puede traer ventanas de otra corrida: con 61 propias la linea
+            # base ya no las mira). Desde el 62 puede opinar; 3 ciclos para
+            # las <= 2 ventanas de M4
+            inject_after_cycle=61,
             inject_sql=DROP_K_INDEX_SQL,
-            max_cycles=14,
+            max_cycles=64,
             expectations=[
                 Expectation(
                     "baseline_degradation sobre SELECT pad FROM ql_scn WHERE k = ?",
@@ -751,6 +760,16 @@ def main() -> int:
         "--docker", action="store_true",
         help="correr pipeline y detection_engine en sus contenedores en vez de los venv locales",
     )
+    parser.add_argument(
+        "--interval", type=int,
+        help="segundos entre snapshots para todos los escenarios (por defecto, el de cada escenario)",
+    )
+    parser.add_argument("--cycles", type=int, help="ciclos maximos para todos los escenarios")
+    parser.add_argument("--warmup", type=int, help="segundos de carga antes del primer ciclo")
+    parser.add_argument(
+        "--no-cut-snapshot", action="store_true",
+        help="sin snapshot de corte antes de la carga (ver Scenario.cut_snapshot)",
+    )
     args = parser.parse_args()
     global USE_DOCKER
     USE_DOCKER = args.docker
@@ -771,9 +790,20 @@ def main() -> int:
     engines = ["postgres", "mysql"] if args.engine == "both" else [args.engine]
 
     summary = []
+    overrides = {}
+    if args.interval is not None:
+        overrides["interval_seconds"] = args.interval
+    if args.cycles is not None:
+        overrides["max_cycles"] = args.cycles
+    if args.warmup is not None:
+        overrides["warmup_seconds"] = args.warmup
+    if args.no_cut_snapshot:
+        overrides["cut_snapshot"] = False
+
     for engine in engines:
         for name in names:
-            for expectation, finding in run_scenario(SCENARIOS[name], engine, args.keep):
+            scenario = dataclasses.replace(SCENARIOS[name], **overrides)
+            for expectation, finding in run_scenario(scenario, engine, args.keep):
                 summary.append((name, engine, expectation, finding))
 
     print("\n================ RESUMEN ================")
