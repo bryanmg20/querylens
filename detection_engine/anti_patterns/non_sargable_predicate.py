@@ -50,7 +50,7 @@ logger = get_logger(__name__)
 
 DEFAULT_MIN_LIVE_ROWS = 10_000  # mismo valor que AP-02
 DEFAULT_MAX_SELECTIVITY = 0.1  # mismo valor que AP-02
-DEFAULT_MIN_WINDOW_CALLS = 10  # mismo valor que AP-02
+DEFAULT_MIN_WINDOW_CALLS = 2  # mismo valor que AP-02
 
 # Igual que AP-02: full_index_scan en un SELECT simple pasa por todas las filas
 # (sin LIMIT, MIN/MAX ni EXISTS nada corta la lectura antes)
@@ -58,8 +58,8 @@ _FULL_SCAN_METHODS = ("full_table_scan", "full_index_scan")
 
 # Igual que AP-02: una query sin fila guardada cuyo counters_epoch esta a menos
 # de esto de la hora del snapshot empezo a contar dentro de la ventana. Asume
-# snapshots cada 60 s (ventana del informe).
-_NEW_QUERY_WINDOW = timedelta(seconds=60)
+# snapshots cada 10 s (EXTRACT_INTERVAL_S).
+_NEW_QUERY_WINDOW = timedelta(seconds=10)
 
 
 # Referencias a subplanes, no son SQL valido: (SubPlan N) de Postgres y de
