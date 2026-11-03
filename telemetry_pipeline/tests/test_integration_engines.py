@@ -23,7 +23,6 @@ from enqueue import send_to_queue
 from querylens_contract.snapshot import SnapshotPayload
 from orchestrator import Orchestrator
 from stages.collect import CollectStage
-from stages.sql_text import is_explainable_command
 
 pytestmark = pytest.mark.integration
 
@@ -137,20 +136,13 @@ def test_schema_resolver_maps_the_demo_user_to_a_real_schema(pg):
 def test_generic_plan_explain_is_supported_by_the_engine(pg):
     if _pg_version_num(pg) < 160000:
         pytest.skip("EXPLAIN (GENERIC_PLAN) es de PG 16: en 15 los planes llegan solo de auto_explain")
-    collector = _pg_collector(pg)
-    with pg.connect() as conn:
-        rows = conn.execute(text(collector.queries["statements"])).mappings().all()
-    # Misma puerta que ExplainStage: el rol monitor es de solo lectura, asi que
-    # un FOR UPDATE o un DML del top daria permission denied, no un plan.
-    statement = next(
-        (r for r in rows if is_explainable_command(r["query_text"], "postgres")),
-        None,
-    )
-    if statement is None:
-        pytest.skip("sin SELECT/WITH explicables en pg_stat_statements: corre la bateria primero")
+    # Texto fijo con $1, como lo guarda pg_stat_statements, sobre un catalogo que
+    # siempre existe. Antes se tomaba la primera sentencia explicable del
+    # historial, que puede citar tablas ya borradas (p. ej. ql_cmp de una campaña)
+    # y fallar por el sandbox, no por el motor.
     with pg.connect() as conn:
         result = conn.execute(text(
-            f"EXPLAIN (GENERIC_PLAN, FORMAT JSON) {statement['query_text']}"
+            "EXPLAIN (GENERIC_PLAN, FORMAT JSON) SELECT relname FROM pg_class WHERE oid = $1"
         )).mappings().first()
     assert result is not None
     assert "QUERY PLAN" in result
