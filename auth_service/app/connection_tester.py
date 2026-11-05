@@ -23,7 +23,8 @@ def test_connection(params: ConnectionParams) -> TestConnectionResponse:
             conn = pymysql.connect(
                 host=params.host,
                 port=params.port,
-                database=params.database_name,
+                # En MySQL no se exige una base: se conecta al servidor sin esquema por defecto.
+                database=params.database_name or None,
                 user=params.username,
                 password=params.password,
                 connect_timeout=settings.connection_test_timeout_seconds,

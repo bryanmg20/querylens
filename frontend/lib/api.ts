@@ -22,7 +22,8 @@ function toApiPayload(values: ConnectionFormValues) {
     port: values.port,
     username: values.username,
     password: values.password,
-    database_name: values.databaseName,
+    // MySQL no usa nombre de base de datos: el servidor se observa completo.
+    database_name: values.engine === "mysql" ? "" : values.databaseName,
   };
 }
 
