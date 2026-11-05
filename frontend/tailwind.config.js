@@ -1,37 +1,31 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
+  content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./lib/**/*.{ts,tsx}"],
   theme: {
     extend: {
+      // Los valores viven en app/globals.css como variables CSS: un solo lugar
+      // para los tokens del tema oscuro.
       colors: {
-        paper: "#F3F5F4",
-        surface: "#FFFFFF",
-        ink: "#12161A",
-        graphite: {
-          600: "#4B545C",
-          300: "#C4CBCE",
-          200: "#DDE2E3",
-        },
-        signal: {
-          DEFAULT: "#0E7C86",
-          soft: "#E4F1F1",
-        },
-        alert: {
-          DEFAULT: "#B23B3B",
-          soft: "#F7E9E7",
-        },
-        warn: {
-          DEFAULT: "#8A5A00",
-          soft: "#FAF0D9",
-        },
+        ground: "var(--ground)",
+        surface: "var(--surface)",
+        raised: "var(--raised)",
+        line: "var(--border)",
+        rule: "var(--rule)",
+        control: "var(--control)",
+        fg: "var(--text)",
+        muted: "var(--muted)",
+        accent: "var(--accent)",
+        positive: "var(--positive)",
+        negative: "var(--negative)",
+        warning: "var(--warning)",
       },
       fontFamily: {
-        sans: ["var(--font-plex-sans)", "system-ui", "sans-serif"],
+        sans: ["var(--font-public-sans)", "Inter", "system-ui", "sans-serif"],
         mono: ["var(--font-plex-mono)", "ui-monospace", "SFMono-Regular", "monospace"],
       },
       borderRadius: {
-        sm: "3px",
-        DEFAULT: "4px",
+        sm: "4px",
+        DEFAULT: "6px",
       },
     },
   },

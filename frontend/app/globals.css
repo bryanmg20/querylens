@@ -2,47 +2,443 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Tema oscuro (por defecto) y tema claro. El script de app/layout.tsx fija data-theme antes de pintar. */
+:root,
+:root[data-theme="dark"] {
+  --ground: #171719;
+  --surface: #131217;
+  --raised: #212023;
+  --border: #222224;
+  --rule: #1b1a1f;
+  --control: #3a3a3e;
+  --control-hover: #4c4c52;
+  --grid: #26262a;
+  --text: #ffffff;
+  --muted: #8a8c92;
+  /* El teal de marca de QueryLens, subido de luminosidad para fondo oscuro. */
+  --accent: #41bcc4;
+  --on-accent: #06161a;
+  --positive: #44a282;
+  --negative: #e5566f;
+  --on-negative: #1a0d11;
+  --warning: #d9a441;
+  --neutral-mark: #5d5f66;
+  --primary: #ffffff;
+  --on-primary: #111111;
+  --primary-hover: #dcdce0;
+
+  --pill-pos-bg: #1b2828;
+  --pill-pos-ink: #5fc39c;
+  --pill-neg-bg: #2c1a20;
+  --pill-neg-ink: #e5566f;
+  --pill-warn-bg: #2a2416;
+  --pill-warn-ink: #d9a441;
+  --pill-warn-edge: #4a3b17;
+  --pill-neu-bg: #212023;
+  --pill-neu-ink: #bdbdc0;
+
+  --shadow-float: 0 12px 28px rgba(0, 0, 0, 0.35);
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --ground: #f6f7f9;
+  --surface: #ffffff;
+  --raised: #eceff2;
+  --border: #e3e6ea;
+  --rule: #eef0f3;
+  --control: #cdd2d8;
+  --control-hover: #aab0b8;
+  --grid: #e6e9ed;
+  --text: #111214;
+  --muted: #5a6169;
+  /* El teal de marca original: sobre blanco pasa 4,5:1 como texto. */
+  --accent: #0e7c86;
+  --on-accent: #ffffff;
+  --positive: #1f7a4d;
+  --negative: #c4242a;
+  --on-negative: #ffffff;
+  --warning: #b86e0a;
+  --neutral-mark: #9aa1ab;
+  --primary: #1d1f20;
+  --on-primary: #ffffff;
+  --primary-hover: #3a3d40;
+
+  --pill-pos-bg: #dcfae5;
+  --pill-pos-ink: #0a4d27;
+  --pill-neg-bg: #ffe9e6;
+  --pill-neg-ink: #8a1c20;
+  --pill-warn-bg: #fff4d6;
+  --pill-warn-ink: #85470a;
+  --pill-warn-edge: #f0d48a;
+  --pill-neu-bg: #eceff2;
+  --pill-neu-ink: #454b53;
+
+  --shadow-float: 0 12px 28px rgba(16, 24, 40, 0.14);
+  color-scheme: light;
+}
+
+:root {
+  --rail: 56px;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+/* Cambio de tema: un fundido corto de colores, solo mientras dura el cambio. */
+:root.theme-anim *,
+:root.theme-anim *::before,
+:root.theme-anim *::after {
+  transition:
+    background-color 220ms ease,
+    border-color 220ms ease,
+    color 220ms ease,
+    fill 220ms ease,
+    stroke 220ms ease !important;
+}
+
 html,
 body {
-  height: 100%;
+  min-height: 100%;
 }
 
 body {
-  background-color: #f3f5f4;
-  color: #12161a;
-  font-feature-settings: "cv05", "cv11";
+  background-color: var(--ground);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 20px;
+  /* Cifras tabulares en todo: los números que se actualizan no deben bailar. */
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 @layer components {
+  .card {
+    @apply rounded border border-line bg-surface;
+  }
+
+  .card-title {
+    @apply text-base font-semibold text-fg;
+  }
+
+  /* Botones: píldora de 34px; el primario va invertido (blanco con texto negro). */
+  .btn {
+    @apply inline-flex h-[34px] flex-none items-center justify-center gap-2 whitespace-nowrap rounded-full px-4 text-[13px] font-medium transition duration-150 active:scale-[0.97] disabled:cursor-not-allowed disabled:bg-raised disabled:text-muted disabled:active:scale-100;
+  }
+  .btn-primary {
+    @apply btn bg-[var(--primary)] text-[var(--on-primary)] hover:bg-[var(--primary-hover)];
+  }
+  .btn-outline {
+    @apply btn border border-control text-fg hover:bg-raised disabled:border-line;
+  }
+  .btn-danger {
+    @apply btn bg-negative text-[var(--on-negative)] hover:brightness-110;
+  }
+  .btn-text {
+    @apply btn px-2 text-muted hover:text-fg disabled:bg-transparent;
+  }
+
   .input {
-    @apply w-full rounded border border-graphite-300 bg-surface px-3 py-2 text-sm text-ink shadow-none transition placeholder:text-graphite-300 focus:border-signal focus:outline-none focus:ring-1 focus:ring-signal;
+    @apply h-[38px] w-full rounded border border-control bg-ground px-3 text-[13px] text-fg transition-colors duration-150 placeholder:text-muted hover:border-[var(--control-hover)] focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent;
   }
-
+  select.input {
+    @apply appearance-none pr-9;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a8c92' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+  }
   .input-mono {
-    @apply input font-mono;
+    @apply input font-mono text-[12.5px];
   }
-
   .field-label {
-    @apply mb-1.5 block text-sm text-graphite-600;
+    @apply mb-2 block text-[13px] font-medium text-fg;
   }
 
-  .panel-line {
-    @apply border-graphite-200;
+  /* Pastillas: tinte pálido con texto del mismo matiz; nunca se aprietan. */
+  .pill {
+    @apply inline-flex h-5 flex-none items-center gap-1.5 whitespace-nowrap rounded-full px-2 text-xs font-medium;
+  }
+  .pill-pos {
+    @apply pill;
+    background: var(--pill-pos-bg);
+    color: var(--pill-pos-ink);
+  }
+  .pill-neg {
+    @apply pill;
+    background: var(--pill-neg-bg);
+    color: var(--pill-neg-ink);
+  }
+  .pill-warn {
+    @apply pill;
+    background: var(--pill-warn-bg);
+    color: var(--pill-warn-ink);
+  }
+  .pill-neu {
+    @apply pill;
+    background: var(--pill-neu-bg);
+    color: var(--pill-neu-ink);
+  }
+
+  .notice {
+    @apply rounded px-3 py-2.5 text-[13px] text-fg;
+  }
+  .notice-warn {
+    @apply notice border;
+    background: var(--pill-warn-bg);
+    border-color: var(--pill-warn-edge);
+    color: var(--pill-warn-ink);
+  }
+  .notice-neg {
+    @apply notice;
+    background: var(--pill-neg-bg);
+    color: var(--pill-neg-ink);
+  }
+  .notice-pos {
+    @apply notice;
+    background: var(--pill-pos-bg);
+    color: var(--pill-pos-ink);
+  }
+
+  /* Sección vacía: conserva su marco y dice una sola frase. */
+  .empty-frame {
+    @apply flex min-h-[38px] items-center rounded border border-dashed border-control px-3 py-2 text-[13px] text-muted;
+  }
+
+  .skeleton {
+    @apply rounded bg-raised;
+  }
+}
+
+/* Despliegue de filas: anima la altura sin saltos y saca el contenido del orden de tabulación al cerrar. */
+.reveal {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition:
+    grid-template-rows 280ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    visibility 0s linear 280ms;
+}
+.reveal[data-open="true"] {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+/* Gráficas: al pasar el cursor por una barra se atenúan las demás. */
+.chart .bar rect {
+  transition: fill-opacity 150ms ease;
+}
+.chart:hover .bar rect {
+  fill-opacity: 0.4;
+}
+.chart .bar:hover rect {
+  fill-opacity: 1;
+}
+
+.ring-progress {
+  transition: stroke-dashoffset 1s linear;
+}
+
+/* Filas del feed de la presentación: suben de posición con transición (interrumpible) y
+   las nuevas entran desde arriba. */
+.feed-row {
+  transition:
+    transform 450ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 350ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+@starting-style {
+  .feed-row {
+    opacity: 0;
+    transform: translateY(-28px);
   }
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  .swap-in {
+    animation: swap-in 220ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+  .rise {
+    animation: rise 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-delay: calc(var(--i, 0) * 50ms);
+  }
+  .grow-x {
+    transform-origin: left center;
+    animation: grow-x 700ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-delay: calc(var(--i, 0) * 70ms + 150ms);
+  }
+  .grow-y {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+    animation: grow-y 600ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-delay: calc(var(--i, 0) * 25ms + 150ms);
+  }
+  .pop {
+    animation: pop 180ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    transform-origin: top right;
+  }
+  .live-dot::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    background: inherit;
+    animation: live-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+  .skeleton {
+    animation: skeleton 1.6s ease-in-out infinite;
+  }
   .trace-dot {
     animation: trace-dot-move 1.4s ease-in-out infinite;
   }
+  .ping-once {
+    animation: live-ping 900ms cubic-bezier(0, 0, 0.2, 1) 1 both;
+  }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .ring-progress,
+  .reveal {
+    transition: none;
+  }
+}
+
+@keyframes swap-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+    filter: blur(2px);
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes grow-y {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+}
+@keyframes live-ping {
+  from {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.6);
+  }
+}
+@keyframes skeleton {
+  50% {
+    opacity: 0.55;
+  }
+}
 @keyframes trace-dot-move {
   0%,
   100% {
     left: 0;
   }
   50% {
-    left: calc(100% - 6px);
+    left: 100%;
+  }
+}
+
+/* Carrusel de la página de inicio.
+   Salida rápida y entrada deliberada: lo que se va desaparece en 180ms; lo que llega
+   se compone en escalones de 80ms una vez que la diapositiva ya casi está en su sitio. */
+.slide {
+  visibility: hidden;
+  touch-action: pan-y;
+  transition:
+    transform 800ms var(--ease-in-out),
+    opacity 600ms var(--ease-out),
+    visibility 0s linear 800ms;
+}
+.slide[data-current="true"] {
+  visibility: visible;
+  transition-delay: 0s;
+}
+.slide-inner {
+  transition: transform 800ms var(--ease-in-out);
+}
+[data-ready="false"] .slide,
+[data-ready="false"] .slide-inner {
+  transition: none;
+}
+
+.sl {
+  opacity: 0;
+  transform: translate3d(0, 26px, 0);
+  transition:
+    opacity 180ms ease-out,
+    transform 180ms ease-out;
+}
+[data-active="true"] .sl {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 700ms var(--ease-out),
+    transform 800ms var(--ease-out);
+  transition-delay: calc(var(--i, 0) * 80ms + 380ms);
+}
+.sl-mask {
+  overflow: hidden;
+  padding-bottom: 0.08em;
+}
+.sl-line {
+  display: block;
+  transform: translate3d(0, 105%, 0);
+  transition: transform 180ms ease-out;
+}
+[data-active="true"] .sl-line {
+  transform: none;
+  transition: transform 900ms var(--ease-out);
+  transition-delay: calc(var(--i, 0) * 90ms + 350ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide {
+    transform: none !important;
+    transition: opacity 200ms ease-out, visibility 0s linear 200ms;
+  }
+  .slide[data-current="true"] {
+    transition-delay: 0s;
+  }
+  .slide-inner {
+    transform: none !important;
+    transition: none;
+  }
+  .sl,
+  [data-active="true"] .sl {
+    transform: none;
+    transition: opacity 200ms ease-out;
+    transition-delay: 0ms;
+  }
+  .sl-line,
+  [data-active="true"] .sl-line {
+    transform: none;
+    transition: none;
   }
 }
