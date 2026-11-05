@@ -78,6 +78,17 @@ def normalize_locks(stats: Stats):
     for lock in stats.get("locks") or []:
         lock["is_granted"] = to_bool(lock.get("is_granted"))
 
+def merge_index_sizes(stats: Stats):
+    # MySQL: el tamaño de cada indice llega en su propia seccion (index_sizes) y
+    # se copia a indexes. Si esa seccion fallo, el tamaño queda en None.
+    sizes = {
+        (row.get("schema_name"), row.get("table_name"), row.get("index_name")): row.get("index_size_bytes")
+        for row in stats.pop("index_sizes", None) or []
+    }
+    for index in stats.get("indexes") or []:
+        key = (index.get("schema_name"), index.get("table_name"), index.get("index_name"))
+        index["index_size_bytes"] = sizes.get(key)
+
 def normalize_predicate(stats: Stats):
     for explain in stats.get("canonic_explains") or []:
         for operation in explain.get("canonical_plan", {}).get("physical_operations", []):

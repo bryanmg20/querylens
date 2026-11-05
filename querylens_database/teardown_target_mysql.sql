@@ -28,7 +28,8 @@ SET @ql_restart = EXISTS (
     SELECT 1
     FROM querylens.setup_changes c
     JOIN performance_schema.global_variables g ON g.VARIABLE_NAME = c.name
-    WHERE c.name IN ('performance_schema', 'performance_schema_max_sql_text_length')
+    WHERE c.name IN ('performance_schema', 'performance_schema_max_sql_text_length',
+                     'performance_schema_events_statements_history_size')
       AND c.previous_global <> g.VARIABLE_VALUE);
 
 -- Por cada variable registrada: las dinamicas vuelven ya a su valor de antes
@@ -85,5 +86,5 @@ DROP USER IF EXISTS 'querylens_monitor'@'%';
 DROP DATABASE querylens;
 
 SELECT IF(@ql_restart,
-          'Listo. Algunos valores (performance_schema_max_sql_text_length) vuelven a como estaban en el proximo reinicio de MySQL; no hace falta reiniciar ahora.',
+          'Listo. Algunos valores (performance_schema_max_sql_text_length, performance_schema_events_statements_history_size) vuelven a como estaban en el proximo reinicio de MySQL; no hace falta reiniciar ahora.',
           'Listo: QueryLens ya no tiene nada en este servidor.') AS querylens;

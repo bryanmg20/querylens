@@ -8,31 +8,27 @@ from models import Hallazgo, StatementHistory
 from .statement_history import WINDOW_MIN_CALLS, evaluate_statements
 
 
-# Regla AP-01 del SegundoInforme (Tabla 2): huella con >= 30 ejecuciones en la
-# ventana cuya latencia media es >= 2,0 veces la mediana de las 10 ventanas
-# previas y al menos 1 ms mayor en valor absoluto. La lista de ventanas la
-# arma statement_history.py con el mismo minimo de ejecuciones.
+# Regla AP-01 del SegundoInforme (Tabla 2), ajustada a ventanas de 10 s: huella
+# con >= 5 ejecuciones en la ventana cuya latencia media es >= 2,0 veces la
+# mediana de las 60 ventanas previas (10 min, lo mismo que 10 ventanas de 60 s)
+# y al menos 1 ms mayor en valor absoluto. La lista de ventanas la arma
+# statement_history.py con el mismo minimo de ejecuciones.
+# Pendiente: llevar los valores de 10 s a la fila de AP-01 del informe.
 DEFAULT_MIN_CALLS = WINDOW_MIN_CALLS
-DEFAULT_BASELINE_WINDOW = 10
+DEFAULT_BASELINE_WINDOW = 60
 DEFAULT_MIN_RATIO = 2.0
 DEFAULT_MIN_ABS_INCREASE_MS = 1.0
 
 # Severidad por tiempo extra consumido en la ventana (ms), no por el ratio:
 # una query de 2ms que se duplica con 40 llamadas pesa menos que una de 50ms
-# que se duplica con miles. Con ventanas de 60s, 60.000ms extra equivale a un
-# nucleo de CPU ocupado todo el minuto solo por la degradacion.
-_HIGH_EXTRA_MS = 60_000
-_MEDIUM_EXTRA_MS = 5_000
+# que se duplica con miles. Con ventanas de 10s, 10.000ms extra equivale a un
+# nucleo de CPU ocupado toda la ventana solo por la degradacion.
+_HIGH_EXTRA_MS = 10_000
+_MEDIUM_EXTRA_MS = 1_000
 
-# Limitacion / pendiente: estos cortes, el minimo de 30 ejecuciones y las 10
-# ventanas de linea base asumen snapshots cada 60 s (la ventana del informe).
-# Con otro intervalo cambian de significado: cada 5 min, 60 s de tiempo extra
-# es mas facil de alcanzar (mas hallazgos high), 30 ejecuciones es un umbral 5
-# veces mas bajo y la linea base cubre 50 min en vez de 10. Por hacer: medir la
-# severidad como proporcion del tiempo REAL de la ventana (segundos de base de
-# datos por segundo de ventana, con captured_at de la fila anterior) en vez de
-# ms absolutos; el minimo de ejecuciones y las 10 ventanas son reglas del
-# informe para 60 s y habria que revisarlas con el sandbox si cambia el intervalo.
+# Limitacion: estos cortes, el minimo de ejecuciones y las 60 ventanas de linea
+# base asumen snapshots cada 10 s (EXTRACT_INTERVAL_S). Con otro intervalo
+# cambian de significado y hay que volver a ajustarlos.
 
 # Limitacion conocida: una query que siempre fue erratica (ventanas que saltan
 # entre 1 y 9ms, por ejemplo) puede pasar el ratio y el minimo absoluto sin

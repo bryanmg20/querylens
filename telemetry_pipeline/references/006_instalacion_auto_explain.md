@@ -24,7 +24,8 @@ Funciona con cualquier driver de la aplicación (JDBC, Go, Node, .NET, Rails, Py
 |--------|--------|-----------|
 | `session_preload_libraries = 'auto_explain'` | Carga `auto_explain` en cada conexión nueva | Reload (conexiones nuevas) |
 | `auto_explain.log_min_duration = '50ms'` | Solo se registran las consultas que tardan 50 ms o más de ejecución | Reload |
-| `auto_explain.log_analyze = off` | Registra el plan con filas **estimadas**, igual que `EXPLAIN`. No vuelve a ejecutar nada y no agrega overhead a las consultas rápidas | Reload |
+| `auto_explain.log_analyze = on` | El plan registrado trae, además de las filas **estimadas**, las filas **reales** de esa ejecución (AP-08 compara las dos). No vuelve a ejecutar nada: Postgres cuenta las filas mientras ejecuta las consultas de la aplicación. Ese conteo corre en todas las consultas, no solo en las que se registran | Reload |
+| `auto_explain.log_timing = off` | Con `log_analyze`, no mide el tiempo de cada paso del plan, que es la parte cara. Con esto el costo no se distinguió del ruido en el sandbox (−2 % a +3 %; `detection_engine/references/004_ap08_filas_misma_ejecucion.md`) | Reload |
 | `auto_explain.log_format = json` | Plan en JSON: el mismo formato que ya procesa QueryLens | Reload |
 | `logging_collector = on` | Postgres escribe el log en archivos dentro del servidor | **Reinicio** |
 | `log_destination = 'stderr,jsonlog'` | Además del log de texto, un archivo `.json` con una línea JSON por evento (incluye `query_id`) | Reload |
@@ -80,7 +81,8 @@ LOAD 'auto_explain';
 ALTER SYSTEM SET session_preload_libraries = 'auto_explain';
 
 ALTER SYSTEM SET auto_explain.log_min_duration = '50ms';
-ALTER SYSTEM SET auto_explain.log_analyze = off;
+ALTER SYSTEM SET auto_explain.log_analyze = on;
+ALTER SYSTEM SET auto_explain.log_timing = off;
 ALTER SYSTEM SET auto_explain.log_format = 'json';
 
 ALTER SYSTEM SET logging_collector = on;
@@ -178,6 +180,8 @@ Si tu rol de monitoreo tiene otro nombre, reemplaza `querylens_monitor` en las 3
 
 ```sql
 SHOW auto_explain.log_min_duration;   -- 50ms
+SHOW auto_explain.log_analyze;        -- on
+SHOW auto_explain.log_timing;         -- off
 SHOW logging_collector;               -- on
 SHOW log_destination;                 -- stderr,jsonlog
 SHOW log_filename;                    -- postgresql-%a.log
@@ -251,6 +255,7 @@ DROP SCHEMA querylens CASCADE;
 ALTER SYSTEM RESET session_preload_libraries;   -- o vuelve a poner el valor que tenía
 ALTER SYSTEM RESET auto_explain.log_min_duration;
 ALTER SYSTEM RESET auto_explain.log_analyze;
+ALTER SYSTEM RESET auto_explain.log_timing;
 ALTER SYSTEM RESET auto_explain.log_format;
 ALTER SYSTEM RESET log_destination;
 ALTER SYSTEM RESET log_filename;

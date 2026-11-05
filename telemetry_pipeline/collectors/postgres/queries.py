@@ -111,7 +111,10 @@ SELECT clock_timestamp() AS captured_at
 
 SERVER_START_QUERY = """
 SELECT
-    pg_postmaster_start_time()                         AS server_start_time
+    pg_postmaster_start_time()                         AS server_start_time,
+    (SELECT stats_reset
+       FROM pg_stat_database
+      WHERE datname = current_database())              AS stats_reset_time
 """
 
 COLUMNS_QUERY = """

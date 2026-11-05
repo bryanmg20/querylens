@@ -160,6 +160,11 @@ class ForeignKeyRow(BaseModel):
 
 class ServerStartRow(BaseModel):
     server_start_time: Annotated[str | None, BeforeValidator(to_iso)] = None
+    # Ultimo reinicio manual de las estadisticas (pg_stat_reset(), stats_reset de
+    # pg_stat_database). Desde PG 15 las estadisticas sobreviven a un apagado
+    # limpio, asi que el arranque no alcanza para saber desde cuando cuentan.
+    # MySQL no tiene equivalente: queda en None. Default None por los goldens previos.
+    stats_reset_time: Annotated[str | None, BeforeValidator(to_iso)] = None
 
 
 class CaptureTimestampRow(BaseModel):
@@ -268,6 +273,11 @@ class LogicalShape(BaseModel):
 class Estimates(BaseModel):
     total_cost: float | None = None
     output_rows: Union[int, float] | None = None
+    # Filas que devolvio la MISMA ejecucion de la que sale el plan (Postgres:
+    # auto_explain con log_analyze; MySQL: la ejecucion de
+    # events_statements_history que se explico). None si el plan no viene de
+    # una ejecucion (GENERIC_PLAN, sample sin historial).
+    actual_rows: Union[int, float] | None = None
 
 
 class PhysicalOperation(BaseModel):

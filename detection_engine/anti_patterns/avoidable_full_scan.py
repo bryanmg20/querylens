@@ -44,7 +44,8 @@ logger = get_logger(__name__)
 
 DEFAULT_MIN_LIVE_ROWS = 10_000  # tabla considerada "grande" para este chequeo
 DEFAULT_MAX_SELECTIVITY = 0.1  # devuelve como maximo el 10% de las filas recorridas
-DEFAULT_MIN_WINDOW_CALLS = 10
+# con ventanas de 10 s (antes 10 en ventanas de 60 s: la misma frecuencia)
+DEFAULT_MIN_WINDOW_CALLS = 2
 
 # full_index_scan (MySQL `index`, Postgres Index Scan sin Index Cond) pasa por
 # una entrada del indice por cada fila: en un SELECT simple examina toda la
@@ -57,8 +58,8 @@ _FULL_SCAN_METHODS = ("full_table_scan", "full_index_scan")
 
 # Igual que AP-07/AP-08: una query sin fila guardada cuyo counters_epoch esta a
 # menos de esto de la hora del snapshot empezo a contar dentro de la ventana.
-# Asume snapshots cada 60 s (ventana del informe).
-_NEW_QUERY_WINDOW = timedelta(seconds=60)
+# Asume snapshots cada 10 s (EXTRACT_INTERVAL_S).
+_NEW_QUERY_WINDOW = timedelta(seconds=10)
 
 
 @dataclass

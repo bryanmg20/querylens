@@ -9,7 +9,7 @@
 #   bash /scripts/scenarios/workload.sh <motor> <tipo> <segundos>
 #     motor: postgres | mysql
 #     tipo:  full_scan | non_sargable | disk_spill | point_lookup | correlated
-#            n_plus_one | n_plus_one_control
+#            unused_index | n_plus_one | n_plus_one_control
 #
 # Cada worker abre UNA sola sesion y le envia consultas sin pausa: asi la
 # consulta esta casi siempre ejecutandose, que es lo que necesita el pipeline
@@ -51,6 +51,12 @@ query() {
     disk_spill)   echo "SELECT c, COUNT(*) FROM ql_scn GROUP BY c ORDER BY c;" ;;
     # busqueda puntual por k: rapida con el indice, lenta si se elimina
     point_lookup) echo "SELECT pad FROM ql_scn WHERE k = $(rand);" ;;
+    # AP-05: lee con el indice de k (o su duplicado) y con (c, k), el unico con
+    # las dos columnas, para que esos tengan lecturas y los que cubren salgan
+    # como redundantes; pad no lo lee nadie
+    unused_index)
+      if (( RANDOM % 2 )); then echo "SELECT pad FROM ql_scn WHERE k = $(rand);"
+      else echo "SELECT id FROM ql_scn WHERE c = $(rand) AND k = $(rand);"; fi ;;
     # a = b = c: el optimizador multiplica las tres selectividades (1/1000) y
     # estima ~100 filas, pero las tres condiciones son una sola y vuelven ~10.000
     correlated)   v=$(( RANDOM % 10 )); echo "SELECT id FROM ql_scn_corr WHERE a = $v AND b = $v AND c = $v;" ;;

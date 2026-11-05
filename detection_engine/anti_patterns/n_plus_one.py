@@ -20,7 +20,7 @@ logger = get_logger(__name__)
 #                     y el padre lee la tabla referenciada (customers)
 #       muchos_a_uno: la hija filtra por la columna referenciada (customers WHERE id = ?)
 #                     y el padre lee la tabla que tiene la FK (orders)
-#   - la hija tiene >= 100 ejecuciones en la ventana
+#   - la hija tiene >= 100 ejecuciones en la ventana (50 con ventanas de 10 s, ver _MIN_CHILD_CALLS)
 #   - sus ejecuciones coinciden (+-20 %) con las filas que devolvio el padre en
 #     la misma ventana
 #
@@ -37,17 +37,22 @@ logger = get_logger(__name__)
 #
 # No usa el EXPLAIN: recorre todos los statements, no solo top_impact_queries.
 
-_MIN_CHILD_CALLS = 100
+# Con ventanas de 10 s (el informe pide 100 en ventanas de 60 s). 50 en vez de
+# los ~17 que darian la misma tasa: con numeros chicos dos consultas sin
+# relacion coinciden por casualidad dentro del +-20 % (falso positivo); con 50
+# se pierden los N+1 de menos de 50 filas por ventana (paginas de 20 o 25).
+# Pendiente: llevarlo a la fila de AP-06 del informe.
+_MIN_CHILD_CALLS = 50
 _MATCH_TOLERANCE = 0.20
 _MIN_PARENT_ROWS_PER_CALL = 2
 
-# Severidad por las ejecuciones evitables de la hija en la ventana
-_HIGH_CHILD_CALLS = 1000
+# Severidad por las ejecuciones evitables de la hija en la ventana (10 veces el minimo)
+_HIGH_CHILD_CALLS = 500
 
 # Igual que AP-07 y AP-08: una query sin fila guardada cuyo counters_epoch esta
 # a menos de esto de la hora del snapshot empezo a contar dentro de la ventana.
-# Limitacion / pendiente (la misma de AP-07): asume snapshots cada 60 s.
-_NEW_QUERY_WINDOW = timedelta(seconds=60)
+# Asume snapshots cada 10 s (EXTRACT_INTERVAL_S).
+_NEW_QUERY_WINDOW = timedelta(seconds=10)
 
 _UNAVAILABLE = "Not available"
 

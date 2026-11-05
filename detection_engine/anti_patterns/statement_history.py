@@ -14,12 +14,13 @@ from models import StatementHistory
 
 # Solo las ventanas con al menos estas ejecuciones entran a la lista de
 # ventanas: es el criterio de linea base de AP-01 (su promedio depende
-# demasiado de una sola ejecucion atipica si hay pocas)
-WINDOW_MIN_CALLS = 30
+# demasiado de una sola ejecucion atipica si hay pocas). Con ventanas de 10 s
+# (antes 30 en ventanas de 60 s)
+WINDOW_MIN_CALLS = 5
 
-# Ventanas que se guardan por query: AP-01 usa solo las ultimas 10, el resto
-# queda para la linea de tiempo de la interfaz
-HISTORY_WINDOWS = 60
+# Ventanas que se guardan por query: AP-01 usa solo las ultimas 60, el resto
+# queda para la linea de tiempo de la interfaz (90 ventanas de 10 s = 15 min)
+HISTORY_WINDOWS = 90
 
 # Una query que no se ejecuto en este tiempo pierde su fila (y su historia)
 STALE_AFTER = timedelta(hours=24)

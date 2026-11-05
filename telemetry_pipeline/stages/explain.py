@@ -98,10 +98,13 @@ class ExplainStage:
                     continue
 
                 dialect = self.collector.source_dialect
+                # MySQL: primero la ejecucion del historial (se conocen sus
+                # filas reales); sin ella, el sample como siempre
+                from_history = dialect != "postgres" and bool(query.get("history_text"))
                 query_text = (
                     query.get("query_text")
                     if dialect == "postgres"
-                    else query.get("query_sample_text")
+                    else query.get("history_text") or query.get("query_sample_text")
                 )
                 # El selector filtro por query_text, pero MySQL explica
                 # query_sample_text: la puerta de solo-lectura se re-aplica al
@@ -178,8 +181,9 @@ class ExplainStage:
                                 continue
                             stats["query_explain"].append({
                                 "query_id": query_id,
-                                "explain_source": "sample",
+                                "explain_source": "history" if from_history else "sample",
                                 "plan": json.loads(plan_row["EXPLAIN"]),
+                                "actual_rows": query.get("history_rows_sent") if from_history else None,
                             })
                 except Exception as e:
                     failures += 1

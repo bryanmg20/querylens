@@ -12,6 +12,11 @@ con dos diferencias pensadas solo para las pruebas:
 Se ejecuta con el python del venv de telemetry_pipeline:
   python pipeline_one_engine.py <postgres|mysql>
 o, con run_scenario.py --docker, dentro del servicio pipeline del compose.
+
+Conexion al motor: con MONITOR_PG_HOST / MONITOR_MY_HOST definidas (venv, CI)
+se usan esas variables; si no (el servicio pipeline ya no las tiene: toma las
+bases de registered_databases), la base registrada y activa de ese motor,
+igual que el runner.
 """
 
 import json
@@ -30,6 +35,7 @@ from config.connections import (  # noqa: E402
     get_connection_postgres,
     get_connection_querylens_db,
 )
+from config.registered import load_registered_targets  # noqa: E402
 from enqueue import send_to_queue  # noqa: E402
 from orchestrator import Orchestrator  # noqa: E402
 
@@ -37,10 +43,22 @@ CONNECTIONS = {
     "postgres": get_connection_postgres,
     "mysql": get_connection_mysql,
 }
+HOST_VARIABLES = {"postgres": "MONITOR_PG_HOST", "mysql": "MONITOR_MY_HOST"}
+
+
+def connection_for(dialect: str):
+    if os.getenv(HOST_VARIABLES[dialect]):
+        return CONNECTIONS[dialect]()
+    for target in load_registered_targets() or []:
+        if target.dialect == dialect:
+            return target.factory()
+    sys.exit(
+        f"{dialect}: no hay {HOST_VARIABLES[dialect]} ni una base registrada y activa de ese motor"
+    )
 
 
 def main(dialect: str) -> None:
-    collector = Engine_Factory().create_collector(dialect, CONNECTIONS[dialect]())
+    collector = Engine_Factory().create_collector(dialect, connection_for(dialect))
     payload = Orchestrator(collector).run_pipeline()
     payload["db_id"] = f"{payload.get('db_id')}-{dialect}"
 

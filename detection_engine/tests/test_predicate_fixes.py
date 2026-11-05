@@ -212,7 +212,7 @@ def test_ap04_skips_when_real_selectivity_is_high():
 def test_ap04_requires_min_window_calls():
     operation = {**MYSQL_FULL_SCAN, "estimated_rows": 10, "predicate": "(ql_pt_orders.note = '$1')"}
     assert _missing(MYSQL_QUERY_ID, "SELECT id FROM ql_pt_orders WHERE note = $1", operation,
-                    previous_calls=45, previous_rows=45) == []
+                    previous_calls=49, previous_rows=49) == []
 
 
 def test_ap04_only_simple_selects():
@@ -331,8 +331,7 @@ def test_d8_table_name_resolves_renamed_relation():
                          indexes=[_index("note")])
     assert [f.table_name for f in detect_non_sargable_predicates(snapshot, _history(PG_QUERY_ID, 30, 30), NOW)] == ["ql_pt_orders"]
 
-    _, tables_with_traffic = _collect_query_traffic(snapshot)
-    assert tables_with_traffic == {("public", "ql_pt_orders")}
+    assert set(_collect_query_traffic(snapshot)) == {("public", "ql_pt_orders")}
 
     full_scan = detect_avoidable_full_scans(
         snapshot, _history(PG_QUERY_ID, 30, rows_returned=30), datetime(2026, 10, 13, 10, 6, tzinfo=timezone.utc),
@@ -455,7 +454,7 @@ def test_ap03_requires_full_scan():
 
 
 def test_ap03_requires_min_window_calls():
-    assert _non_sargable(PG_QUERY_ID, LOWER_NOTE, FULL_SCAN_NOTE[0], previous_calls=45, previous_rows=45) == []
+    assert _non_sargable(PG_QUERY_ID, LOWER_NOTE, FULL_SCAN_NOTE[0], previous_calls=49, previous_rows=49) == []
 
 
 def test_ap03_skips_when_real_selectivity_is_high():

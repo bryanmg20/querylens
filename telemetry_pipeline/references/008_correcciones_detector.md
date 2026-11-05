@@ -60,6 +60,7 @@ Orden sugerido: D1 primero, después D2–D5, el resto cuando se pueda.
 
 - **Dónde:** AP-02 (`avoidable_full_scan.py:53`), AP-04 (`missing_index.py:242`), severidad en AP-03 (`non_sargable_predicate.py:600`), AP-05 (`unused_index.py:153`).
 - **Qué:** decidir si `full_index_scan` cuenta como escaneo completo. Hoy todos comparan con `== "full_table_scan"`, así que lo ignoran (igual que antes, cuando llegaba como `index_lookup`): no hay regresión, pero tampoco ganancia hasta que se adopte. Ojo: un `ORDER BY ... LIMIT` que recorre el índice y corta enseguida también es `full_index_scan` (`estimated_rows` lo distingue).
+- **Decidido:** cuenta como escaneo completo en los cuatro. Primero solo en AP-02, porque su base de SELECT simples ya excluye `LIMIT`, `MIN`/`MAX` y `EXISTS`, que son los casos que cortan antes; AP-03 y AP-04 lo heredaron al adoptar esa misma base, y AP-05 se alineó después. Los cuatro usan `_FULL_SCAN_METHODS = ("full_table_scan", "full_index_scan")`. En AP-03 la severidad es alta con `full_table_scan` y media con `full_index_scan`; en AP-05 solo decide qué consulta se asocia al hallazgo, no si hay hallazgo.
 
 ### D7. AP-07 con `sort_merge_passes` (punto 13a)
 

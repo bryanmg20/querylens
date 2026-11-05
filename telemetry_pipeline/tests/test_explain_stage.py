@@ -256,6 +256,37 @@ def test_mysql_records_sample_explain_source():
     assert stats["canonic_explains"][0]["explain_source"] == "sample"
 
 
+def _mysql_history_stats():
+    stats = _mysql_stats()
+    stats["top_impact_queries"][0]["history_text"] = "select c from sbtest1 where id = 9 and k = 'y'"
+    stats["top_impact_queries"][0]["history_rows_sent"] = 3
+    return stats
+
+
+def test_mysql_explains_the_history_execution_before_the_sample():
+    conn = _FakeConn(rows=[{"EXPLAIN": '{"query_block": {"select_id": 1}}'}])
+    stats = _mysql_history_stats()
+    ExplainStage(_FakeMysqlCollector()).execute(stats, conn)
+    assert "where id = 9 and k = 'y'" in conn.sent[1]
+    assert "where id = 5" not in conn.sent[1]
+
+
+def test_mysql_history_execution_carries_its_rows_and_source():
+    conn = _FakeConn(rows=[{"EXPLAIN": '{"query_block": {"select_id": 1}}'}])
+    stats = _mysql_history_stats()
+    ExplainStage(_FakeMysqlCollector()).execute(stats, conn)
+    explain = stats["canonic_explains"][0]
+    assert explain["explain_source"] == "history"
+    assert explain["canonical_plan"]["estimates"]["actual_rows"] == 3
+
+
+def test_mysql_sample_has_no_actual_rows():
+    conn = _FakeConn(rows=[{"EXPLAIN": '{"query_block": {"select_id": 1}}'}])
+    stats = _mysql_stats()
+    ExplainStage(_FakeMysqlCollector()).execute(stats, conn)
+    assert stats["canonic_explains"][0]["canonical_plan"]["estimates"]["actual_rows"] is None
+
+
 def _mysql_tracker_stage(tracker):
     stage = ExplainStage(_FakeMysqlCollector())
     stage._foreign_engine_factory = lambda url: _FakeMysqlForeignEngine(url, tracker)

@@ -1,8 +1,10 @@
 from collectors.base import DB_Engine_Collector
 from .queries import (
     INDEXES_QUERY,
+    INDEX_SIZES_QUERY,
     TABLES_QUERY,
     STATEMENTS_QUERY,
+    STATEMENT_HISTORY_QUERY,
     LOCKS_QUERY,
     ACTIVE_QUERIES_QUERY,
     CAPTURE_TIMESTAMP_QUERY,
@@ -21,8 +23,10 @@ class Mysql_Collector(DB_Engine_Collector):
         self.source_dialect = "mysql"
         self.queries = {
                         "indexes": INDEXES_QUERY,
+                        "index_sizes": INDEX_SIZES_QUERY,
                         "tables": TABLES_QUERY,
                         "statements": STATEMENTS_QUERY,
+                        "statement_history": STATEMENT_HISTORY_QUERY,
                         "capture_timestamp": CAPTURE_TIMESTAMP_QUERY,
                         "locks": LOCKS_QUERY,
                         "active_queries": ACTIVE_QUERIES_QUERY,
@@ -76,13 +80,25 @@ class Mysql_Collector(DB_Engine_Collector):
         return stats
 
     def normalize_engine_artifacts(self, stats: Stats) -> Stats:
+        normalize.merge_index_sizes(stats)
         normalize.normalize_locks(stats)
         normalize.normalize_blocking_pids(stats)
         normalize.normalize_predicate(stats)
         return stats
 
     def mark_explainable(self, stats: Stats) -> Stats:
+        # Trae literales reales: se saca de stats aca y solo queda en el
+        # candidato, que tampoco viaja con esas claves (igual que el sample)
+        history = {
+            row.get("query_id"): row
+            for row in stats.pop("statement_history", None) or []
+            if (row.get("history_text") or "").strip()
+        }
         for candidate in stats.get("top_impact_queries", []):
             sample = (candidate.get("query_sample_text") or "").strip()
-            candidate["ready_for_explain"] = bool(sample)
+            execution = history.get(candidate.get("query_id"))
+            if execution is not None:
+                candidate["history_text"] = execution["history_text"]
+                candidate["history_rows_sent"] = execution.get("history_rows_sent")
+            candidate["ready_for_explain"] = bool(sample) or execution is not None
         return stats
