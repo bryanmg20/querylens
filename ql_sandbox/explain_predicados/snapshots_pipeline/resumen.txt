@@ -1,0 +1,186 @@
+=== postgres lote 1 (msg_id 232): casos 01, 02, 03, 04, 05, 06, 07, 08
+  [auto_explain] SELECT id FROM ql_pt_orders WHERE total BETWEEN $1 AND $2
+      scan ql_pt_orders (ql_pt_orders) full_table_scan idx=None est=103132 pred=((total >= $1) AND (total <= $2))
+  [auto_explain] SELECT id FROM ql_pt_orders WHERE status <> $1
+      scan ql_pt_orders (ql_pt_orders) full_table_scan idx=None est=299800 pred=((status)::text <> $1)
+  [auto_explain] SELECT id FROM ql_pt_orders WHERE status IN ($1, $2)
+      scan ql_pt_orders (ql_pt_orders) index_lookup idx=ql_pt_orders_status est=299800 pred=((status)::text = ANY ($1))
+      scan ql_pt_orders (ql_pt_orders) index_lookup idx=ql_pt_orders_status est=299800 pred=None
+  [auto_explain] SELECT id FROM ql_pt_orders WHERE note IS $1
+      scan ql_pt_orders (ql_pt_orders) full_table_scan idx=None est=97900 pred=(note IS NULL)
+  [auto_explain] SELECT id FROM ql_pt_orders WHERE status = $1 OR total > $2
+      scan ql_pt_orders (ql_pt_orders) full_table_scan idx=None est=7828 pred=(((status)::text = $1) OR (total > $2))
+  [auto_explain] SELECT id FROM ql_pt_orders WHERE total = $1
+      scan ql_pt_orders (ql_pt_orders) full_table_scan idx=None est=414 pred=(total = $1)
+  [auto_explain] SELECT id FROM ql_pt_orders WHERE status = $1
+      scan ql_pt_orders (ql_pt_orders) index_lookup idx=ql_pt_orders_status est=10067 pred=((status)::text = $1)
+      scan ql_pt_orders (ql_pt_orders) index_lookup idx=ql_pt_orders_status est=10067 pred=None
+  [generic] SELECT id FROM ql_pt_orders WHERE created_at >= $1 AND created_at < $2
+      scan ql_pt_orders (ql_pt_orders) index_lookup idx=ql_pt_orders_created est=5000 pred=((created_at >= $1) AND (created_at < $2))
+=== postgres lote 2 (msg_id 233): casos 09, 10, 11, 12, 13, 14, 16, 17
+  [auto_explain] SELECT id FROM ql_pt_orders WHERE note LIKE $1
+      scan ql_pt_orders (ql_pt_orders) full_table_scan idx=None est=100233 pred=(note ~~ $1)
+  [auto_explain] SELECT id FROM ql_pt_orders WHERE total + $1 = $2
+      scan ql_pt_orders (ql_pt_orders) full_table_scan idx=None est=2083 pred=((total + $1) = $2)
+  [auto_explain] SELECT id FROM ql_pt_orders WHERE customer_id = $1
+      scan ql_pt_orders (ql_pt_orders) full_table_scan idx=None est=2083 pred=((customer_id)::numeric = $1)
+  [auto_explain] SELECT id FROM ql_pt_orders WHERE CAST(code AS INT) = $1
+      scan ql_pt_orders (ql_pt_orders) full_table_scan idx=None est=2083 pred=((code)::integer = $1)
+  [auto_explain] SELECT id FROM ql_pt_orders WHERE DATE(created_at) = $1
+      scan ql_pt_orders (ql_pt_orders) full_table_scan idx=None est=2083 pred=(date(created_at) = $1)
+  [auto_explain] SELECT id FROM ql_pt_orders WHERE status = $1 AND LOWER(note) = $2
+      scan ql_pt_orders (ql_pt_orders) index_lookup idx=ql_pt_orders_status est=50 pred=((status)::text = $1) AND (lower(note) = $2)
+      scan ql_pt_orders (ql_pt_orders) index_lookup idx=ql_pt_orders_status est=10067 pred=None
+  [generic] SELECT id FROM ql_pt_customers WHERE LOWER(email) = $1
+      scan ql_pt_customers (ql_pt_customers) full_table_scan idx=None est=25 pred=(lower((email)::text) = $1)
+=== postgres lote 3 (msg_id 234): casos 18, 19, 20, 21, 22, 23, 24, 25
+  [auto_explain] SELECT id FROM ql_pt_orders WHERE created_at >= $1 AND total > $2
+      scan ql_pt_orders (ql_pt_orders) full_table_scan idx=None est=456890 pred=((created_at >= $1) AND (total > $2))
+  [auto_explain] SELECT o.id FROM ql_pt_orders AS o WHERE EXISTS(SELECT $1 FROM ql_pt_customers AS c WHERE c.id = o.customer_id AND LOWER(c.email) LIKE $2)
+      scan c (ql_pt_customers) full_table_scan idx=None est=25 pred=(lower((email)::text) ~~ $1)
+      scan o (ql_pt_orders) index_lookup idx=ql_pt_orders_customer est=200 pred=(customer_id = c.id)
+      scan o (ql_pt_orders) index_lookup idx=ql_pt_orders_customer est=200 pred=None
+  [auto_explain] SELECT id FROM ql_pt_orders WHERE customer_id IN (SELECT id FROM ql_pt_customers WHERE region = $1)
+      scan ql_pt_orders (ql_pt_orders) full_table_scan idx=None est=1000000 pred=None
+      scan ql_pt_customers (ql_pt_customers) full_table_scan idx=None est=500 pred=(region = $1)
+  [auto_explain] WITH r AS (SELECT id FROM ql_pt_customers WHERE region = $1) SELECT o.id FROM ql_pt_orders AS o JOIN r ON r.id = o.customer_id
+      scan o (ql_pt_orders) full_table_scan idx=None est=1000000 pred=None
+      scan ql_pt_customers (ql_pt_customers) full_table_scan idx=None est=500 pred=(region = $1)
+  [auto_explain] SELECT status, COUNT(*) FROM ql_pt_orders WHERE total > $1 GROUP BY status HAVING COUNT(*) > $2
+      scan ql_pt_orders (ql_pt_orders) full_table_scan idx=None est=207771 pred=(total > $1)
+  [auto_explain] SELECT o.id FROM ql_pt_orders AS o JOIN ql_pt_customers AS c ON c.id = o.customer_id WHERE c.region = $1 AND o.status = $2
+      scan o (ql_pt_orders) index_lookup idx=ql_pt_orders_status est=10067 pred=((status)::text = $1)
+      scan o (ql_pt_orders) index_lookup idx=ql_pt_orders_status est=10067 pred=None
+      scan c (ql_pt_customers) full_table_scan idx=None est=500 pred=(region = $1)
+  [generic] SELECT o.id FROM ql_pt_orders AS o WHERE o.customer_id = (SELECT MIN(c.id) FROM ql_pt_customers AS c WHERE LOWER(c.name) = $1)
+      scan o (ql_pt_orders) index_lookup idx=ql_pt_orders_customer est=200 pred=(customer_id = (InitPlan 2).col1)
+      scan c (ql_pt_customers) full_index_scan idx=ql_pt_customers_pkey est=25 pred=(lower((name)::text) = $1)
+      scan o (ql_pt_orders) index_lookup idx=ql_pt_orders_customer est=200 pred=None
+  [generic] SELECT t.id FROM (SELECT id, total FROM ql_pt_orders WHERE total > $1) AS t WHERE t.id < $2
+      scan ql_pt_orders (ql_pt_orders) index_lookup idx=ql_pt_orders_pkey est=111111 pred=(id < $2) AND (total > $1)
+=== postgres lote 4 (msg_id 235): casos 26, 27, 28, 29, 30, 31, 32, 33
+  [auto_explain] SELECT id FROM ql_pt_orders WHERE total > $1
+      scan ql_pt_orders (ql_pt_orders) full_table_scan idx=None est=999902 pred=(total > $1)
+  [auto_explain] SELECT id FROM ql_pt_orders WHERE NOT (status = $1)
+      scan ql_pt_orders (ql_pt_orders) full_table_scan idx=None est=989933 pred=((status)::text <> $1)
+  [auto_explain] SELECT id FROM ql_pt_orders WHERE total > id
+      scan ql_pt_orders (ql_pt_orders) full_table_scan idx=None est=333333 pred=(total > (id)::numeric)
+  [auto_explain] SELECT id FROM ql_pt_orders WHERE COALESCE(note, $1) = $2
+      scan ql_pt_orders (ql_pt_orders) full_table_scan idx=None est=2083 pred=(COALESCE(note, $1) = $2)
+  [auto_explain] SELECT id FROM ql_pt_orders WHERE CASE WHEN status = $1 THEN $2 ELSE $3 END = $4
+      scan ql_pt_orders (ql_pt_orders) full_table_scan idx=None est=2083 pred=(CASE WHEN ((status)::text = $1) THEN $2 ELSE $3 END = $4)
+  [generic] SELECT id FROM ql_pt_customers WHERE name = $1
+      scan ql_pt_customers (ql_pt_customers) full_table_scan idx=None est=1 pred=((name)::text = $1)
+  [generic] SELECT id FROM ql_pt_orders WHERE total > $1 ORDER BY created_at DESC LIMIT $2
+      scan ql_pt_orders (ql_pt_orders) full_index_scan idx=ql_pt_orders_created est=333333 pred=(total > $1)
+  [generic] SELECT id FROM ql_pt_orders WHERE id IN ($1)
+      scan ql_pt_orders (ql_pt_orders) index_lookup idx=ql_pt_orders_pkey est=1 pred=(id = $1)
+=== postgres lote 5 (msg_id 236): casos 34, 35, 36, 37, 38, 39, 40
+  [auto_explain] SELECT id FROM ql_pt_orders WHERE created_at > CURRENT_TIMESTAMP - INTERVAL '?'
+      scan ql_pt_orders (ql_pt_orders) index_lookup idx=ql_pt_orders_created est=591734 pred=(created_at > (now() - $1))
+  [auto_explain] SELECT id FROM ql_pt_orders WHERE status = $1 OR LOWER(note) = $2
+      scan ql_pt_orders (ql_pt_orders) full_table_scan idx=None est=6257 pred=(((status)::text = $1) OR (lower(note) = $2))
+  [auto_explain] SELECT c.id FROM ql_pt_customers AS c LEFT JOIN ql_pt_orders AS o ON o.customer_id = c.id WHERE o.id IS $1
+      scan o (ql_pt_orders) full_table_scan idx=None est=1000000 pred=None
+      scan c (ql_pt_customers) full_table_scan idx=None est=5000 pred=None
+  [auto_explain] SELECT id FROM ql_pt_orders WHERE status = $1 UNION SELECT id FROM ql_pt_orders WHERE total > $2
+      scan ql_pt_orders (ql_pt_orders) index_lookup idx=ql_pt_orders_status est=10067 pred=((status)::text = $1)
+      scan ql_pt_orders (ql_pt_orders) index_lookup idx=ql_pt_orders_status est=10067 pred=None
+      scan ql_pt_orders_1 (ql_pt_orders) full_table_scan idx=None est=3670 pred=(total > $1)
+  [auto_explain] SELECT a.id FROM ql_pt_orders AS a JOIN ql_pt_orders AS b ON b.id = a.id + $1 WHERE a.status = $2
+      scan a (ql_pt_orders) index_lookup idx=ql_pt_orders_status est=4195 pred=((status)::text = $1)
+      scan a (ql_pt_orders) index_lookup idx=ql_pt_orders_status est=10067 pred=None
+      scan b (ql_pt_orders) index_lookup idx=ql_pt_orders_pkey est=1 pred=(id = (a.id + $1))
+  [auto_explain] SELECT o.id FROM ql_pt_orders AS o JOIN ql_pt_customers AS c ON LOWER(c.email) = LOWER(o.note) WHERE o.status = $1
+      scan c (ql_pt_customers) full_table_scan idx=None est=5000 pred=None
+      scan o (ql_pt_orders) index_lookup idx=ql_pt_orders_status est=10067 pred=((status)::text = $1)
+      scan o (ql_pt_orders) index_lookup idx=ql_pt_orders_status est=10067 pred=None
+  [generic] SELECT id FROM ql_pt_customers WHERE name || $1 = $2
+      scan ql_pt_customers (ql_pt_customers) full_table_scan idx=None est=25 pred=(((name)::text || $1) = $2)
+=== mysql lote 1 (msg_id 237): casos 01, 02, 03, 04, 05, 06, 07, 08
+  [sample] SELECT id FROM ql_pt_orders WHERE note IS $1
+      scan ql_pt_orders (None) full_table_scan idx=None est=99562.8 pred=(ql_pt_orders.note IS NULL)
+  [sample] SELECT id FROM ql_pt_orders WHERE STATUS = $1 OR total > $2
+      scan ql_pt_orders (None) full_table_scan idx=None est=663685.62 pred=((ql_pt_orders.status = '$1') OR (ql_pt_orders.total > $2))
+  [sample] SELECT id FROM ql_pt_orders WHERE total BETWEEN $1 AND $2
+      scan ql_pt_orders (None) full_table_scan idx=None est=110614.27 pred=(ql_pt_orders.total BETWEEN $1 AND $2)
+  [sample] SELECT id FROM ql_pt_orders WHERE total = $1
+      scan ql_pt_orders (None) full_table_scan idx=None est=99562.8 pred=(ql_pt_orders.total = $1)
+  [sample] SELECT id FROM ql_pt_orders WHERE STATUS IN ($1)
+      scan ql_pt_orders (None) index_lookup idx=ql_pt_orders_status est=515812.0 pred=(ql_pt_orders.status IN ('$1', '$2'))
+  [sample] SELECT id FROM ql_pt_orders WHERE STATUS <> $1
+      scan ql_pt_orders (None) index_lookup idx=ql_pt_orders_status est=497815.0 pred=(ql_pt_orders.status <> '$1')
+  [sample] SELECT id FROM ql_pt_orders WHERE STATUS = $1
+      scan ql_pt_orders (None) index_lookup idx=ql_pt_orders_status est=17998.0 pred=None
+  [sample] SELECT id FROM ql_pt_orders WHERE created_at >= $1 AND created_at < $2
+      scan ql_pt_orders (None) index_lookup idx=ql_pt_orders_created est=1440.0 pred=((ql_pt_orders.created_at >= CAST('$1' AS TIMESTAMPTZ)) AND (ql_pt_orders.created_at < CAST('$2' AS TIMESTAMPTZ)))
+=== mysql lote 2 (msg_id 238): casos 09, 10, 11, 12, 13, 14, 15, 16
+  [sample] SELECT id FROM ql_pt_orders WHERE note LIKE $1
+      scan ql_pt_orders (None) full_table_scan idx=None est=110614.27 pred=(ql_pt_orders.note LIKE '$1')
+  [sample] SELECT id FROM ql_pt_orders WHERE CODE = $1
+      scan ql_pt_orders (None) full_table_scan idx=None est=99562.8 pred=(ql_pt_orders.code = $1)
+  [sample] SELECT id FROM ql_pt_orders WHERE total + $1 = $2
+      scan ql_pt_orders (None) full_table_scan idx=None est=995628.0 pred=((ql_pt_orders.total + $1) = $2)
+  [sample] SELECT id FROM ql_pt_orders WHERE CAST(CODE AS BIGINT) = $1
+      scan ql_pt_orders (None) full_table_scan idx=None est=995628.0 pred=(CAST(ql_pt_orders.code AS BIGINT) = $1)
+  [sample] SELECT id FROM ql_pt_orders WHERE CAST(created_at AS DATE) = $1
+      scan ql_pt_orders (None) full_index_scan idx=ql_pt_orders_created est=995628.0 pred=(CAST(ql_pt_orders.created_at AS DATE) = '$1')
+  [sample] SELECT id FROM ql_pt_customers WHERE LOWER(email) = $1
+      scan ql_pt_customers (None) full_index_scan idx=ql_pt_customers_email est=5000.0 pred=(LOWER(ql_pt_customers.email) = '$1')
+  [sample] SELECT id FROM ql_pt_orders WHERE customer_id = $1
+      scan ql_pt_orders (None) index_lookup idx=ql_pt_fk est=200.0 pred=None
+=== mysql lote 3 (msg_id 239): casos 17, 18, 19, 20, 21, 22, 23, 24
+  [sample] SELECT id FROM ql_pt_orders WHERE created_at >= $1 AND total > $2
+      scan ql_pt_orders (None) full_table_scan idx=None est=165871.62 pred=((ql_pt_orders.created_at >= CAST('$1' AS TIMESTAMPTZ)) AND (ql_pt_orders.total > $2))
+  [sample] SELECT o.id FROM ql_pt_orders AS o JOIN ql_pt_customers AS c ON c.id = o.customer_id WHERE c.region = $1 AND o.status = $2
+      scan o (None) index_lookup idx=ql_pt_orders_status est=17998.0 pred=(NOT o.customer_id IS NULL)
+      scan c (None) index_lookup idx=PRIMARY est=0.1 pred=(c.region = $1)
+  [sample] SELECT o.id FROM ql_pt_orders AS o WHERE EXISTS(SELECT $1 FROM ql_pt_customers AS c WHERE c.id = o.customer_id AND LOWER(c.email) LIKE $2)
+      scan c (None) full_index_scan idx=ql_pt_customers_email est=5000.0 pred=(LOWER(c.email) LIKE '$1')
+      scan o (None) index_lookup idx=ql_pt_fk est=193.0 pred=None
+  [sample] SELECT id FROM ql_pt_orders WHERE STATUS = $1 AND LOWER(note) = $2
+      scan ql_pt_orders (None) index_lookup idx=ql_pt_orders_status est=17998.0 pred=(LOWER(ql_pt_orders.note) = '$1')
+  [sample] SELECT id FROM ql_pt_orders WHERE customer_id IN (SELECT id FROM ql_pt_customers WHERE region = $1)
+      scan ql_pt_customers (None) full_table_scan idx=None est=500.0 pred=(ql_pt_customers.region = $1)
+      scan ql_pt_orders (None) index_lookup idx=ql_pt_fk est=193.0 pred=None
+  [sample] WITH r AS (SELECT id FROM ql_pt_customers WHERE region = $1) SELECT o.id FROM ql_pt_orders AS o JOIN r ON r.id = o.customer_id
+      scan ql_pt_customers (None) full_table_scan idx=None est=500.0 pred=(ql_pt_customers.region = $1)
+      scan o (None) index_lookup idx=ql_pt_fk est=193.0 pred=None
+  [sample] SELECT o.id FROM ql_pt_orders AS o WHERE o.customer_id = (SELECT MIN(c.id) FROM ql_pt_customers AS c WHERE LOWER(c.name) = $1)
+      scan o (None) index_lookup idx=ql_pt_fk est=200.0 pred=(o.customer_id = (SubPlan 1))
+      scan c (None) full_table_scan idx=None est=5000.0 pred=(LOWER(c.name) = '$1')
+  [sample] SELECT t.id FROM (SELECT id, total FROM ql_pt_orders WHERE total > $1) AS t WHERE t.id < $2
+      scan ql_pt_orders (None) index_lookup idx=PRIMARY est=332.97 pred=((ql_pt_orders.id < $1) AND (ql_pt_orders.total > $2))
+=== mysql lote 4 (msg_id 240): casos 25, 26, 27, 28, 29, 30, 31, 32
+  [sample] SELECT STATUS, COUNT(*) FROM ql_pt_orders WHERE total > $1 GROUP BY STATUS HAVING COUNT(*) > $2
+      scan ql_pt_orders (None) full_index_scan idx=ql_pt_orders_status est=331842.81 pred=(ql_pt_orders.total > $1)
+  [sample] SELECT id FROM ql_pt_orders WHERE COALESCE(note, $1) = $2
+      scan ql_pt_orders (None) full_table_scan idx=None est=995628.0 pred=(COALESCE(ql_pt_orders.note, '$1') = '$2')
+  [sample] SELECT id FROM ql_pt_orders WHERE NOT (STATUS = $1)
+      scan ql_pt_orders (None) index_lookup idx=ql_pt_orders_status est=497815.0 pred=(ql_pt_orders.status <> '$1')
+  [sample] SELECT id FROM ql_pt_orders WHERE CASE WHEN STATUS = $1 THEN $2 ELSE $3 END = $4
+      scan ql_pt_orders (None) full_index_scan idx=ql_pt_orders_status est=995628.0 pred=((CASE WHEN (ql_pt_orders.status = '$1') THEN $2 ELSE $3 END) = $4)
+  [sample] SELECT id FROM ql_pt_orders WHERE total > -$1
+      scan ql_pt_orders (None) full_table_scan idx=None est=331842.81 pred=(ql_pt_orders.total > -$1)
+  [sample] SELECT id FROM ql_pt_orders WHERE total > id
+      scan ql_pt_orders (None) full_table_scan idx=None est=331842.81 pred=(ql_pt_orders.total > ql_pt_orders.id)
+  [sample] SELECT id FROM ql_pt_orders WHERE total > $1 ORDER BY created_at DESC NULLS LAST LIMIT $2
+      scan ql_pt_orders (None) full_index_scan idx=ql_pt_orders_created est=3.33 pred=(ql_pt_orders.total > $1)
+  [sample] SELECT id FROM ql_pt_orders WHERE id IN ($1)
+      scan ql_pt_orders (None) index_lookup idx=PRIMARY est=1.0 pred=None
+=== mysql lote 5 (msg_id 241): casos 33, 34, 35, 36, 37, 38, 39, 40
+  [sample] SELECT id FROM ql_pt_orders WHERE STATUS = $1 UNION SELECT id FROM ql_pt_orders WHERE total > $2
+      scan ql_pt_orders (None) index_lookup idx=ql_pt_orders_status est=17998.0 pred=None
+      scan ql_pt_orders (None) full_table_scan idx=None est=331842.81 pred=(ql_pt_orders.total > $1)
+  [sample] SELECT c.id FROM ql_pt_customers AS c LEFT JOIN ql_pt_orders AS o ON o.customer_id = c.id WHERE o.id IS $1
+      scan c (None) full_index_scan idx=ql_pt_customers_email est=5000.0 pred=None
+      scan o (None) index_lookup idx=ql_pt_fk est=19.3 pred=<if>(found_match(o), (o.id is null), true)
+  [sample] SELECT id FROM ql_pt_orders WHERE created_at > NOW() - INTERVAL '? SQL_TSI_DAY'
+      scan ql_pt_orders (None) index_lookup idx=ql_pt_orders_created est=497814.0 pred=(ql_pt_orders.created_at > ((NOW() - INTERVAL '$1 DAY')))
+  [sample] SELECT a.id FROM ql_pt_orders AS a JOIN ql_pt_orders AS b ON b.id = a.id + $1 WHERE a.status = $2
+      scan a (None) index_lookup idx=ql_pt_orders_status est=17998.0 pred=None
+      scan b (None) index_lookup idx=PRIMARY est=1.0 pred=(b.id = (a.id + $1))
+  [sample] SELECT id FROM ql_pt_customers WHERE NAME = $1
+      scan ql_pt_customers (None) full_table_scan idx=None est=500.0 pred=(ql_pt_customers.name = '$1')
+  [sample] SELECT id FROM ql_pt_customers WHERE NAME || $1 = $2
+      scan ql_pt_customers (None) full_table_scan idx=None est=5000.0 pred=(ql_pt_customers.name || '$1' = '$2')

@@ -1,0 +1,284 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+import { registerDatabase, testConnection } from "@/lib/api";
+import { saveAccessToken } from "@/lib/session";
+import {
+  DEFAULT_FORM_VALUES,
+  DEFAULT_PORTS,
+  type ConnectionFormValues,
+  type DatabaseEngine,
+} from "@/types/database";
+import { IconCheck } from "./icons";
+import SignalTrace, { type TraceState } from "./SignalTrace";
+
+type RegisterFeedback =
+  | { type: "idle" }
+  | { type: "success"; identifier: string; alreadyRegistered: boolean }
+  | { type: "error"; message: string };
+
+// Cuánto se muestra el mensaje de registro exitoso antes de ir a diagnósticos.
+const REDIRECT_DELAY_MS = 1500;
+
+function buildDsnPreview(values: ConnectionFormValues): string {
+  const scheme = values.engine === "mysql" ? "mysql" : "postgresql";
+  const user = values.username || "usuario";
+  const host = values.host || "host";
+  const port = values.port || DEFAULT_PORTS[values.engine];
+  // En MySQL no hay base de datos que indicar: la conexión es al servidor.
+  if (values.engine === "mysql") return `${scheme}://${user}@${host}:${port}`;
+  const db = values.databaseName || "basededatos";
+  return `${scheme}://${user}@${host}:${port}/${db}`;
+}
+
+export default function DatabaseForm() {
+  const [values, setValues] = useState<ConnectionFormValues>(DEFAULT_FORM_VALUES);
+  const [registering, setRegistering] = useState(false);
+  const [traceState, setTraceState] = useState<TraceState>({ status: "idle" });
+  const router = useRouter();
+  const [registerFeedback, setRegisterFeedback] = useState<RegisterFeedback>({ type: "idle" });
+
+  const testing = traceState.status === "testing";
+  const dsnPreview = useMemo(() => buildDsnPreview(values), [values]);
+
+  function update<K extends keyof ConnectionFormValues>(key: K, value: ConnectionFormValues[K]) {
+    setValues((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function handleEngineChange(engine: DatabaseEngine) {
+    setValues((prev) => {
+      const wasDefaultPort = prev.port === DEFAULT_PORTS[prev.engine];
+      return { ...prev, engine, port: wasDefaultPort ? DEFAULT_PORTS[engine] : prev.port };
+    });
+  }
+
+  async function handleTestConnection() {
+    setTraceState({ status: "testing" });
+    try {
+      const result = await testConnection(values);
+      setTraceState(
+        result.success
+          ? { status: "success", latencyMs: result.latency_ms ?? null, message: result.message }
+          : { status: "error", message: result.message }
+      );
+    } catch (error) {
+      setTraceState({
+        status: "error",
+        message: error instanceof Error ? error.message : "No fue posible probar la conexión",
+      });
+    }
+  }
+
+  async function handleRegister(event: React.FormEvent) {
+    event.preventDefault();
+    setRegistering(true);
+    setRegisterFeedback({ type: "idle" });
+    try {
+      const result = await registerDatabase(values);
+      saveAccessToken(result.data.access_token);
+      setRegisterFeedback({
+        type: "success",
+        identifier: result.data.database_identifier,
+        alreadyRegistered: result.alreadyRegistered,
+      });
+      // Se deja ver el mensaje de éxito un momento y luego se pasa a la
+      // página de diagnósticos con la sesión iniciada.
+      setTimeout(() => router.push("/diagnostics"), REDIRECT_DELAY_MS);
+    } catch (error) {
+      setRegisterFeedback({
+        type: "error",
+        message: error instanceof Error ? error.message : "No fue posible registrar la base de datos",
+      });
+    } finally {
+      setRegistering(false);
+    }
+  }
+
+  // Rejilla de 3 columnas con hueco de 24px: el formulario ocupa 2 (872px) y la vista previa 1 (424px).
+  return (
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <form onSubmit={handleRegister} className="card min-w-0 p-6 lg:col-span-2">
+        <h2 className="card-title">Conexión</h2>
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Nombre de la conexión">
+            <input
+              required
+              type="text"
+              value={values.connectionName}
+              onChange={(e) => update("connectionName", e.target.value)}
+              placeholder="Producción - Ventas"
+              className="input"
+            />
+          </Field>
+
+          <Field label="Motor">
+            <select
+              value={values.engine}
+              onChange={(e) => handleEngineChange(e.target.value as DatabaseEngine)}
+              className="input"
+            >
+              <option value="postgresql">PostgreSQL</option>
+              <option value="mysql">MySQL</option>
+            </select>
+          </Field>
+        </div>
+
+        <h2 className="card-title mt-8 border-t border-rule pt-6">Servidor y credenciales</h2>
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Host">
+            <input
+              required
+              type="text"
+              value={values.host}
+              onChange={(e) => update("host", e.target.value)}
+              className="input-mono"
+            />
+            {(values.host === "localhost" || values.host === "127.0.0.1") && (
+              <p className="mt-2 text-[13px] leading-5 text-muted">
+                Si la base de datos corre en este mismo servidor (fuera de un
+                contenedor), usa <code className="font-mono text-fg">host.docker.internal</code>{" "}
+                en vez de <code className="font-mono text-fg">{values.host}</code>.
+              </p>
+            )}
+          </Field>
+
+          <Field label="Puerto">
+            <input
+              required
+              type="number"
+              value={values.port}
+              onChange={(e) => update("port", Number(e.target.value))}
+              className="input-mono"
+            />
+          </Field>
+
+          <Field label="Usuario">
+            <input
+              required
+              type="text"
+              value={values.username}
+              onChange={(e) => update("username", e.target.value)}
+              className="input-mono"
+            />
+          </Field>
+
+          <Field label="Contraseña">
+            <input
+              required
+              type="password"
+              value={values.password}
+              onChange={(e) => update("password", e.target.value)}
+              className="input-mono"
+            />
+          </Field>
+
+          {values.engine === "postgresql" ? (
+            <Field label="Nombre de la base de datos" className="sm:col-span-2">
+              <input
+                required
+                type="text"
+                value={values.databaseName}
+                onChange={(e) => update("databaseName", e.target.value)}
+                className="input-mono"
+              />
+            </Field>
+          ) : (
+            <p className="rise rounded bg-ground px-3 py-2.5 text-[13px] leading-5 text-muted sm:col-span-2">
+              En MySQL no hace falta indicar una base de datos: QueryLens se conecta al servidor y lee sus estadísticas.
+            </p>
+          )}
+        </div>
+
+        {registerFeedback.type === "success" && (
+          <div className="notice-pos pop mt-6 flex items-start gap-2.5" role="status">
+            <IconCheck size={16} className="mt-0.5 flex-none" />
+            <div>
+              <p>
+                {registerFeedback.alreadyRegistered
+                  ? "Esta conexión ya estaba registrada y se actualizó. Su monitoreo sigue como estaba. Redirigiendo a diagnósticos…"
+                  : "Base de datos registrada con éxito. Redirigiendo a diagnósticos para que inicies el monitoreo…"}
+              </p>
+              <p className="mt-1 font-mono text-[13px]">Identificador: {registerFeedback.identifier}</p>
+            </div>
+          </div>
+        )}
+        {registerFeedback.type === "error" && (
+          <div className="notice-neg pop mt-6" role="alert">
+            {registerFeedback.message}
+          </div>
+        )}
+
+        <div className="mt-6 flex flex-col gap-3 border-t border-rule pt-6 sm:flex-row sm:justify-end">
+          <button type="button" onClick={handleTestConnection} disabled={testing} className="btn-outline">
+            {testing ? "Probando…" : "Probar conexión"}
+          </button>
+          <button
+            type="submit"
+            disabled={registering || registerFeedback.type === "success"}
+            className="btn-primary"
+          >
+            {registering ? "Registrando…" : "Registrar base de datos"}
+          </button>
+        </div>
+      </form>
+
+      <aside className="card flex flex-col justify-between gap-6 p-6">
+        <section aria-labelledby="dsn-title">
+          <div className="flex items-center justify-between gap-3">
+            <h2 id="dsn-title" className="card-title">
+              Vista previa
+            </h2>
+            <span className="pill-neu">{values.engine}</span>
+          </div>
+          <p className="mt-4 truncate text-[13px] text-muted">{values.connectionName || "Sin nombre todavía"}</p>
+          <p className="mt-1 break-words rounded bg-ground px-3 py-2.5 font-mono text-[12.5px] leading-5">
+            {/* Puntos de corte tras @ : y / para que una base larga no se parta a mitad de palabra. */}
+            {dsnPreview.split(/(?<=[@:/])/).map((part, i) => (
+              <span key={i}>
+                {part}
+                <wbr />
+              </span>
+            ))}
+          </p>
+        </section>
+
+        <div className="border-t border-rule pt-6">
+          <SignalTrace state={traceState} bare />
+        </div>
+
+        <section className="border-t border-rule pt-6" aria-labelledby="next-title">
+          <h2 id="next-title" className="card-title">
+            Después de registrar
+          </h2>
+          <ul className="mt-4 space-y-2.5 text-[13px] leading-5 text-muted">
+            <li>QueryLens abre tu sesión con esta base de datos.</li>
+            <li>Te lleva a Diagnósticos, que se actualiza cada 30 segundos.</li>
+            <li>
+              Si la base es nueva, el monitoreo queda en pausa hasta que lo inicies desde Diagnósticos. Si ya estaba
+              registrada, sigue como estaba.
+            </li>
+            <li>Una vez iniciado, puedes pausarlo cuando quieras.</li>
+          </ul>
+        </section>
+      </aside>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  children,
+  className = "",
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <label className={`block ${className}`}>
+      <span className="field-label">{label}</span>
+      {children}
+    </label>
+  );
+}

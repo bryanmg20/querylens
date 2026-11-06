@@ -1,0 +1,216 @@
+INDEXES_QUERY = """
+SELECT
+    schemaname AS schema_name,
+    relname AS table_name,
+    indexrelname AS index_name,
+    idx_scan AS index_scans,
+    last_idx_scan AS last_index_scan,
+    pg_get_indexdef(indexrelid) AS index_ref,
+    pg_relation_size(indexrelid) AS index_size_bytes
+FROM pg_stat_user_indexes;
+"""
+
+
+TABLES_QUERY = """
+SELECT
+    schemaname AS schema_name,
+    relname AS table_name,
+    seq_scan AS seq_scans,
+    idx_scan AS idx_scans,
+    n_live_tup AS live_rows
+FROM pg_stat_user_tables;
+"""
+
+
+STATEMENTS_QUERY = """
+SELECT
+    userid AS userid,
+    queryid AS query_id,
+    query AS query_text,
+    calls AS execution_count,
+    rows AS rows_returned,
+    ROUND(rows::numeric / NULLIF(calls, 0), 6) AS avg_rows_per_call,
+    total_exec_time AS total_time_ms,
+    mean_exec_time AS mean_time_ms,
+    stddev_exec_time AS stddev_time_ms,
+    min_exec_time AS min_time_ms,
+    max_exec_time AS max_time_ms,
+    stddev_exec_time / NULLIF(mean_exec_time, 0) AS coeff_of_variation,
+    temp_blks_written AS disk_spill_indicator,
+    -- temp_blks_written ya cuenta los ordenamientos que van a disco; la
+    -- columna existe para que las dos filas tengan la misma forma.
+    NULL::bigint AS sort_merge_passes,
+    stats_since AS counters_epoch,
+    d.datname AS database_name
+FROM pg_stat_statements s
+LEFT JOIN pg_database d ON d.oid = s.dbid
+WHERE userid != (SELECT oid FROM pg_roles WHERE rolname = session_user)
+  -- Comandos de roles: pg_stat_statements no normaliza su PASSWORD '...'
+  -- (verificado: CREATE ROLE x PASSWORD 'secret' queda literal) y la cola no
+  -- puede llevar credenciales. No son candidatos a EXPLAIN ni pesan en el
+  -- impacto. USER cubre tambien USER MAPPING ... OPTIONS (password '...').
+  -- No se filtra por la palabra password: borraria SELECT ... WHERE password = $1.
+  AND s.query !~* '^\\s*(CREATE|ALTER)\\s+(ROLE|USER|GROUP)\\M'
+  -- pg_stat_statements es de todo el servidor, pero el esquema (indices,
+  -- tablas, columnas) solo es el de la base conectada: una consulta de otra
+  -- base se cruzaria con el public.<tabla> de esta.
+  AND s.dbid = (SELECT oid FROM pg_database WHERE datname = current_database())
+ORDER BY total_exec_time DESC;
+"""
+
+
+LOCKS_QUERY = """
+SELECT
+    l.pid AS process_id,
+    d.datname AS database_name,
+    c.relname AS table_name,
+    l.mode AS lock_mode,
+    l.granted AS is_granted
+FROM pg_locks l
+LEFT JOIN pg_class c ON c.oid = l.relation
+LEFT JOIN pg_database d ON d.oid = l.database
+JOIN pg_stat_activity a ON a.pid = l.pid
+-- IS DISTINCT FROM y no !=: los procesos de fondo (autovacuum) tienen usesysid
+-- NULL y con != se descartaban; su pid llega en blocking_pids de quien bloquean.
+WHERE a.usesysid IS DISTINCT FROM (SELECT oid FROM pg_roles WHERE rolname = session_user)
+  -- Por la base de la sesion y no por l.database: la espera de una fila es un
+  -- lock transactionid, con l.database NULL.
+  AND a.datname = current_database();
+"""
+
+
+ACTIVE_QUERIES_QUERY = """
+SELECT
+    pid                   AS process_id,
+    query                 AS query_text,
+    query_id              AS query_id,
+    datname               AS database_name,
+    xact_start AS transaction_start_time,
+    state                 AS session_state,
+    -- waitstart (PG 14+) puede llegar NULL unos instantes despues de empezar la
+    -- espera aunque granted ya sea false; min() por si espera mas de un lock.
+    (
+        SELECT min(l.waitstart)
+        FROM pg_locks l
+        WHERE l.pid = pg_stat_activity.pid AND NOT l.granted
+    )                     AS wait_start_time,
+    pg_blocking_pids(pid) AS blocking_pids  
+FROM pg_stat_activity
+WHERE usesysid != (SELECT oid FROM pg_roles WHERE rolname = session_user)
+  AND datname = current_database();
+"""
+
+
+# Reloj del servidor, no del pipeline: transaction_start_time y wait_start_time
+# vienen de este mismo reloj y la antiguedad se calcula restandolos. now() no
+# sirve: es el inicio de la transaccion de lectura del propio colector.
+CAPTURE_TIMESTAMP_QUERY = """
+SELECT clock_timestamp() AS captured_at
+"""
+
+
+SERVER_START_QUERY = """
+SELECT
+    pg_postmaster_start_time()                         AS server_start_time,
+    (SELECT stats_reset
+       FROM pg_stat_database
+      WHERE datname = current_database())              AS stats_reset_time
+"""
+
+COLUMNS_QUERY = """
+SELECT
+    table_schema AS schema_name,
+    table_name   AS table_name,
+    column_name  AS column_name,
+    data_type    AS data_type
+FROM information_schema.columns
+WHERE table_schema NOT IN ('pg_catalog', 'information_schema');
+"""
+
+FOREIGN_KEYS_QUERY = """
+-- Una fila por columna de cada FK (las compuestas dan varias, ordenadas por
+-- position). pg_constraint y no information_schema: las vistas de constraints
+-- solo muestran tablas del rol dueno, y querylens_monitor (solo SELECT) recibe
+-- 0 filas. conparentid = 0 deja la FK logica: una FK sobre o hacia una tabla
+-- particionada clona una fila por particion, que duplicaria la relacion.
+-- pg_constraint es por base: solo trae las FK de la base conectada.
+SELECT
+    n.nspname   AS schema_name,
+    c.relname   AS table_name,
+    a.attname   AS column_name,
+    rn.nspname  AS referenced_schema_name,
+    rc.relname  AS referenced_table_name,
+    ra.attname  AS referenced_column_name,
+    con.conname AS constraint_name,
+    k.position  AS position
+FROM pg_constraint con
+JOIN pg_class c ON c.oid = con.conrelid
+JOIN pg_namespace n ON n.oid = c.relnamespace
+JOIN pg_class rc ON rc.oid = con.confrelid
+JOIN pg_namespace rn ON rn.oid = rc.relnamespace
+CROSS JOIN LATERAL unnest(con.conkey, con.confkey) WITH ORDINALITY AS k(attnum, ref_attnum, position)
+JOIN pg_attribute a ON a.attrelid = con.conrelid AND a.attnum = k.attnum
+JOIN pg_attribute ra ON ra.attrelid = con.confrelid AND ra.attnum = k.ref_attnum
+WHERE con.contype = 'f'
+  AND con.conparentid = 0
+  AND n.nspname NOT IN ('pg_catalog', 'information_schema');
+"""
+
+SCHEMA_RESOLVER_QUERY = """
+WITH role_search_paths AS (
+    SELECT
+        r.oid AS user_id,
+        r.rolname,
+        sp.schema_entry,
+        row_number() OVER (PARTITION BY r.oid ORDER BY sp.ordinality) AS priority
+    FROM pg_roles r
+    CROSS JOIN LATERAL unnest(
+        string_to_array(
+            COALESCE(
+                (SELECT regexp_replace(val, 'search_path=', '')
+                 FROM unnest(r.rolconfig) AS cfg(val)
+                 WHERE cfg.val LIKE 'search_path=%'),
+                '"$user", public'
+            ),
+            ','
+        )
+    ) WITH ORDINALITY AS sp(schema_entry)
+),
+normalized_paths AS (
+    SELECT
+        user_id,
+        rolname,
+        trim(replace(schema_entry, '"$user"', rolname)) AS schema_name,
+        priority
+    FROM role_search_paths
+),
+all_relations AS (
+    SELECT
+        n.nspname AS schema_name,
+        c.relname AS table_name
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relkind IN ('r', 'v', 'm', 'p')
+      AND n.nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+)
+SELECT DISTINCT ON (usp.user_id)
+    usp.user_id,
+    usp.rolname      AS username,
+    usp.schema_name  AS resolved_schema
+FROM normalized_paths usp
+JOIN all_relations t ON t.schema_name = usp.schema_name
+ORDER BY usp.user_id, usp.priority;
+"""
+
+# Versiones anteriores a 17 (PIPELINE_FLOW, "Versiones soportadas"): las mismas
+# consultas con NULL en lo que la version no tiene. stats_since es de PG 17
+# (sin el, una query nueva se mide desde su segundo snapshot) y last_idx_scan
+# de PG 16 (sin el, un indice sin uso se reconoce solo por idx_scan = 0, como
+# en MySQL).
+STATEMENTS_QUERY_PG16 = STATEMENTS_QUERY.replace(
+    "stats_since AS counters_epoch", "NULL::timestamptz AS counters_epoch"
+)
+INDEXES_QUERY_PG15 = INDEXES_QUERY.replace(
+    "last_idx_scan AS last_index_scan", "NULL::timestamptz AS last_index_scan"
+)
+assert STATEMENTS_QUERY_PG16 != STATEMENTS_QUERY and INDEXES_QUERY_PG15 != INDEXES_QUERY

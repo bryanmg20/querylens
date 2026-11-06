@@ -1,0 +1,124 @@
+import logging
+import re
+
+from sqlglot import exp
+
+from querylens_contract.snapshot import MAX_STATEMENT_TEXT_CHARS
+from models.stats import Stats
+
+# Nodos de sqlglot que cargan un dato real de la query. HexString/BitString/
+# ByteString no son exp.Literal: sin ellos 0xDEADBEEF, X'..', b'..' y E'..'
+# viajaban crudos a la cola (UUIDs/hashes en columnas BINARY). Fuente unica
+# para canonicalize_query y para los predicados de plan de MySQL.
+DATA_LITERAL_NODES = (exp.Literal, exp.HexString, exp.BitString, exp.ByteString)
+
+# pg_stat_statements respeta el espaciado original: IN (1,2,3) llega como
+# IN ($1,$2,$3). El tokenizer postgres de sqlglot lee `$` como apertura de un
+# dollar-quote y falla con un $N pegado a lo que sigue ($1,$2 / $1+$2), asi que
+# la query quedaba en "Not available". Un tag de dollar-quote no empieza con
+# digito, por lo que $N fuera de un identificador (col$1) siempre es parametro.
+PG_PARAM_GLUED = re.compile(r"(?<![\w$])(\$\d+)(?=[^\s\d])")
+
+
+def separate_pg_params(query_text):
+    return PG_PARAM_GLUED.sub(r"\1 ", query_text)
+
+
+def canonicalize_query(query_text, source_dialect="postgres"):
+    import sqlglot
+
+    if not query_text:
+        return None
+
+    if source_dialect == "postgres":
+        query_text = separate_pg_params(query_text)
+
+    try:
+        ast = sqlglot.parse_one(query_text, read=source_dialect)
+        for node in list(ast.find_all(*DATA_LITERAL_NODES, exp.Boolean, exp.Null, exp.Parameter)):
+            node.replace(exp.Placeholder())
+        canonic = ast.sql(dialect="postgres", identify=False, comments=False)
+
+        param_index = 1
+
+        def replace_placeholder(match):
+            nonlocal param_index
+            current_param = f"${param_index}"
+            param_index += 1
+            return current_param
+
+        return re.sub(r"%s", replace_placeholder, canonic).replace('"', "")
+    except Exception:
+        return "Not available"
+
+
+# DIGEST_TEXT resume las listas: `IN (...)` y `VALUES (...) /* , ... */`.
+# sqlglot no lee `(...)` y la query quedaba en "Not available", sin canonic_query
+# ni alias para el consumidor. Se reemplazan por un solo `?`, el placeholder que
+# el digest ya usa para el resto de los valores.
+_DIGEST_VALUES_LIST = re.compile(r"\bVALUES\s*\(\s*\.\.\.\s*\)(?:\s*/\*\s*,\s*\.\.\.\s*\*/)?", re.IGNORECASE)
+_DIGEST_IN_LIST = re.compile(r"\bIN\s*\(\s*\.\.\.\s*\)", re.IGNORECASE)
+
+
+def clean_mysql_sintax(query):
+    query = _DIGEST_VALUES_LIST.sub("VALUES (?)", query)
+    query = _DIGEST_IN_LIST.sub("IN (?)", query)
+    return query.replace("DISTINCTROW", "DISTINCT")
+
+
+# El parseo de sqlglot crece con el largo del texto y pg_stat_statements guarda
+# el texto completo: un INSERT masivo de 58 KB costaba ~600 ms y duplicaba su
+# peso en el payload. Sobre este largo un statement queda en "Not available";
+# los candidatos no tienen tope (son pocos y su canonic_query alimenta el
+# analisis). MySQL no llega: DIGEST_TEXT se corta en max_digest_length (1024).
+# Es el mismo tope con el que SnapshotPayload recorta query_text de statements.
+MAX_STATEMENT_CANONIC_CHARS = MAX_STATEMENT_TEXT_CHARS
+
+# sqlglot avisa con WARNING cada sentencia de utilidad que parsea como Command
+# (GRANT, ALTER EXTENSION, SHOW...). Con statements completos son varias por
+# ciclo, sin handler propio caen a stderr y no indican ningun fallo.
+logging.getLogger("sqlglot").setLevel(logging.ERROR)
+
+
+def create_canonic_queries(stats: Stats, source_dialect="postgres", clean_mysql=False):
+    # Los candidatos son copias de statements y en MySQL el mismo DIGEST_TEXT se
+    # repite entre schemas: el cache por texto parsea cada forma una sola vez.
+    # Van primero para que el tope de largo de statements no les aplique.
+    cache = {}
+
+    def canonic(query_text):
+        if query_text not in cache:
+            text = clean_mysql_sintax(query_text) if clean_mysql and query_text else query_text
+            cache[query_text] = canonicalize_query(text, source_dialect)
+        return cache[query_text]
+
+    for stmt in stats.get("top_impact_queries") or []:
+        stmt["canonic_query"] = canonic(stmt.get("query_text"))
+
+    for stmt in stats.get("statements") or []:
+        query_text = stmt.get("query_text")
+        if query_text not in cache and len(query_text or "") > MAX_STATEMENT_CANONIC_CHARS:
+            stmt["canonic_query"] = "Not available"
+            continue
+        stmt["canonic_query"] = canonic(query_text)
+
+
+def normalize_querytext_active(stats: Stats, source_dialect="postgres"):
+    for stmt in stats.get("active_queries") or []:
+        query_text = stmt.get("query_text")
+        del stmt["query_text"]
+        if not query_text:
+            stmt["canonic_query"] = "Not available"
+            continue
+
+        stmt["canonic_query"] = canonicalize_query(query_text, source_dialect) or "Not available"
+
+
+def redact_active_queries(stats: Stats):
+    """Reja de privacidad del camino degradado (Q4): sin `statements` no hay
+    normalizacion disponible, pero el texto real de las queries activas nunca
+    puede viajar. Se descarta `query_text` y `canonic_query` queda en
+    "Not available" para que sea inconfundible que no hubo contexto."""
+    for stmt in stats.get("active_queries") or []:
+        stmt.pop("query_text", None)
+        stmt["canonic_query"] = "Not available"

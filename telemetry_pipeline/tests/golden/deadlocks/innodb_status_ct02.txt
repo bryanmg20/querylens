@@ -1,0 +1,63 @@
+
+=====================================
+2026-10-22 01:00:02 140619378787904 INNODB MONITOR OUTPUT
+=====================================
+[...]
+------------------------
+LATEST DETECTED DEADLOCK
+------------------------
+2026-10-22 01:00:00 140619105269312
+*** (1) TRANSACTION:
+TRANSACTION 63993, ACTIVE 3 sec starting index read
+mysql tables in use 1, locked 1
+LOCK WAIT 4 lock struct(s), heap size 1128, 2 row lock(s)
+MySQL thread id 274, OS thread handle 140619042301504, query id 617760 localhost app_user updating
+UPDATE ql_ct01_cuentas SET saldo=saldo-1 WHERE id=1
+
+*** (1) HOLDS THE LOCK(S):
+RECORD LOCKS space id 12 page no 4 n bits 72 index PRIMARY of table `ql_demo`.`ql_ct01_cuentas` trx id 63993 lock mode S locks rec but not gap
+Record lock, heap no 2 PHYSICAL RECORD: n_fields 4; compact format; info bits 0
+ 0: len 4; hex 80000001; asc     ;;
+ 1: len 6; hex 00000000f9e2; asc       ;;
+ 2: len 7; hex 82000000cd0110; asc        ;;
+ 3: len 4; hex 80000064; asc    d;;
+
+
+*** (1) WAITING FOR THIS LOCK TO BE GRANTED:
+RECORD LOCKS space id 12 page no 4 n bits 72 index PRIMARY of table `ql_demo`.`ql_ct01_cuentas` trx id 63993 lock_mode X locks rec but not gap waiting
+Record lock, heap no 2 PHYSICAL RECORD: n_fields 4; compact format; info bits 0
+ 0: len 4; hex 80000001; asc     ;;
+ 1: len 6; hex 00000000f9e2; asc       ;;
+ 2: len 7; hex 82000000cd0110; asc        ;;
+ 3: len 4; hex 80000064; asc    d;;
+
+
+*** (2) TRANSACTION:
+TRANSACTION 63994, ACTIVE 2 sec starting index read
+mysql tables in use 1, locked 1
+LOCK WAIT 4 lock struct(s), heap size 1128, 2 row lock(s)
+MySQL thread id 275, OS thread handle 140619379844672, query id 617761 localhost app_user updating
+UPDATE ql_ct01_cuentas SET saldo=saldo-2 WHERE id=1
+
+*** (2) HOLDS THE LOCK(S):
+RECORD LOCKS space id 12 page no 4 n bits 72 index PRIMARY of table `ql_demo`.`ql_ct01_cuentas` trx id 63994 lock mode S locks rec but not gap
+Record lock, heap no 2 PHYSICAL RECORD: n_fields 4; compact format; info bits 0
+ 0: len 4; hex 80000001; asc     ;;
+ 1: len 6; hex 00000000f9e2; asc       ;;
+ 2: len 7; hex 82000000cd0110; asc        ;;
+ 3: len 4; hex 80000064; asc    d;;
+
+
+*** (2) WAITING FOR THIS LOCK TO BE GRANTED:
+RECORD LOCKS space id 12 page no 4 n bits 72 index PRIMARY of table `ql_demo`.`ql_ct01_cuentas` trx id 63994 lock_mode X locks rec but not gap waiting
+Record lock, heap no 2 PHYSICAL RECORD: n_fields 4; compact format; info bits 0
+ 0: len 4; hex 80000001; asc     ;;
+ 1: len 6; hex 00000000f9e2; asc       ;;
+ 2: len 7; hex 82000000cd0110; asc        ;;
+ 3: len 4; hex 80000064; asc    d;;
+
+*** WE ROLL BACK TRANSACTION (2)
+------------
+TRANSACTIONS
+------------
+[...]

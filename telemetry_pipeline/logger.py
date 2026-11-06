@@ -1,0 +1,88 @@
+import logging
+import os
+import sys
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
+
+LOGS_DIR = Path(__file__).resolve().parent / "logs"
+LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+MAX_BYTES = 5 * 1024 * 1024
+BACKUP_COUNT = 3
+
+_file_handler = None
+
+
+def _build_file_handler():
+    """Handler de archivo propio del pipeline.
+
+    Se construye una sola vez. Si el directorio no es escribible se degrada a
+    stderr en lugar de abortar el pipeline: perder el log no puede ser motivo
+    para no entregar el snapshot.
+    """
+    global _file_handler
+    if _file_handler is not None:
+        return _file_handler
+
+    try:
+        LOGS_DIR.mkdir(exist_ok=True)
+        handler = RotatingFileHandler(
+            LOGS_DIR / "pipeline.log",
+            maxBytes=MAX_BYTES,
+            backupCount=BACKUP_COUNT,
+            encoding="utf-8",
+        )
+    except OSError as exc:
+        handler = logging.StreamHandler(sys.stderr)
+        handler.set_name("pipeline-fallback")
+        print(
+            f"querylens | logger | no se pudo abrir {LOGS_DIR / 'pipeline.log'} ({exc}) "
+            "| los logs van a stderr",
+            file=sys.stderr,
+        )
+
+    handler.setFormatter(logging.Formatter(LOG_FORMAT))
+    _file_handler = handler
+    return handler
+
+
+def _level_from_env() -> int:
+    """Nivel por QL_LOG_LEVEL (DEBUG/INFO/WARNING/ERROR). Default INFO.
+
+    Mantiene el comportamiento historico (todo INFO salvo runner.py, que baja a
+    DEBUG por su cuenta) y habilita por proceso un nivel inferior: p. ej.
+    QL_LOG_LEVEL=DEBUG hace visible la linea DEBUG de tamano de payload de
+    main._log_payload_size, muerta desde que logger.py fija INFO a mansalva.
+    """
+    level = explicit_level_from_env()
+    return logging.INFO if level is None else level
+
+
+def explicit_level_from_env() -> int | None:
+    """El nivel de QL_LOG_LEVEL si nombra uno valido; None si falta, esta en
+    blanco o no se reconoce (entonces cada logger usa su default)."""
+    name = (os.getenv("QL_LOG_LEVEL") or "").strip().upper()
+    return logging.getLevelNamesMapping().get(name)
+
+
+def get_logger(name: str) -> logging.Logger:
+    """Devuelve un logger con salida propia del pipeline.
+
+    No se usa logging.basicConfig a proposito: es no-op cuando el root logger
+    ya tiene handlers (pytest, o cualquier host que importe el pipeline), y eso
+    dejaba al pipeline sin log sin avisar. El handler se engancha al logger del
+    modulo y se desactiva propagate para que el pipeline escriba una sola vez en
+    su archivo, sin duplicar en la configuracion del host.
+    """
+    logger = logging.getLogger(name)
+    logger.setLevel(_level_from_env())
+    logger.propagate = False
+
+    target = str(LOGS_DIR / "pipeline.log")
+    already_writing = any(
+        getattr(existing, "baseFilename", None) == target
+        for existing in logger.handlers
+    )
+    if not already_writing:
+        logger.addHandler(_build_file_handler())
+
+    return logger

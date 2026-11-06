@@ -1,0 +1,105 @@
+from collections.abc import Iterable
+from datetime import datetime, timedelta
+
+from querylens_contract import SnapshotPayload
+
+from models import Hallazgo, StatementHistory
+
+from .avoidable_full_scan import detect_avoidable_full_scans
+from .baseline_degradation import detect_baseline_degradation
+from .cardinality_misestimate import detect_cardinality_misestimates
+from .disk_spill import detect_disk_spill
+from .missing_index import DEFAULT_MAX_SELECTIVITY, DEFAULT_MIN_LIVE_ROWS, detect_missing_indexes
+from .n_plus_one import detect_n_plus_one
+from .non_sargable_predicate import detect_non_sargable_predicates
+from .unused_index import DEFAULT_MIN_STATS_WINDOW, detect_unused_indexes
+
+
+# Reglas que corren cuando no se pide una puntual. Cualquiera se puede correr
+# por nombre con `rule`.
+ACTIVE_RULES = (
+    "disk_spill",  # AP-07
+    "baseline_degradation",  # AP-01
+    "n_plus_one",  # AP-06
+    "avoidable_full_scan",  # AP-02
+    "non_sargable_predicate",  # AP-03
+    "missing_index",  # AP-04
+    # filas de la misma ejecucion (references/004); bateria en
+    # ql_sandbox/campana_cardinalidad_ap08
+    "cardinality_misestimate",  # AP-08
+    "unused_index",  # AP-05
+)
+
+
+# Ejecuta un detector puntual por nombre, o los de ACTIVE_RULES si no se especifica ninguno
+def detect_all(
+    snapshot: SnapshotPayload,
+    rule: str | None = None,
+    min_live_rows: int = DEFAULT_MIN_LIVE_ROWS,
+    max_selectivity: float = DEFAULT_MAX_SELECTIVITY,
+    min_stats_window: timedelta = DEFAULT_MIN_STATS_WINDOW,
+    history: dict[str, StatementHistory] | None = None,
+    captured_at: datetime | None = None,
+) -> list[Hallazgo]:
+    # mapea nombre de regla -> funcion detectora, para poder seleccionarla por nombre
+    detectors = {
+        "disk_spill": lambda current_snapshot: detect_disk_spill(current_snapshot, history, captured_at),
+        # umbrales propios (SELECT simples, selectividad real de la ventana)
+        "avoidable_full_scan": lambda current_snapshot: detect_avoidable_full_scans(
+            current_snapshot,
+            history,
+            captured_at,
+        ),
+        # misma base de escaneo completo que AP-02 (SELECT simples, selectividad
+        # real de la ventana)
+        "missing_index": lambda current_snapshot: detect_missing_indexes(
+            current_snapshot,
+            history,
+            captured_at,
+            min_live_rows,
+            max_selectivity,
+        ),
+        # misma base de escaneo completo que AP-02
+        "non_sargable_predicate": lambda current_snapshot: detect_non_sargable_predicates(
+            current_snapshot,
+            history,
+            captured_at,
+            min_live_rows,
+            max_selectivity,
+        ),
+        "unused_index": lambda current_snapshot: detect_unused_indexes(
+            current_snapshot,
+            min_stats_window,
+            history,
+            captured_at,
+        ),
+        "baseline_degradation": lambda current_snapshot: detect_baseline_degradation(
+            current_snapshot,
+            history,
+            captured_at,
+        ),
+        "n_plus_one": lambda current_snapshot: detect_n_plus_one(
+            current_snapshot,
+            history,
+            captured_at,
+        ),
+        "cardinality_misestimate": lambda current_snapshot: detect_cardinality_misestimates(
+            current_snapshot,
+            history,
+            captured_at,
+        ),
+    }
+
+    if rule is not None:
+        return detectors[rule](snapshot)
+
+    return [finding for name in ACTIVE_RULES for finding in detectors[name](snapshot)]
+
+
+# Agrupa una lista de hallazgos en un dict segun su tipo de antipatron
+def findings_by_type(findings: Iterable[Hallazgo]) -> dict[str, list[Hallazgo]]:
+    # agrupa por antipatron para no repetir esta logica en cada consumidor
+    grouped: dict[str, list[Hallazgo]] = {}
+    for finding in findings:
+        grouped.setdefault(finding.antipatron, []).append(finding)
+    return grouped

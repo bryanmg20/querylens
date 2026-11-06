@@ -1,0 +1,121 @@
+{
+  "generated_at": "2026-10-12T14:18:54",
+  "elapsed_s": 57.3,
+  "result": {
+    "postgres": [
+      {
+        "filler_goal_mb": 0,
+        "filler_bytes": 0,
+        "filler_plans": 0,
+        "target_source": "auto_explain"
+      },
+      {
+        "filler_goal_mb": 0.5,
+        "filler_bytes": 685191,
+        "filler_plans": 800,
+        "target_source": "auto_explain"
+      },
+      {
+        "filler_goal_mb": 1.0,
+        "filler_bytes": 1202437,
+        "filler_plans": 1400,
+        "target_source": "auto_explain"
+      },
+      {
+        "filler_goal_mb": 1.5,
+        "filler_bytes": 1719593,
+        "filler_plans": 2000,
+        "target_source": "auto_explain"
+      },
+      {
+        "filler_goal_mb": 1.8,
+        "filler_bytes": 1891999,
+        "filler_plans": 2200,
+        "target_source": "auto_explain"
+      },
+      {
+        "filler_goal_mb": 2.0,
+        "filler_bytes": 2236799,
+        "filler_plans": 2600,
+        "target_source": "generic"
+      },
+      {
+        "filler_goal_mb": 2.2,
+        "filler_bytes": 2409211,
+        "filler_plans": 2800,
+        "target_source": "generic"
+      },
+      {
+        "filler_goal_mb": 2.5,
+        "filler_bytes": 2754171,
+        "filler_plans": 3200,
+        "target_source": "generic"
+      },
+      {
+        "filler_goal_mb": 3.0,
+        "filler_bytes": 3271205,
+        "filler_plans": 3800,
+        "target_source": "generic"
+      }
+    ],
+    "mysql": [
+      {
+        "distinct_digests_before": 0,
+        "digest_rows_before_target": 4,
+        "digests_size": 10000,
+        "digest_lost_delta": 0,
+        "target_has_row": true,
+        "target_source": "sample"
+      },
+      {
+        "distinct_digests_before": 5000,
+        "digest_rows_before_target": 5004,
+        "digests_size": 10000,
+        "digest_lost_delta": 0,
+        "target_has_row": true,
+        "target_source": "sample"
+      },
+      {
+        "distinct_digests_before": 9000,
+        "digest_rows_before_target": 9004,
+        "digests_size": 10000,
+        "digest_lost_delta": 0,
+        "target_has_row": true,
+        "target_source": "sample"
+      },
+      {
+        "distinct_digests_before": 9900,
+        "digest_rows_before_target": 9904,
+        "digests_size": 10000,
+        "digest_lost_delta": 0,
+        "target_has_row": true,
+        "target_source": "sample"
+      },
+      {
+        "distinct_digests_before": 10000,
+        "digest_rows_before_target": 10000,
+        "digests_size": 10000,
+        "digest_lost_delta": 6,
+        "target_has_row": false,
+        "target_source": null
+      },
+      {
+        "distinct_digests_before": 10100,
+        "digest_rows_before_target": 10000,
+        "digests_size": 10000,
+        "digest_lost_delta": 106,
+        "target_has_row": false,
+        "target_source": null
+      },
+      {
+        "distinct_digests_before": 12000,
+        "digest_rows_before_target": 10000,
+        "digests_size": 10000,
+        "digest_lost_delta": 2006,
+        "target_has_row": false,
+        "target_source": null
+      }
+    ],
+    "log_window_bytes": 2097152
+  }
+}

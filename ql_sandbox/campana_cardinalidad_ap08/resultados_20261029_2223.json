@@ -1,0 +1,1022 @@
+[
+ {
+  "motor": "postgres",
+  "alias": "card01",
+  "descripcion": "columnas correlacionadas a = b = c",
+  "sql": "SELECT id AS {alias} FROM ql_card WHERE a = {v} AND b = {v} AND c = {v}",
+  "filas_reales": "20.000",
+  "nota": "Postgres multiplica las tres selectividades (1/50^3); MySQL sin histograma usa 10 % cada una",
+  "esperado": true,
+  "obtenido": true,
+  "estado": "VP",
+  "ap08": [
+   {
+    "estimated_rows": 9.0,
+    "actual_rows": 20000.0,
+    "q_error": 2222.22,
+    "direccion": "subestimacion",
+    "explain_source": "auto_explain",
+    "window_calls": 21,
+    "severidad": "high",
+    "detectado_en": "2026-10-30T03:08:28.445853+00:00"
+   },
+   {
+    "estimated_rows": 9.0,
+    "actual_rows": 20000.0,
+    "q_error": 2222.22,
+    "direccion": "subestimacion",
+    "explain_source": "auto_explain",
+    "window_calls": 297,
+    "severidad": "high",
+    "detectado_en": "2026-10-30T03:08:39.097316+00:00"
+   },
+   {
+    "estimated_rows": 9.0,
+    "actual_rows": 20000.0,
+    "q_error": 2222.22,
+    "direccion": "subestimacion",
+    "explain_source": "auto_explain",
+    "window_calls": 269,
+    "severidad": "high",
+    "detectado_en": "2026-10-30T03:08:48.707696+00:00"
+   },
+   {
+    "estimated_rows": 7.0,
+    "actual_rows": 20000.0,
+    "q_error": 2857.14,
+    "direccion": "subestimacion",
+    "explain_source": "auto_explain",
+    "window_calls": 304,
+    "severidad": "high",
+    "detectado_en": "2026-10-30T03:08:58.417896+00:00"
+   },
+   {
+    "estimated_rows": 8.0,
+    "actual_rows": 20000.0,
+    "q_error": 2500.0,
+    "direccion": "subestimacion",
+    "explain_source": "auto_explain",
+    "window_calls": 89,
+    "severidad": "high",
+    "detectado_en": "2026-10-30T03:09:07.709008+00:00"
+   }
+  ],
+  "otros_antipatrones": [
+   "avoidable_full_scan",
+   "missing_index",
+   "unused_index"
+  ],
+  "snapshots": [
+   {
+    "execution_count": 21,
+    "rows_returned": 420000,
+    "explain_source": "auto_explain",
+    "output_rows": 9.0
+   },
+   {
+    "execution_count": 318,
+    "rows_returned": 6360000,
+    "explain_source": "auto_explain",
+    "output_rows": 9.0
+   },
+   {
+    "execution_count": 587,
+    "rows_returned": 11740000,
+    "explain_source": "auto_explain",
+    "output_rows": 9.0
+   },
+   {
+    "execution_count": 891,
+    "rows_returned": 17820000,
+    "explain_source": "auto_explain",
+    "output_rows": 7.0
+   },
+   {
+    "execution_count": 980,
+    "rows_returned": 19600000,
+    "explain_source": "auto_explain",
+    "output_rows": 8.0
+   }
+  ]
+ },
+ {
+  "motor": "postgres",
+  "alias": "card02",
+  "descripcion": "correlacionadas dentro de un JOIN",
+  "sql": "SELECT q.id AS {alias} FROM ql_card AS q JOIN ql_card_dim AS d ON d.id = q.g WHERE q.a = {v} AND q.b = {v} AND q.c = {v}",
+  "filas_reales": "20.000",
+  "nota": "",
+  "esperado": true,
+  "obtenido": true,
+  "estado": "VP",
+  "ap08": [
+   {
+    "estimated_rows": 8.0,
+    "actual_rows": 20000.0,
+    "q_error": 2500.0,
+    "direccion": "subestimacion",
+    "explain_source": "auto_explain",
+    "window_calls": 277,
+    "severidad": "high",
+    "detectado_en": "2026-10-30T03:09:28.389056+00:00"
+   },
+   {
+    "estimated_rows": 8.0,
+    "actual_rows": 20000.0,
+    "q_error": 2500.0,
+    "direccion": "subestimacion",
+    "explain_source": "auto_explain",
+    "window_calls": 307,
+    "severidad": "high",
+    "detectado_en": "2026-10-30T03:09:38.895455+00:00"
+   },
+   {
+    "estimated_rows": 8.0,
+    "actual_rows": 20000.0,
+    "q_error": 2500.0,
+    "direccion": "subestimacion",
+    "explain_source": "auto_explain",
+    "window_calls": 307,
+    "severidad": "high",
+    "detectado_en": "2026-10-30T03:09:48.396641+00:00"
+   },
+   {
+    "estimated_rows": 8.0,
+    "actual_rows": 20000.0,
+    "q_error": 2500.0,
+    "direccion": "subestimacion",
+    "explain_source": "auto_explain",
+    "window_calls": 145,
+    "severidad": "high",
+    "detectado_en": "2026-10-30T03:09:57.575344+00:00"
+   }
+  ],
+  "otros_antipatrones": [
+   "unused_index"
+  ],
+  "snapshots": [
+   {
+    "execution_count": 277,
+    "rows_returned": 5540000,
+    "explain_source": "auto_explain",
+    "output_rows": 8.0
+   },
+   {
+    "execution_count": 584,
+    "rows_returned": 11680000,
+    "explain_source": "auto_explain",
+    "output_rows": 8.0
+   },
+   {
+    "execution_count": 891,
+    "rows_returned": 17820000,
+    "explain_source": "auto_explain",
+    "output_rows": 8.0
+   },
+   {
+    "execution_count": 1036,
+    "rows_returned": 20720000,
+    "explain_source": "auto_explain",
+    "output_rows": 8.0
+   },
+   {
+    "execution_count": 1036,
+    "rows_returned": 20720000,
+    "explain_source": "auto_explain",
+    "output_rows": 8.0
+   }
+  ]
+ },
+ {
+  "motor": "postgres",
+  "alias": "card03",
+  "descripcion": "estadisticas desactualizadas (200.000 filas nuevas sin ANALYZE)",
+  "sql": "SELECT id AS {alias} FROM ql_card_stale WHERE v = {v}",
+  "filas_reales": "200.001",
+  "nota": "",
+  "esperado": true,
+  "obtenido": true,
+  "estado": "VP",
+  "ap08": [
+   {
+    "estimated_rows": 1.0,
+    "actual_rows": 200001.0,
+    "q_error": 200001.0,
+    "direccion": "subestimacion",
+    "explain_source": "auto_explain",
+    "window_calls": 185,
+    "severidad": "high",
+    "detectado_en": "2026-10-30T03:10:18.066827+00:00"
+   },
+   {
+    "estimated_rows": 1.0,
+    "actual_rows": 200001.0,
+    "q_error": 200001.0,
+    "direccion": "subestimacion",
+    "explain_source": "auto_explain",
+    "window_calls": 221,
+    "severidad": "high",
+    "detectado_en": "2026-10-30T03:10:28.030286+00:00"
+   },
+   {
+    "estimated_rows": 1.0,
+    "actual_rows": 200001.0,
+    "q_error": 200001.0,
+    "direccion": "subestimacion",
+    "explain_source": "auto_explain",
+    "window_calls": 221,
+    "severidad": "high",
+    "detectado_en": "2026-10-30T03:10:38.104065+00:00"
+   },
+   {
+    "estimated_rows": 1.0,
+    "actual_rows": 200001.0,
+    "q_error": 200001.0,
+    "direccion": "subestimacion",
+    "explain_source": "auto_explain",
+    "window_calls": 121,
+    "severidad": "high",
+    "detectado_en": "2026-10-30T03:10:47.644606+00:00"
+   }
+  ],
+  "otros_antipatrones": [],
+  "snapshots": [
+   {
+    "execution_count": 185,
+    "rows_returned": 37000185,
+    "explain_source": "auto_explain",
+    "output_rows": 1.0
+   },
+   {
+    "execution_count": 406,
+    "rows_returned": 81200406,
+    "explain_source": "auto_explain",
+    "output_rows": 1.0
+   },
+   {
+    "execution_count": 627,
+    "rows_returned": 125400627,
+    "explain_source": "auto_explain",
+    "output_rows": 1.0
+   },
+   {
+    "execution_count": 748,
+    "rows_returned": 149600748,
+    "explain_source": "auto_explain",
+    "output_rows": 1.0
+   },
+   {
+    "execution_count": 748,
+    "rows_returned": 149600748,
+    "explain_source": "auto_explain",
+    "output_rows": 1.0
+   }
+  ]
+ },
+ {
+  "motor": "postgres",
+  "alias": "card04",
+  "descripcion": "igualdad sobre indice, distribucion uniforme",
+  "sql": "SELECT id AS {alias} FROM ql_card WHERE k = {v}",
+  "filas_reales": "10",
+  "nota": "",
+  "esperado": false,
+  "obtenido": false,
+  "estado": "VN",
+  "ap08": [],
+  "otros_antipatrones": [
+   "unused_index"
+  ],
+  "snapshots": [
+   {
+    "execution_count": 60235,
+    "rows_returned": 602350,
+    "explain_source": "generic",
+    "output_rows": 10.0
+   },
+   {
+    "execution_count": 138498,
+    "rows_returned": 1384980,
+    "explain_source": "generic",
+    "output_rows": 10.0
+   },
+   {
+    "execution_count": 214647,
+    "rows_returned": 2146470,
+    "explain_source": "generic",
+    "output_rows": 10.0
+   },
+   {
+    "execution_count": 258060,
+    "rows_returned": 2580600,
+    "explain_source": "generic",
+    "output_rows": 10.0
+   },
+   {
+    "execution_count": 258060,
+    "rows_returned": 2580600,
+    "explain_source": "generic",
+    "output_rows": 10.0
+   }
+  ]
+ },
+ {
+  "motor": "postgres",
+  "alias": "card05",
+  "descripcion": "igualdad sin indice, distribucion uniforme",
+  "sql": "SELECT id AS {alias} FROM ql_card WHERE u = {v}",
+  "filas_reales": "1.000",
+  "nota": "MySQL sin indice ni histograma estima 10 % (100.000): es un error real de su estimacion",
+  "esperado": false,
+  "obtenido": false,
+  "estado": "VN",
+  "ap08": [],
+  "otros_antipatrones": [
+   "avoidable_full_scan",
+   "missing_index",
+   "unused_index"
+  ],
+  "snapshots": [
+   {
+    "execution_count": 253,
+    "rows_returned": 253000,
+    "explain_source": "auto_explain",
+    "output_rows": 995.0
+   },
+   {
+    "execution_count": 582,
+    "rows_returned": 582000,
+    "explain_source": "auto_explain",
+    "output_rows": 995.0
+   },
+   {
+    "execution_count": 900,
+    "rows_returned": 900000,
+    "explain_source": "auto_explain",
+    "output_rows": 995.0
+   },
+   {
+    "execution_count": 1139,
+    "rows_returned": 1139000,
+    "explain_source": "auto_explain",
+    "output_rows": 995.0
+   },
+   {
+    "execution_count": 1139,
+    "rows_returned": 1139000,
+    "explain_source": "auto_explain",
+    "output_rows": 995.0
+   }
+  ]
+ },
+ {
+  "motor": "postgres",
+  "alias": "card06",
+  "descripcion": "indice sesgado, solo valores raros",
+  "sql": "SELECT id AS {alias} FROM ql_card WHERE sk = {v}",
+  "filas_reales": "1",
+  "nota": "",
+  "esperado": false,
+  "obtenido": false,
+  "estado": "VN",
+  "ap08": [],
+  "otros_antipatrones": [],
+  "snapshots": [
+   {
+    "execution_count": 66427,
+    "rows_returned": 66427,
+    "explain_source": "generic",
+    "output_rows": 34.0
+   },
+   {
+    "execution_count": 169417,
+    "rows_returned": 169417,
+    "explain_source": "generic",
+    "output_rows": 34.0
+   },
+   {
+    "execution_count": 273136,
+    "rows_returned": 273136,
+    "explain_source": "generic",
+    "output_rows": 34.0
+   },
+   {
+    "execution_count": 347655,
+    "rows_returned": 347655,
+    "explain_source": "generic",
+    "output_rows": 34.0
+   },
+   {
+    "execution_count": 347655,
+    "rows_returned": 347655,
+    "explain_source": "generic",
+    "output_rows": 34.0
+   }
+  ]
+ },
+ {
+  "motor": "postgres",
+  "alias": "card07",
+  "descripcion": "indice sesgado, 1 % valor frecuente (500.000 filas) y 99 % raros",
+  "sql": "SELECT id AS {alias} FROM ql_card WHERE sk = {v}",
+  "filas_reales": "~5.000 (promedio)",
+  "nota": "las raras usan el indice (< 50 ms, sin auto_explain); el sample de MySQL es la mas lenta",
+  "esperado": false,
+  "obtenido": false,
+  "estado": "VN",
+  "ap08": [],
+  "otros_antipatrones": [
+   "avoidable_full_scan"
+  ],
+  "snapshots": [
+   {
+    "execution_count": 5041,
+    "rows_returned": 20505000,
+    "explain_source": "auto_explain",
+    "output_rows": 500600.0
+   },
+   {
+    "execution_count": 12277,
+    "rows_returned": 52512172,
+    "explain_source": "auto_explain",
+    "output_rows": 500600.0
+   },
+   {
+    "execution_count": 16416,
+    "rows_returned": 85016246,
+    "explain_source": "auto_explain",
+    "output_rows": 500600.0
+   },
+   {
+    "execution_count": 22055,
+    "rows_returned": 110021835,
+    "explain_source": "auto_explain",
+    "output_rows": 500600.0
+   },
+   {
+    "execution_count": 22055,
+    "rows_returned": 110021835,
+    "explain_source": "auto_explain",
+    "output_rows": 500600.0
+   }
+  ]
+ },
+ {
+  "motor": "postgres",
+  "alias": "card08",
+  "descripcion": "sin indice y sesgado, 10 % valor frecuente y 90 % raros",
+  "sql": "SELECT id AS {alias} FROM ql_card WHERE sk2 = {v}",
+  "filas_reales": "~50.000 (promedio)",
+  "nota": "todas son escaneo completo (> 50 ms): auto_explain registra cada una y gana la ultima",
+  "esperado": false,
+  "obtenido": false,
+  "estado": "VN",
+  "ap08": [],
+  "otros_antipatrones": [
+   "avoidable_full_scan",
+   "missing_index"
+  ],
+  "snapshots": [
+   {
+    "execution_count": 165,
+    "rows_returned": 6000153,
+    "explain_source": "auto_explain",
+    "output_rows": 17.0
+   },
+   {
+    "execution_count": 404,
+    "rows_returned": 21000362,
+    "explain_source": "auto_explain",
+    "output_rows": 500600.0
+   },
+   {
+    "execution_count": 627,
+    "rows_returned": 38000551,
+    "explain_source": "auto_explain",
+    "output_rows": 17.0
+   },
+   {
+    "execution_count": 824,
+    "rows_returned": 50500723,
+    "explain_source": "auto_explain",
+    "output_rows": 17.0
+   },
+   {
+    "execution_count": 824,
+    "rows_returned": 50500723,
+    "explain_source": "auto_explain",
+    "output_rows": 17.0
+   }
+  ]
+ },
+ {
+  "motor": "mysql",
+  "alias": "card01",
+  "descripcion": "columnas correlacionadas a = b = c",
+  "sql": "SELECT id AS {alias} FROM ql_card WHERE a = {v} AND b = {v} AND c = {v}",
+  "filas_reales": "20.000",
+  "nota": "Postgres multiplica las tres selectividades (1/50^3); MySQL sin histograma usa 10 % cada una",
+  "esperado": true,
+  "obtenido": true,
+  "estado": "VP",
+  "ap08": [
+   {
+    "estimated_rows": 854.0,
+    "actual_rows": 20000.0,
+    "q_error": 23.42,
+    "direccion": "subestimacion",
+    "explain_source": "history",
+    "window_calls": 83,
+    "severidad": "medium",
+    "detectado_en": "2026-10-30T03:16:38.748074+00:00"
+   },
+   {
+    "estimated_rows": 854.0,
+    "actual_rows": 20000.0,
+    "q_error": 23.42,
+    "direccion": "subestimacion",
+    "explain_source": "history",
+    "window_calls": 84,
+    "severidad": "medium",
+    "detectado_en": "2026-10-30T03:16:48.652387+00:00"
+   }
+  ],
+  "otros_antipatrones": [
+   "avoidable_full_scan",
+   "missing_index",
+   "unused_index"
+  ],
+  "snapshots": [
+   {
+    "execution_count": 24,
+    "rows_returned": 480000,
+    "explain_source": "history",
+    "output_rows": 854.0
+   },
+   {
+    "execution_count": 107,
+    "rows_returned": 2160000,
+    "explain_source": "history",
+    "output_rows": 854.0
+   },
+   {
+    "execution_count": 191,
+    "rows_returned": 3840000,
+    "explain_source": "history",
+    "output_rows": 854.0
+   },
+   {
+    "execution_count": 276,
+    "rows_returned": 5559510,
+    "explain_source": "sample",
+    "output_rows": 854.0
+   },
+   {
+    "execution_count": 276,
+    "rows_returned": 5559510,
+    "explain_source": "sample",
+    "output_rows": 854.0
+   }
+  ]
+ },
+ {
+  "motor": "mysql",
+  "alias": "card02",
+  "descripcion": "correlacionadas dentro de un JOIN",
+  "sql": "SELECT q.id AS {alias} FROM ql_card AS q JOIN ql_card_dim AS d ON d.id = q.g WHERE q.a = {v} AND q.b = {v} AND q.c = {v}",
+  "filas_reales": "20.000",
+  "nota": "",
+  "esperado": true,
+  "obtenido": true,
+  "estado": "VP",
+  "ap08": [
+   {
+    "estimated_rows": 341.0,
+    "actual_rows": 20000.0,
+    "q_error": 58.65,
+    "direccion": "subestimacion",
+    "explain_source": "history",
+    "window_calls": 76,
+    "severidad": "medium",
+    "detectado_en": "2026-10-30T03:17:28.649026+00:00"
+   },
+   {
+    "estimated_rows": 341.0,
+    "actual_rows": 20000.0,
+    "q_error": 58.65,
+    "direccion": "subestimacion",
+    "explain_source": "history",
+    "window_calls": 76,
+    "severidad": "medium",
+    "detectado_en": "2026-10-30T03:17:38.653299+00:00"
+   },
+   {
+    "estimated_rows": 341.0,
+    "actual_rows": 20000.0,
+    "q_error": 58.65,
+    "direccion": "subestimacion",
+    "explain_source": "history",
+    "window_calls": 73,
+    "severidad": "medium",
+    "detectado_en": "2026-10-30T03:17:48.770188+00:00"
+   }
+  ],
+  "otros_antipatrones": [
+   "unused_index"
+  ],
+  "snapshots": [
+   {
+    "execution_count": 21,
+    "rows_returned": 420000,
+    "explain_source": "history",
+    "output_rows": 341.0
+   },
+   {
+    "execution_count": 97,
+    "rows_returned": 2020000,
+    "explain_source": "history",
+    "output_rows": 341.0
+   },
+   {
+    "execution_count": 173,
+    "rows_returned": 3620000,
+    "explain_source": "history",
+    "output_rows": 341.0
+   },
+   {
+    "execution_count": 246,
+    "rows_returned": 5140000,
+    "explain_source": "history",
+    "output_rows": 341.0
+   },
+   {
+    "execution_count": 254,
+    "rows_returned": 5274407,
+    "explain_source": "sample",
+    "output_rows": 341.0
+   }
+  ]
+ },
+ {
+  "motor": "mysql",
+  "alias": "card03",
+  "descripcion": "estadisticas desactualizadas (200.000 filas nuevas sin ANALYZE)",
+  "sql": "SELECT id AS {alias} FROM ql_card_stale WHERE v = {v}",
+  "filas_reales": "200.001",
+  "nota": "",
+  "esperado": true,
+  "obtenido": true,
+  "estado": "VP",
+  "ap08": [
+   {
+    "estimated_rows": 201.0,
+    "actual_rows": 200001.0,
+    "q_error": 995.03,
+    "direccion": "subestimacion",
+    "explain_source": "history",
+    "window_calls": 311,
+    "severidad": "high",
+    "detectado_en": "2026-10-30T03:18:18.740534+00:00"
+   },
+   {
+    "estimated_rows": 201.0,
+    "actual_rows": 200001.0,
+    "q_error": 995.03,
+    "direccion": "subestimacion",
+    "explain_source": "history",
+    "window_calls": 298,
+    "severidad": "high",
+    "detectado_en": "2026-10-30T03:18:28.965562+00:00"
+   },
+   {
+    "estimated_rows": 201.0,
+    "actual_rows": 200001.0,
+    "q_error": 995.03,
+    "direccion": "subestimacion",
+    "explain_source": "history",
+    "window_calls": 326,
+    "severidad": "high",
+    "detectado_en": "2026-10-30T03:18:38.953752+00:00"
+   }
+  ],
+  "otros_antipatrones": [],
+  "snapshots": [
+   {
+    "execution_count": 78,
+    "rows_returned": 15600078,
+    "explain_source": "history",
+    "output_rows": 201.0
+   },
+   {
+    "execution_count": 389,
+    "rows_returned": 77800389,
+    "explain_source": "history",
+    "output_rows": 201.0
+   },
+   {
+    "execution_count": 687,
+    "rows_returned": 137400687,
+    "explain_source": "history",
+    "output_rows": 201.0
+   },
+   {
+    "execution_count": 1013,
+    "rows_returned": 202601013,
+    "explain_source": "history",
+    "output_rows": 201.0
+   },
+   {
+    "execution_count": 1038,
+    "rows_returned": 207392256,
+    "explain_source": "sample",
+    "output_rows": 201.0
+   }
+  ]
+ },
+ {
+  "motor": "mysql",
+  "alias": "card04",
+  "descripcion": "igualdad sobre indice, distribucion uniforme",
+  "sql": "SELECT id AS {alias} FROM ql_card WHERE k = {v}",
+  "filas_reales": "10",
+  "nota": "",
+  "esperado": false,
+  "obtenido": false,
+  "estado": "VN",
+  "ap08": [],
+  "otros_antipatrones": [
+   "unused_index"
+  ],
+  "snapshots": [
+   {
+    "execution_count": 9496,
+    "rows_returned": 99410,
+    "explain_source": "history",
+    "output_rows": 10.0
+   },
+   {
+    "execution_count": 61440,
+    "rows_returned": 689570,
+    "explain_source": "history",
+    "output_rows": 10.0
+   },
+   {
+    "execution_count": 117622,
+    "rows_returned": 1325320,
+    "explain_source": "history",
+    "output_rows": 10.0
+   },
+   {
+    "execution_count": 175141,
+    "rows_returned": 1987790,
+    "explain_source": "history",
+    "output_rows": 10.0
+   },
+   {
+    "execution_count": 185206,
+    "rows_returned": 2098790,
+    "explain_source": "sample",
+    "output_rows": 10.0
+   }
+  ]
+ },
+ {
+  "motor": "mysql",
+  "alias": "card05",
+  "descripcion": "igualdad sin indice, distribucion uniforme",
+  "sql": "SELECT id AS {alias} FROM ql_card WHERE u = {v}",
+  "filas_reales": "1.000",
+  "nota": "MySQL sin indice ni histograma estima 10 % (100.000): es un error real de su estimacion",
+  "esperado": true,
+  "obtenido": true,
+  "estado": "VP",
+  "ap08": [
+   {
+    "estimated_rows": 85405.0,
+    "actual_rows": 1000.0,
+    "q_error": 85.41,
+    "direccion": "sobreestimacion",
+    "explain_source": "history",
+    "window_calls": 91,
+    "severidad": "medium",
+    "detectado_en": "2026-10-30T03:19:58.559621+00:00"
+   },
+   {
+    "estimated_rows": 85405.0,
+    "actual_rows": 1000.0,
+    "q_error": 85.41,
+    "direccion": "sobreestimacion",
+    "explain_source": "history",
+    "window_calls": 103,
+    "severidad": "medium",
+    "detectado_en": "2026-10-30T03:20:08.525274+00:00"
+   },
+   {
+    "estimated_rows": 85405.0,
+    "actual_rows": 1000.0,
+    "q_error": 85.41,
+    "direccion": "sobreestimacion",
+    "explain_source": "history",
+    "window_calls": 104,
+    "severidad": "medium",
+    "detectado_en": "2026-10-30T03:20:18.379582+00:00"
+   }
+  ],
+  "otros_antipatrones": [
+   "avoidable_full_scan",
+   "missing_index",
+   "unused_index"
+  ],
+  "snapshots": [
+   {
+    "execution_count": 10,
+    "rows_returned": 10000,
+    "explain_source": "history",
+    "output_rows": 85405.0
+   },
+   {
+    "execution_count": 101,
+    "rows_returned": 102000,
+    "explain_source": "history",
+    "output_rows": 85405.0
+   },
+   {
+    "execution_count": 204,
+    "rows_returned": 205000,
+    "explain_source": "history",
+    "output_rows": 85405.0
+   },
+   {
+    "execution_count": 308,
+    "rows_returned": 313000,
+    "explain_source": "history",
+    "output_rows": 85405.0
+   },
+   {
+    "execution_count": 336,
+    "rows_returned": 341000,
+    "explain_source": "sample",
+    "output_rows": 85405.0
+   }
+  ]
+ },
+ {
+  "motor": "mysql",
+  "alias": "card06",
+  "descripcion": "indice sesgado, solo valores raros",
+  "sql": "SELECT id AS {alias} FROM ql_card WHERE sk = {v}",
+  "filas_reales": "1",
+  "nota": "",
+  "esperado": false,
+  "obtenido": false,
+  "estado": "VN",
+  "ap08": [],
+  "otros_antipatrones": [],
+  "snapshots": [
+   {
+    "execution_count": 4672,
+    "rows_returned": 4824,
+    "explain_source": "history",
+    "output_rows": 1.0
+   },
+   {
+    "execution_count": 63223,
+    "rows_returned": 72518,
+    "explain_source": "history",
+    "output_rows": 1.0
+   },
+   {
+    "execution_count": 113302,
+    "rows_returned": 129253,
+    "explain_source": "history",
+    "output_rows": 1.0
+   },
+   {
+    "execution_count": 171417,
+    "rows_returned": 195511,
+    "explain_source": "history",
+    "output_rows": 1.0
+   },
+   {
+    "execution_count": 188388,
+    "rows_returned": 214584,
+    "explain_source": "sample",
+    "output_rows": 1.0
+   }
+  ]
+ },
+ {
+  "motor": "mysql",
+  "alias": "card07",
+  "descripcion": "indice sesgado, 1 % valor frecuente (500.000 filas) y 99 % raros",
+  "sql": "SELECT id AS {alias} FROM ql_card WHERE sk = {v}",
+  "filas_reales": "~5.000 (promedio)",
+  "nota": "las raras usan el indice (< 50 ms, sin auto_explain); el sample de MySQL es la mas lenta",
+  "esperado": false,
+  "obtenido": false,
+  "estado": "VN",
+  "ap08": [],
+  "otros_antipatrones": [],
+  "snapshots": [
+   {
+    "execution_count": 23,
+    "rows_returned": 500022,
+    "explain_source": "history",
+    "output_rows": 427029.0
+   },
+   {
+    "execution_count": 9981,
+    "rows_returned": 62510141,
+    "explain_source": "history",
+    "output_rows": 427029.0
+   },
+   {
+    "execution_count": 19848,
+    "rows_returned": 120520230,
+    "explain_source": "history",
+    "output_rows": 427029.0
+   },
+   {
+    "execution_count": 29610,
+    "rows_returned": 178030163,
+    "explain_source": "history",
+    "output_rows": 1.0
+   },
+   {
+    "execution_count": 33029,
+    "rows_returned": 201328830,
+    "explain_source": "sample",
+    "output_rows": 427029.0
+   }
+  ]
+ },
+ {
+  "motor": "mysql",
+  "alias": "card08",
+  "descripcion": "sin indice y sesgado, 10 % valor frecuente y 90 % raros",
+  "sql": "SELECT id AS {alias} FROM ql_card WHERE sk2 = {v}",
+  "filas_reales": "~50.000 (promedio)",
+  "nota": "todas son escaneo completo (> 50 ms): auto_explain registra cada una y gana la ultima",
+  "esperado": false,
+  "obtenido": true,
+  "estado": "FP",
+  "ap08": [
+   {
+    "estimated_rows": 85405.0,
+    "actual_rows": 1.0,
+    "q_error": 85405.0,
+    "direccion": "sobreestimacion",
+    "explain_source": "history",
+    "window_calls": 98,
+    "severidad": "high",
+    "detectado_en": "2026-10-30T03:22:38.566688+00:00"
+   },
+   {
+    "estimated_rows": 85405.0,
+    "actual_rows": 1.0,
+    "q_error": 85405.0,
+    "direccion": "sobreestimacion",
+    "explain_source": "history",
+    "window_calls": 93,
+    "severidad": "high",
+    "detectado_en": "2026-10-30T03:22:48.526457+00:00"
+   }
+  ],
+  "otros_antipatrones": [
+   "avoidable_full_scan",
+   "missing_index"
+  ],
+  "snapshots": [
+   {
+    "execution_count": 84,
+    "rows_returned": 6000075,
+    "explain_source": "history",
+    "output_rows": 85405.0
+   },
+   {
+    "execution_count": 182,
+    "rows_returned": 10000169,
+    "explain_source": "history",
+    "output_rows": 85405.0
+   },
+   {
+    "execution_count": 275,
+    "rows_returned": 14000257,
+    "explain_source": "history",
+    "output_rows": 85405.0
+   },
+   {
+    "execution_count": 319,
+    "rows_returned": 19000295,
+    "explain_source": "sample",
+    "output_rows": 85405.0
+   },
+   {
+    "execution_count": 319,
+    "rows_returned": 19000295,
+    "explain_source": "sample",
+    "output_rows": 85405.0
+   }
+  ]
+ }
+]

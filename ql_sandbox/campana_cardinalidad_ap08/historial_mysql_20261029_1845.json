@@ -1,0 +1,1120 @@
+[
+ {
+  "carga": "card01",
+  "descripcion": "columnas correlacionadas a = b = c",
+  "una_de_cada": 1,
+  "ruido": false,
+  "consultas": 10,
+  "sample_en_history_pct": 10.0,
+  "sample_en_history_long_pct": 100.0,
+  "historial_pct": 100.0,
+  "ejecuciones_en_history_mediana": 40.0,
+  "edad_sample_mediana_s": 21.4270575,
+  "filas_reales_historial": [
+   20000
+  ],
+  "muestras": [
+   {
+    "edad_sample_s": 6.542886,
+    "sample_en_history": false,
+    "sample_en_history_long": true,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 20000
+   },
+   {
+    "edad_sample_s": 0.138941,
+    "sample_en_history": true,
+    "sample_en_history_long": true,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 20000
+   },
+   {
+    "edad_sample_s": 6.300691,
+    "sample_en_history": false,
+    "sample_en_history_long": true,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 20000
+   },
+   {
+    "edad_sample_s": 12.288004,
+    "sample_en_history": false,
+    "sample_en_history_long": true,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 20000
+   },
+   {
+    "edad_sample_s": 18.352919,
+    "sample_en_history": false,
+    "sample_en_history_long": true,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 20000
+   },
+   {
+    "edad_sample_s": 24.501196,
+    "sample_en_history": false,
+    "sample_en_history_long": true,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 20000
+   },
+   {
+    "edad_sample_s": 30.46841,
+    "sample_en_history": false,
+    "sample_en_history_long": true,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 20000
+   },
+   {
+    "edad_sample_s": 36.690766,
+    "sample_en_history": false,
+    "sample_en_history_long": true,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 20000
+   },
+   {
+    "edad_sample_s": 42.733742,
+    "sample_en_history": false,
+    "sample_en_history_long": true,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 20000
+   },
+   {
+    "edad_sample_s": 48.778322,
+    "sample_en_history": false,
+    "sample_en_history_long": true,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 20000
+   }
+  ]
+ },
+ {
+  "carga": "card01",
+  "descripcion": "columnas correlacionadas a = b = c",
+  "una_de_cada": 1,
+  "ruido": true,
+  "consultas": 9,
+  "sample_en_history_pct": 44.44444444444444,
+  "sample_en_history_long_pct": 0.0,
+  "historial_pct": 100.0,
+  "ejecuciones_en_history_mediana": 40,
+  "edad_sample_mediana_s": 14.982041,
+  "filas_reales_historial": [
+   20000
+  ],
+  "muestras": [
+   {
+    "edad_sample_s": 0.781596,
+    "sample_en_history": true,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 32,
+    "rows_sent_historial": 20000
+   },
+   {
+    "edad_sample_s": 6.676808,
+    "sample_en_history": true,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 20000
+   },
+   {
+    "edad_sample_s": 1.150032,
+    "sample_en_history": true,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 20000
+   },
+   {
+    "edad_sample_s": 8.112828,
+    "sample_en_history": true,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 20000
+   },
+   {
+    "edad_sample_s": 14.982041,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 20000
+   },
+   {
+    "edad_sample_s": 22.022196,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 20000
+   },
+   {
+    "edad_sample_s": 28.821337,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 20000
+   },
+   {
+    "edad_sample_s": 35.662545,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 20000
+   },
+   {
+    "edad_sample_s": 42.766355,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 20000
+   }
+  ]
+ },
+ {
+  "carga": "card04",
+  "descripcion": "igualdad sobre indice, distribucion uniforme",
+  "una_de_cada": 1,
+  "ruido": false,
+  "consultas": 10,
+  "sample_en_history_pct": 0.0,
+  "sample_en_history_long_pct": 10.0,
+  "historial_pct": 100.0,
+  "ejecuciones_en_history_mediana": 40.0,
+  "edad_sample_mediana_s": 26.5867,
+  "filas_reales_historial": [
+   10
+  ],
+  "muestras": [
+   {
+    "edad_sample_s": 5.030675,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 10
+   },
+   {
+    "edad_sample_s": 11.159385,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 10
+   },
+   {
+    "edad_sample_s": 17.382146,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 10
+   },
+   {
+    "edad_sample_s": 23.553421,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 10
+   },
+   {
+    "edad_sample_s": 29.619979,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 10
+   },
+   {
+    "edad_sample_s": 35.76408,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 10
+   },
+   {
+    "edad_sample_s": 41.862408,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 10
+   },
+   {
+    "edad_sample_s": 47.979094,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 10
+   },
+   {
+    "edad_sample_s": 54.061589,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 10
+   },
+   {
+    "edad_sample_s": 0.278237,
+    "sample_en_history": false,
+    "sample_en_history_long": true,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 10
+   }
+  ]
+ },
+ {
+  "carga": "card04",
+  "descripcion": "igualdad sobre indice, distribucion uniforme",
+  "una_de_cada": 1,
+  "ruido": true,
+  "consultas": 9,
+  "sample_en_history_pct": 0.0,
+  "sample_en_history_long_pct": 0.0,
+  "historial_pct": 100.0,
+  "ejecuciones_en_history_mediana": 40,
+  "edad_sample_mediana_s": 10.66696,
+  "filas_reales_historial": [
+   10
+  ],
+  "muestras": [
+   {
+    "edad_sample_s": 10.66696,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 10
+   },
+   {
+    "edad_sample_s": 17.598541,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 10
+   },
+   {
+    "edad_sample_s": 2.924395,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 10
+   },
+   {
+    "edad_sample_s": 10.064984,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 10
+   },
+   {
+    "edad_sample_s": 17.085432,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 10
+   },
+   {
+    "edad_sample_s": 24.115425,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 10
+   },
+   {
+    "edad_sample_s": 0.911017,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 10
+   },
+   {
+    "edad_sample_s": 8.035513,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 10
+   },
+   {
+    "edad_sample_s": 15.059041,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 10
+   }
+  ]
+ },
+ {
+  "carga": "card07",
+  "descripcion": "indice sesgado, 1 % valor frecuente (500.000 filas) y 99 % raros",
+  "una_de_cada": 1,
+  "ruido": false,
+  "consultas": 10,
+  "sample_en_history_pct": 0.0,
+  "sample_en_history_long_pct": 20.0,
+  "historial_pct": 100.0,
+  "ejecuciones_en_history_mediana": 40.0,
+  "edad_sample_mediana_s": 25.9344295,
+  "filas_reales_historial": [
+   1,
+   500000
+  ],
+  "muestras": [
+   {
+    "edad_sample_s": 4.109584,
+    "sample_en_history": false,
+    "sample_en_history_long": true,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 500000
+   },
+   {
+    "edad_sample_s": 10.240723,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 500000
+   },
+   {
+    "edad_sample_s": 16.613516,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 500000
+   },
+   {
+    "edad_sample_s": 22.810492,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 1
+   },
+   {
+    "edad_sample_s": 29.058367,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 500000
+   },
+   {
+    "edad_sample_s": 35.304566,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 1
+   },
+   {
+    "edad_sample_s": 41.549637,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 1
+   },
+   {
+    "edad_sample_s": 47.783523,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 1
+   },
+   {
+    "edad_sample_s": 53.981671,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 1
+   },
+   {
+    "edad_sample_s": 0.217208,
+    "sample_en_history": false,
+    "sample_en_history_long": true,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 500000
+   }
+  ]
+ },
+ {
+  "carga": "card07",
+  "descripcion": "indice sesgado, 1 % valor frecuente (500.000 filas) y 99 % raros",
+  "una_de_cada": 1,
+  "ruido": true,
+  "consultas": 9,
+  "sample_en_history_pct": 0.0,
+  "sample_en_history_long_pct": 0.0,
+  "historial_pct": 100.0,
+  "ejecuciones_en_history_mediana": 40,
+  "edad_sample_mediana_s": 8.358841,
+  "filas_reales_historial": [
+   1,
+   500000
+  ],
+  "muestras": [
+   {
+    "edad_sample_s": 4.162161,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 1
+   },
+   {
+    "edad_sample_s": 5.168421,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 1
+   },
+   {
+    "edad_sample_s": 3.179685,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 1
+   },
+   {
+    "edad_sample_s": 10.33785,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 500000
+   },
+   {
+    "edad_sample_s": 17.603737,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 1
+   },
+   {
+    "edad_sample_s": 24.369474,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 500000
+   },
+   {
+    "edad_sample_s": 1.445445,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 1
+   },
+   {
+    "edad_sample_s": 8.358841,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 500000
+   },
+   {
+    "edad_sample_s": 15.223771,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 40,
+    "rows_sent_historial": 500000
+   }
+  ]
+ },
+ {
+  "carga": "card01",
+  "descripcion": "columnas correlacionadas a = b = c",
+  "una_de_cada": 50,
+  "ruido": false,
+  "consultas": 10,
+  "sample_en_history_pct": 0.0,
+  "sample_en_history_long_pct": 80.0,
+  "historial_pct": 30.0,
+  "ejecuciones_en_history_mediana": 0.0,
+  "edad_sample_mediana_s": 15.9558125,
+  "filas_reales_historial": [
+   20000
+  ],
+  "muestras": [
+   {
+    "edad_sample_s": 4.042245,
+    "sample_en_history": false,
+    "sample_en_history_long": true,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 10.080713,
+    "sample_en_history": false,
+    "sample_en_history_long": true,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 16.328465,
+    "sample_en_history": false,
+    "sample_en_history_long": true,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 2.49947,
+    "sample_en_history": false,
+    "sample_en_history_long": true,
+    "historial": true,
+    "ejecuciones_en_history": 2,
+    "rows_sent_historial": 20000
+   },
+   {
+    "edad_sample_s": 9.269402,
+    "sample_en_history": false,
+    "sample_en_history_long": true,
+    "historial": true,
+    "ejecuciones_en_history": 4,
+    "rows_sent_historial": 20000
+   },
+   {
+    "edad_sample_s": 15.58316,
+    "sample_en_history": false,
+    "sample_en_history_long": true,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 21.778563,
+    "sample_en_history": false,
+    "sample_en_history_long": true,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 27.99673,
+    "sample_en_history": false,
+    "sample_en_history_long": true,
+    "historial": true,
+    "ejecuciones_en_history": 4,
+    "rows_sent_historial": 20000
+   },
+   {
+    "edad_sample_s": 34.111261,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 40.367498,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   }
+  ]
+ },
+ {
+  "carga": "card01",
+  "descripcion": "columnas correlacionadas a = b = c",
+  "una_de_cada": 50,
+  "ruido": true,
+  "consultas": 9,
+  "sample_en_history_pct": 0.0,
+  "sample_en_history_long_pct": 0.0,
+  "historial_pct": 22.22222222222222,
+  "ejecuciones_en_history_mediana": 0,
+  "edad_sample_mediana_s": 15.867522,
+  "filas_reales_historial": [
+   20000
+  ],
+  "muestras": [
+   {
+    "edad_sample_s": 8.209853,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 2,
+    "rows_sent_historial": 20000
+   },
+   {
+    "edad_sample_s": 15.509371,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 2.208324,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 8.997668,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 15.867522,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 23.072563,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 29.961292,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 36.909453,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 1,
+    "rows_sent_historial": 20000
+   },
+   {
+    "edad_sample_s": 44.577709,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   }
+  ]
+ },
+ {
+  "carga": "card04",
+  "descripcion": "igualdad sobre indice, distribucion uniforme",
+  "una_de_cada": 50,
+  "ruido": false,
+  "consultas": 10,
+  "sample_en_history_pct": 0.0,
+  "sample_en_history_long_pct": 0.0,
+  "historial_pct": 20.0,
+  "ejecuciones_en_history_mediana": 0.0,
+  "edad_sample_mediana_s": 27.308594499999998,
+  "filas_reales_historial": [
+   10
+  ],
+  "muestras": [
+   {
+    "edad_sample_s": 5.763249,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 2,
+    "rows_sent_historial": 10
+   },
+   {
+    "edad_sample_s": 11.933537,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 18.09503,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 1,
+    "rows_sent_historial": 10
+   },
+   {
+    "edad_sample_s": 24.261814,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 30.355375,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 36.74777,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 42.949703,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 49.076815,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 55.181889,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 1.216311,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   }
+  ]
+ },
+ {
+  "carga": "card04",
+  "descripcion": "igualdad sobre indice, distribucion uniforme",
+  "una_de_cada": 50,
+  "ruido": true,
+  "consultas": 9,
+  "sample_en_history_pct": 0.0,
+  "sample_en_history_long_pct": 0.0,
+  "historial_pct": 55.55555555555556,
+  "ejecuciones_en_history_mediana": 1,
+  "edad_sample_mediana_s": 24.529041,
+  "filas_reales_historial": [
+   10
+  ],
+  "muestras": [
+   {
+    "edad_sample_s": 8.777965,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 1,
+    "rows_sent_historial": 10
+   },
+   {
+    "edad_sample_s": 17.063234,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 2,
+    "rows_sent_historial": 10
+   },
+   {
+    "edad_sample_s": 24.529041,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 32.134959,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 39.553489,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 46.861594,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 1,
+    "rows_sent_historial": 10
+   },
+   {
+    "edad_sample_s": 53.928537,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 1,
+    "rows_sent_historial": 10
+   },
+   {
+    "edad_sample_s": 0.694931,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 0.989329,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 2,
+    "rows_sent_historial": 10
+   }
+  ]
+ },
+ {
+  "carga": "card04",
+  "descripcion": "igualdad sobre indice, distribucion uniforme",
+  "una_de_cada": 200,
+  "ruido": false,
+  "consultas": 10,
+  "sample_en_history_pct": 0.0,
+  "sample_en_history_long_pct": 10.0,
+  "historial_pct": 10.0,
+  "ejecuciones_en_history_mediana": 0.0,
+  "edad_sample_mediana_s": 25.4346685,
+  "filas_reales_historial": [
+   10
+  ],
+  "muestras": [
+   {
+    "edad_sample_s": 0.13074,
+    "sample_en_history": false,
+    "sample_en_history_long": true,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 3.579213,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 9.768977,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 1,
+    "rows_sent_historial": 10
+   },
+   {
+    "edad_sample_s": 16.127592,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 22.357639,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 28.511698,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 34.926177,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 41.247053,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 47.466978,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 53.615865,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   }
+  ]
+ },
+ {
+  "carga": "card04",
+  "descripcion": "igualdad sobre indice, distribucion uniforme",
+  "una_de_cada": 200,
+  "ruido": true,
+  "consultas": 9,
+  "sample_en_history_pct": 0.0,
+  "sample_en_history_long_pct": 0.0,
+  "historial_pct": 11.11111111111111,
+  "ejecuciones_en_history_mediana": 0,
+  "edad_sample_mediana_s": 21.988602,
+  "filas_reales_historial": [
+   10
+  ],
+  "muestras": [
+   {
+    "edad_sample_s": 7.854867,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 14.62394,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 21.988602,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": true,
+    "ejecuciones_en_history": 1,
+    "rows_sent_historial": 10
+   },
+   {
+    "edad_sample_s": 29.162162,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 36.032228,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 43.165308,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 50.470283,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 2.44206,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   },
+   {
+    "edad_sample_s": 9.360668,
+    "sample_en_history": false,
+    "sample_en_history_long": false,
+    "historial": false,
+    "ejecuciones_en_history": 0,
+    "rows_sent_historial": null
+   }
+  ]
+ }
+]

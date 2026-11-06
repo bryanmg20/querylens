@@ -1,0 +1,27 @@
+﻿[23:08:22] ===== ap02_avoidable_full_scan | mysql | v1_hist | regla avoidable_full_scan =====
+[23:08:22] pipeline: C:\Users\HP\Documents\GitHub\querylens\telemetry_pipeline
+[23:09:04] paso extra: histograms_mysql.sql
+[23:09:08]   caso status_raro (esperado: si)
+[23:09:30]     -> VP (intentos de snapshot: 1)
+[23:09:30]   caso status_comun (esperado: no)
+[23:09:51]     -> VN (intentos de snapshot: 1)
+[23:09:51]   caso rango_reciente (esperado: si)
+[23:10:12]     -> VP (intentos de snapshot: 1)
+[23:10:12]   caso rango_amplio (esperado: no)
+[23:10:32]     -> VN (intentos de snapshot: 1)
+[23:10:32]   caso valor_casi_unico (esperado: si)
+[23:10:53]     -> VP (intentos de snapshot: 1)
+[23:10:53]   caso region_20pct (esperado: no)
+[23:11:15]     -> VN (intentos de snapshot: 1)
+[23:11:15]   caso indexado (esperado: no)
+[23:11:39]     -> VN (intentos de snapshot: 1)
+[23:11:39]   caso indexado_sesgado (esperado: no)
+[23:12:02]     -> VN (intentos de snapshot: 1)
+[23:12:02]   caso tabla_chica (esperado: no)
+[23:12:26]     -> VN (intentos de snapshot: 1)
+
+ap02_avoidable_full_scan | mysql | v1_hist | 9 casos
+  VP=3 FN=0 FP=0 VN=6 sin_explain=0 no_candidata=0 no_encontrada=0
+  precision=1.00 recall=1.00
+
+[23:12:27] resultado: ql_sandbox\explain_ab\results\ap02_avoidable_full_scan\mysql_v1_hist.json

@@ -1,0 +1,460 @@
+{
+  "generated_at": "2026-10-12 12:37:42",
+  "method": "paired_blocks_per_template_p95_bootstrap",
+  "profile": "serious",
+  "config": {
+    "block_s": 45.0,
+    "aa_pairs": 3,
+    "pipeline_pairs": 10,
+    "instr_pairs": 6,
+    "stress_pairs": 4,
+    "burn_pairs": 4,
+    "settle_s": 5.0,
+    "warmup_s": 20.0,
+    "cadence_s": 10.0,
+    "stress_cadence_s": 2.0,
+    "workers": 2,
+    "bootstrap": 2000,
+    "seed": 518610656
+  },
+  "umbral_pct": 5.0,
+  "preflight_warnings": [],
+  "verdict": "INCONCLUSO",
+  "engines": {
+    "postgres": {
+      "samples_total": 91711,
+      "failures_total": 26,
+      "arms": {
+        "aa": {
+          "pairs": 3,
+          "min_template_n_base": 516,
+          "min_template_n_treat": 482,
+          "p95_pct": 12.600614909873741,
+          "p95_ci": [
+            0.29648448888066614,
+            52.508679482275845
+          ],
+          "mean_pct": 7.816406370459306,
+          "mean_ci": [
+            0.49930553355819196,
+            17.47151787744372
+          ],
+          "throughput_pct": 6.909639638594409,
+          "throughput_ci": [
+            -0.9791655184097636,
+            13.418490373390558
+          ],
+          "enough_samples": true,
+          "failures": 0,
+          "server_base": {
+            "log_json_bytes_per_s": 13534.923528953776,
+            "monitor_blks_per_s": 0.0,
+            "monitor_calls_per_s": 0.0,
+            "monitor_exec_ms_per_s": 0.0,
+            "monitor_temp_blks_written_per_s": 0.0,
+            "cpu_pct_of_core": 211.08314844874997
+          },
+          "server_treat": {
+            "log_json_bytes_per_s": 13391.37080424183,
+            "monitor_blks_per_s": 0.0,
+            "monitor_calls_per_s": 0.0,
+            "monitor_exec_ms_per_s": 0.0,
+            "monitor_temp_blks_written_per_s": 0.0,
+            "cpu_pct_of_core": 205.97418864859046
+          },
+          "server_errors": [],
+          "noise_floor_ok": false
+        },
+        "pipeline": {
+          "pairs": 10,
+          "min_template_n_base": 1720,
+          "min_template_n_treat": 1693,
+          "p95_pct": 2.655135401145392,
+          "p95_ci": [
+            -0.21097644688019357,
+            5.5058272260274865
+          ],
+          "mean_pct": 1.4129939200080877,
+          "mean_ci": [
+            -0.11479817919994671,
+            3.1216944723311935
+          ],
+          "throughput_pct": 1.673045848628885,
+          "throughput_ci": [
+            0.5001776168665053,
+            3.1142130495345097
+          ],
+          "enough_samples": true,
+          "failures": 0,
+          "server_base": {
+            "log_json_bytes_per_s": 13534.175230844514,
+            "monitor_blks_per_s": 0.0,
+            "monitor_calls_per_s": 0.0,
+            "monitor_exec_ms_per_s": 0.0,
+            "monitor_temp_blks_written_per_s": 0.0,
+            "cpu_pct_of_core": 212.19759807611163
+          },
+          "server_treat": {
+            "log_json_bytes_per_s": 13520.103286446369,
+            "monitor_blks_per_s": 133.94494429431617,
+            "monitor_calls_per_s": 5.7795903845104775,
+            "monitor_exec_ms_per_s": 3.290306879557364,
+            "monitor_temp_blks_written_per_s": 0.0,
+            "cpu_pct_of_core": 210.91045158900275
+          },
+          "server_errors": [],
+          "cycles": {
+            "cycles": 40,
+            "failed": 0,
+            "errors": [],
+            "wall_s_mean": 0.355621391575,
+            "wall_s_max": 1.581616233,
+            "duty_cycle_pct": 3.556204024008478,
+            "candidates_mean": 11.0,
+            "auto_explain_plans_mean": 2.425,
+            "log_bytes_read_mean": 2097152.0
+          },
+          "during_extraction": {
+            "n_overlapping": 657,
+            "n_clear": 16384,
+            "mean_pct": 10.871183460535438,
+            "p95_pct": 30.426046665978966
+          },
+          "verdict": "INCONCLUSO"
+        },
+        "positive_control": {
+          "pairs": 4,
+          "min_template_n_base": 697,
+          "min_template_n_treat": 621,
+          "p95_pct": 54.13335275954299,
+          "p95_ci": [
+            37.26862532743582,
+            68.47922985555621
+          ],
+          "mean_pct": 14.805950500900611,
+          "mean_ci": [
+            13.546196833232438,
+            15.830902386933143
+          ],
+          "throughput_pct": 10.857748358673303,
+          "throughput_ci": [
+            9.465137658232742,
+            12.240864973983971
+          ],
+          "enough_samples": true,
+          "failures": 0,
+          "server_base": {
+            "log_json_bytes_per_s": 13629.301781177834,
+            "monitor_blks_per_s": 0.0,
+            "monitor_calls_per_s": 0.0,
+            "monitor_exec_ms_per_s": 0.0,
+            "monitor_temp_blks_written_per_s": 0.0,
+            "cpu_pct_of_core": 213.04472259429502
+          },
+          "server_treat": {
+            "log_json_bytes_per_s": 13811.181090804099,
+            "monitor_blks_per_s": 0.011107396584184515,
+            "monitor_calls_per_s": 0.8499098963365377,
+            "monitor_exec_ms_per_s": 660.10057697512,
+            "monitor_temp_blks_written_per_s": 683.6706108061871,
+            "cpu_pct_of_core": 258.04296633079554
+          },
+          "server_errors": [],
+          "cycles": {
+            "cycles": 16,
+            "failed": 0,
+            "errors": [],
+            "wall_s_mean": 2.60907979825,
+            "wall_s_max": 3.275299443,
+            "duty_cycle_pct": 26.090721072435485,
+            "candidates_mean": null,
+            "auto_explain_plans_mean": null,
+            "log_bytes_read_mean": null
+          },
+          "during_extraction": {
+            "n_overlapping": 1276,
+            "n_clear": 4980,
+            "mean_pct": 60.90297123311399,
+            "p95_pct": 226.79808624019384
+          },
+          "detected": false
+        },
+        "instrumentation": {
+          "pairs": 6,
+          "min_template_n_base": 1028,
+          "min_template_n_treat": 1011,
+          "p95_pct": 2.2504635515595117,
+          "p95_ci": [
+            -1.8047302938792753,
+            5.847344823129608
+          ],
+          "mean_pct": 1.611897516341032,
+          "mean_ci": [
+            -1.1139649341232905,
+            4.73207794311001
+          ],
+          "throughput_pct": 1.955994705940542,
+          "throughput_ci": [
+            -1.4407871351720722,
+            5.489342119521858
+          ],
+          "enough_samples": true,
+          "failures": 0,
+          "server_base": {
+            "log_json_bytes_per_s": 0.0,
+            "monitor_blks_per_s": 0.0,
+            "monitor_calls_per_s": 0.0,
+            "monitor_exec_ms_per_s": 0.0,
+            "monitor_temp_blks_written_per_s": 0.0,
+            "cpu_pct_of_core": 211.586372557071
+          },
+          "server_treat": {
+            "log_json_bytes_per_s": 13363.913323554703,
+            "monitor_blks_per_s": 0.0,
+            "monitor_calls_per_s": 0.0,
+            "monitor_exec_ms_per_s": 0.0,
+            "monitor_temp_blks_written_per_s": 0.0,
+            "cpu_pct_of_core": 210.1712186505725
+          },
+          "server_errors": [],
+          "verdict": "INCONCLUSO",
+          "toggled": {
+            "setting": "auto_explain.log_min_duration",
+            "role": "ql_user",
+            "server_value_ms": 50,
+            "role_original": null
+          }
+        }
+      },
+      "verdict": "INCONCLUSO",
+      "noise_floor_ok": false,
+      "health": {
+        "db_id": "querylens-db-01:postgres",
+        "last_run": {
+          "status": "degraded",
+          "sections_failed": [],
+          "finished_at": "2026-10-12 16:42:28.623906+00:00"
+        },
+        "open_issues": [
+          {
+            "code": "EXPLAIN_FAILED",
+            "severity": "degraded",
+            "occurrences": 40
+          },
+          {
+            "code": "PAYLOAD_TOO_LARGE",
+            "severity": "info",
+            "occurrences": 46
+          }
+        ]
+      },
+      "warnings": [
+        "RUIDO_EXCESIVO: el A/A no cae dentro de +-5 %; el host no resuelve el umbral",
+        "CONTROL POSITIVO NO DETECTADO: el arnes no ve un costo conocido",
+        "pipeline_health last_run = degraded"
+      ]
+    },
+    "mysql": {
+      "samples_total": 99923,
+      "failures_total": 0,
+      "arms": {
+        "aa": {
+          "pairs": 3,
+          "min_template_n_base": 554,
+          "min_template_n_treat": 552,
+          "p95_pct": -0.46909759738271717,
+          "p95_ci": [
+            -1.1291614422182517,
+            2.0236664599246446
+          ],
+          "mean_pct": -0.7732378656329031,
+          "mean_ci": [
+            -2.4176355454455067,
+            0.38179965659086434
+          ],
+          "throughput_pct": 0.6997561457928667,
+          "throughput_ci": [
+            -0.000472503714208243,
+            1.1663234287496114
+          ],
+          "enough_samples": true,
+          "failures": 0,
+          "server_base": {
+            "monitor_calls_per_s": 0.0,
+            "monitor_exec_ms_per_s": 0.0,
+            "monitor_rows_examined_per_s": 0.0,
+            "cpu_pct_of_core": 209.4428019546496
+          },
+          "server_treat": {
+            "monitor_calls_per_s": 0.0,
+            "monitor_exec_ms_per_s": 0.0,
+            "monitor_rows_examined_per_s": 0.0,
+            "cpu_pct_of_core": 210.40813778221528
+          },
+          "server_errors": [],
+          "noise_floor_ok": true
+        },
+        "pipeline": {
+          "pairs": 10,
+          "min_template_n_base": 1870,
+          "min_template_n_treat": 1851,
+          "p95_pct": 1.6939538435124302,
+          "p95_ci": [
+            -2.597660206959299,
+            4.75007455630167
+          ],
+          "mean_pct": 1.068741332076928,
+          "mean_ci": [
+            -1.1573756700496618,
+            3.0718597181910083
+          ],
+          "throughput_pct": 0.7254210329949914,
+          "throughput_ci": [
+            -1.81736836008557,
+            2.8028119138292924
+          ],
+          "enough_samples": true,
+          "failures": 0,
+          "server_base": {
+            "monitor_calls_per_s": 0.0,
+            "monitor_exec_ms_per_s": 0.0,
+            "monitor_rows_examined_per_s": 0.0,
+            "cpu_pct_of_core": 209.29850525995096
+          },
+          "server_treat": {
+            "monitor_calls_per_s": 5.524368885293823,
+            "monitor_exec_ms_per_s": 3.783021244442294,
+            "monitor_rows_examined_per_s": 427.7274822853327,
+            "cpu_pct_of_core": 208.31690524052334
+          },
+          "server_errors": [],
+          "cycles": {
+            "cycles": 40,
+            "failed": 0,
+            "errors": [],
+            "wall_s_mean": 0.1725239237,
+            "wall_s_max": 0.650636678,
+            "duty_cycle_pct": 1.7252304456785221,
+            "candidates_mean": 10.0,
+            "auto_explain_plans_mean": 0.0,
+            "log_bytes_read_mean": null
+          },
+          "during_extraction": {
+            "n_overlapping": 354,
+            "n_clear": 18258,
+            "mean_pct": 3.0494696616994554,
+            "p95_pct": 3.5930590199025225
+          },
+          "verdict": "CUMPLE"
+        },
+        "positive_control": {
+          "pairs": 4,
+          "min_template_n_base": 735,
+          "min_template_n_treat": 670,
+          "p95_pct": 85.14642185139986,
+          "p95_ci": [
+            74.62846922420263,
+            87.11939702181026
+          ],
+          "mean_pct": 13.356699809307337,
+          "mean_ci": [
+            11.49987930883305,
+            15.518714493356512
+          ],
+          "throughput_pct": 8.801066659945308,
+          "throughput_ci": [
+            7.526655630701905,
+            10.160743389434929
+          ],
+          "enough_samples": true,
+          "failures": 0,
+          "server_base": {
+            "monitor_calls_per_s": 0.0,
+            "monitor_exec_ms_per_s": 0.0,
+            "monitor_rows_examined_per_s": 0.0,
+            "cpu_pct_of_core": 208.97050939661787
+          },
+          "server_treat": {
+            "monitor_calls_per_s": 1.5610558283148648,
+            "monitor_exec_ms_per_s": 869.951918269488,
+            "monitor_rows_examined_per_s": 0.2944327155089654,
+            "cpu_pct_of_core": 266.51344721980905
+          },
+          "server_errors": [],
+          "cycles": {
+            "cycles": 16,
+            "failed": 0,
+            "errors": [],
+            "wall_s_mean": 3.21360024325,
+            "wall_s_max": 3.901194336,
+            "duty_cycle_pct": 32.135940668025434,
+            "candidates_mean": null,
+            "auto_explain_plans_mean": null,
+            "log_bytes_read_mean": null
+          },
+          "during_extraction": {
+            "n_overlapping": 1647,
+            "n_clear": 5078,
+            "mean_pct": 56.42307871057286,
+            "p95_pct": 166.12324892568836
+          },
+          "detected": true
+        },
+        "instrumentation": {
+          "pairs": 6,
+          "min_template_n_base": 1132,
+          "min_template_n_treat": 1130,
+          "p95_pct": -0.5026785434662395,
+          "p95_ci": [
+            -2.342616849388718,
+            1.3243034123511022
+          ],
+          "mean_pct": -0.07041920401992252,
+          "mean_ci": [
+            -1.254117299173696,
+            0.8305715298257965
+          ],
+          "throughput_pct": 0.07047595273963626,
+          "throughput_ci": [
+            -1.1392465213857135,
+            0.8583650356511471
+          ],
+          "enough_samples": true,
+          "failures": 0,
+          "server_base": {
+            "monitor_calls_per_s": 0.0,
+            "monitor_exec_ms_per_s": 0.0,
+            "monitor_rows_examined_per_s": 0.0,
+            "cpu_pct_of_core": 211.8975645080348
+          },
+          "server_treat": {
+            "monitor_calls_per_s": 0.0,
+            "monitor_exec_ms_per_s": 0.0,
+            "monitor_rows_examined_per_s": 0.0,
+            "cpu_pct_of_core": 211.6927159863779
+          },
+          "server_errors": [],
+          "verdict": "CUMPLE",
+          "toggled": {
+            "consumers": {
+              "events_statements_current": "YES",
+              "statements_digest": "YES"
+            }
+          }
+        }
+      },
+      "verdict": "CUMPLE",
+      "noise_floor_ok": true,
+      "health": {
+        "db_id": "querylens-db-01:mysql",
+        "last_run": {
+          "status": "ok",
+          "sections_failed": [],
+          "finished_at": "2026-10-12 17:19:54.873990+00:00"
+        },
+        "open_issues": []
+      },
+      "warnings": []
+    }
+  }
+}

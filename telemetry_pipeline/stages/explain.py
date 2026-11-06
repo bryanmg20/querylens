@@ -1,0 +1,220 @@
+import json
+
+from sqlalchemy import text
+
+from health.classify import classify
+from health.report import HealthReport
+from logger import get_logger
+from models.stats import Stats
+from stages import explain_normalizer as en
+# is_single_statement se re-exporta: tests y mutantes lo importan desde aqui.
+from stages.sql_text import is_explainable_command, is_single_statement  # noqa: F401
+
+logger = get_logger(__name__)
+
+EXPLAIN_NORMALIZERS = en.EXPLAIN_NORMALIZERS
+
+
+class ExplainStage:
+    def __init__(self, collector, report: HealthReport | None = None):
+        self.collector = collector
+        self.report = report if report is not None else HealthReport()
+        self._foreign_engines = {}
+        # Seam para tests: inyecta un builder de "engine" (url -> engine) para
+        # probar el ruteo sin abrir conexiones reales contra otra base.
+        self._foreign_engine_factory = None
+
+    @staticmethod
+    def _search_path_sql(schema_name, engine):
+        if not schema_name:
+            return "SET LOCAL search_path TO DEFAULT"
+        quoted = engine.dialect.identifier_preparer.quote(str(schema_name))
+        return f"SET LOCAL search_path TO {quoted}"
+
+    @staticmethod
+    def _schema_context_sql(schema_name, database_name, dialect, engine):
+        if dialect == "postgres":
+            return ExplainStage._search_path_sql(schema_name, engine)
+        context = schema_name or database_name
+        if context:
+            quoted = engine.dialect.identifier_preparer.quote(str(context))
+            return f"USE {quoted}"
+        return None
+
+    def _connection_for(self, query, conn):
+        """Postgres siempre usa la conexion del ciclo: el colector solo trae
+        candidatos de la base conectada (STATEMENTS_QUERY filtra por
+        current_database()).
+
+        MySQL sin schema (la app corrio la query sin base por defecto) va a una
+        sesion nueva sin base: la conexion compartida arrastra el USE del
+        candidato anterior y armaria el plan de una query sin calificar contra
+        otra base. Sin base, la query calificada (base.tabla) se explica igual
+        que corrio, y la sin calificar falla como fallo en la app."""
+        if self.collector.source_dialect == "postgres":
+            return conn
+        if query.get("schema_name") or query.get("database_name"):
+            return conn
+        return self._foreign_connection("")
+
+    def _foreign_connection(self, database_name):
+        from sqlalchemy import create_engine
+        from sqlalchemy.pool import NullPool
+
+        from config.connections import mysql_connect_args
+
+        engine = self._foreign_engines.get(database_name)
+        if engine is not None:
+            return engine.connect()
+        url = self.collector.engine.url.set(database=database_name)
+        if self._foreign_engine_factory is not None:
+            engine = self._foreign_engine_factory(url)
+        else:
+            engine = create_engine(url, connect_args=mysql_connect_args(), poolclass=NullPool)
+        self._foreign_engines[database_name] = engine
+        return engine.connect()
+
+    def _dispose_foreign_engines(self):
+        for engine in self._foreign_engines.values():
+            engine.dispose()
+        self._foreign_engines.clear()
+
+    def execute(self, stats: Stats, conn):
+        stats["query_explain"] = []
+        # Planes reales del log de auto_explain (AutoExplainStage). Traen los
+        # literales de la ejecucion: se sacan de stats ya, no viajan.
+        logged_plans = stats.pop("auto_explain_plans", None) or {}
+        failures = 0
+        # EXPLAIN (GENERIC_PLAN) es de PG 16: en 15 solo quedan los planes de
+        # auto_explain (el preflight ya avisa con PG_VERSION_LIMITED).
+        version_num = self.report.facts.get("pg_version_num")
+        generic_plan = version_num is None or version_num >= 160000
+        skipped_by_version = 0
+
+        try:
+            for query in stats.get("top_impact_queries", []):
+                query_id = query.get("query_id")
+                if query_id is None or not query.get("ready_for_explain"):
+                    continue
+
+                dialect = self.collector.source_dialect
+                # MySQL: primero la ejecucion del historial (se conocen sus
+                # filas reales); sin ella, el sample como siempre
+                from_history = dialect != "postgres" and bool(query.get("history_text"))
+                query_text = (
+                    query.get("query_text")
+                    if dialect == "postgres"
+                    else query.get("history_text") or query.get("query_sample_text")
+                )
+                # El selector filtro por query_text, pero MySQL explica
+                # query_sample_text: la puerta de solo-lectura se re-aplica al
+                # texto que de verdad llega al EXPLAIN.
+                if not is_explainable_command(query_text, dialect):
+                    logger.warning(
+                        f"{dialect} | EXPLAIN | query_id={query_id} "
+                        "| skipped: not a read-only SELECT/WITH"
+                    )
+                    continue
+
+                if not is_single_statement(query_text, dialect):
+                    logger.warning(
+                        f"{dialect} | EXPLAIN | query_id={query_id} "
+                        "| skipped multi-statement query"
+                    )
+                    continue
+
+                # Primero el plan que auto_explain registro de una ejecucion
+                # real; sin el, el EXPLAIN de siempre.
+                if query_id in logged_plans:
+                    stats["query_explain"].append({
+                        "query_id": query_id,
+                        "explain_source": "auto_explain",
+                        "plan": logged_plans[query_id],
+                    })
+                    continue
+                if dialect == "postgres" and not generic_plan:
+                    skipped_by_version += 1
+                    continue
+
+                context_sql = self._schema_context_sql(
+                    query.get("schema_name"),
+                    query.get("database_name"),
+                    dialect,
+                    self.collector.engine,
+                )
+                try:
+                    active = self._connection_for(query, conn)
+                except Exception as e:
+                    # Falla al abrir la sesion nueva de MySQL: se pierde este
+                    # candidato, no el resto del ciclo.
+                    failures += 1
+                    logger.error(f"{dialect} | EXPLAIN | query_id={query_id} | connect | {e}")
+                    code, params = classify(e, dialect=dialect, scope="explain", phase="connect")
+                    self.report.add(code, **params)
+                    continue
+                try:
+                    # Transaccion corta por candidato (M-12): el collect ya hizo
+                    # COMMIT sobre esta conexion; el BEGIN...COMMIT aísla el
+                    # contexto (SET LOCAL / USE) + EXPLAIN. En Postgres SET LOCAL
+                    # es transaccional y se deshace al cerrar; en MySQL el USE es
+                    # estado de sesion y sobrevive al COMMIT.
+                    with active.begin():
+                        if context_sql:
+                            active.execute(text(context_sql))
+
+                        if dialect == "postgres":
+                            result = active.execute(
+                                text(f"EXPLAIN (GENERIC_PLAN, FORMAT JSON) {query_text}")
+                            )
+                            stats["query_explain"].append({
+                                "query_id": query_id,
+                                "explain_source": "generic",
+                                "plan": [dict(row) for row in result.mappings()],
+                            })
+                        else:
+                            result = active.execute(text(f"EXPLAIN FORMAT=JSON {query_text}"))
+                            plan_row = next(result.mappings(), None)
+                            if plan_row is None:
+                                logger.error(f"mysql | EXPLAIN | query_id={query_id} | returned no plan row")
+                                failures += 1
+                                self.report.add("EXPLAIN_FAILED")
+                                continue
+                            stats["query_explain"].append({
+                                "query_id": query_id,
+                                "explain_source": "history" if from_history else "sample",
+                                "plan": json.loads(plan_row["EXPLAIN"]),
+                                "actual_rows": query.get("history_rows_sent") if from_history else None,
+                            })
+                except Exception as e:
+                    failures += 1
+                    # Agrupado por code (params.count): nunca query_id ni texto.
+                    code, params = classify(e, dialect=dialect, scope="explain")
+                    self.report.add(code, **params)
+                    # Un limite conocido del plan generico se repite en cada
+                    # ciclo: en ERROR serian ~8 640 lineas al dia por query.
+                    log = logger.info if code == "EXPLAIN_PARAM_TYPES_AMBIGUOUS" else logger.error
+                    log(f"{dialect} | EXPLAIN | query_id={query_id} | {e}")
+                finally:
+                    # N-2: la conexion extranjera (abierta con engine.connect()
+                    # en _foreign_connection) no la cierra ningun `with`: el
+                    # `with active.begin()` cierra la TRANSACCION, no la
+                    # conexion, y dispose() no toca lo enganchado. Hay que
+                    # cerrarla explicitamente. El guard es clave: conn (la
+                    # conexion compartida del ciclo) la cierra el orchestrator.
+                    if active is not conn:
+                        active.close()
+        finally:
+            self._dispose_foreign_engines()
+
+        # Hubo candidatos y ninguno dio plan sin que nada fallara: todos se
+        # filtraron (DML, multi-statement). Es informativo, no un error.
+        had_candidates = stats.get("top_impact_queries") or stats.get("non_explainable_candidates")
+        if had_candidates and not stats["query_explain"] and not failures and not skipped_by_version:
+            self.report.add("NO_EXPLAINABLE_CANDIDATES")
+        self.report.checked("explain")
+
+        normalizer = EXPLAIN_NORMALIZERS[self.collector.source_dialect]()
+        normalizer.normalize(stats)
+        stats.pop("query_explain", None)
+
+        return stats

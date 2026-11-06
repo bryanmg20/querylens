@@ -1,0 +1,71 @@
+[
+ {
+  "motor": "postgres",
+  "alias": "q01",
+  "descripcion": "igualdad sin indice",
+  "sql": "SELECT id AS q01 FROM ql_cmp WHERE c = {R}",
+  "esperado": {
+   "avoidable_full_scan": true,
+   "missing_index": [
+    [
+     "c"
+    ],
+    [],
+    false
+   ]
+  },
+  "obtenido": {
+   "avoidable_full_scan": true,
+   "missing_index": [
+    [
+     [
+      "c"
+     ],
+     [],
+     false
+    ]
+   ]
+  },
+  "hallazgos": 14,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q10",
+  "descripcion": "aritmetica sobre columna indexada (informe)",
+  "sql": "SELECT id AS q10 FROM ql_cmp WHERE k + 0 = {R}",
+  "esperado": {
+   "avoidable_full_scan": true,
+   "non_sargable_predicate": [
+    [
+     "arithmetic_on_column",
+     "k"
+    ]
+   ]
+  },
+  "obtenido": {
+   "avoidable_full_scan": true,
+   "non_sargable_predicate": [
+    [
+     "arithmetic_on_column",
+     "k"
+    ]
+   ]
+  },
+  "hallazgos": 16,
+  "problemas": [],
+  "estado": "OK"
+ },
+ {
+  "motor": "postgres",
+  "alias": "q22",
+  "descripcion": "busqueda por indice",
+  "sql": "SELECT id AS q22 FROM ql_cmp WHERE k = {R}",
+  "esperado": {},
+  "obtenido": {},
+  "hallazgos": 0,
+  "problemas": [],
+  "estado": "OK"
+ }
+]

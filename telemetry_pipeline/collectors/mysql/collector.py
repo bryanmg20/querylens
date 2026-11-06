@@ -1,0 +1,104 @@
+from collectors.base import DB_Engine_Collector
+from .queries import (
+    INDEXES_QUERY,
+    INDEX_SIZES_QUERY,
+    TABLES_QUERY,
+    STATEMENTS_QUERY,
+    STATEMENT_HISTORY_QUERY,
+    LOCKS_QUERY,
+    ACTIVE_QUERIES_QUERY,
+    CAPTURE_TIMESTAMP_QUERY,
+SERVER_START_QUERY,
+    COLUMNS_QUERY,
+    FOREIGN_KEYS_QUERY
+)
+import stages.normalize as normalize
+from models.stats import Stats
+
+
+class Mysql_Collector(DB_Engine_Collector):
+    def __init__(self, engine):
+        self.stats = {}
+        self.engine = engine
+        self.source_dialect = "mysql"
+        self.queries = {
+                        "indexes": INDEXES_QUERY,
+                        "index_sizes": INDEX_SIZES_QUERY,
+                        "tables": TABLES_QUERY,
+                        "statements": STATEMENTS_QUERY,
+                        "statement_history": STATEMENT_HISTORY_QUERY,
+                        "capture_timestamp": CAPTURE_TIMESTAMP_QUERY,
+                        "locks": LOCKS_QUERY,
+                        "active_queries": ACTIVE_QUERIES_QUERY,
+                        "server_start_timestamp": SERVER_START_QUERY,
+                        "columns": COLUMNS_QUERY,
+                        "foreign_keys": FOREIGN_KEYS_QUERY
+                        }
+
+    def preprocess_statements(self, stats: Stats) -> Stats:
+        return self.calculate_stddev_coeff(stats)
+
+    def calculate_stddev_coeff(self, stats: Stats | None = None) -> Stats:
+        """stddev_time_ms es una estimacion, no una medida (MySQL no la expone).
+
+        La regla es heuristico: stddev ~= (max - mean) / sqrt(count), un spread
+        plaussible si el max se da entre los extremos de una distribucion. No
+        cambia la semantica del snapshot: alimenta el ranking de impacto y point
+        alla donde el consumidor lo use, pero no se debe leer como desviacion
+        estadistica real. El guard max_time > mean*1000 descarta outliers por
+        orden de magnitud (tupla aislada lenta); documentado en
+        references/004_decisiones_contrato.md (M-9).
+        """
+        import math
+
+        if stats is None:
+            stats = self.stats
+
+        for stmt in stats.get("statements") or []:
+            mean = float(stmt.get('mean_time_ms') or 0)
+            count = int(stmt.get('execution_count') or 0)
+            max_time = float(stmt.get('max_time_ms') or 0)
+
+            if mean > 0 and max_time > mean * 1000:
+                stmt['stddev_time_ms'] = None
+                stmt['coeff_of_variation'] = None
+                continue
+
+            if count > 1 and mean > 0 and max_time > mean:
+                stddev = (max_time - mean) / math.sqrt(count)
+            else:
+                stddev = None
+
+            if stddev is not None and mean > 0:
+                coeff_of_variation = stddev / mean
+            else:
+                coeff_of_variation = None
+
+            stmt['stddev_time_ms'] = stddev
+            stmt['coeff_of_variation'] = coeff_of_variation
+
+        return stats
+
+    def normalize_engine_artifacts(self, stats: Stats) -> Stats:
+        normalize.merge_index_sizes(stats)
+        normalize.normalize_locks(stats)
+        normalize.normalize_blocking_pids(stats)
+        normalize.normalize_predicate(stats)
+        return stats
+
+    def mark_explainable(self, stats: Stats) -> Stats:
+        # Trae literales reales: se saca de stats aca y solo queda en el
+        # candidato, que tampoco viaja con esas claves (igual que el sample)
+        history = {
+            row.get("query_id"): row
+            for row in stats.pop("statement_history", None) or []
+            if (row.get("history_text") or "").strip()
+        }
+        for candidate in stats.get("top_impact_queries", []):
+            sample = (candidate.get("query_sample_text") or "").strip()
+            execution = history.get(candidate.get("query_id"))
+            if execution is not None:
+                candidate["history_text"] = execution["history_text"]
+                candidate["history_rows_sent"] = execution.get("history_rows_sent")
+            candidate["ready_for_explain"] = bool(sample) or execution is not None
+        return stats

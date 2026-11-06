@@ -1,0 +1,336 @@
+# Flujo del pipeline y patrones de diseño
+
+Pipeline agentless de telemetría: captura métricas de `pg_stat_statements` (Postgres) y `performance_schema` (MySQL), selecciona las queries candidatas a explicar, normaliza planes y queries, y encola un snapshot validado en PGMQ para su consumo.
+
+## Versiones soportadas de las bases monitoreadas
+
+| Motor | Versiones | Mínimo | Por qué el mínimo |
+|-------|-----------|--------|-------------------|
+| PostgreSQL | 15, 16, **17**, 18, 19 | **15** | `jsonlog` (PG 15+): de ahí salen los abrazos mortales y los planes de `auto_explain`. Por debajo, el preflight corta con `PG_VERSION_UNSUPPORTED` (blocking). |
+| MySQL | **8.0**, 8.4 LTS | **8.0** | `performance_schema.data_locks`/`data_lock_waits` (8.0.1+) y `QUERY_SAMPLE_TEXT` (8.0.3+). MySQL 5.7 y MariaDB no están soportados. |
+
+En negrita, la combinación de referencia (sandbox sin profile, mediciones de #49). PostgreSQL 19 se probó como release candidate (`19rc1`).
+
+Qué cambia por versión de PostgreSQL (el collector elige las consultas con la versión que lee el preflight, `Postgres_Collector.use_server_version`):
+
+| Dato | Desde | Sin él (15, 16) |
+|------|-------|-----------------|
+| `pg_stat_statements.stats_since` | 17 | `counters_epoch` llega `NULL`. Una query que aparece entre dos snapshots se mide desde el segundo (`disk_spill`, `cardinality_misestimate` y `n_plus_one` la ven un ciclo después); un reinicio de contadores se sigue detectando por el delta negativo. |
+| `EXPLAIN (GENERIC_PLAN)` | 16 | En 15 no se intenta: un candidato tiene plan solo si `auto_explain` lo registró (ejecución de más de 50 ms en la ventana leída). Las detecciones que leen el plan (`missing_index`, `avoidable_full_scan`, `non_sargable_predicate`, `cardinality_misestimate` y el uso de índices de `unused_index`) corren solo sobre esos candidatos. |
+| `pg_stat_user_indexes.last_idx_scan` | 16 | En 15 `last_index_scan` llega `NULL`, como en MySQL: un índice sin uso se reconoce solo por `idx_scan = 0`. |
+
+En 15 y 16 el ciclo termina `ok` y `querylens health` muestra `PG_VERSION_LIMITED` (info) con la lista de lo que falta (`missing`). Que esos casos no se detecten en 15 y 16 es lo esperado, no un error. Los abrazos mortales (CT-01, CT-02) y CT-05 se detectan igual en todas las versiones.
+
+Verificado (2026-10-27) con la suite de integración (`telemetry_pipeline/ci/load.py` + `pytest -m integration`) y `ql_sandbox/mediciones/measure_ct.py` contra los profiles del sandbox (`pg15`, `pg16`, `pg18`, `pg19`, `mysql84`; ver `ql_sandbox/instruction.md`). El CI corre la suite de integración en una matriz que cubre cada versión al menos una vez (`.github/workflows/pipeline.yml`, job `integration`).
+
+## Flujo de extremo a extremo
+
+```
+dos puntos de entrada, una sola maquina de ejecucion:
+
+  main.py (integracion)                     main_sandbox.py (sandbox, tests y CI)
+    load_registered_targets()                 ENGINES = (("postgres", get_connection_postgres),
+      SELECT ... FROM registered_databases               ("mysql", get_connection_mysql))
+      WHERE is_active AND monitoring_enabled dos targets fijos resueltos con
+      Fernet(AUTH_ENCRYPTION_KEY) → Target    MONITOR_PG_* / MONITOR_MY_*
+      sin tabla / sin filas / sin clave       (la tabla no existe en CI y no
+      → None: no se extrae nada               hay filas registradas alli)
+          │                                        │
+          └──────────────────┬─────────────────────┘
+                             v
+               run_targets(targets)                             main.py
+                 por target: try run_engine(...) except → logger.error(... engine_failed)
+                             │
+                             v
+
+run_engine(dialect, connection_factory, db_id)                  main.py
+  │  db_id → payload["db_id"]   pisa la constante DB_ID de enrich con el
+  │                             database_identifier de la fila
+  │
+  ├─ Engine_Factory.create_collector(dialect, engine)        → collector (Strategy por motor)
+  │     ├─ Mysql_Collector(engine)      source_dialect="mysql"
+  │     └─ Postgres_Collector(engine)   source_dialect="postgres"
+  │
+  ├─ Orchestrator(collector).run_pipeline()                  → stats (dict con el snapshot crudo)
+  │     │
+  │     ├─ (1) CollectStage.execute(stats, conn)             telemetry_pipeline/stages/collect.py
+  │     │     for key, query in collector.queries:           ejecuta las consultas del motor
+  │     │     stats[key] = list[dict] ; falla aislada con rollback {key: None}
+  │     │     keys: indexes, tables, statements, locks, active_queries,
+  │     │           server_start_timestamp, columns, foreign_keys
+  │     │     conn.commit()  ← M-12: la transacción de lectura se cierra YA. No
+  │     │     retener snapshot/vacuum (PG) ni MVCC (MySQL) durante el resto del ciclo.
+  │     │
+  │     ├─ DeadlocksStage.execute(stats, conn)               stages/deadlocks.py
+  │     │     corre siempre, aunque statements haya fallado; transacción corta propia.
+  │     │     Informes de abrazo mortal de los últimos 120 s (CT-01 a CT-04):
+  │     │       Postgres: líneas 40P01 del log JSON vía querylens.read_log()
+  │     │       MySQL: SHOW ENGINE INNODB STATUS (detalle del último) +
+  │     │              performance_schema.error_log MY-012468 (cada uno, sin detalle)
+  │     │     stages/deadlock_reports.py los traduce al modelo canónico: solo
+  │     │     canonic_query y direcciones físicas (space:page:heap), nunca literales
+  │     │     Postgres: el log no dice qué fila espera cada proceso. Si la sentencia
+  │     │       trae sus valores escritos y cubren un índice único (pg_index), las
+  │     │       filas se etiquetan "row 1", "row 2"… dentro del informe (misma
+  │     │       etiqueta = misma fila). Si no, con log_lock_waits: el ctid de la
+  │     │       fila que esperaba cada proceso (la víctima en su CONTEXT, las demás
+  │     │       en su aviso "still waiting" del mismo pid y transacción) → mismas
+  │     │       etiquetas, targets_source "ctid". Sin ninguno: targets None
+  │     │     stats["deadlocks"] = [DeadlockReport]
+  │     │     sin fuente → rollback, DEADLOCK_REPORTS_UNAVAILABLE
+  │     │     fuente parcial → DEADLOCK_REPORTS_PARTIAL
+  │     │     log_lock_waits = off (PG) → DEADLOCK_ROW_WAITS_UNLOGGED
+  │     │
+  │     ├─ (2) CandidatesStage.execute(stats)                stages/candidates.py
+  │     │     stats = collector.preprocess_statements(stats) → hook por motor (MySQL calcula
+  │     │                                                     stddev y coeff de variación)
+  │     │     select_high_impact_time_statements()  top 10 por tiempo total
+  │     │     select_unstable_statements()          coeff>2 y mean>10ms
+  │     │     select_disk_spill_indicator()         disk_spill_indicator > 0
+  │     │     select_candidates_to_explain()        dedupe por query_id + selected_by
+  │     │                                           solo SELECT/WITH de solo lectura son explicables
+  │     │                                           (rol monitor con SELECT): DML, CTE que escriben
+  │     │                                           y FOR UPDATE/SHARE van a
+  │     │                                           non_explainable_candidates, sin plan
+  │     │                                           (stages/sql_text.py, lectura lexica por dialecto)
+  │     │     init_ready_for_explain()               dedupe por query_id +
+  │     │                                           ready_for_explain=False (valor inicial;
+  │     │                                           no mira active_queries; la decisión
+  │     │                                           real es mark_explainable)
+  │     │     collector.mark_explainable(stats)     → hook por motor: Postgres=True siempre,
+  │     │                                           MySQL=True si hay sample o una ejecución en
+  │     │                                           events_statements_history (statement_history:
+  │     │                                           la más lenta de cada digest; history_text +
+  │     │                                           history_rows_sent quedan en el candidato y
+  │     │                                           statement_history sale de stats)
+  │     │
+  │     ├─ AutoExplainStage.execute(stats, conn)             stages/auto_explain.py
+  │     │     solo Postgres y solo si hay candidatos con ready_for_explain.
+  │     │     en una transacción corta: querylens.log_files() → querylens.read_log()
+  │     │     sobre los últimos LOG_WINDOW_BYTES (2 MB) del log JSON, del archivo más
+  │     │     nuevo al más viejo (guía references/006). Sin estado entre ciclos.
+  │     │     cruza cada línea jsonlog por query_id (+ dbname) con los candidatos;
+  │     │     gana el plan más reciente. Solo guarda "Plan" (nunca "Query Text").
+  │     │     stats["auto_explain_plans"] = {query_id: {"Plan": ...}}  (interno)
+  │     │     sin funciones / sin permiso → rollback, AUTO_EXPLAIN_LOG_UNAVAILABLE
+  │     │     (info) y todos los candidatos siguen por el plan genérico.
+  │     │
+  │     ├─ (3) ExplainStage.execute(stats, conn)             stages/explain.py
+  │     │     solo para candidatos con ready_for_explain y cuyo texto a explicar
+  │     │     (query_text en PG; en MySQL history_text, o query_sample_text si no hay)
+  │     │     empieza por SELECT/WITH
+  │     │     plan de auto_explain del candidato si existe   → Postgres, sin EXPLAIN
+  │     │                                           (explain_source "auto_explain")
+  │     │     "EXPLAIN (GENERIC_PLAN, FORMAT JSON) <query>"  → Postgres sin plan en el log (PG17+ por el minimo soportado, placeholders $1)
+  │     │     "EXPLAIN FORMAT=JSON <history_text>"          → MySQL con ejecución en el historial
+  │     │                                           (explain_source "history", actual_rows = ROWS_SENT)
+  │     │     "EXPLAIN FORMAT=JSON <query_sample_text>"     → MySQL sin ella (explain_source "sample")
+  │     │     cada candidato corre en una transacción corta propia:
+  │     │     BEGIN → SET LOCAL search_path / USE → EXPLAIN → COMMIT (M-12).
+  │     │     rollback si falla; el USE de MySQL es estado de sesión y sobrevive.
+  │     │     stats["query_explain"] = [{query_id, explain_source, plan, actual_rows?}]
+  │     │     EXPLAIN_NORMALIZERS[dialect]().normalize(stats)
+  │     │       Postgres: _walk_plan sobre arbol JSON → logical_shape + physical_operations;
+  │     │                 con explain_source "auto_explain" los predicados pasan por
+  │     │                 redact_postgres_plan_predicate (literales → $n)
+  │     │       MySQL:    _walk_plan sobre query_block → idem
+  │     │     estimates.actual_rows: filas de la misma ejecución del plan (Postgres: "Actual
+  │     │       Rows" de la raíz con auto_explain.log_analyze; MySQL: ROWS_SENT del historial);
+  │     │       None con GENERIC_PLAN o sample
+  │     │     stats["canonic_explains"] = [{query_id, explain_source, canonical_plan}]
+  │     │
+  │     ├─ (4) NormalizeStage.execute(stats)                 stages/normalize.py
+  │     │     create_canonic_queries()      literal→placeholder via sqlglot (canonic_query)
+  │     │                                   en statements y top_impact_queries;
+  │     │                                   cache por query_text (un parseo por forma)
+  │     │     stats = collector.normalize_engine_artifacts(stats)   → hook por motor:
+  │     │         MySQL: locks bool, blocking_pids list[int], limpieza de predicados
+  │     │         Postgres: timestamps a ISO sin tz
+  │     │     normalize_querytext_active()  active_queries pierde query_text,
+  │     │                                   conserva canonic_query ("Not available" si vacío)
+  │     │
+  │     └─ (5) EnrichStage.execute(stats)                     stages/enrich.py
+  │           stats["db_id"] = DB_ID        (identidad del job de análisis;
+  │                                          run_engine lo pisa con el
+  │                                          database_identifier de la fila)
+  │
+  ├─ SnapshotPayload.from_snapshot(payload)                  ../contract/querylens_contract/snapshot.py
+  │     valida el dict contra los modelos pydantic (11 secciones)
+  │     ValidationError → logger.error + return None (motor omitido, no aborta)
+  │
+  ├─ snapshot.to_json()                    → JSON canónico (model_dump_json)
+  │
+  └─ send_to_queue(payload_json, querylens_engine)           enqueue.py
+        SELECT * FROM pgmq.send('analyze_job', CAST(:payload AS JSONB))
+        → msg_id (logger.info en main: "<dialect> | enqueue | msg_id=...")
+```
+
+Degradación por sección y privacidad (Q3/Q4):
+
+- Si el collect de `statements` falla (una sola consulta de telemetría se aisló con rollback), el orquestador **omite Candidates/Explain/Normalize** y lo avisa con un WARNING explícito — `orchestrator | statements no disponibles | se omiten candidates/explain/normalize` — para que no parezca una sección legítimamente vacía.
+- En ese camino degradado la reja de privacidad sigue encendida: `active_queries` pasa por `redact_active_queries` y nunca viaja con `query_text` real (queda `canonic_query: "Not available"`). El texto de una query en ejecución no sale de la memoria ni cuando la telemetría degrada.
+
+## Targets de conexión (registered_databases)
+
+Las credenciales no están más atadas a dos pares de variables de entorno. El front y el auth service registran cada base del cliente en `registered_databases` (DDL en `querylens_database/registered_databases.sql`, montado por `docker-compose.yml`) con host, puerto, usuario y password cifrados con Fernet. `config/registered.py` hace el `SELECT ... WHERE is_active AND monitoring_enabled`, descifra con `AUTH_ENCRYPTION_KEY` y devuelve un `Target` por fila.
+
+| Punto | Decisión |
+|-------|----------|
+| Conexión al select | `get_connection_querylens_db()` (`ql_user`, dueño de la tabla) |
+| Identidad en el snapshot | `database_identifier` de la fila (`db_<8hex>`); lo pisa `run_engine` **antes** de validar |
+| Motor | `postgresql\|postgres → "postgres"`, `mysql → "mysql"`; otro valor → log + skip de la fila |
+| URL | `sqlalchemy.engine.URL.create(...)` (la password viene de Fernet y puede traer `@`, `:`) |
+| Postgres | URL **con** `database_name` |
+| MySQL | URL **sin** base (el `USE` lo emite `ExplainStage`), `pool_size=1, max_overflow=10, pool_pre_ping=True` |
+| Fila indecifrable / puerto malo / engine desconocido | log + se omite esa fila, las demás siguen; queda `CREDENTIALS_UNREADABLE` / `TARGET_CONFIG_INVALID` en `pipeline_health` |
+| Fila que no conecta (host caído, rol rotado) | `run_targets()` lo atrapa por target: `logger.error(... engine_failed ...)` y sigue con el resto |
+| Sin tabla, 0 filas activas, sin clave o clave ilegible | `load_registered_targets()` devuelve `None` y `main()` no extrae nada (`logger.warning`) |
+
+`main.py` no contiene ningún par de credenciales: decide contra qué correr leyendo la tabla, y si no hay nada registrado se detiene. El par `postgres`/`mysql` que usan `ql_sandbox`, los tests de integración y el job de CI vive literal en **`main_sandbox.py`**, con su propio `main()` y el mismo `run_targets()`. `test_e2e_main.py` ejercita ese par y una fila real de la tabla (la crea, la usa y la borra); `test_registered_targets.py` cubre el loader con mocks, sin abrir ninguna conexión.
+
+## Automatización (runner.py)
+
+`main.py` corre una vez; **`runner.py`** es el daemon que repite esa misma vuelta cada `EXTRACT_INTERVAL_S` (10 s por defecto, mismo criterio para todas las filas). Es el proceso que se despliega en contenedor.
+
+| Decisión | Implementación |
+|----------|----------------|
+| Cadencia | 10 s por defecto; cualquier env no usable (`vacío`, `abc`, `0`, `-3`, `inf`) vuelve a 10 s con warning |
+| Anclaje | La espera se mide **desde el inicio del ciclo**: si la vuelta duró 0,4 s espera 9,6 s; si duró más que el intervalo espera 0 y no se acumulan ticks atrasados (un solo hilo, nunca hay dos ciclos solapados) |
+| Gate de encolado | **Ninguno**: se encola siempre. La retención de PGMQ la resuelve el consumidor |
+| Fallo de ciclo | backoff 10 → 20 → 40 → 60 s (tope) y vuelve al intervalo normal tras una vuelta buena; un target que revienta ya lo aislaba `run_targets()` |
+| Ciclo de vida | `run_engine()` cierra los dos engines que creó (target y cola) en un `finally`: sin `dispose()`, cada 10 s dejaría pools abiertos y se agotaría `max_connections` |
+| Señales | `SIGINT`/`SIGTERM`/`SIGBREAK` marcan stop y el loop termina tras el ciclo en curso |
+| Logging | Estado de targets **por transición** (0↔N) a INFO —a 10 s un aviso por ciclo serían 8 640 al día—; detalle de cada vuelta (targets, duración) a DEBUG en `logs/pipeline.log` |
+| Sin targets | No llama a `run_targets`, solo re-consulta: la tabla puede llenarse mientras el daemon corre |
+| Ruido INFO de `registered.py` (aceptado) | `load_registered_targets` loguea `registered_targets | sin filas activas utilizables` a **INFO en cada ciclo** sin bases activas: ~8 640 líneas/día en el estado ocioso es ruido aceptado (decisión 2026-10-08; se mantiene INFO, no se baja a DEBUG) |
+
+Despliegue: `telemetry_pipeline/Dockerfile` (python:3.11-slim, compila `psycopg2` y purga el toolchain) y el servicio **`pipeline`** en `docker-compose.yml`, con `depends_on: postgres: condition: service_healthy` (healthcheck `pg_isready -U ${QUERYLENS_USER} -d ${QUERYLENS_DB}`: espere a que `init.sql` haya creado la cola; **evita el `Connection refused` del primer ciclo cuando la base todavía arranca**), `restart: unless-stopped`, `host.docker.internal:host-gateway` (las filas registradas suelen apuntar al host), `EXTRACT_INTERVAL_S=${EXTRACT_INTERVAL_S:-10}` y `QL_LOG_LEVEL=${QL_LOG_LEVEL:-INFO}` (DEBUG/INFO/WARNING/ERROR; `DEBUG` habilita la línea de tamaño de payload de `main._log_payload_size`). Los logs caen en el volumen `pipeline_logs`.
+
+### Qué hace y qué no hace (estado actual)
+
+Un ciclo es, completo:
+
+```
+load_registered_targets()        SELECT ... WHERE is_active AND monitoring_enabled   (1 conexión a la cola)
+  → si devuelve None/[]: log de transición y no extrae nada, re-consulta al siguiente ciclo
+  → si hay targets:    run_targets()                          (1 vuelta por fila: extrae,
+                                                               valida, encola, dispose)
+  → espera anclada al inicio del ciclo
+```
+
+Y explícitamente **no**:
+
+| No hace | Por qué |
+|---------|---------|
+| No lee `MONITOR_PG_*` / `MONITOR_MY_*` | El host, puerto, usuario y password de cada target salen de la fila (Fernet con `AUTH_ENCRYPTION_KEY`). Esas variables solo las consume `main_sandbox.py`; están en el servicio `pipeline` únicamente por si alguien corre esa entrada dentro del contenedor |
+| No consume `analyze_job` | Solo produce. El consumidor es `detection_engine` (lee con `pgmq.read` y archiva con `pgmq.archive`); si se detiene, **la cola crece**; el tamaño por snapshot **no está acotado** (va el payload completo: statements + candidatos + planes + columnas/índices/tablas). Medido (2026-10-08, `ci/regenerate_goldens.py` imprime el payload validado): **PG ~32 KB con 11 statements; MySQL ~22 KB con 10 statements** (~2–3 KB por statement adicional) → una base con cientos/miles de statements genera snapshots de cientos de KB a varios MB. Crecimiento ≈ `bytes_promedio × 8 640/día × nº de bases`. Verificar con `SELECT count(*), pg_size_pretty(avg(pg_column_size(message))::bigint) FROM pgmq.q_analyze_job`. `pg_stat_statements` guarda el texto completo de cada query: `statements[*].query_text` viaja recortado a `MAX_STATEMENT_TEXT_CHARS` (8192, `query_text_truncated: true`), el mismo largo sobre el que `canonic_query` ya queda en `"Not available"`; los candidatos viajan completos. `PAYLOAD_TOO_LARGE` (info) abre por encima de 1 MB y se resuelve por debajo de 0,9 MB (histéresis) |
+| No guarda estado entre ciclos | Sin dedupe ni gate por `counters_epoch`: cada vuelta emite un snapshot por base aunque nada haya cambiado. La retención de mensajes ya leídos es del consumidor |
+| No persigue EXPLAIN fallidos (decisión 2026-10-08) | Cada ciclo **reintenta** los candidatos cuya explicación falló (el `ExplainStage` se recrea por ciclo; no hay contador ni backoff a nivel proceso). El fallo queda como `ERROR` de `stages.explain` en el log y ese candidato no obtiene plan en ese ciclo; se vuelve a probar en el siguiente. Quedó así por decisión del usuario, por el momento. **Causa típica conocida:** refs sin calificar que el rol resuelve por un schema que no es el primero con tablas (`SET LOCAL search_path` lo recorta; limitación conocida y aceptada, ver `references/004` → "EXPLAIN y search_path") |
+| No corre en paralelo | Un hilo, una vuelta a la vez; el aislamiento por target (dentro de `run_targets()`) es lo que evita que una base caída tape a las demás |
+| No decide nada del front/auth | Quién registra y activa filas es el auth service; el runner solo las lee. Si se agrega una fila mientras corre, la ve en el próximo ciclo |
+
+## Salud del pipeline (pipeline_health)
+
+Lo que antes solo quedaba en el log (extensión faltante, permisos, conexión caída) ahora también se escribe en el schema `pipeline_health` de la base de QueryLens. La API REST lo lee por `db_id`; el pipeline es el único que escribe. DDL en `querylens_database/pipeline_health.sql`, montado por `docker-compose.yml` como `03_pipeline_health.sql`. **En un volumen ya inicializado el initdb no vuelve a correr**: aplicarlo a mano con `psql -U $QUERYLENS_USER -d $QUERYLENS_DB -f querylens_database/pipeline_health.sql`. Sin el schema, el pipeline sigue igual y avisa una sola vez por proceso.
+
+| Tabla | Contenido |
+|-------|-----------|
+| `last_run` | Una fila por `db_id`, pisada en cada ciclo: `status` (`ok`/`degraded`/`failed`), `sections_ok`/`sections_failed`, `msg_id` encolado, `engine_version` |
+| `issues` | Un problema abierto por `(db_id, code, section)` con `severity` (`blocking`/`degraded`/`info`), `message` y `remediation` ya redactados (`health/catalog.py`), `params` (solo SQLSTATE/errno, contadores y settings: **nunca** texto de queries ni el mensaje crudo del driver), `first_seen`/`last_seen`/`occurrences`/`resolved_at` |
+
+Consulta típica de la API: `SELECT * FROM pipeline_health.last_run WHERE db_id = $1` y `SELECT * FROM pipeline_health.issues WHERE db_id = $1 AND (resolved_at IS NULL OR resolved_at > $2)`.
+
+```
+run_engine(dialect, factory, db_id)                     main.py
+  report = HealthReport()                               health/report.py
+  Orchestrator(collector, report)
+    connect            falla → classify(scope=connection) → AUTH_FAILED, HOST_UNREACHABLE, ...
+    PreflightStage     health/preflight.py; cada HEALTH_PREFLIGHT_TTL_S (300 s) por base:
+                       version/track_counts/pg_stat_statements_info (PG),
+                       @@performance_schema/setup_consumers (MySQL)
+    CollectStage       error por sección → classify(scope=collect): PG_STATEMENTS_NOT_INSTALLED (42P01),
+                       _NOT_PRELOADED (55000), _OUTDATED (42703), PS_SELECT_DENIED (1142), ...
+    post_collect       health/checks.py, antes de normalize/redact:
+                       '<insufficient privilege>' → MISSING_PG_READ_ALL_STATS; muestra MySQL truncada
+                       (sin PROCESS, active_queries de MySQL falla con 1227 → MISSING_PROCESS_PRIVILEGE)
+    DeadlocksStage     sin funciones de log (PG) o sin PROCESS (MySQL) → DEADLOCK_REPORTS_UNAVAILABLE;
+                       log_error_verbosity=terse (PG), innodb_print_all_deadlocks=OFF o
+                       log_error_verbosity<3 (MySQL) → DEADLOCK_REPORTS_PARTIAL
+    ExplainStage       errores agrupados por code con count (sin query_id) + NO_EXPLAINABLE_CANDIDATES
+  validación / encolado → SNAPSHOT_VALIDATION_FAILED, PAYLOAD_TOO_LARGE (scope pipeline);
+                       ENQUEUE_FAILED (scope enqueue: solo se resuelve en un ciclo que volvió a encolar)
+  finally: health_writer.flush(...)   muestra del contador (cycle_samples) y, si se guardó,
+                       abrazos perdidos: en la última hora (terminada 2 min antes, por la cola
+                       del detector) el contador sumó más que los deadlock_events guardados →
+                       DEADLOCKS_MISSED (scope capture); después una transacción:
+                       last_run + upsert issues + resolve
+```
+
+| Decisión | Implementación |
+|----------|----------------|
+| Dedupe | Upsert sobre el índice único parcial `(db_id, code, section) WHERE resolved_at IS NULL`: a 10 s por ciclo, un problema persistente es **una** fila con `occurrences`, no 8 640 por día |
+| Resolución | Un issue abierto se marca `resolved_at` solo en un ciclo que **volvió a evaluar su scope** y ya no lo vio. Si la conexión cae, los issues de collect/explain no se dan por arreglados; si el preflight está en caché, sus issues se reinyectan sin marcar el scope |
+| Reaparición | Un problema resuelto que vuelve es una fila nueva; la resuelta queda como historia hasta la purga |
+| Sin fila registrada (`main_sandbox.py`) | `db_id` = `querylens-db-01:<dialecto>`, para que los dos motores no compartan `last_run` |
+| Purga | `runner.py` llama `health_writer.purge()` en el primer ciclo y luego cada `HEALTH_PURGE_INTERVAL_S` (1 h): borra issues resueltos hace más de `HEALTH_RETENTION_DAYS` (15) días, abiertos sin `last_seen` en ese plazo (base desactivada o borrada) y `last_run` igual de viejos. `main.py` (una sola vuelta) no purga |
+| Fallas del writer | Nunca relanza: perder un registro de salud no impide entregar el snapshot |
+
+Para verlo en el sandbox: `ql_sandbox/scripts/postgres/simulate_health_postgres.sh {drop-extension|revoke-stats|restore}` y `ql_sandbox/scripts/mysql/simulate_health_mysql.sh {disable-consumers|revoke-process|restore}`.
+
+## Patrones de diseño
+
+| Patrón | Dónde | Código |
+|--------|-------|--------|
+| **Strategy** | Cada motor es una estrategia de la misma interfaz `DB_Engine_Collector` (queries, preprocess, normalize_engine_artifacts). Seleccionada en runtime por el dialecto, sin `if` en los stages. | `collectors/base.py:1`, `collectors/mysql/collector.py:14`, `collectors/postgres/collector.py:14` |
+| **Simple Factory** | `Engine_Factory.create_collector(dialect, engine)` devuelve la estrategia correcta y lanza `ValueError` ante un dialecto desconocido. | `collectors/factory.py:3` |
+| **Registry** | `EXPLAIN_NORMALIZERS = {"postgres": ..., "mysql": ...}` mapea dialecto→normalizador; `ExplainStage` hace lookup por `source_dialect`. | `stages/explain_normalizer.py:296`, `stages/explain.py:11` |
+| **Pipeline** | `Orchestrator` encadena stages en orden fijo; cada stage implementa `execute`. Composición lineal + coordinador (director). | `orchestrator.py:8` |
+| **Template Method** | Misma firma de etapa, pero el esqueleto `CandidatesStage`/`NormalizeStage` delega hooks `preprocess_statements`, `mark_explainable` y `normalize_engine_artifacts` a la estrategia del motor. | `stages/candidates.py:7`, `stages/normalize.py:20` |
+| **Facade** | `SnapshotPayload.from_snapshot` / `to_json` ocultan validación y serialización pydantic a `main.py`. | `../contract/querylens_contract/snapshot.py` |
+| **DTO** | Los 15 modelos pydantic son el contrato de transporte entre el pipeline y la cola; `to_json` es la representación wire. | `../contract/querylens_contract/snapshot.py` |
+| **Command (variante)** | Cada `Stage.execute(stats, conn)` es un comando autocontenido y comprobable de forma aislada. | `stages/*.py` |
+
+## Patrones estructurales de alto nivel
+
+- **Arquitectura en capas (layered)**: `collectors` (datos) → `stages` (lógica de análisis) → `enqueue`/cola (integración saliente). Las dependencias fluyen de arriba hacia abajo; la única inversión leve es que `collectors` usan helpers de `stages.normalize` (normalizers compartidos por motor).
+- **Pipeline secuencial**: el snapshot `stats` viaja de stage en stage mutado por pasos idempotentes; enriquecimiento al final (`db_id`).
+- **Registro de estrategias** para normalizadores de plan y selección por razones (`selected_by` agrega motivos; dedupe por `query_id`).
+- **Contrato de datos explícito en la frontera**: validación strict-ish en el punto de emisión (antes de encolar), no en el consumo.
+
+## Tests que confirman los patrones de la arquitectura
+
+Sí — además de los tests de comportamiento, `tests/test_architecture.py` (19 tests, marker `contract`) fija los patrones estructurales:
+
+- **Strategy**: ambas clases heredan `DB_Engine_Collector`, exponen el mismo contrato (7 claves de `queries`, `source_dialect`, hooks callables), y el hook `preprocess_statements` solo está especializado en MySQL.
+- **Simple Factory**: devuelve la estrategia correcta por dialecto y `ValueError` para "oracle".
+- **Registry**: `EXPLAIN_NORMALIZERS` cubre exactamente `{postgres, mysql}` y sus instancias satisfacen `normalize`.
+- **Pipeline**: los 5 stages exponen `execute`; `Orchestrator` compone `Collect → Candidates → Explain → Normalize → Enrich` en ese orden.
+- **Facade/DTO**: round-trip `from_snapshot → to_json → model_validate_json` preserva `db_id` y el número de statements; `to_json` es JSON encolable; payload inválido rompe con `ValidationError`.
+- **Hook de Template**: `DB_Engine_Collector.normalize_engine_artifacts` y `mark_explainable` devuelven `stats` intactos (contrato de la base), y los selectores encadenados por el stage siguen presentes y callables.
+- `tests/test_collectors_explainable.py` fija la semántica de `mark_explainable` por motor: Postgres marca todo listo, MySQL respeta `query_sample_text` nulo, vacío o solo-espacios.
+
+Los tests de arquitectura son **contratos estructurales**: validan "qué interfaz debe existir", no el detalle de implementación de cada rol. Si alguien reemplaza el Strategy por `if/elif` de dialectos o rompe la firma de `execute`, estos tests fallan aunque el comportamiento siga pasando.
+
+## Notas de diseño deliberado
+
+- `stats["source"]` fue eliminado: el dialecto vive en el collector (`source_dialect`); replicarlo en el payload rompía la unicidad del evento en la cola.
+- `query_id` es `Union[str, int, None]`: MySQL lo emite como `{schema}/{digest}` (string — el digest hex solo hubiera perdido una de cada par de filas con el mismo digest en dos schemas, que es la PK real de `events_statements_summary_by_digest`), Postgres como `queryid` bigint.
+- El `queryid` de Postgres es un hash a nivel instancia y **no incluye la base**: si dos bases del mismo servidor ejecutan la misma query, comparten `query_id`, y el dedupe por `query_id` de `select_candidates_to_explain` las colapsaría en un candidato. Aceptado como limitación (una base por target hace el caso improbable); el EXPLAIN de un candidato sin colisión que vive en otra base ya corre en una conexión dedicada a esa base. Ver `references/004_decisiones_contrato.md` (query_id).
+- Cada fila de `statements`, `locks` y `active_queries` lleva `database_name` (`str | None`): la recolección es server-wide (pg_stat_statements/pg_locks/pg_stat_activity y digests MySQL leen todo el servidor) y la atribución por fila permite saber de qué base vino cada cosa bajo un mismo `db_id`. Un candidato de Postgres de otra base se explica en una **conexión dedicada a esa base** (una conexión PG no cambia de base con `USE`); en MySQL el `USE {schema|database}` alcanza, y si no hay contexto de schema el candidato se salta (ver `references/004_decisiones_contrato.md`).
+- `ready_for_explain` es la puerta de entrada a `EXPLAIN`. `init_ready_for_explain` solo la inicializa en `False` y deduplica por `query_id`; la decisión real la toma `mark_explainable`, por motor: Postgres marca todo como listo porque `EXPLAIN (GENERIC_PLAN)` resuelve los placeholders `$1` sin conocer los valores; MySQL marca solo lo que tiene `QUERY_SAMPLE_TEXT` o una ejecución en `events_statements_history`, porque su `EXPLAIN` necesita literales reales.
+- Antes (`c730da1`) la explicación exigía que el `query_id` del candidato estuviera en `active_queries`, es decir que la query se estuviera ejecutando en ese instante. Ese cruce ya no aplica desde `93beb5e`: cada motor produce el plan por su vía nativa sin necesitar la query en vivo, así que `init_ready_for_explain` ya no lee `active_queries` (aunque el nombre y la firma los conserven).
+- La asimetría es propia de cada motor, no una inconsistencia: `pg_stat_statements.query` ya viene normalizado con `$1` y `EXPLAIN (GENERIC_PLAN)` lo convierte en plan. `DIGEST_TEXT` de MySQL trae `?`, que no produce plan; `QUERY_SAMPLE_TEXT` trae la consulta con valores reales, que sí lo produce.
+- El ciclo del runner por defecto es de **10 s** (`interval_from_env()`, pensado para pruebas/sandbox). Para producción la cadencia prevista es de **30–60 s** (decisión de deploy, sin tocar código): cada vuelta emite un snapshot por base, así que el intervalo es la palanca directa de volumen de la cola (ver la fila "No guarda estado entre ciclos").
+- La transacción del target se maneja en dos tiempos: el **collect** la cierra con `commit()` al terminar (no retiene snapshot/vacuum de Postgres ni MVCC de MySQL durante el resto del ciclo), y cada **EXPLAIN** corre en su propia **transacción corta** (`BEGIN → SET LOCAL/USE → EXPLAIN → COMMIT`; rollback en fallo; el `USE` de MySQL es estado de sesión y sobrevive al commit). Ver `references/004_decisiones_contrato.md` (M-12).
+- `EXPLAIN (GENERIC_PLAN)` existe desde PostgreSQL 16. En PG 15 `ExplainStage` no lo intenta: el candidato tiene plan solo si `auto_explain` lo registró (ver "Versiones soportadas"), y no se reporta `NO_EXPLAINABLE_CANDIDATES` por eso. Si un EXPLAIN falla, la excepción se captura por consulta, se hace `rollback` y el candidato queda fuera de `canonic_explains` sin abortar el ciclo. Un caso conocido: si la query normalizada solo pasa parámetros a una función u operador con varias versiones (`generate_series($1, $2)`, `$1 + $2`), `GENERIC_PLAN` no puede elegir sin los tipos (SQLSTATE `42725`/`42P18`). Se reporta como `EXPLAIN_PARAM_TYPES_AMBIGUOUS` (info, se loguea en INFO), no como `EXPLAIN_FAILED` (degraded): la query sigue en `pg_stat_statements` y fallaría en cada ciclo, y como degraded dejaría la base degradada para siempre. Su plan llega por `auto_explain` si alguna ejecución pasa del umbral.
+- `explain_source` viaja en `canonic_explains` para que el consumidor sepa con qué fidelidad se obtuvo el plan: `"auto_explain"` (Postgres, plan que `auto_explain` registró de una ejecución real), `"generic"` (Postgres, plan sin valores concretos), `"history"` (MySQL, plan de una ejecución que sigue en `events_statements_history`, con sus filas reales en `estimates.actual_rows`) o `"sample"` (MySQL, plan de `QUERY_SAMPLE_TEXT` cuando no hay ninguna en el historial). `estimates.actual_rows` es lo que usa AP-08 (`detection_engine/references/004_ap08_filas_misma_ejecucion.md`).
+- En Postgres el plan de `auto_explain` tiene prioridad sobre `GENERIC_PLAN`. Solo se encuentra si la query pasó de `auto_explain.log_min_duration` (50 ms en la guía 006) dentro de la ventana leída: cada ciclo relee los últimos 2 MB del log, sin guardar offsets entre ciclos. Una query rápida, o lenta pero fuera de esa ventana, sigue con el plan genérico. El cruce por `query_id` no se mezcla con las queries del propio monitor: los candidatos ya las excluyen en `STATEMENTS_QUERY`.
+- El plan de `auto_explain` trae los literales de la ejecución en `Filter`/`Index Cond`/`Join Filter`/`Hash Cond`/`Merge Cond`. `redact_postgres_plan_predicate` los reemplaza por `$n` sobre el texto de Postgres (no por sqlglot) y se lleva el cast pegado al literal, para que el predicado tenga el formato del plan genérico: `(c <> 'abc'::bpchar)` → `(c <> $1)`, igual que el genérico `(c ~~ $1)`. Los casts sobre columnas (`(c)::text`) salen igual en ambos planes y se conservan.
+- `QUERY_SAMPLE_TEXT` se trunca a `performance_schema_max_digest_text_length` (1024 por defecto). Una consulta larga queda con SQL inválido: se trata igual que cualquier fallo de `EXPLAIN`, y aparece como no explicable.
+- `query_sample_text`, `history_text` y `history_rows_sent` son **flujo interno, no campos del contrato**: MySQL los produce (`QUERY_SAMPLE_TEXT` y `SQL_TEXT` del historial, literales reales) y solo los usan `mark_explainable` y el `EXPLAIN FORMAT=JSON` en memoria; `statement_history` sale de `stats` en `mark_explainable`. El payload lo **descarta** (`extra="ignore"`; ver `references/004_decisiones_contrato.md`): la cola no debe conservar texto real de las queries — solo viajan los normalizados (`query_text` de Postgres con `$1`, `DIGEST_TEXT` de MySQL con `?`) y los predicados de plan de MySQL (`canonic_explains[*].predicate`), que `clean_mysql_explain_predicate_dynamic` redacta a `$n` (N-1) porque el plan se arma con la query real. El fix de M-10 que lo declaró en el contrato fue un error y quedó revertido; este requisito es la razón por la que el campo nunca estuvo en el contrato.
+- Los scripts que medían la mecánica basada en logs se descartaron; la justificación vive en `references/005_evaluacion_alternativas_query_real.md` (cobertura incompleta del slow log, permisos de FS, config del servidor, texto logueado ≠ texto planificado). La carpeta `research/` se eliminó del repo.
+- Se explica después de `CandidatesStage` y antes de `NormalizeStage`: el EXPLAIN usa el texto de estadísticas; la normalización (canonicalización) ocurre después.
+
+## Nota sobre el README del repo
+
+`README.md` enlaza informes (`SegundoInforme.md`, `InformeFinal.md`, `instalacion.md`, `Desarrollo.md`, `plan_patterns.md`) que aún no existen **a propósito**: se escribirán cuando el proyecto los tenga. No son links rotos pendientes de arreglar ni código muerto de documentación.

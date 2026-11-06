@@ -1,0 +1,3078 @@
+[
+ {
+  "name": "01 igualdad con indice",
+  "sql": "SELECT id FROM ql_pt_orders WHERE status = 'raro'",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Bitmap Heap Scan",
+     "rel": "ql_pt_orders",
+     "Recheck Cond": "((status)::text = $1)"
+    },
+    {
+     "node": "Bitmap Index Scan",
+     "rel": null,
+     "Index Cond": "((status)::text = $1)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 33333,
+     "predicate": null,
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": null,
+     "estimated_rows": 33333,
+     "predicate": "((status)::text = $1)",
+     "index_name": "ql_pt_orders_status"
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Bitmap Heap Scan",
+     "rel": "ql_pt_orders",
+     "Recheck Cond": "((status)::text = 'raro'::text)"
+    },
+    {
+     "node": "Bitmap Index Scan",
+     "rel": null,
+     "Index Cond": "((status)::text = 'raro'::text)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 967,
+     "predicate": null,
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": null,
+     "estimated_rows": 967,
+     "predicate": "((status)::text = $1)",
+     "index_name": "ql_pt_orders_status"
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "ref",
+     "key": "ql_pt_orders_status"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 1000,
+     "predicate": null,
+     "index_name": "ql_pt_orders_status"
+    }
+   ]
+  }
+ },
+ {
+  "name": "02 igualdad sin indice",
+  "sql": "SELECT id FROM ql_pt_orders WHERE total = 10.5",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(total = $1)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 100,
+     "predicate": "(total = $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(total = 10.5)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 99,
+     "predicate": "(total = $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "ALL",
+     "attached_condition": "(`ql_demo`.`ql_pt_orders`.`total` = 10.50)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 9981,
+     "predicate": "(ql_pt_orders.total = $1)",
+     "index_name": null
+    }
+   ]
+  }
+ },
+ {
+  "name": "03 rango fechas",
+  "sql": "SELECT id FROM ql_pt_orders WHERE created_at >= '2026-01-02' AND created_at < '2026-01-03'",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Index Scan",
+     "rel": "ql_pt_orders",
+     "Index Cond": "((created_at >= $1) AND (created_at < $2))"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 500,
+     "predicate": "((created_at >= $1) AND (created_at < $2))",
+     "index_name": "ql_pt_orders_created"
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Index Scan",
+     "rel": "ql_pt_orders",
+     "Index Cond": "((created_at >= '2026-01-02 00:00:00'::timestamp without time zone) AND (created_at < '2026-01-03 00:00:00'::timestamp without time zone))"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 1391,
+     "predicate": "((created_at >= $1) AND (created_at < $2))",
+     "index_name": "ql_pt_orders_created"
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "range",
+     "attached_condition": "((`ql_demo`.`ql_pt_orders`.`created_at` >= TIMESTAMP'2026-01-02 00:00:00') and (`ql_demo`.`ql_pt_orders`.`created_at` < TIMESTAMP'2026-01-03 00:00:00'))",
+     "key": "ql_pt_orders_created"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 1440,
+     "predicate": "((ql_pt_orders.created_at >= CAST($1 AS TIMESTAMPTZ)) AND (ql_pt_orders.created_at < CAST($2 AS TIMESTAMPTZ)))",
+     "index_name": "ql_pt_orders_created"
+    }
+   ]
+  }
+ },
+ {
+  "name": "04 BETWEEN",
+  "sql": "SELECT id FROM ql_pt_orders WHERE total BETWEEN 10 AND 20",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "((total >= $1) AND (total <= $2))"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 500,
+     "predicate": "((total >= $1) AND (total <= $2))",
+     "index_name": null
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "((total >= '10'::numeric) AND (total <= '20'::numeric))"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 10170,
+     "predicate": "((total >= $1) AND (total <= $2))",
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "ALL",
+     "attached_condition": "(`ql_demo`.`ql_pt_orders`.`total` between 10 and 20)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 11089,
+     "predicate": "(ql_pt_orders.total BETWEEN $1 AND $2)",
+     "index_name": null
+    }
+   ]
+  }
+ },
+ {
+  "name": "05 IN lista",
+  "sql": "SELECT id FROM ql_pt_orders WHERE status IN ('raro', 'pendiente')",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "((status)::text = ANY ((ARRAY[$1, $2])::text[]))"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 66667,
+     "predicate": "((status)::text = ANY ((ARRAY[$1, $2])::text[]))",
+     "index_name": null
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Bitmap Heap Scan",
+     "rel": "ql_pt_orders",
+     "Recheck Cond": "((status)::text = ANY ('{raro,pendiente}'::text[]))"
+    },
+    {
+     "node": "Bitmap Index Scan",
+     "rel": null,
+     "Index Cond": "((status)::text = ANY ('{raro,pendiente}'::text[]))"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 29543,
+     "predicate": null,
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": null,
+     "estimated_rows": 29543,
+     "predicate": "((status)::text = ANY ($1))",
+     "index_name": "ql_pt_orders_status"
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "range",
+     "attached_condition": "(`ql_demo`.`ql_pt_orders`.`status` in ('raro','pendiente'))",
+     "key": "ql_pt_orders_status"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 50906,
+     "predicate": "(ql_pt_orders.status IN ($1, $2))",
+     "index_name": "ql_pt_orders_status"
+    }
+   ]
+  }
+ },
+ {
+  "name": "06 distinto",
+  "sql": "SELECT id FROM ql_pt_orders WHERE status <> 'entregado'",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "((status)::text <> $1)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 66667,
+     "predicate": "((status)::text <> $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "((status)::text <> 'entregado'::text)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 29543,
+     "predicate": "((status)::text <> $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "range",
+     "attached_condition": "(`ql_demo`.`ql_pt_orders`.`status` <> 'entregado')",
+     "key": "ql_pt_orders_status"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 49907,
+     "predicate": "(ql_pt_orders.status <> $1)",
+     "index_name": "ql_pt_orders_status"
+    }
+   ]
+  }
+ },
+ {
+  "name": "07 OR",
+  "sql": "SELECT id FROM ql_pt_orders WHERE status = 'raro' OR total > 99",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(((status)::text = $1) OR (total > $2))"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 55556,
+     "predicate": "(((status)::text = $1) OR (total > $2))",
+     "index_name": null
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(((status)::text = 'raro'::text) OR (total > '99'::numeric))"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 1937,
+     "predicate": "(((status)::text = $1) OR (total > $2))",
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "ALL",
+     "attached_condition": "((`ql_demo`.`ql_pt_orders`.`status` = 'raro') or (`ql_demo`.`ql_pt_orders`.`total` > 99.00))"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 66540,
+     "predicate": "((ql_pt_orders.status = $1) OR (ql_pt_orders.total > $2))",
+     "index_name": null
+    }
+   ]
+  }
+ },
+ {
+  "name": "08 IS NULL",
+  "sql": "SELECT id FROM ql_pt_orders WHERE note IS NULL",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(note IS NULL)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 9857,
+     "predicate": "(note IS NULL)",
+     "index_name": null
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(note IS NULL)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 9857,
+     "predicate": "(note IS NULL)",
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "ALL",
+     "attached_condition": "(`ql_demo`.`ql_pt_orders`.`note` is null)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 9981,
+     "predicate": "(ql_pt_orders.note IS NULL)",
+     "index_name": null
+    }
+   ]
+  }
+ },
+ {
+  "name": "09 LIKE prefijo",
+  "sql": "SELECT id FROM ql_pt_orders WHERE note LIKE 'nota1%'",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(note ~~ $1)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 500,
+     "predicate": "(note ~~ $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(note ~~ 'nota1%'::text)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 10016,
+     "predicate": "(note ~~ $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "ALL",
+     "attached_condition": "(`ql_demo`.`ql_pt_orders`.`note` like 'nota1%')"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 11089,
+     "predicate": "(ql_pt_orders.note LIKE $1)",
+     "index_name": null
+    }
+   ]
+  }
+ },
+ {
+  "name": "10 LIKE sufijo",
+  "sql": "SELECT id FROM ql_pt_orders WHERE note LIKE '%99'",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(note ~~ $1)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 500,
+     "predicate": "(note ~~ $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(note ~~ '%99'::text)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 911,
+     "predicate": "(note ~~ $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "ALL",
+     "attached_condition": "(`ql_demo`.`ql_pt_orders`.`note` like '%99')"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 11089,
+     "predicate": "(ql_pt_orders.note LIKE $1)",
+     "index_name": null
+    }
+   ]
+  }
+ },
+ {
+  "name": "11 funcion LOWER",
+  "sql": "SELECT id FROM ql_pt_customers WHERE LOWER(email) = 'user5@x.com'",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_customers",
+     "Filter": "(lower((email)::text) = $1)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_customers",
+     "estimated_rows": 25,
+     "predicate": "(lower((email)::text) = $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_customers",
+     "Filter": "(lower((email)::text) = 'user5@x.com'::text)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_customers",
+     "estimated_rows": 25,
+     "predicate": "(lower((email)::text) = $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_customers",
+     "access_type": "index",
+     "attached_condition": "(lower(`ql_demo`.`ql_pt_customers`.`email`) = 'user5@x.com')",
+     "key": "ql_pt_customers_email"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_customers",
+     "estimated_rows": 5000,
+     "predicate": "(LOWER(ql_pt_customers.email) = $1)",
+     "index_name": "ql_pt_customers_email"
+    }
+   ]
+  }
+ },
+ {
+  "name": "12 aritmetica",
+  "sql": "SELECT id FROM ql_pt_orders WHERE total + 0 = 10",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "((total + $1) = $2)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 500,
+     "predicate": "((total + $1) = $2)",
+     "index_name": null
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "((total + '0'::numeric) = '10'::numeric)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 500,
+     "predicate": "((total + $1) = $2)",
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "ALL",
+     "attached_condition": "((`ql_demo`.`ql_pt_orders`.`total` + 0) = 10)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 99813,
+     "predicate": "((ql_pt_orders.total + $1) = $2)",
+     "index_name": null
+    }
+   ]
+  }
+ },
+ {
+  "name": "13 DATE()",
+  "sql": "SELECT id FROM ql_pt_orders WHERE DATE(created_at) = '2026-01-02'",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(date(created_at) = $1)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 500,
+     "predicate": "(date(created_at) = $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(date(created_at) = '2026-01-02'::date)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 500,
+     "predicate": "(date(created_at) = $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "index",
+     "attached_condition": "(cast(`ql_demo`.`ql_pt_orders`.`created_at` as date) = '2026-01-02')",
+     "key": "ql_pt_orders_created"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 99813,
+     "predicate": "(CAST(ql_pt_orders.created_at AS DATE) = $1)",
+     "index_name": "ql_pt_orders_created"
+    }
+   ]
+  }
+ },
+ {
+  "name": "14 CAST explicito",
+  "sql": "SELECT id FROM ql_pt_orders WHERE CAST(code AS INTEGER) = 5",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "((code)::integer = $1)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 500,
+     "predicate": "((code)::integer = $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "((code)::integer = 5)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 500,
+     "predicate": "((code)::integer = $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "ALL",
+     "attached_condition": "(cast(`ql_demo`.`ql_pt_orders`.`code` as signed) = 5)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 99813,
+     "predicate": "(CAST(ql_pt_orders.code AS BIGINT) = $1)",
+     "index_name": null
+    }
+   ]
+  }
+ },
+ {
+  "name": "15 char contra numero (solo MySQL)",
+  "sql": "SELECT id FROM ql_pt_orders WHERE code = 5",
+  "pg_generic": null,
+  "pg_literal": null,
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "ALL",
+     "attached_condition": "(`ql_demo`.`ql_pt_orders`.`code` = 5)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 9981,
+     "predicate": "(ql_pt_orders.code = $1)",
+     "index_name": null
+    }
+   ]
+  }
+ },
+ {
+  "name": "16 int contra decimal",
+  "sql": "SELECT id FROM ql_pt_orders WHERE customer_id = 5.0",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Bitmap Heap Scan",
+     "rel": "ql_pt_orders",
+     "Recheck Cond": "(customer_id = $1)"
+    },
+    {
+     "node": "Bitmap Index Scan",
+     "rel": null,
+     "Index Cond": "(customer_id = $1)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 20,
+     "predicate": null,
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": null,
+     "estimated_rows": 20,
+     "predicate": "(customer_id = $1)",
+     "index_name": "ql_pt_orders_customer"
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "((customer_id)::numeric = 5.0)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 500,
+     "predicate": "((customer_id)::numeric = $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "ref",
+     "key": "ql_pt_fk"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 20,
+     "predicate": null,
+     "index_name": "ql_pt_fk"
+    }
+   ]
+  }
+ },
+ {
+  "name": "17 indice + funcion",
+  "sql": "SELECT id FROM ql_pt_orders WHERE status = 'raro' AND LOWER(note) = 'nota100'",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Bitmap Heap Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(lower(note) = $2)",
+     "Recheck Cond": "((status)::text = $1)"
+    },
+    {
+     "node": "Bitmap Index Scan",
+     "rel": null,
+     "Index Cond": "((status)::text = $1)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 167,
+     "predicate": "(lower(note) = $2)",
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": null,
+     "estimated_rows": 33333,
+     "predicate": "((status)::text = $1)",
+     "index_name": "ql_pt_orders_status"
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Bitmap Heap Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(lower(note) = 'nota100'::text)",
+     "Recheck Cond": "((status)::text = 'raro'::text)"
+    },
+    {
+     "node": "Bitmap Index Scan",
+     "rel": null,
+     "Index Cond": "((status)::text = 'raro'::text)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 5,
+     "predicate": "(lower(note) = $1)",
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": null,
+     "estimated_rows": 967,
+     "predicate": "((status)::text = $1)",
+     "index_name": "ql_pt_orders_status"
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "ref",
+     "attached_condition": "(lower(`ql_demo`.`ql_pt_orders`.`note`) = 'nota100')",
+     "key": "ql_pt_orders_status"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 1000,
+     "predicate": "(LOWER(ql_pt_orders.note) = $1)",
+     "index_name": "ql_pt_orders_status"
+    }
+   ]
+  }
+ },
+ {
+  "name": "18 indice + otra columna",
+  "sql": "SELECT id FROM ql_pt_orders WHERE created_at >= '2026-03-01' AND total > 50",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Index Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(total > $2)",
+     "Index Cond": "(created_at >= $1)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 11111,
+     "predicate": "(created_at >= $1)",
+     "index_name": "ql_pt_orders_created"
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Index Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(total > '50'::numeric)",
+     "Index Cond": "(created_at >= '2026-03-01 00:00:00'::timestamp without time zone)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 7571,
+     "predicate": "(created_at >= $1)",
+     "index_name": "ql_pt_orders_created"
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "range",
+     "attached_condition": "(`ql_demo`.`ql_pt_orders`.`total` > 50.00)",
+     "index_condition": "(`ql_demo`.`ql_pt_orders`.`created_at` >= TIMESTAMP'2026-03-01 00:00:00')",
+     "key": "ql_pt_orders_created"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 9400,
+     "predicate": "(ql_pt_orders.total > $1)",
+     "index_name": "ql_pt_orders_created"
+    }
+   ]
+  }
+ },
+ {
+  "name": "19 JOIN con filtros",
+  "sql": "SELECT o.id FROM ql_pt_orders o JOIN ql_pt_customers c ON c.id = o.customer_id WHERE c.region = 3 AND o.status = 'raro'",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Hash Join",
+     "rel": null,
+     "Hash Cond": "(o.customer_id = c.id)"
+    },
+    {
+     "node": "Bitmap Heap Scan",
+     "rel": "o",
+     "Recheck Cond": "((status)::text = $2)"
+    },
+    {
+     "node": "Bitmap Index Scan",
+     "rel": null,
+     "Index Cond": "((status)::text = $2)"
+    },
+    {
+     "node": "Seq Scan",
+     "rel": "c",
+     "Filter": "(region = $1)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "o",
+     "estimated_rows": 33333,
+     "predicate": null,
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": null,
+     "estimated_rows": 33333,
+     "predicate": "((status)::text = $2)",
+     "index_name": "ql_pt_orders_status"
+    },
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "c",
+     "estimated_rows": 500,
+     "predicate": "(region = $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Hash Join",
+     "rel": null,
+     "Hash Cond": "(o.customer_id = c.id)"
+    },
+    {
+     "node": "Bitmap Heap Scan",
+     "rel": "o",
+     "Recheck Cond": "((status)::text = 'raro'::text)"
+    },
+    {
+     "node": "Bitmap Index Scan",
+     "rel": null,
+     "Index Cond": "((status)::text = 'raro'::text)"
+    },
+    {
+     "node": "Seq Scan",
+     "rel": "c",
+     "Filter": "(region = 3)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "o",
+     "estimated_rows": 967,
+     "predicate": null,
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": null,
+     "estimated_rows": 967,
+     "predicate": "((status)::text = $1)",
+     "index_name": "ql_pt_orders_status"
+    },
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "c",
+     "estimated_rows": 500,
+     "predicate": "(region = $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "o",
+     "access_type": "ref",
+     "attached_condition": "(`ql_demo`.`o`.`customer_id` is not null)",
+     "key": "ql_pt_orders_status"
+    },
+    {
+     "rel": "c",
+     "access_type": "eq_ref",
+     "attached_condition": "(`ql_demo`.`c`.`region` = 3)",
+     "key": "PRIMARY"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "o",
+     "estimated_rows": 1000,
+     "predicate": "(NOT o.customer_id IS NULL)",
+     "index_name": "ql_pt_orders_status"
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "c",
+     "estimated_rows": 100,
+     "predicate": "(c.region = $1)",
+     "index_name": "PRIMARY"
+    }
+   ]
+  }
+ },
+ {
+  "name": "20 IN subconsulta",
+  "sql": "SELECT id FROM ql_pt_orders WHERE customer_id IN (SELECT id FROM ql_pt_customers WHERE region = 3)",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Hash Join",
+     "rel": null,
+     "Hash Cond": "(ql_pt_orders.customer_id = ql_pt_customers.id)"
+    },
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders"
+    },
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_customers",
+     "Filter": "(region = $1)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 100000,
+     "predicate": null,
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_customers",
+     "estimated_rows": 500,
+     "predicate": "(region = $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Hash Join",
+     "rel": null,
+     "Hash Cond": "(ql_pt_orders.customer_id = ql_pt_customers.id)"
+    },
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders"
+    },
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_customers",
+     "Filter": "(region = 3)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 100000,
+     "predicate": null,
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_customers",
+     "estimated_rows": 500,
+     "predicate": "(region = $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_customers",
+     "access_type": "ALL",
+     "attached_condition": "(`ql_demo`.`ql_pt_customers`.`region` = 3)"
+    },
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "ref",
+     "key": "ql_pt_fk"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_customers",
+     "estimated_rows": 500,
+     "predicate": "(ql_pt_customers.region = $1)",
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 9915,
+     "predicate": null,
+     "index_name": "ql_pt_fk"
+    }
+   ]
+  }
+ },
+ {
+  "name": "21 EXISTS correlacionado",
+  "sql": "SELECT o.id FROM ql_pt_orders o WHERE EXISTS (SELECT 1 FROM ql_pt_customers c WHERE c.id = o.customer_id AND LOWER(c.email) LIKE 'user1%')",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "c",
+     "Filter": "(lower((email)::text) ~~ $1)"
+    },
+    {
+     "node": "Bitmap Heap Scan",
+     "rel": "o",
+     "Recheck Cond": "(customer_id = c.id)"
+    },
+    {
+     "node": "Bitmap Index Scan",
+     "rel": null,
+     "Index Cond": "(customer_id = c.id)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "c",
+     "estimated_rows": 25,
+     "predicate": "(lower((email)::text) ~~ $1)",
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "o",
+     "estimated_rows": 20,
+     "predicate": null,
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": null,
+     "estimated_rows": 20,
+     "predicate": "(customer_id = c.id)",
+     "index_name": "ql_pt_orders_customer"
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "c",
+     "Filter": "(lower((email)::text) ~~ 'user1%'::text)"
+    },
+    {
+     "node": "Bitmap Heap Scan",
+     "rel": "o",
+     "Recheck Cond": "(customer_id = c.id)"
+    },
+    {
+     "node": "Bitmap Index Scan",
+     "rel": null,
+     "Index Cond": "(customer_id = c.id)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "c",
+     "estimated_rows": 25,
+     "predicate": "(lower((email)::text) ~~ $1)",
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "o",
+     "estimated_rows": 20,
+     "predicate": null,
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": null,
+     "estimated_rows": 20,
+     "predicate": "(customer_id = c.id)",
+     "index_name": "ql_pt_orders_customer"
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "c",
+     "access_type": "index",
+     "attached_condition": "(lower(`ql_demo`.`c`.`email`) like 'user1%')",
+     "key": "ql_pt_customers_email"
+    },
+    {
+     "rel": "o",
+     "access_type": "ref",
+     "key": "ql_pt_fk"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "c",
+     "estimated_rows": 5000,
+     "predicate": "(LOWER(c.email) LIKE $1)",
+     "index_name": "ql_pt_customers_email"
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "o",
+     "estimated_rows": 99158,
+     "predicate": null,
+     "index_name": "ql_pt_fk"
+    }
+   ]
+  }
+ },
+ {
+  "name": "22 subconsulta escalar",
+  "sql": "SELECT o.id FROM ql_pt_orders o WHERE o.customer_id = (SELECT MIN(c.id) FROM ql_pt_customers c WHERE LOWER(c.name) = 'name7')",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Bitmap Heap Scan",
+     "rel": "o",
+     "Recheck Cond": "(customer_id = (InitPlan 2).col1)"
+    },
+    {
+     "node": "Index Scan",
+     "rel": "c",
+     "Filter": "(lower((name)::text) = $1)"
+    },
+    {
+     "node": "Bitmap Index Scan",
+     "rel": null,
+     "Index Cond": "(customer_id = (InitPlan 2).col1)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "o",
+     "estimated_rows": 20,
+     "predicate": null,
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "c",
+     "estimated_rows": 25,
+     "predicate": "(lower((name)::text) = $1)",
+     "index_name": "ql_pt_customers_pkey"
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": null,
+     "estimated_rows": 20,
+     "predicate": "(customer_id = (InitPlan 2).col1)",
+     "index_name": "ql_pt_orders_customer"
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Bitmap Heap Scan",
+     "rel": "o",
+     "Recheck Cond": "(customer_id = (InitPlan 2).col1)"
+    },
+    {
+     "node": "Index Scan",
+     "rel": "c",
+     "Filter": "(lower((name)::text) = 'name7'::text)"
+    },
+    {
+     "node": "Bitmap Index Scan",
+     "rel": null,
+     "Index Cond": "(customer_id = (InitPlan 2).col1)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "o",
+     "estimated_rows": 20,
+     "predicate": null,
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "c",
+     "estimated_rows": 25,
+     "predicate": "(lower((name)::text) = $1)",
+     "index_name": "ql_pt_customers_pkey"
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": null,
+     "estimated_rows": 20,
+     "predicate": "(customer_id = (InitPlan 2).col1)",
+     "index_name": "ql_pt_orders_customer"
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "o",
+     "access_type": "ref",
+     "attached_condition": "(`ql_demo`.`o`.`customer_id` = (/* select#2 */ select min(`ql_demo`.`c`.`id`) from `ql_demo`.`ql_pt_customers` `c` where (lower(`ql_demo`.`c`.`name`) = 'name7')))",
+     "key": "ql_pt_fk"
+    },
+    {
+     "rel": "c",
+     "access_type": "ALL",
+     "attached_condition": "(lower(`ql_demo`.`c`.`name`) = 'name7')"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "o",
+     "estimated_rows": 20,
+     "predicate": "(o.customer_id = (SELECT MIN(c.id) FROM ql_pt_customers AS c WHERE (LOWER(c.name) = $1)))",
+     "index_name": "ql_pt_fk"
+    },
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "c",
+     "estimated_rows": 5000,
+     "predicate": "(LOWER(c.name) = $1)",
+     "index_name": null
+    }
+   ]
+  }
+ },
+ {
+  "name": "23 CTE",
+  "sql": "WITH r AS (SELECT id FROM ql_pt_customers WHERE region = 3) SELECT o.id FROM ql_pt_orders o JOIN r ON r.id = o.customer_id",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Hash Join",
+     "rel": null,
+     "Hash Cond": "(o.customer_id = ql_pt_customers.id)"
+    },
+    {
+     "node": "Seq Scan",
+     "rel": "o"
+    },
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_customers",
+     "Filter": "(region = $1)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "o",
+     "estimated_rows": 100000,
+     "predicate": null,
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_customers",
+     "estimated_rows": 500,
+     "predicate": "(region = $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Hash Join",
+     "rel": null,
+     "Hash Cond": "(o.customer_id = ql_pt_customers.id)"
+    },
+    {
+     "node": "Seq Scan",
+     "rel": "o"
+    },
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_customers",
+     "Filter": "(region = 3)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "o",
+     "estimated_rows": 100000,
+     "predicate": null,
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_customers",
+     "estimated_rows": 500,
+     "predicate": "(region = $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_customers",
+     "access_type": "ALL",
+     "attached_condition": "(`ql_demo`.`ql_pt_customers`.`region` = 3)"
+    },
+    {
+     "rel": "o",
+     "access_type": "ref",
+     "key": "ql_pt_fk"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_customers",
+     "estimated_rows": 500,
+     "predicate": "(ql_pt_customers.region = $1)",
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "o",
+     "estimated_rows": 9915,
+     "predicate": null,
+     "index_name": "ql_pt_fk"
+    }
+   ]
+  }
+ },
+ {
+  "name": "24 tabla derivada",
+  "sql": "SELECT t.id FROM (SELECT id, total FROM ql_pt_orders WHERE total > 50) t WHERE t.id < 1000",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Index Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(total > $1)",
+     "Index Cond": "(id < $2)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 11111,
+     "predicate": "(id < $2)",
+     "index_name": "ql_pt_orders_pkey"
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Index Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(total > '50'::numeric)",
+     "Index Cond": "(id < 1000)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 497,
+     "predicate": "(id < $1)",
+     "index_name": "ql_pt_orders_pkey"
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "range",
+     "attached_condition": "((`ql_demo`.`ql_pt_orders`.`id` < 1000) and (`ql_demo`.`ql_pt_orders`.`total` > 50.00))",
+     "key": "PRIMARY"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 332,
+     "predicate": "((ql_pt_orders.id < $1) AND (ql_pt_orders.total > $2))",
+     "index_name": "PRIMARY"
+    }
+   ]
+  }
+ },
+ {
+  "name": "25 GROUP BY HAVING",
+  "sql": "SELECT status, COUNT(*) FROM ql_pt_orders WHERE total > 50 GROUP BY status HAVING COUNT(*) > 10",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Aggregate",
+     "rel": null,
+     "Filter": "(count(*) > $2)"
+    },
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(total > $1)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 33333,
+     "predicate": "(total > $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Aggregate",
+     "rel": null,
+     "Filter": "(count(*) > 10)"
+    },
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(total > '50'::numeric)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 50079,
+     "predicate": "(total > $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "index",
+     "attached_condition": "(`ql_demo`.`ql_pt_orders`.`total` > 50.00)",
+     "key": "ql_pt_orders_status"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 33267,
+     "predicate": "(ql_pt_orders.total > $1)",
+     "index_name": "ql_pt_orders_status"
+    }
+   ]
+  }
+ },
+ {
+  "name": "26 ORDER BY LIMIT",
+  "sql": "SELECT id FROM ql_pt_orders WHERE total > 50 ORDER BY created_at DESC LIMIT 10",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Index Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(total > $1)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 33333,
+     "predicate": "(total > $1)",
+     "index_name": "ql_pt_orders_created"
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Index Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(total > '50'::numeric)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 50079,
+     "predicate": "(total > $1)",
+     "index_name": "ql_pt_orders_created"
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "index",
+     "attached_condition": "(`ql_demo`.`ql_pt_orders`.`total` > 50.00)",
+     "key": "ql_pt_orders_created"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 33267,
+     "predicate": "(ql_pt_orders.total > $1)",
+     "index_name": "ql_pt_orders_created"
+    }
+   ]
+  }
+ },
+ {
+  "name": "27 CASE en WHERE",
+  "sql": "SELECT id FROM ql_pt_orders WHERE CASE WHEN status = 'raro' THEN 1 ELSE 0 END = 1",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(CASE WHEN ((status)::text = $1) THEN $2 ELSE $3 END = $4)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 500,
+     "predicate": "(CASE WHEN ((status)::text = $1) THEN $2 ELSE $3 END = $4)",
+     "index_name": null
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(CASE WHEN ((status)::text = 'raro'::text) THEN 1 ELSE 0 END = 1)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 500,
+     "predicate": "(CASE WHEN ((status)::text = $1) THEN $2 ELSE $3 END = $4)",
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "index",
+     "attached_condition": "((case when (`ql_demo`.`ql_pt_orders`.`status` = 'raro') then 1 else 0 end) = 1)",
+     "key": "ql_pt_orders_status"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 99813,
+     "predicate": "((CASE WHEN (ql_pt_orders.status = $1) THEN $2 ELSE $3 END) = $4)",
+     "index_name": "ql_pt_orders_status"
+    }
+   ]
+  }
+ },
+ {
+  "name": "28 COALESCE",
+  "sql": "SELECT id FROM ql_pt_orders WHERE COALESCE(note, '') = ''",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(COALESCE(note, $1) = $2)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 500,
+     "predicate": "(COALESCE(note, $1) = $2)",
+     "index_name": null
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(COALESCE(note, ''::text) = ''::text)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 500,
+     "predicate": "(COALESCE(note, $1) = $2)",
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "ALL",
+     "attached_condition": "(coalesce(`ql_demo`.`ql_pt_orders`.`note`,'') = '')"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 99813,
+     "predicate": "(COALESCE(ql_pt_orders.note, $1) = $2)",
+     "index_name": null
+    }
+   ]
+  }
+ },
+ {
+  "name": "29 columna contra columna",
+  "sql": "SELECT id FROM ql_pt_orders WHERE total > id",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(total > (id)::numeric)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 33333,
+     "predicate": "(total > (id)::numeric)",
+     "index_name": null
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(total > (id)::numeric)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 33333,
+     "predicate": "(total > (id)::numeric)",
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "ALL",
+     "attached_condition": "(`ql_demo`.`ql_pt_orders`.`total` > `ql_demo`.`ql_pt_orders`.`id`)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 33267,
+     "predicate": "(ql_pt_orders.total > ql_pt_orders.id)",
+     "index_name": null
+    }
+   ]
+  }
+ },
+ {
+  "name": "30 NOT",
+  "sql": "SELECT id FROM ql_pt_orders WHERE NOT (status = 'raro')",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "((status)::text <> $1)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 66667,
+     "predicate": "((status)::text <> $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "((status)::text <> 'raro'::text)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 99033,
+     "predicate": "((status)::text <> $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "range",
+     "attached_condition": "(`ql_demo`.`ql_pt_orders`.`status` <> 'raro')",
+     "key": "ql_pt_orders_status"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 49907,
+     "predicate": "(ql_pt_orders.status <> $1)",
+     "index_name": "ql_pt_orders_status"
+    }
+   ]
+  }
+ },
+ {
+  "name": "31 IN un valor",
+  "sql": "SELECT id FROM ql_pt_orders WHERE id IN (5)",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Index Only Scan",
+     "rel": "ql_pt_orders",
+     "Index Cond": "(id = $1)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 1,
+     "predicate": "(id = $1)",
+     "index_name": "ql_pt_orders_pkey"
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Index Only Scan",
+     "rel": "ql_pt_orders",
+     "Index Cond": "(id = 5)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 1,
+     "predicate": "(id = $1)",
+     "index_name": "ql_pt_orders_pkey"
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "const",
+     "key": "PRIMARY"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 1,
+     "predicate": null,
+     "index_name": "PRIMARY"
+    }
+   ]
+  }
+ },
+ {
+  "name": "32 decimal negativo",
+  "sql": "SELECT id FROM ql_pt_orders WHERE total > -5.5",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(total > $1)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 33333,
+     "predicate": "(total > $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(total > '-5.5'::numeric)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 99990,
+     "predicate": "(total > $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "ALL",
+     "attached_condition": "(`ql_demo`.`ql_pt_orders`.`total` > -5.50)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 33267,
+     "predicate": "(ql_pt_orders.total > -$1)",
+     "index_name": null
+    }
+   ]
+  }
+ },
+ {
+  "name": "33 texto con comilla",
+  "sql": "SELECT id FROM ql_pt_customers WHERE name = 'O''Brien'",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_customers",
+     "Filter": "((name)::text = $1)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_customers",
+     "estimated_rows": 1,
+     "predicate": "((name)::text = $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_customers",
+     "Filter": "((name)::text = 'O''Brien'::text)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_customers",
+     "estimated_rows": 1,
+     "predicate": "((name)::text = $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_customers",
+     "access_type": "ALL",
+     "attached_condition": "(`ql_demo`.`ql_pt_customers`.`name` = 'O\\'Brien')"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_customers",
+     "estimated_rows": 500,
+     "predicate": "(ql_pt_customers.name = $1)",
+     "index_name": null
+    }
+   ]
+  }
+ },
+ {
+  "name": "34 LEFT JOIN anti-join",
+  "sql": "SELECT c.id FROM ql_pt_customers c LEFT JOIN ql_pt_orders o ON o.customer_id = c.id WHERE o.id IS NULL",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Hash Join",
+     "rel": null,
+     "Filter": "(o.id IS NULL)",
+     "Hash Cond": "(o.customer_id = c.id)"
+    },
+    {
+     "node": "Seq Scan",
+     "rel": "o"
+    },
+    {
+     "node": "Seq Scan",
+     "rel": "c"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "o",
+     "estimated_rows": 100000,
+     "predicate": null,
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "c",
+     "estimated_rows": 5000,
+     "predicate": null,
+     "index_name": null
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Hash Join",
+     "rel": null,
+     "Filter": "(o.id IS NULL)",
+     "Hash Cond": "(o.customer_id = c.id)"
+    },
+    {
+     "node": "Seq Scan",
+     "rel": "o"
+    },
+    {
+     "node": "Seq Scan",
+     "rel": "c"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "o",
+     "estimated_rows": 100000,
+     "predicate": null,
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "c",
+     "estimated_rows": 5000,
+     "predicate": null,
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "c",
+     "access_type": "index",
+     "key": "ql_pt_customers_email"
+    },
+    {
+     "rel": "o",
+     "access_type": "ref",
+     "attached_condition": "<if>(found_match(o), (`ql_demo`.`o`.`id` is null), true)",
+     "key": "ql_pt_fk"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "c",
+     "estimated_rows": 5000,
+     "predicate": null,
+     "index_name": "ql_pt_customers_email"
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "o",
+     "estimated_rows": 9915,
+     "predicate": "<if>(found_match(o), (o.id is null), true)",
+     "index_name": "ql_pt_fk"
+    }
+   ]
+  }
+ },
+ {
+  "name": "35 UNION",
+  "sql": "SELECT id FROM ql_pt_orders WHERE status = 'raro' UNION SELECT id FROM ql_pt_orders WHERE total > 99",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Bitmap Heap Scan",
+     "rel": "ql_pt_orders",
+     "Recheck Cond": "((status)::text = $1)"
+    },
+    {
+     "node": "Bitmap Index Scan",
+     "rel": null,
+     "Index Cond": "((status)::text = $1)"
+    },
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders_1",
+     "Filter": "(total > $2)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 33333,
+     "predicate": null,
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": null,
+     "estimated_rows": 33333,
+     "predicate": "((status)::text = $1)",
+     "index_name": "ql_pt_orders_status"
+    },
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders_1",
+     "estimated_rows": 33333,
+     "predicate": "(total > $2)",
+     "index_name": null
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Bitmap Heap Scan",
+     "rel": "ql_pt_orders",
+     "Recheck Cond": "((status)::text = 'raro'::text)"
+    },
+    {
+     "node": "Bitmap Index Scan",
+     "rel": null,
+     "Index Cond": "((status)::text = 'raro'::text)"
+    },
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders_1",
+     "Filter": "(total > '99'::numeric)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 967,
+     "predicate": null,
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": null,
+     "estimated_rows": 967,
+     "predicate": "((status)::text = $1)",
+     "index_name": "ql_pt_orders_status"
+    },
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders_1",
+     "estimated_rows": 980,
+     "predicate": "(total > $1)",
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "ref",
+     "key": "ql_pt_orders_status"
+    },
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "ALL",
+     "attached_condition": "(`ql_demo`.`ql_pt_orders`.`total` > 99.00)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 1000,
+     "predicate": null,
+     "index_name": "ql_pt_orders_status"
+    },
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 33267,
+     "predicate": "(ql_pt_orders.total > $1)",
+     "index_name": null
+    }
+   ]
+  }
+ },
+ {
+  "name": "36 self join",
+  "sql": "SELECT a.id FROM ql_pt_orders a JOIN ql_pt_orders b ON b.id = a.id + 1 WHERE a.status = 'raro'",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Hash Join",
+     "rel": null,
+     "Hash Cond": "((a.id + $1) = b.id)"
+    },
+    {
+     "node": "Bitmap Heap Scan",
+     "rel": "a",
+     "Recheck Cond": "((status)::text = $2)"
+    },
+    {
+     "node": "Bitmap Index Scan",
+     "rel": null,
+     "Index Cond": "((status)::text = $2)"
+    },
+    {
+     "node": "Seq Scan",
+     "rel": "b"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "a",
+     "estimated_rows": 33333,
+     "predicate": null,
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": null,
+     "estimated_rows": 33333,
+     "predicate": "((status)::text = $2)",
+     "index_name": "ql_pt_orders_status"
+    },
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "b",
+     "estimated_rows": 100000,
+     "predicate": null,
+     "index_name": null
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Hash Join",
+     "rel": null,
+     "Hash Cond": "((a.id + 1) = b.id)"
+    },
+    {
+     "node": "Bitmap Heap Scan",
+     "rel": "a",
+     "Recheck Cond": "((status)::text = 'raro'::text)"
+    },
+    {
+     "node": "Bitmap Index Scan",
+     "rel": null,
+     "Index Cond": "((status)::text = 'raro'::text)"
+    },
+    {
+     "node": "Seq Scan",
+     "rel": "b"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "a",
+     "estimated_rows": 967,
+     "predicate": null,
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": null,
+     "estimated_rows": 967,
+     "predicate": "((status)::text = $1)",
+     "index_name": "ql_pt_orders_status"
+    },
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "b",
+     "estimated_rows": 100000,
+     "predicate": null,
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "a",
+     "access_type": "ref",
+     "key": "ql_pt_orders_status"
+    },
+    {
+     "rel": "b",
+     "access_type": "eq_ref",
+     "attached_condition": "(`ql_demo`.`b`.`id` = (`ql_demo`.`a`.`id` + 1))",
+     "key": "PRIMARY"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "a",
+     "estimated_rows": 1000,
+     "predicate": null,
+     "index_name": "ql_pt_orders_status"
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "b",
+     "estimated_rows": 1000,
+     "predicate": "(b.id = (a.id + $1))",
+     "index_name": "PRIMARY"
+    }
+   ]
+  }
+ },
+ {
+  "name": "37 concatenacion",
+  "sql": "SELECT id FROM ql_pt_customers WHERE name || 'x' = 'name5x'",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_customers",
+     "Filter": "(((name)::text || $1) = $2)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_customers",
+     "estimated_rows": 25,
+     "predicate": "(((name)::text || $1) = $2)",
+     "index_name": null
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_customers",
+     "Filter": "(((name)::text || 'x'::text) = 'name5x'::text)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_customers",
+     "estimated_rows": 25,
+     "predicate": "(((name)::text || $1) = $2)",
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_customers",
+     "access_type": "ALL",
+     "attached_condition": "(concat(`ql_demo`.`ql_pt_customers`.`name`,'x') = 'name5x')"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_customers",
+     "estimated_rows": 5000,
+     "predicate": "(ql_pt_customers.name || $1 = $2)",
+     "index_name": null
+    }
+   ]
+  }
+ },
+ {
+  "name": "38 intervalo",
+  "sql": "SELECT id FROM ql_pt_orders WHERE created_at > NOW() - INTERVAL '1 day'",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Index Scan",
+     "rel": "ql_pt_orders",
+     "Index Cond": "(created_at > (now() - $1))"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 33333,
+     "predicate": "(created_at > (now() - $1))",
+     "index_name": "ql_pt_orders_created"
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Index Scan",
+     "rel": "ql_pt_orders",
+     "Index Cond": "(created_at > (now() - '1 day'::interval))"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 1,
+     "predicate": "(created_at > (now() - $1))",
+     "index_name": "ql_pt_orders_created"
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "range",
+     "attached_condition": "(`ql_demo`.`ql_pt_orders`.`created_at` > <cache>((now() - interval 1 day)))",
+     "key": "ql_pt_orders_created"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 1,
+     "predicate": "(ql_pt_orders.created_at > ((NOW() - INTERVAL '? DAY')))",
+     "index_name": "ql_pt_orders_created"
+    }
+   ]
+  }
+ },
+ {
+  "name": "39 funcion en el ON",
+  "sql": "SELECT o.id FROM ql_pt_orders o JOIN ql_pt_customers c ON LOWER(c.email) = LOWER(o.note) WHERE o.status = 'raro'",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Merge Join",
+     "rel": null,
+     "Merge Cond": "((lower((c.email)::text)) = (lower(o.note)))"
+    },
+    {
+     "node": "Seq Scan",
+     "rel": "c"
+    },
+    {
+     "node": "Bitmap Heap Scan",
+     "rel": "o",
+     "Recheck Cond": "((status)::text = $1)"
+    },
+    {
+     "node": "Bitmap Index Scan",
+     "rel": null,
+     "Index Cond": "((status)::text = $1)"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "c",
+     "estimated_rows": 5000,
+     "predicate": null,
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "o",
+     "estimated_rows": 33333,
+     "predicate": null,
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": null,
+     "estimated_rows": 33333,
+     "predicate": "((status)::text = $1)",
+     "index_name": "ql_pt_orders_status"
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Merge Join",
+     "rel": null,
+     "Merge Cond": "((lower(o.note)) = (lower((c.email)::text)))"
+    },
+    {
+     "node": "Bitmap Heap Scan",
+     "rel": "o",
+     "Recheck Cond": "((status)::text = 'raro'::text)"
+    },
+    {
+     "node": "Bitmap Index Scan",
+     "rel": null,
+     "Index Cond": "((status)::text = 'raro'::text)"
+    },
+    {
+     "node": "Seq Scan",
+     "rel": "c"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "o",
+     "estimated_rows": 967,
+     "predicate": null,
+     "index_name": null
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": null,
+     "estimated_rows": 967,
+     "predicate": "((status)::text = $1)",
+     "index_name": "ql_pt_orders_status"
+    },
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "c",
+     "estimated_rows": 5000,
+     "predicate": null,
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "o",
+     "access_type": "ref",
+     "key": "ql_pt_orders_status"
+    },
+    {
+     "rel": "c",
+     "access_type": "index",
+     "attached_condition": "(lower(`ql_demo`.`c`.`email`) = lower(`ql_demo`.`o`.`note`))",
+     "key": "ql_pt_customers_email"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "o",
+     "estimated_rows": 1000,
+     "predicate": null,
+     "index_name": "ql_pt_orders_status"
+    },
+    {
+     "type": "scan",
+     "access_method": "index_lookup",
+     "relation": "c",
+     "estimated_rows": 5000000,
+     "predicate": "(LOWER(c.email) = LOWER(o.note))",
+     "index_name": "ql_pt_customers_email"
+    }
+   ]
+  }
+ },
+ {
+  "name": "40 OR con funcion",
+  "sql": "SELECT id FROM ql_pt_orders WHERE status = 'raro' OR LOWER(note) = 'nota5'",
+  "pg_generic": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(((status)::text = $1) OR (lower(note) = $2))"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 33667,
+     "predicate": "(((status)::text = $1) OR (lower(note) = $2))",
+     "index_name": null
+    }
+   ]
+  },
+  "pg_literal": {
+   "raw": [
+    {
+     "node": "Seq Scan",
+     "rel": "ql_pt_orders",
+     "Filter": "(((status)::text = 'raro'::text) OR (lower(note) = 'nota5'::text))"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 1462,
+     "predicate": "(((status)::text = $1) OR (lower(note) = $2))",
+     "index_name": null
+    }
+   ]
+  },
+  "mysql": {
+   "raw": [
+    {
+     "rel": "ql_pt_orders",
+     "access_type": "ALL",
+     "attached_condition": "((`ql_demo`.`ql_pt_orders`.`status` = 'raro') or (lower(`ql_demo`.`ql_pt_orders`.`note`) = 'nota5'))"
+    }
+   ],
+   "scans": [
+    {
+     "type": "scan",
+     "access_method": "full_table_scan",
+     "relation": "ql_pt_orders",
+     "estimated_rows": 99813,
+     "predicate": "((ql_pt_orders.status = $1) OR (LOWER(ql_pt_orders.note) = $2))",
+     "index_name": null
+    }
+   ]
+  }
+ }
+]

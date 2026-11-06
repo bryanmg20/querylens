@@ -1,0 +1,627 @@
+{
+  "generated_at": "2026-10-12T14:19:48",
+  "elapsed_s": 43.3,
+  "result": {
+    "protocol": "battery.sh 5 reps, 50 noise; 3 muestras",
+    "runs": [
+      {
+        "threshold_ms": 50,
+        "sample": 1,
+        "postgres": [
+          {
+            "query_id": "-3393400438001201936",
+            "mean_time_ms": 317.4580956,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "-5113450092408103415",
+            "mean_time_ms": 35.6250826,
+            "c": "generic",
+            "generic": "generic"
+          },
+          {
+            "query_id": "-5237548970121419630",
+            "mean_time_ms": 11.420491,
+            "c": "generic",
+            "generic": "generic"
+          },
+          {
+            "query_id": "2030578604519308472",
+            "mean_time_ms": 10.833655,
+            "c": "generic",
+            "generic": "generic"
+          },
+          {
+            "query_id": "-7877954262883710982",
+            "mean_time_ms": 9.9419836,
+            "c": "generic",
+            "generic": "generic"
+          },
+          {
+            "query_id": "8210029729983000597",
+            "mean_time_ms": 2.5228024,
+            "c": "generic",
+            "generic": "generic"
+          },
+          {
+            "query_id": "5618008366990467113",
+            "mean_time_ms": 4.631800200000001,
+            "c": "generic",
+            "generic": "generic"
+          },
+          {
+            "query_id": "305366340431563936",
+            "mean_time_ms": 3.7806142,
+            "c": "generic",
+            "generic": "generic"
+          },
+          {
+            "query_id": "7824641651341060181",
+            "mean_time_ms": 1.7371033000000002,
+            "c": "generic",
+            "generic": "generic"
+          },
+          {
+            "query_id": "-2353098031413616099",
+            "mean_time_ms": 3.4225706000000002,
+            "c": "generic",
+            "generic": "generic"
+          }
+        ],
+        "mysql": [
+          {
+            "query_id": "ql_demo/864c221061d4b660a27826c88ae8cf2f9156146f73ecdf50adca93bb8fab35ab",
+            "mean_time_ms": 156.2817,
+            "sample_len": 93,
+            "full_text": true,
+            "c": "sample"
+          },
+          {
+            "query_id": "ql_demo/1db394432abe3db3d3021befcb36d8b03a99e8e1b37938716ece3738b5fbcffd",
+            "mean_time_ms": 91.3821,
+            "sample_len": 135,
+            "full_text": true,
+            "c": "sample"
+          },
+          {
+            "query_id": "ql_demo/d6431f200291c19f481376073ee77aaa488b28737a86ecbcbe07fd1a5c09e217",
+            "mean_time_ms": 42.9267,
+            "sample_len": 105,
+            "full_text": true,
+            "c": "sample"
+          },
+          {
+            "query_id": "ql_demo/efa2f5a7c25efdbdce3f61208ffa0f36a40f2beca8e6fef639afd89543fa4103",
+            "mean_time_ms": 40.651,
+            "sample_len": 159,
+            "full_text": true,
+            "c": "sample"
+          },
+          {
+            "query_id": "ql_demo/8aa34322c96b11e0f4362bb2d63df80a389fb3c598cc25a5b3f0ec166fbcf3e0",
+            "mean_time_ms": 15.2165,
+            "sample_len": 123,
+            "full_text": true,
+            "c": "sample"
+          },
+          {
+            "query_id": "ql_demo/191237201273a605ac2e63c367320605a666878f33f2a1ba0135744a90aeb2df",
+            "mean_time_ms": 10.4681,
+            "sample_len": 123,
+            "full_text": true,
+            "c": "sample"
+          },
+          {
+            "query_id": "ql_demo/c76bf6b3c038a0457eaf545bd4b9640b718d8d79aad8353918034a5735b19685",
+            "mean_time_ms": 3.3293,
+            "sample_len": 36,
+            "full_text": true,
+            "c": "sample"
+          },
+          {
+            "query_id": "ql_demo/5da1c1966009fd7dc4f26a331e2d3f0ba513a85a62879d6d25e20354e1ca812b",
+            "mean_time_ms": 6.6015,
+            "sample_len": 165,
+            "full_text": true,
+            "c": "sample"
+          },
+          {
+            "query_id": "ql_demo/335b3dcaa2897f9e43ed45a632273c58c5afc14f22dacd4f97806a85ba0c01e3",
+            "mean_time_ms": 2.6707,
+            "sample_len": 52,
+            "full_text": true,
+            "c": "sample"
+          },
+          {
+            "query_id": "ql_demo/e09de071700e20397f986cb8612876d2d16d255924601bb9d2c84ba61f0e3bba",
+            "mean_time_ms": 3.388,
+            "sample_len": 134,
+            "full_text": true,
+            "c": "sample"
+          }
+        ],
+        "mysql_text_limit": 1024
+      },
+      {
+        "threshold_ms": 50,
+        "sample": 2,
+        "postgres": [
+          {
+            "query_id": "-3393400438001201936",
+            "mean_time_ms": 312.6447804,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "-5113450092408103415",
+            "mean_time_ms": 35.550141800000006,
+            "c": "generic",
+            "generic": "generic"
+          },
+          {
+            "query_id": "-7877954262883710982",
+            "mean_time_ms": 12.405818,
+            "c": "generic",
+            "generic": "generic"
+          },
+          {
+            "query_id": "-5237548970121419630",
+            "mean_time_ms": 11.185823200000002,
+            "c": "generic",
+            "generic": "generic"
+          },
+          {
+            "query_id": "2030578604519308472",
+            "mean_time_ms": 10.5182954,
+            "c": "generic",
+            "generic": "generic"
+          },
+          {
+            "query_id": "8210029729983000597",
+            "mean_time_ms": 2.5880959,
+            "c": "generic",
+            "generic": "generic"
+          },
+          {
+            "query_id": "5618008366990467113",
+            "mean_time_ms": 4.674161599999999,
+            "c": "generic",
+            "generic": "generic"
+          },
+          {
+            "query_id": "-2353098031413616099",
+            "mean_time_ms": 3.3428202,
+            "c": "generic",
+            "generic": "generic"
+          },
+          {
+            "query_id": "305366340431563936",
+            "mean_time_ms": 3.1377482,
+            "c": "generic",
+            "generic": "generic"
+          },
+          {
+            "query_id": "5366684204224026269",
+            "mean_time_ms": 2.2143148,
+            "c": "generic",
+            "generic": "generic"
+          }
+        ],
+        "mysql": [
+          {
+            "query_id": "ql_demo/864c221061d4b660a27826c88ae8cf2f9156146f73ecdf50adca93bb8fab35ab",
+            "mean_time_ms": 150.9071,
+            "sample_len": 93,
+            "full_text": true,
+            "c": "sample"
+          },
+          {
+            "query_id": "ql_demo/1db394432abe3db3d3021befcb36d8b03a99e8e1b37938716ece3738b5fbcffd",
+            "mean_time_ms": 91.2323,
+            "sample_len": 135,
+            "full_text": true,
+            "c": "sample"
+          },
+          {
+            "query_id": "ql_demo/d6431f200291c19f481376073ee77aaa488b28737a86ecbcbe07fd1a5c09e217",
+            "mean_time_ms": 53.5265,
+            "sample_len": 105,
+            "full_text": true,
+            "c": "sample"
+          },
+          {
+            "query_id": "ql_demo/efa2f5a7c25efdbdce3f61208ffa0f36a40f2beca8e6fef639afd89543fa4103",
+            "mean_time_ms": 39.0427,
+            "sample_len": 159,
+            "full_text": true,
+            "c": "sample"
+          },
+          {
+            "query_id": "ql_demo/8aa34322c96b11e0f4362bb2d63df80a389fb3c598cc25a5b3f0ec166fbcf3e0",
+            "mean_time_ms": 14.8032,
+            "sample_len": 123,
+            "full_text": true,
+            "c": "sample"
+          },
+          {
+            "query_id": "ql_demo/191237201273a605ac2e63c367320605a666878f33f2a1ba0135744a90aeb2df",
+            "mean_time_ms": 11.9656,
+            "sample_len": 123,
+            "full_text": true,
+            "c": "sample"
+          },
+          {
+            "query_id": "ql_demo/c76bf6b3c038a0457eaf545bd4b9640b718d8d79aad8353918034a5735b19685",
+            "mean_time_ms": 3.3982,
+            "sample_len": 35,
+            "full_text": true,
+            "c": "sample"
+          },
+          {
+            "query_id": "ql_demo/5da1c1966009fd7dc4f26a331e2d3f0ba513a85a62879d6d25e20354e1ca812b",
+            "mean_time_ms": 6.3993,
+            "sample_len": 165,
+            "full_text": true,
+            "c": "sample"
+          },
+          {
+            "query_id": "ql_demo/e09de071700e20397f986cb8612876d2d16d255924601bb9d2c84ba61f0e3bba",
+            "mean_time_ms": 3.2917,
+            "sample_len": 134,
+            "full_text": true,
+            "c": "sample"
+          },
+          {
+            "query_id": "ql_demo/335b3dcaa2897f9e43ed45a632273c58c5afc14f22dacd4f97806a85ba0c01e3",
+            "mean_time_ms": 1.3027,
+            "sample_len": 52,
+            "full_text": true,
+            "c": "sample"
+          }
+        ],
+        "mysql_text_limit": 1024
+      },
+      {
+        "threshold_ms": 50,
+        "sample": 3,
+        "postgres": [
+          {
+            "query_id": "-3393400438001201936",
+            "mean_time_ms": 323.8122278,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "-5113450092408103415",
+            "mean_time_ms": 36.542863600000004,
+            "c": "generic",
+            "generic": "generic"
+          },
+          {
+            "query_id": "-5237548970121419630",
+            "mean_time_ms": 11.514609,
+            "c": "generic",
+            "generic": "generic"
+          },
+          {
+            "query_id": "2030578604519308472",
+            "mean_time_ms": 10.732349600000001,
+            "c": "generic",
+            "generic": "generic"
+          },
+          {
+            "query_id": "-7877954262883710982",
+            "mean_time_ms": 8.7664228,
+            "c": "generic",
+            "generic": "generic"
+          },
+          {
+            "query_id": "8210029729983000597",
+            "mean_time_ms": 2.5422444,
+            "c": "generic",
+            "generic": "generic"
+          },
+          {
+            "query_id": "5618008366990467113",
+            "mean_time_ms": 4.6684616,
+            "c": "generic",
+            "generic": "generic"
+          },
+          {
+            "query_id": "-2353098031413616099",
+            "mean_time_ms": 3.5615566,
+            "c": "generic",
+            "generic": "generic"
+          },
+          {
+            "query_id": "305366340431563936",
+            "mean_time_ms": 3.2000898,
+            "c": "generic",
+            "generic": "generic"
+          },
+          {
+            "query_id": "5366684204224026269",
+            "mean_time_ms": 2.0947283999999997,
+            "c": "generic",
+            "generic": "generic"
+          }
+        ],
+        "mysql": [
+          {
+            "query_id": "ql_demo/864c221061d4b660a27826c88ae8cf2f9156146f73ecdf50adca93bb8fab35ab",
+            "mean_time_ms": 157.3805,
+            "sample_len": 93,
+            "full_text": true,
+            "c": "sample"
+          },
+          {
+            "query_id": "ql_demo/1db394432abe3db3d3021befcb36d8b03a99e8e1b37938716ece3738b5fbcffd",
+            "mean_time_ms": 92.9022,
+            "sample_len": 135,
+            "full_text": true,
+            "c": "sample"
+          },
+          {
+            "query_id": "ql_demo/d6431f200291c19f481376073ee77aaa488b28737a86ecbcbe07fd1a5c09e217",
+            "mean_time_ms": 48.58,
+            "sample_len": 105,
+            "full_text": true,
+            "c": "sample"
+          },
+          {
+            "query_id": "ql_demo/efa2f5a7c25efdbdce3f61208ffa0f36a40f2beca8e6fef639afd89543fa4103",
+            "mean_time_ms": 33.0963,
+            "sample_len": 159,
+            "full_text": true,
+            "c": "sample"
+          },
+          {
+            "query_id": "ql_demo/8aa34322c96b11e0f4362bb2d63df80a389fb3c598cc25a5b3f0ec166fbcf3e0",
+            "mean_time_ms": 14.42,
+            "sample_len": 123,
+            "full_text": true,
+            "c": "sample"
+          },
+          {
+            "query_id": "ql_demo/191237201273a605ac2e63c367320605a666878f33f2a1ba0135744a90aeb2df",
+            "mean_time_ms": 13.8668,
+            "sample_len": 123,
+            "full_text": true,
+            "c": "sample"
+          },
+          {
+            "query_id": "ql_demo/5da1c1966009fd7dc4f26a331e2d3f0ba513a85a62879d6d25e20354e1ca812b",
+            "mean_time_ms": 6.4482,
+            "sample_len": 165,
+            "full_text": true,
+            "c": "sample"
+          },
+          {
+            "query_id": "ql_demo/c76bf6b3c038a0457eaf545bd4b9640b718d8d79aad8353918034a5735b19685",
+            "mean_time_ms": 2.7132,
+            "sample_len": 36,
+            "full_text": true,
+            "c": "sample"
+          },
+          {
+            "query_id": "ql_demo/e09de071700e20397f986cb8612876d2d16d255924601bb9d2c84ba61f0e3bba",
+            "mean_time_ms": 3.1564,
+            "sample_len": 134,
+            "full_text": true,
+            "c": "sample"
+          },
+          {
+            "query_id": "ql_demo/cf95e53cd6dd0adc4e13db5dca6dfd42dbfb5ab983972f3c4fd2cf86cc8dc4b8",
+            "mean_time_ms": 3.0766,
+            "sample_len": 82,
+            "full_text": true,
+            "c": "sample"
+          }
+        ],
+        "mysql_text_limit": 1024
+      },
+      {
+        "threshold_ms": 0,
+        "sample": 1,
+        "postgres": [
+          {
+            "query_id": "-3393400438001201936",
+            "mean_time_ms": 320.5597166,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "-5113450092408103415",
+            "mean_time_ms": 36.9362654,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "-7877954262883710982",
+            "mean_time_ms": 17.014868999999997,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "-5237548970121419630",
+            "mean_time_ms": 11.897268200000001,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "2030578604519308472",
+            "mean_time_ms": 10.632723200000001,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "8210029729983000597",
+            "mean_time_ms": 2.613441,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "5618008366990467113",
+            "mean_time_ms": 4.7585566,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "-2353098031413616099",
+            "mean_time_ms": 3.3817604,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "305366340431563936",
+            "mean_time_ms": 3.1573896,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "5366684204224026269",
+            "mean_time_ms": 2.1964294,
+            "c": "auto_explain",
+            "generic": "generic"
+          }
+        ],
+        "mysql_text_limit": 1024
+      },
+      {
+        "threshold_ms": 0,
+        "sample": 2,
+        "postgres": [
+          {
+            "query_id": "-3393400438001201936",
+            "mean_time_ms": 315.7733594,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "-5113450092408103415",
+            "mean_time_ms": 37.70530479999999,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "-5237548970121419630",
+            "mean_time_ms": 11.5665868,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "2030578604519308472",
+            "mean_time_ms": 10.8575602,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "-7877954262883710982",
+            "mean_time_ms": 8.6764056,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "8210029729983000597",
+            "mean_time_ms": 2.562233,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "5618008366990467113",
+            "mean_time_ms": 4.6704824,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "-2353098031413616099",
+            "mean_time_ms": 3.3511112,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "305366340431563936",
+            "mean_time_ms": 3.097394,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "5366684204224026269",
+            "mean_time_ms": 2.2742054,
+            "c": "auto_explain",
+            "generic": "generic"
+          }
+        ],
+        "mysql_text_limit": 1024
+      },
+      {
+        "threshold_ms": 0,
+        "sample": 3,
+        "postgres": [
+          {
+            "query_id": "-3393400438001201936",
+            "mean_time_ms": 317.2684478,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "-5113450092408103415",
+            "mean_time_ms": 36.4984204,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "2030578604519308472",
+            "mean_time_ms": 13.6460782,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "-5237548970121419630",
+            "mean_time_ms": 11.4084954,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "-7877954262883710982",
+            "mean_time_ms": 8.7796752,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "8210029729983000597",
+            "mean_time_ms": 2.5826869,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "5618008366990467113",
+            "mean_time_ms": 4.6415612,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "-2353098031413616099",
+            "mean_time_ms": 3.4805476,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "305366340431563936",
+            "mean_time_ms": 3.2083771999999997,
+            "c": "auto_explain",
+            "generic": "generic"
+          },
+          {
+            "query_id": "7824641651341060181",
+            "mean_time_ms": 1.0921261999999998,
+            "c": "auto_explain",
+            "generic": "generic"
+          }
+        ],
+        "mysql_text_limit": 1024
+      }
+    ]
+  }
+}

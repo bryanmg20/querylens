@@ -1,0 +1,56 @@
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 7772597439118, "t1_ns": 7773028237576, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 4}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 7782597830993, "t1_ns": 7782894976590, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 4}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 7792610620224, "t1_ns": 7792936229648, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 4}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 7802629015647, "t1_ns": 7802962127466, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 4}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 7865237795950, "t1_ns": 7865495305023, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 3}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 7875249186617, "t1_ns": 7875512137226, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 3}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 7885266533871, "t1_ns": 7885536169201, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 3}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 7895268364029, "t1_ns": 7895526288243, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 3}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 7911572698800, "t1_ns": 7911820801517, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 3}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 7921574746285, "t1_ns": 7921824625299, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 3}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 7931577454868, "t1_ns": 7931822124707, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 2}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 7941596047082, "t1_ns": 7941852753685, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 2}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 8189581411069, "t1_ns": 8189850041216, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 2}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 8199582603509, "t1_ns": 8199832523420, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 2}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 8209585245195, "t1_ns": 8209847447031, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 2}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 8219600866017, "t1_ns": 8219850711263, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 2}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 8282268386019, "t1_ns": 8282759730618, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 2}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 8292269853133, "t1_ns": 8292524880469, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 2}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 8302279228645, "t1_ns": 8302566162744, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 2}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 8312294933038, "t1_ns": 8312568729389, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 2}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 8421152983169, "t1_ns": 8421402698612, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 2}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 8431159375848, "t1_ns": 8431414479571, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 2}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 8441168554345, "t1_ns": 8441418671011, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 2}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 8451187670642, "t1_ns": 8451477534579, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 2}
+{"kind": "cycle", "mode": "burn", "t0_ns": 8513743836204, "t1_ns": 8516544184126, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 8523740916164, "t1_ns": 8526470573691, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 8533746850656, "t1_ns": 8536642509740, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 8543760781756, "t1_ns": 8546447334144, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 8560035160356, "t1_ns": 8562501614177, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 8570040948095, "t1_ns": 8572634808702, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 8580054336576, "t1_ns": 8582694925297, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 8590056154911, "t1_ns": 8592821880930, "ok": true, "error": null}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 8884272294774, "t1_ns": 8884535072903, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 2}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 8894283982085, "t1_ns": 8894526897754, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 2}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 8904299503220, "t1_ns": 8904584567465, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 2}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 8914314813817, "t1_ns": 8914596238116, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 2}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 8976990265673, "t1_ns": 8977261926109, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 2}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 8986995903433, "t1_ns": 8987250935923, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 2}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 8997010708484, "t1_ns": 8997275616769, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 2}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 9007026992042, "t1_ns": 9007296024158, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 2}
+{"kind": "cycle", "mode": "burn", "t0_ns": 9115884589250, "t1_ns": 9118270806226, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 9125896016189, "t1_ns": 9128178706341, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 9135901491986, "t1_ns": 9138868807218, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 9145911350538, "t1_ns": 9148469544247, "ok": true, "error": null}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 9208511590343, "t1_ns": 9208784924151, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 2}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 9218516974267, "t1_ns": 9218773981813, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 2}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 9228534263256, "t1_ns": 9228819153724, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 2}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 9238541772436, "t1_ns": 9238808441726, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 2}
+{"kind": "cycle", "mode": "burn", "t0_ns": 9718081324877, "t1_ns": 9721192596824, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 9728091134545, "t1_ns": 9730780246855, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 9738101543733, "t1_ns": 9740535765634, "ok": true, "error": null}
+{"kind": "cycle", "mode": "burn", "t0_ns": 9748121561645, "t1_ns": 9750734033510, "ok": true, "error": null}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 9764403836540, "t1_ns": 9764706892734, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 3}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 9774405371051, "t1_ns": 9774658356145, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 3}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 9784425459237, "t1_ns": 9784698630147, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 3}
+{"kind": "cycle", "mode": "pipeline", "t0_ns": 9794434923763, "t1_ns": 9794681874857, "ok": true, "error": null, "log_bytes_read": 2097152, "candidates": 10, "auto_explain_plans": 3}

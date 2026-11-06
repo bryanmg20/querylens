@@ -1,0 +1,93 @@
+[01:04:12] ===== mysql | db_id db_63cda418 =====
+[01:04:12] Preparando ql_cmp (1,000,000 filas)...
+[01:05:49] q01 igualdad sin indice: SELECT id AS q01 FROM ql_cmp WHERE c = {R}
+[01:07:11]    -> OK | 14 hallazgo(s) | obtenido {'avoidable_full_scan': True, 'missing_index': [(('c',), (), False)]}
+[01:07:12] q02 rango sin indice: SELECT id AS q02 FROM ql_cmp WHERE c BETWEEN {R} AND {R} + 5
+[01:08:33]    -> OK | 16 hallazgo(s) | obtenido {'avoidable_full_scan': True, 'missing_index': [((), ('c',), False)]}
+[01:08:34] q03 IN sin indice: SELECT id AS q03 FROM ql_cmp WHERE c IN ({R}, {R2}, {R3})
+[01:09:56]    -> OK | 14 hallazgo(s) | obtenido {'avoidable_full_scan': True, 'missing_index': [(('c',), (), False)]}
+[01:09:56] q04 IS NULL sin indice: SELECT id AS q04 FROM ql_cmp WHERE z IS NULL
+[01:11:22]    -> OK | 14 hallazgo(s) | obtenido {'avoidable_full_scan': True, 'missing_index': [(('z',), (), False)]}
+[01:11:22] q05 AND de dos igualdades sin indice: SELECT id AS q05 FROM ql_cmp WHERE c = {R} AND c2 = {R2}
+[01:12:44]    -> OK | 16 hallazgo(s) | obtenido {'avoidable_full_scan': True, 'missing_index': [(('c', 'c2'), (), False)]}
+[01:12:44] q06 AND igualdad + rango sin indice: SELECT id AS q06 FROM ql_cmp WHERE c = {R} AND c2 > {R2}
+[01:14:06]    -> OK | 14 hallazgo(s) | obtenido {'avoidable_full_scan': True, 'missing_index': [(('c',), ('c2',), False)]}
+[01:14:06] q07 OR sin ningun indice: SELECT id AS q07 FROM ql_cmp WHERE c = {R} OR c2 = {R2}
+[01:15:30]    -> OK | 14 hallazgo(s) | obtenido {'avoidable_full_scan': True, 'missing_index': [(('c', 'c2'), (), True)]}
+[01:15:31] q08 OR con una rama indexada: SELECT id AS q08 FROM ql_cmp WHERE k = {R} OR c = {R2}
+[01:16:52]    -> OK | 16 hallazgo(s) | obtenido {'avoidable_full_scan': True, 'missing_index': [(('c',), (), True)]}
+[01:16:53] q09 OR igualdad + rango sin indice: SELECT id AS q09 FROM ql_cmp WHERE c = {R} OR c2 BETWEEN {R2} AND {R2} + 3
+[01:18:15]    -> OK | 16 hallazgo(s) | obtenido {'avoidable_full_scan': True, 'missing_index': [(('c',), ('c2',), True)]}
+[01:18:15] q10 aritmetica sobre columna indexada (informe): SELECT id AS q10 FROM ql_cmp WHERE k + 0 = {R}
+[01:19:38]    -> OK | 14 hallazgo(s) | obtenido {'avoidable_full_scan': True, 'non_sargable_predicate': [('arithmetic_on_column', 'k')]}
+[01:19:39] q11 LOWER sobre columna indexada: SELECT id AS q11 FROM ql_cmp WHERE LOWER(s) = {S}
+[01:21:01]    -> OK | 14 hallazgo(s) | obtenido {'avoidable_full_scan': True, 'non_sargable_predicate': [('function_on_column', 's')]}
+[01:21:02] q12 DATE sobre columna indexada: SELECT id AS q12 FROM ql_cmp WHERE DATE(t) = {D}
+[01:22:24]    -> OK | 16 hallazgo(s) | obtenido {'avoidable_full_scan': True, 'non_sargable_predicate': [('function_on_column', 't')]}
+[01:22:24] q13 conversion de char a numero: SELECT id AS q13 FROM ql_cmp WHERE code = {N}
+[01:23:50]    -> OK | 14 hallazgo(s) | obtenido {'avoidable_full_scan': True, 'non_sargable_predicate': [('implicit_cast', 'code')]}
+[01:23:50] q14 OR con la otra rama indexada: SELECT id AS q14 FROM ql_cmp WHERE k + 0 = {R} OR r = {R2}
+[01:25:12]    -> OK | 16 hallazgo(s) | obtenido {'avoidable_full_scan': True, 'non_sargable_predicate': [('arithmetic_on_column', 'k')]}
+[01:25:12] q15 OR de dos columnas envueltas indexadas: SELECT id AS q15 FROM ql_cmp WHERE k + 0 = {R} OR LOWER(s) = {S}
+[01:26:34]    -> OK | 24 hallazgo(s) | obtenido {'avoidable_full_scan': True, 'non_sargable_predicate': [('arithmetic_on_column', 'k'), ('function_on_column', 's')]}
+[01:26:35] q16 entero contra decimal: SELECT id AS q16 FROM ql_cmp WHERE k = {R}.5
+[01:27:58]    -> OK | 0 hallazgo(s) | obtenido {}
+[01:27:58] q17 AND: columna sin indice y columna envuelta: SELECT id AS q17 FROM ql_cmp WHERE c = {R} AND LOWER(s) = {S}
+[01:29:21]    -> OK | 21 hallazgo(s) | obtenido {'avoidable_full_scan': True, 'non_sargable_predicate': [('function_on_column', 's')], 'missing_index': [(('c',), (), False)]}
+[01:29:22] q18 OR mixto: rama sin indice y rama envuelta: SELECT id AS q18 FROM ql_cmp WHERE c = {R} OR LOWER(s) = {S}
+[01:30:43]    -> OK | 8 hallazgo(s) | obtenido {'avoidable_full_scan': True}
+[01:30:44] q19 funcion sobre columna sin indice: SELECT id AS q19 FROM ql_cmp WHERE LOWER(s2) = {S2}
+[01:32:06]    -> OK | 7 hallazgo(s) | obtenido {'avoidable_full_scan': True}
+[01:32:06] q20 LIKE con comodin inicial: SELECT id AS q20 FROM ql_cmp WHERE s2 LIKE {LIKE}
+[01:33:28]    -> OK | 7 hallazgo(s) | obtenido {'avoidable_full_scan': True}
+[01:33:29] q21 columna contra columna: SELECT id AS q21 FROM ql_cmp WHERE c > c2 + 99000
+[01:34:51]    -> OK | 7 hallazgo(s) | obtenido {'avoidable_full_scan': True}
+[01:34:51] q22 busqueda por indice: SELECT id AS q22 FROM ql_cmp WHERE k = {R}
+[01:36:13]    -> OK | 0 hallazgo(s) | obtenido {}
+[01:36:14] q23 OR con las dos ramas indexadas: SELECT id AS q23 FROM ql_cmp WHERE k = {R} OR r = {R2}
+[01:37:36]    -> OK | 0 hallazgo(s) | obtenido {}
+[01:37:36] q24 AND con una parte indexada: SELECT id AS q24 FROM ql_cmp WHERE c = {R} AND k = {R2}
+[01:39:00]    -> OK | 0 hallazgo(s) | obtenido {}
+[01:39:01] q25 selectividad alta (25 %): SELECT id AS q25 FROM ql_cmp WHERE g = {G}
+[01:40:23]    -> OK | 0 hallazgo(s) | obtenido {}
+[01:40:23] q26 JOIN (no es SELECT simple): SELECT q.id AS q26 FROM ql_cmp AS q JOIN ql_cmp_dim AS d ON d.id = q.g WHERE q.c = {R}
+[01:41:45]    -> OK | 0 hallazgo(s) | obtenido {}
+[01:41:46] q27 agregado (no es SELECT simple): SELECT COUNT(*) AS q27 FROM ql_cmp WHERE c = {R}
+[01:43:08]    -> OK | 0 hallazgo(s) | obtenido {}
+[01:43:08] q28 LIMIT (no es SELECT simple): SELECT id AS q28 FROM ql_cmp WHERE c = {R} LIMIT 5
+[01:44:31]    -> OK | 0 hallazgo(s) | obtenido {}
+# Campana AP-02 / AP-03 / AP-04 por el flujo real
+
+## mysql: 28/28 escenarios OK
+
+| Escenario | Consulta | Esperado | Obtenido | Estado |
+|---|---|---|---|---|
+| q01 igualdad sin indice | `SELECT id AS q01 FROM ql_cmp WHERE c = {R}` | avoidable_full_scan, missing_index | avoidable_full_scan, missing_index | OK |
+| q02 rango sin indice | `SELECT id AS q02 FROM ql_cmp WHERE c BETWEEN {R} AND {R} + 5` | avoidable_full_scan, missing_index | avoidable_full_scan, missing_index | OK |
+| q03 IN sin indice | `SELECT id AS q03 FROM ql_cmp WHERE c IN ({R}, {R2}, {R3})` | avoidable_full_scan, missing_index | avoidable_full_scan, missing_index | OK |
+| q04 IS NULL sin indice | `SELECT id AS q04 FROM ql_cmp WHERE z IS NULL` | avoidable_full_scan, missing_index | avoidable_full_scan, missing_index | OK |
+| q05 AND de dos igualdades sin indice | `SELECT id AS q05 FROM ql_cmp WHERE c = {R} AND c2 = {R2}` | avoidable_full_scan, missing_index | avoidable_full_scan, missing_index | OK |
+| q06 AND igualdad + rango sin indice | `SELECT id AS q06 FROM ql_cmp WHERE c = {R} AND c2 > {R2}` | avoidable_full_scan, missing_index | avoidable_full_scan, missing_index | OK |
+| q07 OR sin ningun indice | `SELECT id AS q07 FROM ql_cmp WHERE c = {R} OR c2 = {R2}` | avoidable_full_scan, missing_index | avoidable_full_scan, missing_index | OK |
+| q08 OR con una rama indexada | `SELECT id AS q08 FROM ql_cmp WHERE k = {R} OR c = {R2}` | avoidable_full_scan, missing_index | avoidable_full_scan, missing_index | OK |
+| q09 OR igualdad + rango sin indice | `SELECT id AS q09 FROM ql_cmp WHERE c = {R} OR c2 BETWEEN {R2} AND {R2} + 3` | avoidable_full_scan, missing_index | avoidable_full_scan, missing_index | OK |
+| q10 aritmetica sobre columna indexada (informe) | `SELECT id AS q10 FROM ql_cmp WHERE k + 0 = {R}` | avoidable_full_scan, non_sargable_predicate | avoidable_full_scan, non_sargable_predicate | OK |
+| q11 LOWER sobre columna indexada | `SELECT id AS q11 FROM ql_cmp WHERE LOWER(s) = {S}` | avoidable_full_scan, non_sargable_predicate | avoidable_full_scan, non_sargable_predicate | OK |
+| q12 DATE sobre columna indexada | `SELECT id AS q12 FROM ql_cmp WHERE DATE(t) = {D}` | avoidable_full_scan, non_sargable_predicate | avoidable_full_scan, non_sargable_predicate | OK |
+| q13 conversion de char a numero | `SELECT id AS q13 FROM ql_cmp WHERE code = {N}` | avoidable_full_scan, non_sargable_predicate | avoidable_full_scan, non_sargable_predicate | OK |
+| q14 OR con la otra rama indexada | `SELECT id AS q14 FROM ql_cmp WHERE k + 0 = {R} OR r = {R2}` | avoidable_full_scan, non_sargable_predicate | avoidable_full_scan, non_sargable_predicate | OK |
+| q15 OR de dos columnas envueltas indexadas | `SELECT id AS q15 FROM ql_cmp WHERE k + 0 = {R} OR LOWER(s) = {S}` | avoidable_full_scan, non_sargable_predicate | avoidable_full_scan, non_sargable_predicate | OK |
+| q16 entero contra decimal | `SELECT id AS q16 FROM ql_cmp WHERE k = {R}.5` | nada | nada | OK |
+| q17 AND: columna sin indice y columna envuelta | `SELECT id AS q17 FROM ql_cmp WHERE c = {R} AND LOWER(s) = {S}` | avoidable_full_scan, missing_index, non_sargable_predicate | avoidable_full_scan, missing_index, non_sargable_predicate | OK |
+| q18 OR mixto: rama sin indice y rama envuelta | `SELECT id AS q18 FROM ql_cmp WHERE c = {R} OR LOWER(s) = {S}` | avoidable_full_scan | avoidable_full_scan | OK |
+| q19 funcion sobre columna sin indice | `SELECT id AS q19 FROM ql_cmp WHERE LOWER(s2) = {S2}` | avoidable_full_scan | avoidable_full_scan | OK |
+| q20 LIKE con comodin inicial | `SELECT id AS q20 FROM ql_cmp WHERE s2 LIKE {LIKE}` | avoidable_full_scan | avoidable_full_scan | OK |
+| q21 columna contra columna | `SELECT id AS q21 FROM ql_cmp WHERE c > c2 + 99000` | avoidable_full_scan | avoidable_full_scan | OK |
+| q22 busqueda por indice | `SELECT id AS q22 FROM ql_cmp WHERE k = {R}` | nada | nada | OK |
+| q23 OR con las dos ramas indexadas | `SELECT id AS q23 FROM ql_cmp WHERE k = {R} OR r = {R2}` | nada | nada | OK |
+| q24 AND con una parte indexada | `SELECT id AS q24 FROM ql_cmp WHERE c = {R} AND k = {R2}` | nada | nada | OK |
+| q25 selectividad alta (25 %) | `SELECT id AS q25 FROM ql_cmp WHERE g = {G}` | nada | nada | OK |
+| q26 JOIN (no es SELECT simple) | `SELECT q.id AS q26 FROM ql_cmp AS q JOIN ql_cmp_dim AS d ON d.id = q.g WHERE q.c = {R}` | nada | nada | OK |
+| q27 agregado (no es SELECT simple) | `SELECT COUNT(*) AS q27 FROM ql_cmp WHERE c = {R}` | nada | nada | OK |
+| q28 LIMIT (no es SELECT simple) | `SELECT id AS q28 FROM ql_cmp WHERE c = {R} LIMIT 5` | nada | nada | OK |
+

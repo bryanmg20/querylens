@@ -1,0 +1,38 @@
+[11:19:34] ===== ap02b_full_scan_formas | postgres | v1 | regla avoidable_full_scan =====
+[11:19:34] pipeline: C:\Users\HP\Documents\GitHub\querylens\telemetry_pipeline
+[11:19:40]   caso agg_count_raro (esperado: si)
+[11:19:58]     -> VP (intentos de snapshot: 1)
+[11:19:58]   caso agg_sum_reciente (esperado: si)
+[11:20:20]     -> VP (intentos de snapshot: 1)
+[11:20:20]   caso limit_raro (esperado: si)
+[11:20:39]     -> VP (intentos de snapshot: 1)
+[11:20:39]   caso limit_comun (esperado: no)
+[11:20:58]     -> VN (intentos de snapshot: 1)
+[11:20:58]   caso group_by_raro (esperado: si)
+[11:21:15]     -> VP (intentos de snapshot: 1)
+[11:21:15]   caso join_raro (esperado: si)
+[11:21:33]     -> VP (intentos de snapshot: 1)
+[11:21:33]   caso join_comun (esperado: no)
+[11:21:51]     -> VN (intentos de snapshot: 1)
+[11:21:51]   caso join_filtro_dim (esperado: si)
+[11:22:09]     -> VP (intentos de snapshot: 1)
+[11:22:09]   caso join_dos_filtros (esperado: si)
+[11:22:27]     -> VP (intentos de snapshot: 1)
+[11:22:27]   caso join_group_by_raro (esperado: si)
+[11:22:45]     -> VP (intentos de snapshot: 1)
+[11:22:45]   caso mezcla_error_done_99_1 (esperado: ?)
+[11:23:03]     -> detecta (intentos de snapshot: 1)
+[11:23:03]   caso mezcla_error_done_90_10 (esperado: ?)
+[11:23:21]     -> no_detecta (intentos de snapshot: 1)
+[11:23:21]   caso mezcla_error_done_50_50 (esperado: ?)
+[11:23:40]     -> no_detecta (intentos de snapshot: 1)
+[11:23:40]   caso mezcla_error_done_10_90 (esperado: ?)
+[11:23:58]     -> no_detecta (intentos de snapshot: 1)
+[11:23:58]   caso mezcla_error_pending_50_50 (esperado: si)
+[11:24:16]     -> VP (intentos de snapshot: 1)
+
+ap02b_full_scan_formas | postgres | v1 | 15 casos
+  VP=9 FN=0 FP=0 VN=2 detecta=1 no_detecta=3 sin_explain=0 no_candidata=0 no_encontrada=0
+  precision=1.00 recall=1.00
+
+[11:24:17] resultado: ql_sandbox\explain_ab\results\ap02b_full_scan_formas\postgres_v1.json

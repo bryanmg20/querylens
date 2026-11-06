@@ -1,0 +1,39 @@
+[12:38:51] ===== ap02b_full_scan_formas | mysql | v3_hist | regla avoidable_full_scan =====
+[12:38:51] pipeline: C:\Users\HP\Documents\GitHub\querylens-v3\telemetry_pipeline
+[12:39:33] paso extra: histograms_mysql.sql
+[12:45:21]   caso agg_count_raro (esperado: si)
+[12:45:41]     -> VP (intentos de snapshot: 1)
+[12:45:41]   caso agg_sum_reciente (esperado: si)
+[12:46:01]     -> VP (intentos de snapshot: 1)
+[12:46:01]   caso limit_raro (esperado: si)
+[12:46:22]     -> VP (intentos de snapshot: 1)
+[12:46:22]   caso limit_comun (esperado: no)
+[12:46:44]     -> VN (intentos de snapshot: 1)
+[12:46:44]   caso group_by_raro (esperado: si)
+[12:47:05]     -> VP (intentos de snapshot: 1)
+[12:47:05]   caso join_raro (esperado: si)
+[12:47:27]     -> VP (intentos de snapshot: 1)
+[12:47:27]   caso join_comun (esperado: no)
+[12:48:07]     -> no_encontrada (intentos de snapshot: 6)
+[12:48:07]   caso join_filtro_dim (esperado: si)
+[12:48:28]     -> VP (intentos de snapshot: 1)
+[12:48:28]   caso join_dos_filtros (esperado: si)
+[12:48:48]     -> VP (intentos de snapshot: 1)
+[12:48:48]   caso join_group_by_raro (esperado: si)
+[12:49:08]     -> VP (intentos de snapshot: 1)
+[12:49:08]   caso mezcla_error_done_99_1 (esperado: ?)
+[12:49:29]     -> detecta (intentos de snapshot: 1)
+[12:49:29]   caso mezcla_error_done_90_10 (esperado: ?)
+[12:49:51]     -> no_detecta (intentos de snapshot: 1)
+[12:49:51]   caso mezcla_error_done_50_50 (esperado: ?)
+[12:50:14]     -> no_detecta (intentos de snapshot: 1)
+[12:50:14]   caso mezcla_error_done_10_90 (esperado: ?)
+[12:50:37]     -> no_detecta (intentos de snapshot: 1)
+[12:50:37]   caso mezcla_error_pending_50_50 (esperado: si)
+[12:50:59]     -> VP (intentos de snapshot: 1)
+
+ap02b_full_scan_formas | mysql | v3_hist | 15 casos
+  VP=9 FN=0 FP=0 VN=1 detecta=1 no_detecta=3 sin_explain=0 no_candidata=0 no_encontrada=1
+  precision=1.00 recall=1.00
+
+[12:50:59] resultado: ql_sandbox\explain_ab\results\ap02b_full_scan_formas\mysql_v3_hist.json
