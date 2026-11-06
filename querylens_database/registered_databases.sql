@@ -21,13 +21,16 @@ CREATE TABLE IF NOT EXISTS registered_databases (
     -- Indica si la base de datos esta activa (TRUE) o no (FALSE). Es el
     -- registro de seguimiento de su estado.
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    -- Voluntad del usuario: FALSE cuando pauso el monitoreo desde la pagina de
-    -- diagnosticos. A diferencia de is_active (que lo actualiza solo el chequeo
-    -- de disponibilidad), esta columna solo la cambia el usuario; el pipeline
-    -- extrae unicamente las bases con is_active Y monitoring_enabled.
-    monitoring_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    -- Voluntad del usuario: una base nueva nace en FALSE y registrarla de nuevo
+    -- no cambia el valor. Pasa a TRUE cuando el usuario inicia el monitoreo desde
+    -- la pagina de diagnosticos o el CLI, o programa una ventana. A diferencia de
+    -- is_active (que lo actualiza solo el chequeo de disponibilidad), no depende
+    -- de si la base responde; el pipeline extrae unicamente las bases con
+    -- is_active Y monitoring_enabled.
+    monitoring_enabled BOOLEAN NOT NULL DEFAULT FALSE,
     -- Ventana de recoleccion programada desde el CLI (cli/querylens.sh). NULL
-    -- en las dos = monitoreo continuo, sin ventana ni reporte automatico. El
+    -- en las dos = sin ventana ni reporte automatico: el monitoreo sigue como lo
+    -- deje el usuario. El
     -- servicio scheduler enciende monitoring_enabled al llegar collect_from
     -- (y anota collect_started_at), lo apaga al llegar collect_until y, tras
     -- un margen, escribe el reporte en reports/ y anota report_written_at.
@@ -46,6 +49,11 @@ ALTER TABLE registered_databases
     ADD COLUMN IF NOT EXISTS collect_until TIMESTAMPTZ,
     ADD COLUMN IF NOT EXISTS collect_started_at TIMESTAMPTZ,
     ADD COLUMN IF NOT EXISTS report_written_at TIMESTAMPTZ;
+
+-- Volumenes creados cuando el monitoreo nacia encendido. Solo cambia el valor
+-- por defecto: las bases ya registradas siguen como estan.
+ALTER TABLE registered_databases
+    ALTER COLUMN monitoring_enabled SET DEFAULT FALSE;
 
 CREATE INDEX IF NOT EXISTS idx_registered_databases_identifier
     ON registered_databases (database_identifier);

@@ -196,8 +196,8 @@ export default function DatabaseForm() {
             <div>
               <p>
                 {registerFeedback.alreadyRegistered
-                  ? "Esta conexión ya estaba registrada y se actualizó. Redirigiendo a diagnósticos…"
-                  : "Base de datos registrada con éxito. Redirigiendo a diagnósticos…"}
+                  ? "Esta conexión ya estaba registrada y se actualizó. Su monitoreo sigue como estaba. Redirigiendo a diagnósticos…"
+                  : "Base de datos registrada con éxito. Redirigiendo a diagnósticos para que inicies el monitoreo…"}
               </p>
               <p className="mt-1 font-mono text-[13px]">Identificador: {registerFeedback.identifier}</p>
             </div>
@@ -254,7 +254,11 @@ export default function DatabaseForm() {
           <ul className="mt-4 space-y-2.5 text-[13px] leading-5 text-muted">
             <li>QueryLens abre tu sesión con esta base de datos.</li>
             <li>Te lleva a Diagnósticos, que se actualiza cada 30 segundos.</li>
-            <li>Puedes pausar el monitoreo cuando quieras.</li>
+            <li>
+              Si la base es nueva, el monitoreo queda en pausa hasta que lo inicies desde Diagnósticos. Si ya estaba
+              registrada, sigue como estaba.
+            </li>
+            <li>Una vez iniciado, puedes pausarlo cuando quieras.</li>
           </ul>
         </section>
       </aside>

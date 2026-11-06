@@ -126,11 +126,28 @@ jobs:
           curl -fsS -o /dev/null "$base/"
           curl -fsS "$base/auth/health"
           curl -fsS "$base/api/health"
-          token=$(curl -fsS -X POST "$base/auth/databases" \
-            -H 'Content-Type: application/json' \
-            -d '{"connection_name":"ci","engine":"postgresql","host":"ci.invalid","port":5432,"username":"ci","password":"ci","database_name":"ci"}' \
-            | python3 -c 'import json, sys; print(json.load(sys.stdin)["access_token"])')
+          register() {
+            curl -fsS -X POST "$base/auth/databases" \
+              -H 'Content-Type: application/json' \
+              -d '{"connection_name":"ci","engine":"postgresql","host":"ci.invalid","port":5432,"username":"ci","password":"ci","database_name":"ci"}'
+          }
+          field() { python3 -c "import json, sys; print(json.load(sys.stdin)['$1'])"; }
+          response=$(register)
+          token=$(field access_token <<<"$response")
           curl -fsS -o /dev/null -H "Authorization: Bearer $token" "$base/api/diagnostics"
+          # Una base nueva nace con el monitoreo apagado y registrarla de nuevo
+          # conserva su estado, encendido o apagado.
+          set_monitoring() {
+            curl -fsS -X PATCH "$base/auth/databases/monitoring" \
+              -H "Authorization: Bearer $token" -H 'Content-Type: application/json' \
+              -d "{\"enabled\":$1}"
+          }
+          test "$(field monitoring_enabled <<<"$response")" = False
+          test "$(register | field monitoring_enabled)" = False
+          test "$(set_monitoring true | field monitoring_enabled)" = True
+          test "$(register | field monitoring_enabled)" = True
+          test "$(set_monitoring false | field monitoring_enabled)" = False
+          test "$(register | field monitoring_enabled)" = False
 
       - name: smoke del CLI y del scheduler
         # Modo headless: el CLI (rol ql_cli) lista la base que registro el

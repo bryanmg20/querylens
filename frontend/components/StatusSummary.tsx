@@ -59,6 +59,13 @@ export default function StatusSummary({
                 Último ciclo {timeAgo(lastRun.finished_at, data.server_time)} · {formatDateTime(lastRun.finished_at)}
               </p>
             </>
+          ) : !data.monitoring_enabled ? (
+            <>
+              <p className="text-xl font-semibold leading-7">Monitoreo sin iniciar</p>
+              <p className="mt-0.5 text-[13px] text-muted">
+                Los diagnósticos aparecerán después de que inicies el monitoreo.
+              </p>
+            </>
           ) : (
             <>
               <p className="text-xl font-semibold leading-7">Esperando la primera extracción</p>

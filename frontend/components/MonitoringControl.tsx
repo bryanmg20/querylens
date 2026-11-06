@@ -3,16 +3,19 @@
 import { useState } from "react";
 import { IconPause, IconPlay } from "./icons";
 
-// Pausar / reanudar el monitoreo de la base de datos de la sesión. Pausar pide confirmación
-// porque detiene la recolección de nuevos diagnósticos; la confirmación se despliega en la
-// misma tarjeta.
+// Iniciar / pausar / reanudar el monitoreo de la base de datos de la sesión. Registrar una base
+// lo deja apagado: `started` distingue una base que nunca se ha extraído (iniciar) de una que ya
+// tuvo ciclos (reanudar). Pausar pide confirmación porque detiene la recolección de nuevos
+// diagnósticos; la confirmación se despliega en la misma tarjeta.
 export default function MonitoringControl({
   enabled,
+  started,
   busy,
   error,
   onChange,
 }: {
   enabled: boolean;
+  started: boolean;
   busy: boolean;
   error: string | null;
   onChange: (enabled: boolean) => void;
@@ -32,12 +35,14 @@ export default function MonitoringControl({
         </span>
         <span>
           <span className={`block font-medium ${enabled ? "" : "text-muted"}`}>
-            {enabled ? "Monitoreo activo" : "Monitoreo en pausa"}
+            {enabled ? "Monitoreo activo" : started ? "Monitoreo en pausa" : "Monitoreo sin iniciar"}
           </span>
           <span className="mt-0.5 block text-muted">
             {enabled
               ? "QueryLens está recolectando información de esta base de datos."
-              : "No se recolectan nuevos diagnósticos. Los actuales se conservan."}
+              : started
+                ? "No se recolectan nuevos diagnósticos. Los actuales se conservan."
+                : "QueryLens no recolecta información de esta base de datos hasta que lo inicies."}
           </span>
         </span>
       </p>
@@ -45,7 +50,13 @@ export default function MonitoringControl({
       {!enabled && (
         <button type="button" disabled={busy} onClick={() => onChange(true)} className="btn-primary mt-4 w-full">
           <IconPlay size={14} />
-          {busy ? "Reanudando…" : "Reanudar monitoreo"}
+          {busy
+            ? started
+              ? "Reanudando…"
+              : "Iniciando…"
+            : started
+              ? "Reanudar monitoreo"
+              : "Iniciar monitoreo"}
         </button>
       )}
 

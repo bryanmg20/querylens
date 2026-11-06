@@ -49,12 +49,12 @@ def _to_response(record: RegisteredDatabase) -> DatabaseRegisteredResponse:
 
 
 def _start_session(db: Session, record: RegisteredDatabase) -> DatabaseSessionResponse:
-    # Iniciar sesión marca la base de datos como disponible y vuelve a habilitar
-    # el monitoreo si el usuario lo había pausado. Se queda así aunque cierre la
-    # página: el monitoreo continúa.
-    if not record.is_active or not record.monitoring_enabled:
+    # Registrar abre la sesión y marca la base de datos como disponible. El
+    # monitoreo no se toca: una base nueva nace apagada (valor por defecto de la
+    # columna) y una que ya existía conserva su estado, que solo cambian el usuario
+    # (PATCH /databases/monitoring) y su ventana de recolección.
+    if not record.is_active:
         record.is_active = True
-        record.monitoring_enabled = True
         db.commit()
         db.refresh(record)
     return DatabaseSessionResponse(
@@ -147,8 +147,8 @@ def set_monitoring(
     database_identifier: str = Depends(get_database_identifier),
     db: Session = Depends(get_db),
 ) -> MonitoringResponse:
-    """Pausa (enabled=false) o reanuda (enabled=true) el monitoreo de la base
-    de datos del token. Solo cambia monitoring_enabled: la disponibilidad
+    """Pausa (enabled=false) o inicia/reanuda (enabled=true) el monitoreo de la
+    base de datos del token. Solo cambia monitoring_enabled: la disponibilidad
     (is_active) sigue siendo responsabilidad del chequeo automático."""
 
     record = (

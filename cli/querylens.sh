@@ -46,7 +46,8 @@ Uso: querylens [comando] [opciones]
 Sin comando abre el menu interactivo.
 
   add                       Registra una base (pide credenciales) y programa
-                            su ventana de recoleccion
+                            su ventana de recoleccion. Sin ventana, una base nueva
+                            queda en pausa hasta que se use resume
   test                      Prueba una conexion sin registrarla
   list                      Lista las bases registradas y su ventana
   schedule ID --until T [--from T]
@@ -54,7 +55,7 @@ Sin comando abre el menu interactivo.
                             terminar, el scheduler escribe el reporte en
                             reports/. --from por defecto: ahora
   unschedule ID             Quita la ventana (el monitoreo sigue como esta)
-  pause ID | resume ID      Pausa o reanuda el monitoreo de ID
+  pause ID | resume ID      Pausa o inicia/reanuda el monitoreo de ID
   report ID [--since 7d | --from T --until T] [--format md|csv|json]
             [--include-evidence]
                             Escribe el reporte de hallazgos en reports/. Sin
@@ -176,7 +177,7 @@ cmd_test() {
 }
 
 cmd_add() {
-    local name body id answer from until
+    local name body id answer from until monitoring
     read -r -e -p "Nombre de la conexion: " name
     [[ -n $name ]] || die "el nombre es obligatorio"
     ask_connection
@@ -189,14 +190,21 @@ cmd_add() {
     body=$(connection_json "$name" | auth_post /databases)
     conn_password=
     id=$(jq -r .database_identifier <<<"$body")
-    echo "Base registrada: $name (id $id)"
+    # Una base nueva nace en pausa; una que ya existia conserva su estado.
+    monitoring=$(jq -r .monitoring_enabled <<<"$body")
+    if [[ $monitoring == true ]]; then
+        echo "Base registrada: $name (id $id). Monitoreo activo."
+    else
+        echo "Base registrada: $name (id $id). Monitoreo en pausa."
+    fi
 
     echo
-    echo "Ventana de recoleccion. Horas: \"YYYY-MM-DD HH:MM\", now o +2h."
+    echo "Ventana de recoleccion (opcional). Horas: \"YYYY-MM-DD HH:MM\", now o +2h."
     read -r -e -p "Inicio (vacio = ahora): " from
-    read -r -e -p "Fin (vacio = monitoreo continuo, sin reporte automatico): " until
+    read -r -e -p "Fin (vacio = no programar ventana): " until
     if [[ -z $until ]]; then
-        echo "Sin ventana: el monitoreo queda continuo. Reporte: querylens report $id"
+        [[ $monitoring == true ]] || echo "Para iniciar el monitoreo: querylens resume $id"
+        echo "Reporte: querylens report $id"
         return
     fi
     cmd_schedule "$id" --from "${from:-now}" --until "$until"
@@ -212,7 +220,7 @@ SELECT database_identifier AS id,
        CASE WHEN monitoring_enabled THEN 'si' ELSE 'no' END AS monitoreo,
        coalesce(to_char(collect_from, 'YYYY-MM-DD HH24:MI'), '-') AS desde,
        coalesce(to_char(collect_until, 'YYYY-MM-DD HH24:MI'), '-') AS hasta,
-       CASE WHEN collect_until IS NULL THEN 'continuo'
+       CASE WHEN collect_until IS NULL THEN 'sin ventana'
             WHEN report_written_at IS NOT NULL THEN 'reporte listo'
             WHEN collect_until <= now() THEN 'terminada'
             WHEN collect_started_at IS NOT NULL THEN 'en curso'
@@ -502,9 +510,9 @@ QueryLens
   2) Probar una conexion
   3) Listar bases
   4) Programar ventana de recoleccion
-  5) Quitar ventana (monitoreo continuo)
+  5) Quitar ventana
   6) Pausar monitoreo
-  7) Reanudar monitoreo
+  7) Iniciar o reanudar monitoreo
   8) Generar reporte de hallazgos
   9) Salud del pipeline
   0) Salir
