@@ -55,12 +55,12 @@ Sin argumentos, `querylens` abre un menú. Cada opción también existe como sub
 
 | Comando | Qué hace |
 |---|---|
-| `add` | Pide las credenciales (la contraseña sin eco), prueba la conexión, registra la base y pide la ventana de recolección |
+| `add` | Pide las credenciales (la contraseña sin eco), prueba la conexión, registra la base y pide la ventana de recolección. Sin ventana, una base nueva queda en pausa hasta usar `resume` |
 | `test` | Prueba una conexión sin registrarla |
 | `list` | Bases registradas, su estado y su ventana |
 | `schedule ID --until T [--from T]` | Programa la ventana de recolección. `--from` es ahora por defecto |
 | `unschedule ID` | Quita la ventana; el monitoreo queda como esté |
-| `pause ID` / `resume ID` | Pausa o reanuda el monitoreo |
+| `pause ID` / `resume ID` | Pausa o inicia/reanuda el monitoreo |
 | `report ID [--since 7d \| --from T --until T] [--format md\|csv\|json] [--include-evidence]` | Escribe un reporte en `reports/`. Sin rango usa la ventana programada o, si no hay, los últimos 7 días |
 | `health ID` | Último ciclo del pipeline y problemas abiertos (extensión faltante, permisos, conexión) |
 
@@ -69,7 +69,8 @@ Las horas (`T`) se escriben como `"2026-10-27 08:00"` (en `QL_TZ`), `now` o rela
 Ejemplo:
 
 ```bash
-querylens add                                   # registra y programa
+querylens add                                   # registra; una base nueva queda en pausa si no das ventana
+querylens resume db_a1b2c3d4                    # monitoreo continuo desde ahora, o bien una ventana:
 querylens schedule db_a1b2c3d4 --from "2026-10-27 08:00" --until "2026-10-27 18:00"
 querylens list
 querylens report db_a1b2c3d4 --since 24h --format csv
@@ -83,7 +84,9 @@ El servicio `scheduler` revisa las ventanas de todas las bases cada `SCHEDULER_I
 2. Cuando llega `--until`, lo apaga.
 3. `REPORT_GRACE_S` después, escribe el reporte. El detector procesa en diferido los últimos snapshots, así que el reporte incluye también lo que detecte durante ese margen.
 
-Las ventanas se guardan en la base (`registered_databases`): un reinicio del servidor o del scheduler no pierde ninguna. Una pausa manual durante la ventana se respeta. Sin ventana, el monitoreo es continuo y el reporte se pide con `report`.
+Las ventanas se guardan en la base (`registered_databases`): un reinicio del servidor o del scheduler no pierde ninguna. Una pausa manual durante la ventana se respeta. Sin ventana, el monitoreo arranca con `resume`, sigue hasta que se pause y el reporte se pide con `report`.
+
+Registrar no cambia el monitoreo de una conexión que ya existía: si estaba activo sigue activo, si estaba en pausa sigue en pausa, y su ventana se conserva. Solo una base nueva empieza en pausa.
 
 ### Reportes
 
