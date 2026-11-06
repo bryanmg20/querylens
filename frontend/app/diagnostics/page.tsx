@@ -33,7 +33,9 @@ function headline(data: DiagnosticsResponse): { text: string; tone: string } {
     };
   }
   if (!data.monitoring_enabled) {
-    return { text: "El monitoreo está en pausa: no se recolectan nuevos diagnósticos.", tone: "var(--warning)" };
+    return data.health.last_run == null
+      ? { text: "El monitoreo no ha iniciado: inícialo para empezar a recolectar diagnósticos.", tone: "var(--warning)" }
+      : { text: "El monitoreo está en pausa: no se recolectan nuevos diagnósticos.", tone: "var(--warning)" };
   }
   if (data.health.last_run == null) {
     return { text: "Esperando la primera extracción.", tone: "var(--muted)" };
@@ -244,6 +246,7 @@ export default function DiagnosticsPage() {
               <StatusSummary data={data} pollSeconds={POLL_INTERVAL_MS / 1000} cycle={cycle} />
               <MonitoringControl
                 enabled={data.monitoring_enabled}
+                started={data.health.last_run != null}
                 busy={monitoringBusy}
                 error={monitoringError}
                 onChange={handleMonitoringChange}

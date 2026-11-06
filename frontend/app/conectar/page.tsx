@@ -11,7 +11,7 @@ export default function ConnectPage() {
         </p>
         <h1 className="mt-2 text-[26px] font-semibold leading-8 tracking-[-0.01em]">Conectar base de datos</h1>
         <p className="mt-1 max-w-xl text-sm text-muted">
-          Registra una base PostgreSQL o MySQL para que QueryLens empiece a observar sus consultas.
+          Registra una base PostgreSQL o MySQL. QueryLens empieza a observar sus consultas cuando inicies el monitoreo.
         </p>
       </header>
       <div className="mt-8">
