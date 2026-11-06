@@ -335,9 +335,9 @@ def test_main_extrae_solo_lo_registrado(monkeypatch, ql, scratch_queue):
                     "INSERT INTO registered_databases ("
                     "database_identifier, connection_fingerprint, connection_name, "
                     "engine, host, port, db_user, encrypted_password, database_name, "
-                    "is_active"
+                    "is_active, monitoring_enabled"
                     ") VALUES ("
-                    ":ident, :fp, 'e2e', 'postgresql', :host, :port, :user, :pw, :db, true"
+                    ":ident, :fp, 'e2e', 'postgresql', :host, :port, :user, :pw, :db, true, true"
                     ")"
                 ),
                 {
