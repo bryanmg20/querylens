@@ -10,6 +10,7 @@ import {
   type ConnectionFormValues,
   type DatabaseEngine,
 } from "@/types/database";
+import { IconCheck } from "./icons";
 import SignalTrace, { type TraceState } from "./SignalTrace";
 
 type RegisterFeedback =
@@ -25,6 +26,8 @@ function buildDsnPreview(values: ConnectionFormValues): string {
   const user = values.username || "usuario";
   const host = values.host || "host";
   const port = values.port || DEFAULT_PORTS[values.engine];
+  // En MySQL no hay base de datos que indicar: la conexión es al servidor.
+  if (values.engine === "mysql") return `${scheme}://${user}@${host}:${port}`;
   const db = values.databaseName || "basededatos";
   return `${scheme}://${user}@${host}:${port}/${db}`;
 }
@@ -92,10 +95,12 @@ export default function DatabaseForm() {
     }
   }
 
+  // Rejilla de 3 columnas con hueco de 24px: el formulario ocupa 2 (872px) y la vista previa 1 (424px).
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_296px]">
-      <form onSubmit={handleRegister} className="min-w-0 space-y-8">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <form onSubmit={handleRegister} className="card min-w-0 p-6 lg:col-span-2">
+        <h2 className="card-title">Conexión</h2>
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Nombre de la conexión">
             <input
               required
@@ -119,7 +124,8 @@ export default function DatabaseForm() {
           </Field>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 border-t panel-line pt-6 sm:grid-cols-2">
+        <h2 className="card-title mt-8 border-t border-rule pt-6">Servidor y credenciales</h2>
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Host">
             <input
               required
@@ -129,10 +135,10 @@ export default function DatabaseForm() {
               className="input-mono"
             />
             {(values.host === "localhost" || values.host === "127.0.0.1") && (
-              <p className="mt-1 text-xs text-graphite-600">
+              <p className="mt-2 text-[13px] leading-5 text-muted">
                 Si la base de datos corre en este mismo servidor (fuera de un
-                contenedor), usa <code className="font-mono">host.docker.internal</code>{" "}
-                en vez de <code className="font-mono">{values.host}</code>.
+                contenedor), usa <code className="font-mono text-fg">host.docker.internal</code>{" "}
+                en vez de <code className="font-mono text-fg">{values.host}</code>.
               </p>
             )}
           </Field>
@@ -167,66 +173,90 @@ export default function DatabaseForm() {
             />
           </Field>
 
-          <Field label="Nombre de la base de datos" className="sm:col-span-2">
-            <input
-              required
-              type="text"
-              value={values.databaseName}
-              onChange={(e) => update("databaseName", e.target.value)}
-              className="input-mono"
-            />
-          </Field>
+          {values.engine === "postgresql" ? (
+            <Field label="Nombre de la base de datos" className="sm:col-span-2">
+              <input
+                required
+                type="text"
+                value={values.databaseName}
+                onChange={(e) => update("databaseName", e.target.value)}
+                className="input-mono"
+              />
+            </Field>
+          ) : (
+            <p className="rise rounded bg-ground px-3 py-2.5 text-[13px] leading-5 text-muted sm:col-span-2">
+              En MySQL no hace falta indicar una base de datos: QueryLens se conecta al servidor y lee sus estadísticas.
+            </p>
+          )}
         </div>
 
         {registerFeedback.type === "success" && (
-          <div className="rounded border-l-2 border-signal bg-signal-soft px-3 py-2.5">
-            <p className="text-xs text-graphite-600">
-              {registerFeedback.alreadyRegistered
-                ? "Esta conexión ya estaba registrada y se actualizó. Redirigiendo a diagnósticos…"
-                : "Base de datos registrada con éxito. Redirigiendo a diagnósticos…"}
-            </p>
-            <p className="mt-0.5 font-mono text-sm text-ink">
-              Identificador: {registerFeedback.identifier}
-            </p>
+          <div className="notice-pos pop mt-6 flex items-start gap-2.5" role="status">
+            <IconCheck size={16} className="mt-0.5 flex-none" />
+            <div>
+              <p>
+                {registerFeedback.alreadyRegistered
+                  ? "Esta conexión ya estaba registrada y se actualizó. Redirigiendo a diagnósticos…"
+                  : "Base de datos registrada con éxito. Redirigiendo a diagnósticos…"}
+              </p>
+              <p className="mt-1 font-mono text-[13px]">Identificador: {registerFeedback.identifier}</p>
+            </div>
           </div>
         )}
         {registerFeedback.type === "error" && (
-          <div className="rounded border-l-2 border-alert bg-alert-soft px-3 py-2.5 text-sm text-ink">
+          <div className="notice-neg pop mt-6" role="alert">
             {registerFeedback.message}
           </div>
         )}
 
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <button
-            type="button"
-            onClick={handleTestConnection}
-            disabled={testing}
-            className="flex-1 rounded border border-signal px-4 py-2 text-sm text-signal transition hover:bg-signal-soft disabled:cursor-not-allowed disabled:opacity-50"
-          >
+        <div className="mt-6 flex flex-col gap-3 border-t border-rule pt-6 sm:flex-row sm:justify-end">
+          <button type="button" onClick={handleTestConnection} disabled={testing} className="btn-outline">
             {testing ? "Probando…" : "Probar conexión"}
           </button>
           <button
             type="submit"
             disabled={registering || registerFeedback.type === "success"}
-            className="flex-1 rounded bg-ink px-4 py-2 text-sm text-paper transition hover:bg-graphite-600 disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn-primary"
           >
             {registering ? "Registrando…" : "Registrar base de datos"}
           </button>
         </div>
       </form>
 
-      <aside className="h-fit space-y-4 lg:sticky lg:top-10">
-        <div className="rounded border border-graphite-600 bg-ink px-4 py-4">
-          <p className="truncate text-xs text-graphite-300">
-            {values.connectionName || "Sin nombre todavía"}
-          </p>
-          <p className="mt-1 break-all font-mono text-sm text-paper">{dsnPreview}</p>
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            <Badge>{values.engine}</Badge>
+      <aside className="card flex flex-col justify-between gap-6 p-6">
+        <section aria-labelledby="dsn-title">
+          <div className="flex items-center justify-between gap-3">
+            <h2 id="dsn-title" className="card-title">
+              Vista previa
+            </h2>
+            <span className="pill-neu">{values.engine}</span>
           </div>
+          <p className="mt-4 truncate text-[13px] text-muted">{values.connectionName || "Sin nombre todavía"}</p>
+          <p className="mt-1 break-words rounded bg-ground px-3 py-2.5 font-mono text-[12.5px] leading-5">
+            {/* Puntos de corte tras @ : y / para que una base larga no se parta a mitad de palabra. */}
+            {dsnPreview.split(/(?<=[@:/])/).map((part, i) => (
+              <span key={i}>
+                {part}
+                <wbr />
+              </span>
+            ))}
+          </p>
+        </section>
+
+        <div className="border-t border-rule pt-6">
+          <SignalTrace state={traceState} bare />
         </div>
 
-        <SignalTrace state={traceState} />
+        <section className="border-t border-rule pt-6" aria-labelledby="next-title">
+          <h2 id="next-title" className="card-title">
+            Después de registrar
+          </h2>
+          <ul className="mt-4 space-y-2.5 text-[13px] leading-5 text-muted">
+            <li>QueryLens abre tu sesión con esta base de datos.</li>
+            <li>Te lleva a Diagnósticos, que se actualiza cada 30 segundos.</li>
+            <li>Puedes pausar el monitoreo cuando quieras.</li>
+          </ul>
+        </section>
       </aside>
     </div>
   );
@@ -246,13 +276,5 @@ function Field({
       <span className="field-label">{label}</span>
       {children}
     </label>
-  );
-}
-
-function Badge({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="rounded-sm border border-graphite-600 px-1.5 py-0.5 font-mono text-[11px] text-graphite-300">
-      {children}
-    </span>
   );
 }
