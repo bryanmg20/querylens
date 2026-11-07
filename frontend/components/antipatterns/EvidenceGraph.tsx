@@ -19,8 +19,9 @@ const KIND_LABEL: Record<NodeKind, string> = {
   index: "Índice",
   predicate: "Filtro",
   metric: "Medida",
+  session: "Sesión",
 };
-const IDENT: NodeKind[] = ["query", "table", "column", "index", "predicate"];
+const IDENT: NodeKind[] = ["query", "table", "column", "index", "predicate", "session"];
 
 const NODE_H = 64;
 const NODE_H_SERIES = 92;
@@ -42,7 +43,8 @@ const nodeHeight = (n: GNode) => (n.series && n.series.length > 1 ? NODE_H_SERIE
 function layout(nodes: GNode[], width: number) {
   const layers = [...new Set(nodes.map((n) => n.layer))].sort((a, b) => a - b);
   const rows = layers.map((l) => nodes.filter((n) => n.layer === l));
-  const vertical = width < VERTICAL_BELOW;
+  // Con muchas capas (una cola larga de bloqueos) las columnas no caben: se apilan.
+  const vertical = width < VERTICAL_BELOW || width < rows.length * 140 + (rows.length - 1) * 64;
   const boxes = new Map<string, Box>();
   let height = 0;
   let gapX = 0;
