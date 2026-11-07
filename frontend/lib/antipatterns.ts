@@ -15,7 +15,8 @@ export type VizConfig =
   | { kind: "writes"; index: string; sizeMb: number }
   | { kind: "baseline"; median: number; bad: number[]; fix: number[] }
   | { kind: "estimate"; actual: number; estBad: number; estFix: number; planBad: string; planFix: string }
-  | { kind: "spill"; dataMb: number; memBad: number; memFix: number; tempBlocks: number };
+  | { kind: "spill"; dataMb: number; memBad: number; memFix: number; tempBlocks: number }
+  | { kind: "nplus1"; parent: string; child: string; rows: number };
 
 export interface AntipatternDoc {
   id: string;
@@ -231,6 +232,43 @@ export const ANTIPATTERN_DOCS: Record<string, AntipatternDoc> = {
     ],
     viz: { kind: "writes", index: "idx_pedidos_notas", sizeMb: 412 },
   },
+  n_plus_one: {
+    id: "n_plus_one",
+    code: "AP-06",
+    title: "Patrón N+1",
+    family: "Demasiadas consultas",
+    tagline: "Una consulta para la lista y otra por cada fila.",
+    summary: "Una consulta se repite una vez por cada fila que devolvió otra, cuando podría traer todo junto.",
+    rule: "Una consulta hija con 50 ejecuciones o más en la ventana, que filtra por igualdad sobre una clave foránea y cuyas ejecuciones coinciden (±20 %) con las filas que devolvió una consulta padre, de 2 filas o más por ejecución.",
+    what: [
+      "La aplicación lee una lista de registros con una consulta (la padre) y después lanza otra consulta (la hija) por cada uno de ellos para traer sus datos relacionados. Con N filas son N + 1 consultas.",
+      "Cada consulta es rápida por separado, así que no se ve como lenta. El costo está en el viaje de ida y vuelta a la base, repetido N veces, y crece con el tamaño de la lista.",
+      "QueryLens lo detecta sin usar el plan: busca una consulta cuyo número de ejecuciones en la ventana coincide con las filas que devolvió otra, unidas por una clave foránea.",
+    ],
+    causes: [
+      { title: "Carga perezosa del ORM", text: "Al recorrer la lista, cada acceso a la relación dispara su propia consulta." },
+      { title: "Un bucle que consulta por cada registro", text: "El código pide los datos relacionados dentro del ciclo en lugar de pedirlos juntos." },
+      { title: "Falta de carga anticipada", text: "No se indicó que la relación se necesita, así que el ORM la trae bajo demanda." },
+      { title: "Listas que crecieron", text: "Con 10 filas pasaba inadvertido; con 500 son 500 viajes a la base por petición." },
+    ],
+    bad: "SELECT id FROM clientes WHERE region = 3;\n-- y por cada cliente:\nSELECT * FROM pedidos WHERE cliente_id = $1;",
+    fix: "SELECT c.id, p.*\nFROM clientes c\nJOIN pedidos p ON p.cliente_id = c.id\nWHERE c.region = 3;",
+    compare: { metric: "Consultas por petición", unit: "consultas", bad: 51, fix: 1 },
+    checklist: [
+      "Trae las filas relacionadas con un JOIN en la consulta padre.",
+      "O pídelas todas juntas con WHERE cliente_id IN (...) sobre los valores del padre.",
+      "Si usas un ORM, activa la carga anticipada (eager loading o prefetch) para esa relación.",
+      "Verifica en pg_stat_statements que las ejecuciones de la hija bajen a una por petición.",
+    ],
+    caveat:
+      "Una página de detalle que lee un pedido y luego su cliente es un «1 + 1» normal: por eso el padre debe devolver 2 filas o más por ejecución. Tampoco se cuentan las lecturas con bloqueo (FOR UPDATE o FOR KEY SHARE), como el chequeo interno de claves foráneas de PostgreSQL. Con menos de 50 ejecuciones en la ventana no se marca.",
+    evidence: [
+      ["Ejecuciones de la hija", "1.240"],
+      ["Filas del padre", "1.250"],
+      ["Clave foránea", "fk_pedidos_cliente"],
+    ],
+    viz: { kind: "nplus1", parent: "clientes", child: "pedidos", rows: 24 },
+  },
   disk_spill: {
     id: "disk_spill",
     code: "AP-07",
@@ -317,6 +355,7 @@ export const ANTIPATTERN_ORDER = [
   "non_sargable_predicate",
   "missing_index",
   "unused_index",
+  "n_plus_one",
   "disk_spill",
   "cardinality_misestimate",
 ] as const;
@@ -329,6 +368,7 @@ export const LANDING_ORDER = [
   "unused_index",
   "baseline_degradation",
   "cardinality_misestimate",
+  "n_plus_one",
   "disk_spill",
 ] as const;
 

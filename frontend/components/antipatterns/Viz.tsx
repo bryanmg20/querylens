@@ -400,6 +400,66 @@ function SpillViz({ cfg, mode }: { cfg: Extract<VizConfig, { kind: "spill" }>; m
   );
 }
 
+// ---------------------------------------------------------------- consultas por fila (AP-06)
+
+function NPlusOneViz({ cfg, mode }: { cfg: Extract<VizConfig, { kind: "nplus1" }>; mode: Mode }) {
+  const fixed = mode === "fix";
+  const p = useProgress(0, fixed ? 1600 : 3600, 250);
+  // Problemática: una consulta hija por fila, una tras otra. Corregida: una sola trae todas.
+  const done = fixed ? (seg(p, 0.2, 0.5) > 0 ? cfg.rows : 0) : Math.floor(seg(p, 0.1, 0.95) * cfg.rows);
+  const queries = fixed ? (p > 0.2 ? 1 : 0) : (p > 0.05 ? 1 : 0) + done;
+  const settled = p > 0.95;
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-2 text-[13px]">
+        <p className="text-muted">
+          <code className="font-mono text-fg">{cfg.parent}</code> devuelve {cfg.rows} filas; cada una necesita sus{" "}
+          <code className="font-mono text-fg">{cfg.child}</code>
+        </p>
+        <span className={fixed ? "pill-pos" : "pill-neg"}>{fixed ? "Una sola consulta con JOIN" : "Una consulta por cada fila"}</span>
+      </div>
+
+      <div
+        role="img"
+        aria-label={fixed ? "Una consulta trae los datos de todas las filas" : "Cada fila lanza su propia consulta"}
+        className="mt-5 grid grid-cols-6 gap-2 sm:grid-cols-8 md:grid-cols-12"
+      >
+        {Array.from({ length: cfg.rows }, (_, i) => {
+          const lit = i < done;
+          return (
+            <span
+              key={i}
+              className="flex aspect-square items-center justify-center rounded text-[11px] font-mono transition-[background-color,color,transform] duration-200 ease-out"
+              style={{
+                background: lit ? (fixed ? "var(--positive)" : READ) : "var(--raised)",
+                color: lit ? "var(--ground)" : "var(--muted)",
+                transform: lit && !fixed && i === done - 1 ? "scale(1.18)" : "scale(1)",
+              }}
+            >
+              {i + 1}
+            </span>
+          );
+        })}
+      </div>
+
+      <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-1.5 text-[13px] text-muted">
+        <li className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-[2px]" style={{ background: fixed ? "var(--positive)" : READ }} />
+          {fixed ? "Fila resuelta por el JOIN" : "Fila con su consulta ya lanzada"}
+        </li>
+        <li className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-[2px] bg-raised" />Fila pendiente</li>
+      </ul>
+
+      <div className="mt-4 grid grid-cols-3 gap-3">
+        <Stat label="Consultas lanzadas" value={INT.format(queries)} tone={settled ? (fixed ? "pos" : "neg") : undefined} />
+        <Stat label="Filas del padre" value={cfg.rows} />
+        <Stat label="Consultas hija" value={fixed ? (p > 0.2 ? "0" : "—") : INT.format(done)} tone={settled ? (fixed ? "pos" : "neg") : undefined} />
+      </div>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------- selector
 
 export default function AntipatternViz({ doc }: { doc: AntipatternDoc }) {
@@ -418,6 +478,8 @@ export default function AntipatternViz({ doc }: { doc: AntipatternDoc }) {
             return <EstimateViz cfg={cfg} mode={mode} />;
           case "spill":
             return <SpillViz cfg={cfg} mode={mode} />;
+          case "nplus1":
+            return <NPlusOneViz cfg={cfg} mode={mode} />;
         }
       }}
     </VizFrame>
