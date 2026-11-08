@@ -270,7 +270,9 @@ def register(engine):
     auth-service reconoce la misma conexion por su fingerprint y devuelve el id
     que ya tenia, asi que repetirlo no crea otra fila."""
     name, auth_engine, port = CONNECTION[engine]
-    answers = [name, auth_engine, "host.docker.internal", port, "querylens_monitor", "monitor_pass", "ql_demo", "", ""]
+    # En MySQL el CLI no pregunta la base.
+    database = [] if auth_engine == "mysql" else ["ql_demo"]
+    answers = [name, auth_engine, "host.docker.internal", port, "querylens_monitor", "monitor_pass", *database, "", ""]
     out = cli("add", input_text="\n".join(answers) + "\n")
     match = re.search(r"\(id (db_[0-9a-f]+)\)", out)
     if not match:

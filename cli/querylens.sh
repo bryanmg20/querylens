@@ -145,8 +145,12 @@ ask_connection() {
     read -r -s -p "Contrasena: " conn_password
     echo >&2
     [[ -n $conn_password ]] || die "la contrasena es obligatoria"
-    read -r -e -p "Base de datos: " conn_database
-    [[ -n $conn_database ]] || die "la base de datos es obligatoria"
+    # En MySQL no se pide: el pipeline observa todo el servidor.
+    conn_database=
+    if [[ $conn_engine != mysql ]]; then
+        read -r -e -p "Base de datos: " conn_database
+        [[ -n $conn_database ]] || die "la base de datos es obligatoria"
+    fi
 }
 
 # JSON de la conexion (con connection_name si se pasa uno). La contrasena va

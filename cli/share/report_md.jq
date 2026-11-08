@@ -7,7 +7,7 @@
   def num: if . == null then "sin dato" else tostring end;
 "# Reporte de hallazgos: \(.base.connection_name)",
 "",
-"- Base: `\(.base.database_name)` (\(.base.engine)), id `\(.base.database_identifier)`",
+"- Base: \(if .base.engine == "mysql" then "toda la base" else "`\(.base.database_name)`" end) (\(.base.engine)), id `\(.base.database_identifier)`",
 "- Rango: \(.desde | ts) a \(.hasta | ts)",
 "- Generado: \(.generado | ts)",
 "",
