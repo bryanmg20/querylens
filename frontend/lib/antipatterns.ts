@@ -16,7 +16,10 @@ export type VizConfig =
   | { kind: "baseline"; median: number; bad: number[]; fix: number[] }
   | { kind: "estimate"; actual: number; estBad: number; estFix: number; planBad: string; planFix: string }
   | { kind: "spill"; dataMb: number; memBad: number; memFix: number; tempBlocks: number }
-  | { kind: "nplus1"; parent: string; child: string; rows: number };
+  | { kind: "nplus1"; parent: string; child: string; rows: number }
+  | { kind: "deadlock"; scenario: "order" | "conversion" | "range" | "unknown" }
+  | { kind: "cascade"; sessions: number }
+  | { kind: "amplify"; table: string; rows: number; modified: number };
 
 export interface AntipatternDoc {
   id: string;
@@ -346,19 +349,263 @@ export const ANTIPATTERN_DOCS: Record<string, AntipatternDoc> = {
       planFix: "Hash Join",
     },
   },
+
+  // Bloqueos. Los códigos CT-0x y las reglas salen de detection_engine/deadlocks; los ejemplos
+  // de sentencias y cifras son ilustrativos.
+  inconsistent_lock_order_deadlock: {
+    id: "inconsistent_lock_order_deadlock",
+    code: "CT-01",
+    title: "Abrazo mortal por orden inconsistente",
+    family: "Bloqueos",
+    tagline: "Cada una espera lo que la otra ya tiene.",
+    summary: "Dos transacciones toman los mismos recursos en orden opuesto y quedan esperándose mutuamente.",
+    rule: "Un ciclo de 2 o más transacciones en el grafo de espera, donde cada una mantiene en modo exclusivo el recurso que la otra solicita, adquiridos en orden opuesto.",
+    what: [
+      "Una transacción bloquea la fila 1 y después pide la fila 2. Otra, al mismo tiempo, bloquea la fila 2 y después pide la fila 1. Ninguna puede avanzar y ninguna suelta lo que tiene hasta terminar.",
+      "El motor lo detecta, revierte una de las dos (la víctima) y le devuelve un error de abrazo mortal. Esa transacción pierde su trabajo y la aplicación debe reintentarla.",
+    ],
+    causes: [
+      { title: "Rutas que recorren los datos en distinto orden", text: "Una transferencia de A a B y otra de B a A actualizan las mismas filas en sentido contrario." },
+      { title: "Sin una regla de orden común", text: "Cada parte del código decide por su cuenta qué fila toma primero." },
+      { title: "Transacciones largas", text: "Mientras más tiempo se retienen los bloqueos, más probable es que otra transacción se cruce." },
+      { title: "Varias tablas en la misma transacción", text: "Una ruta modifica pedidos y luego facturas, y otra lo hace al revés." },
+    ],
+    bad: "-- Transacción A          -- Transacción B\nUPDATE cuentas ... id = 1;  UPDATE cuentas ... id = 2;\nUPDATE cuentas ... id = 2;  UPDATE cuentas ... id = 1;",
+    fix: "-- Las dos, en el mismo orden (id ascendente)\nUPDATE cuentas ... id = 1;\nUPDATE cuentas ... id = 2;",
+    compare: { metric: "Abrazos mortales por hora", unit: "abrazos", bad: 12, fix: 0.5 },
+    checklist: [
+      "Define un orden único de acceso: por ejemplo, siempre por clave primaria ascendente.",
+      "Si necesitas varias filas, bloquéalas todas al inicio con SELECT ... FOR UPDATE ordenado por esa clave.",
+      "Mantén las transacciones cortas para reducir la ventana del ciclo.",
+      "Haz que la aplicación reintente la transacción revertida al recibir el error de abrazo mortal.",
+    ],
+    caveat:
+      "Todas las rutas que modifican esas tablas deben seguir el mismo orden, o el ciclo reaparece entre una ruta nueva y una vieja. Bloquear por adelantado alarga el tiempo que se retienen los bloqueos y puede aumentar la espera de otras sesiones. En PostgreSQL el informe no dice qué mantenía cada transacción, y eso queda anotado en la evidencia.",
+    evidence: [
+      ["Transacciones en el ciclo", "2"],
+      ["Veces que ocurrió", "3"],
+      ["Tabla", "cuentas"],
+    ],
+    viz: { kind: "deadlock", scenario: "order" },
+  },
+  lock_mode_conversion_deadlock: {
+    id: "lock_mode_conversion_deadlock",
+    code: "CT-02",
+    title: "Abrazo mortal por conversión de modo",
+    family: "Bloqueos",
+    tagline: "Las dos leen juntas y las dos quieren escribir.",
+    summary: "Varias transacciones leen la misma fila con FOR SHARE y después todas piden pasar a exclusivo.",
+    rule: "Un ciclo en el que todas las transacciones mantienen FOR SHARE sobre el mismo recurso y piden exclusivo sobre él.",
+    what: [
+      "Un bloqueo compartido es compatible con otro compartido, así que las dos transacciones entran a leer la fila. Pero ninguna puede pasar a exclusivo mientras la otra conserve su lectura, y ninguna la suelta hasta terminar.",
+      "A diferencia del orden inconsistente, aquí el recurso es el mismo: se espera por una fila que las dos ya tenían.",
+    ],
+    causes: [
+      { title: "Leer con FOR SHARE y escribir después", text: "El patrón «comprobar y actualizar» toma la lectura compartida antes de saber que va a escribir." },
+      { title: "Claves foráneas", text: "En MySQL el chequeo de una clave foránea toma un bloqueo compartido sobre la fila referenciada." },
+      { title: "Lecturas en paralelo sobre filas calientes", text: "Muchas sesiones leen la misma fila y varias intentan modificarla." },
+      { title: "Transacciones largas", text: "Mantener el bloqueo compartido mucho tiempo da margen para que otra se cruce." },
+    ],
+    bad: "-- Las dos transacciones:\nSELECT * FROM cuentas WHERE id = 1 FOR SHARE;\nUPDATE cuentas SET saldo = saldo - 10 WHERE id = 1;",
+    fix: "-- Pedir exclusivo desde la lectura\nSELECT * FROM cuentas WHERE id = 1 FOR UPDATE;\nUPDATE cuentas SET saldo = saldo - 10 WHERE id = 1;",
+    compare: { metric: "Abrazos mortales por hora", unit: "abrazos", bad: 9, fix: 0.5 },
+    checklist: [
+      "Si vas a escribir la fila, léela con FOR UPDATE desde el principio.",
+      "Evita FOR SHARE cuando después se va a modificar el mismo registro.",
+      "Mantén las transacciones cortas.",
+      "Haz que la aplicación reintente la transacción revertida.",
+    ],
+    caveat:
+      "FOR UPDATE pone en fila a las transacciones que antes leían en paralelo: las que solo leen y no modifican esperan más. En PostgreSQL el informe no dice qué mantenía cada transacción: la conversión se deduce de que todas esperaban la misma fila, y la evidencia lo marca como inferido. El informe muestra la sentencia que esperaba (el UPDATE), no la lectura con FOR SHARE, que ocurrió antes en la misma transacción.",
+    evidence: [
+      ["Transacciones en el ciclo", "2"],
+      ["Veces que ocurrió", "5"],
+      ["Tabla", "cuentas"],
+    ],
+    viz: { kind: "deadlock", scenario: "conversion" },
+  },
+  range_contention_deadlock: {
+    id: "range_contention_deadlock",
+    code: "CT-03",
+    title: "Abrazo mortal por contención de rango",
+    family: "Bloqueos",
+    tagline: "Las dos bloquean el mismo hueco y ninguna puede insertar.",
+    summary: "Dos transacciones bloquean el mismo hueco de un índice y después cada una intenta insertar en él.",
+    rule: "Un ciclo con un bloqueo de intención de inserción esperando por un bloqueo de hueco o next-key sobre el mismo índice (MySQL).",
+    what: [
+      "En InnoDB, buscar una clave que no existe con FOR UPDATE bloquea el hueco donde esa clave estaría. Los bloqueos de hueco son compatibles entre sí: dos transacciones pueden tener el mismo hueco a la vez.",
+      "El problema aparece al insertar: ninguna puede hacerlo mientras la otra mantenga el hueco, y ninguna lo suelta hasta terminar. El caso típico es «verificar que no existe y después insertar».",
+    ],
+    causes: [
+      { title: "Verificar antes de insertar", text: "SELECT ... FOR UPDATE sobre una clave inexistente y luego INSERT de esa clave." },
+      { title: "Aislamiento REPEATABLE READ", text: "InnoDB bloquea huecos y next-key para evitar lecturas fantasma." },
+      { title: "Claves cercanas en el mismo hueco", text: "Dos sesiones buscan claves distintas que caen entre las mismas dos filas." },
+      { title: "Inserciones al final del índice", text: "El hueco después de la última fila (supremum) lo comparte todo el que inserta ahí." },
+    ],
+    bad: "-- Las dos transacciones:\nSELECT * FROM reservas WHERE id = 15 FOR UPDATE;  -- no existe\nINSERT INTO reservas (id, ...) VALUES (15, ...);",
+    fix: "INSERT INTO reservas (id, ...) VALUES (15, ...)\nON DUPLICATE KEY UPDATE ...;",
+    compare: { metric: "Abrazos mortales por hora", unit: "abrazos", bad: 7, fix: 0.5 },
+    checklist: [
+      "Inserta directamente y deja que la restricción única detecte el duplicado.",
+      "Usa INSERT ... ON DUPLICATE KEY UPDATE en lugar de comprobar antes.",
+      "Si el nivel lo permite, considera READ COMMITTED para evitar bloqueos de hueco.",
+      "Mantén las transacciones cortas y reintenta la revertida.",
+    ],
+    caveat:
+      "Solo aplica a MySQL: PostgreSQL no tiene bloqueos de hueco y sus conflictos de rango terminan en un error de serialización, no en un abrazo mortal. El hueco se identifica por el registro que lo cierra, con su dirección física, porque QueryLens no guarda los valores de los registros.",
+    evidence: [
+      ["Transacciones en el ciclo", "2"],
+      ["Veces que ocurrió", "2"],
+      ["Tabla", "reservas"],
+    ],
+    viz: { kind: "deadlock", scenario: "range" },
+  },
+  lock_amplification_deadlock: {
+    id: "lock_amplification_deadlock",
+    code: "CT-04",
+    title: "Ampliación de bloqueos por falta de índice",
+    family: "Bloqueos",
+    tagline: "Modifica 2 filas y bloquea 100.",
+    summary: "Un UPDATE o DELETE sin índice utilizable bloquea muchas más filas de las que modifica y termina en un abrazo mortal.",
+    rule: "Un ciclo donde un UPDATE o DELETE sin índice utilizable mantiene 10 veces más bloqueos de fila que filas modificadas (MySQL).",
+    what: [
+      "Sin un índice que le sirva, InnoDB recorre el índice primario completo, y en REPEATABLE READ bloquea cada fila que lee, no solo las que modifica.",
+      "Con tantas filas bloqueadas, cualquier otra transacción que toque la tabla puede cerrar un ciclo con ella.",
+    ],
+    causes: [
+      { title: "Falta un índice sobre el filtro", text: "El WHERE compara columnas que no encabezan ningún índice de la tabla." },
+      { title: "Aislamiento REPEATABLE READ", text: "Bloquea con next-key todo lo que recorre para evitar lecturas fantasma." },
+      { title: "UPDATE o DELETE amplios", text: "Un filtro poco selectivo recorre y bloquea gran parte de la tabla." },
+      { title: "Transacciones largas", text: "Los bloqueos de todas esas filas se retienen hasta el final." },
+    ],
+    bad: "UPDATE pedidos SET estado = 'enviado'\nWHERE codigo = 'A-1042';  -- sin índice sobre codigo",
+    fix: "CREATE INDEX idx_pedidos_codigo ON pedidos (codigo);",
+    compare: { metric: "Filas bloqueadas por fila modificada", unit: "filas", bad: 50, fix: 1 },
+    checklist: [
+      "Crea un índice cuya primera columna sea la que filtra el UPDATE o DELETE.",
+      "Verifica con EXPLAIN que la sentencia deje de recorrer toda la tabla.",
+      "Mantén las transacciones cortas para soltar los bloqueos pronto.",
+      "Reintenta la transacción revertida.",
+    ],
+    caveat:
+      "Si la tabla ya tiene un índice que empieza por una de las columnas del filtro, la ampliación tiene otra causa (bloqueos tomados antes en la transacción, un índice poco selectivo) y no es este patrón. Las filas bloqueadas y las modificadas son de toda la transacción, no solo de la sentencia que esperaba. Solo aplica a MySQL, y el recorrido completo se infiere de los metadatos, no de un plan.",
+    evidence: [
+      ["Filas bloqueadas", "1.200"],
+      ["Filas modificadas", "24"],
+      ["Proporción", "50 veces"],
+    ],
+    viz: { kind: "amplify", table: "pedidos", rows: 100, modified: 2 },
+  },
+  long_transaction_cascade: {
+    id: "long_transaction_cascade",
+    code: "CT-05",
+    title: "Cascada por transacción larga",
+    family: "Bloqueos",
+    tagline: "Una sesión olvidada detiene a todas las demás.",
+    summary: "Una transacción abierta mucho tiempo bloquea a otras sesiones, que se acumulan esperando.",
+    rule: "En dos muestras consecutivas, una transacción raíz con 30 s o más de antigüedad bloquea a 2 o más sesiones que esperan 5 s o más.",
+    what: [
+      "No es un abrazo mortal: la espera va en una sola dirección, así que el motor no la resuelve solo. PostgreSQL espera indefinidamente por defecto y MySQL hasta innodb_lock_wait_timeout (50 s).",
+      "La raíz típica es una sesión «idle in transaction»: la aplicación abrió la transacción, modificó algo y no la cerró. Todo lo que toque esa fila queda en cola detrás de ella.",
+    ],
+    causes: [
+      { title: "Transacción abierta y olvidada", text: "Falta un COMMIT o ROLLBACK, por un error o una excepción que no cerró la conexión." },
+      { title: "Trabajo externo dentro de la transacción", text: "Se llama a otro servicio o se espera al usuario con la transacción abierta." },
+      { title: "Sin tiempos límite", text: "lock_timeout y idle_in_transaction_session_timeout no están configurados." },
+      { title: "Una fila muy disputada", text: "Muchas sesiones quieren modificar la misma fila, así que la cola crece rápido." },
+    ],
+    bad: "BEGIN;\nUPDATE cuentas SET saldo = saldo - 10 WHERE id = 1;\n-- la aplicación no hace COMMIT",
+    fix: "SET idle_in_transaction_session_timeout = '15s';\n-- y cerrar siempre la transacción: COMMIT o ROLLBACK",
+    compare: { metric: "Espera acumulada de las sesiones", unit: "s", bad: 220, fix: 18 },
+    checklist: [
+      "Busca la sesión raíz: la que lleva más tiempo en «idle in transaction» y bloquea a otras.",
+      "Corrige la aplicación para que cierre siempre la transacción, incluso si hay un error.",
+      "Configura idle_in_transaction_session_timeout y lock_timeout en PostgreSQL, o innodb_lock_wait_timeout en MySQL.",
+      "Saca de la transacción las llamadas a servicios externos.",
+    ],
+    caveat:
+      "Terminar la sesión raíz revierte toda su transacción: los cambios que llevaba se pierden y la aplicación recibe un error en esa conexión, así que debe estar preparada para reintentar. Bajar los tiempos límite hace que las sesiones en espera fallen antes, y un idle_in_transaction_session_timeout muy bajo corta también transacciones legítimamente largas.",
+    evidence: [
+      ["Sesiones bloqueadas", "5"],
+      ["Espera acumulada", "220 s"],
+      ["Tabla", "cuentas"],
+    ],
+    viz: { kind: "cascade", sessions: 5 },
+  },
+  unclassified_deadlock: {
+    id: "unclassified_deadlock",
+    code: "CT",
+    title: "Abrazo mortal sin clasificar",
+    family: "Bloqueos",
+    tagline: "Hubo un ciclo, pero no se sabe qué esperaba cada una.",
+    summary: "Se detectó un abrazo mortal, pero el informe no identifica qué recurso esperaba cada transacción.",
+    rule: "Un ciclo detectado cuyo informe no trae el recurso que esperaba cada transacción, así que no se puede distinguir entre orden inconsistente (CT-01) y conversión de modo (CT-02).",
+    what: [
+      "Sin saber qué recurso esperaba cada transacción no se puede decir si tomaron recursos distintos en orden opuesto o si todas pedían el mismo que ya tenían compartido.",
+      "QueryLens no adivina: informa el abrazo, el arreglo que cubre los dos casos y cómo averiguar cuál fue.",
+    ],
+    causes: [
+      { title: "PostgreSQL no informa la fila que espera cada proceso", text: "Solo dice qué transacción la tiene, no cuál es la fila." },
+      { title: "Sentencias preparadas", text: "Con valores como $1 no hay de dónde sacar la fila por la que se esperaba." },
+      { title: "No se toca una sola fila por clave única", text: "La sentencia no identifica un único registro." },
+      { title: "log_lock_waits desactivado", text: "Sin ese registro, el servidor no deja constancia de la fila de las esperas largas." },
+    ],
+    bad: "-- Informe del abrazo:\n-- transacción A espera a B\n-- transacción B espera a A\n-- recurso: desconocido",
+    fix: "ALTER SYSTEM SET log_lock_waits = on;\nSELECT pg_reload_conf();",
+    compare: { metric: "Abrazos que se pueden clasificar", unit: "%", bad: 10, fix: 90 },
+    checklist: [
+      "Activa log_lock_waits en el servidor: registra la fila de las esperas largas.",
+      "O registra por un tiempo acotado las sentencias del rol de la aplicación.",
+      "Aplica mientras tanto el arreglo que cubre los dos casos: orden único de acceso y FOR UPDATE desde la lectura.",
+      "Haz que la aplicación reintente la transacción revertida.",
+    ],
+    caveat:
+      "Un abrazo sin clasificar es un abrazo real: el motor revirtió una transacción y la aplicación perdió su trabajo. Lo que falta es saber por qué, no si ocurrió.",
+    evidence: [
+      ["Transacciones en el ciclo", "2"],
+      ["Veces que ocurrió", "1"],
+    ],
+    viz: { kind: "deadlock", scenario: "unknown" },
+  },
 };
 
-/** Orden por código AP-0x, el de la navegación del detalle. */
-export const ANTIPATTERN_ORDER = [
-  "baseline_degradation",
-  "avoidable_full_scan",
-  "non_sargable_predicate",
-  "missing_index",
-  "unused_index",
-  "n_plus_one",
-  "disk_spill",
-  "cardinality_misestimate",
+/** Las dos secciones de Diagnósticos, cada una en el orden de su código (AP-0x, CT-0x). */
+export const ANTIPATTERN_GROUPS = [
+  {
+    key: "antipatterns",
+    title: "Antipatrones",
+    ids: [
+      "baseline_degradation",
+      "avoidable_full_scan",
+      "non_sargable_predicate",
+      "missing_index",
+      "unused_index",
+      "n_plus_one",
+      "disk_spill",
+      "cardinality_misestimate",
+    ],
+  },
+  {
+    key: "deadlocks",
+    title: "Abrazos mortales",
+    ids: [
+      "inconsistent_lock_order_deadlock",
+      "lock_mode_conversion_deadlock",
+      "range_contention_deadlock",
+      "lock_amplification_deadlock",
+      "long_transaction_cascade",
+      "unclassified_deadlock",
+    ],
+  },
 ] as const;
+
+/** Todos los patrones, antipatrones primero. */
+export const ANTIPATTERN_ORDER = ANTIPATTERN_GROUPS.flatMap((g) => g.ids) as readonly string[];
+
+/** La sección a la que pertenece un patrón (la primera si no se reconoce). */
+export function groupOf(id: string) {
+  return ANTIPATTERN_GROUPS.find((g) => (g.ids as readonly string[]).includes(id)) ?? ANTIPATTERN_GROUPS[0];
+}
 
 /** Orden en que se presentan en la página de inicio. */
 export const LANDING_ORDER = [
