@@ -400,6 +400,352 @@ function SpillViz({ cfg, mode }: { cfg: Extract<VizConfig, { kind: "spill" }>; m
   );
 }
 
+// ---------------------------------------------------------------- consultas por fila (AP-06)
+
+function NPlusOneViz({ cfg, mode }: { cfg: Extract<VizConfig, { kind: "nplus1" }>; mode: Mode }) {
+  const fixed = mode === "fix";
+  const p = useProgress(0, fixed ? 1600 : 3600, 250);
+  // Problemática: una consulta hija por fila, una tras otra. Corregida: una sola trae todas.
+  const done = fixed ? (seg(p, 0.2, 0.5) > 0 ? cfg.rows : 0) : Math.floor(seg(p, 0.1, 0.95) * cfg.rows);
+  const queries = fixed ? (p > 0.2 ? 1 : 0) : (p > 0.05 ? 1 : 0) + done;
+  const settled = p > 0.95;
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-2 text-[13px]">
+        <p className="text-muted">
+          <code className="font-mono text-fg">{cfg.parent}</code> devuelve {cfg.rows} filas; cada una necesita sus{" "}
+          <code className="font-mono text-fg">{cfg.child}</code>
+        </p>
+        <span className={fixed ? "pill-pos" : "pill-neg"}>{fixed ? "Una sola consulta con JOIN" : "Una consulta por cada fila"}</span>
+      </div>
+
+      <div
+        role="img"
+        aria-label={fixed ? "Una consulta trae los datos de todas las filas" : "Cada fila lanza su propia consulta"}
+        className="mt-5 grid grid-cols-6 gap-2 sm:grid-cols-8 md:grid-cols-12"
+      >
+        {Array.from({ length: cfg.rows }, (_, i) => {
+          const lit = i < done;
+          return (
+            <span
+              key={i}
+              className="flex aspect-square items-center justify-center rounded text-[11px] font-mono transition-[background-color,color,transform] duration-200 ease-out"
+              style={{
+                background: lit ? (fixed ? "var(--positive)" : READ) : "var(--raised)",
+                color: lit ? "var(--ground)" : "var(--muted)",
+                transform: lit && !fixed && i === done - 1 ? "scale(1.18)" : "scale(1)",
+              }}
+            >
+              {i + 1}
+            </span>
+          );
+        })}
+      </div>
+
+      <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-1.5 text-[13px] text-muted">
+        <li className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-[2px]" style={{ background: fixed ? "var(--positive)" : READ }} />
+          {fixed ? "Fila resuelta por el JOIN" : "Fila con su consulta ya lanzada"}
+        </li>
+        <li className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-[2px] bg-raised" />Fila pendiente</li>
+      </ul>
+
+      <div className="mt-4 grid grid-cols-3 gap-3">
+        <Stat label="Consultas lanzadas" value={INT.format(queries)} tone={settled ? (fixed ? "pos" : "neg") : undefined} />
+        <Stat label="Filas del padre" value={cfg.rows} />
+        <Stat label="Consultas hija" value={fixed ? (p > 0.2 ? "0" : "—") : INT.format(done)} tone={settled ? (fixed ? "pos" : "neg") : undefined} />
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- abrazos mortales (CT-01, 02, 03 y sin clasificar)
+
+type Who = "A" | "B" | "Motor";
+interface Step {
+  who: Who;
+  text: string;
+  tone?: "neg" | "pos";
+}
+interface Script {
+  steps: Step[];
+  waiting: number;
+  result: string;
+  pill: string;
+}
+
+const WHO_COLOR: Record<Who, string> = { A: "var(--accent)", B: "var(--warning)", Motor: "var(--muted)" };
+const WHO_LABEL: Record<Who, string> = { A: "Transacción A", B: "Transacción B", Motor: "El motor" };
+
+const DEADLOCK_SCRIPTS: Record<"order" | "conversion" | "range" | "unknown", Record<Mode, Script>> = {
+  order: {
+    bad: {
+      pill: "Orden opuesto: ciclo",
+      waiting: 2,
+      result: "Abrazo mortal",
+      steps: [
+        { who: "A", text: "UPDATE de la fila 1: la bloquea." },
+        { who: "B", text: "UPDATE de la fila 2: la bloquea." },
+        { who: "A", text: "Pide la fila 2: espera a B." },
+        { who: "B", text: "Pide la fila 1: espera a A. Cada una espera a la otra.", tone: "neg" },
+        { who: "Motor", text: "Detecta el ciclo y revierte a B con un error de abrazo mortal.", tone: "neg" },
+      ],
+    },
+    fix: {
+      pill: "Mismo orden: sin ciclo",
+      waiting: 1,
+      result: "Sin ciclo",
+      steps: [
+        { who: "A", text: "UPDATE de la fila 1: la bloquea." },
+        { who: "B", text: "Pide la fila 1 primero: espera a A. No tiene nada que A necesite." },
+        { who: "A", text: "UPDATE de la fila 2 y COMMIT: suelta todo." },
+        { who: "B", text: "Toma la fila 1, luego la 2, y termina.", tone: "pos" },
+      ],
+    },
+  },
+  conversion: {
+    bad: {
+      pill: "FOR SHARE y luego exclusivo",
+      waiting: 2,
+      result: "Abrazo mortal",
+      steps: [
+        { who: "A", text: "SELECT ... FOR SHARE de la fila: la lee con bloqueo compartido." },
+        { who: "B", text: "SELECT ... FOR SHARE de la misma fila: compartido es compatible, entra." },
+        { who: "A", text: "UPDATE de la fila: pide exclusivo, pero B conserva su lectura. Espera." },
+        { who: "B", text: "UPDATE de la fila: pide exclusivo y espera a A. Ninguna cede.", tone: "neg" },
+        { who: "Motor", text: "Revierte a B con un error de abrazo mortal.", tone: "neg" },
+      ],
+    },
+    fix: {
+      pill: "FOR UPDATE desde la lectura",
+      waiting: 1,
+      result: "Sin ciclo",
+      steps: [
+        { who: "A", text: "SELECT ... FOR UPDATE de la fila: la bloquea en exclusivo." },
+        { who: "B", text: "SELECT ... FOR UPDATE de la misma fila: espera a A." },
+        { who: "A", text: "UPDATE y COMMIT: suelta la fila." },
+        { who: "B", text: "Toma la fila, la actualiza y termina.", tone: "pos" },
+      ],
+    },
+  },
+  range: {
+    bad: {
+      pill: "Mismo hueco: nadie inserta",
+      waiting: 2,
+      result: "Abrazo mortal",
+      steps: [
+        { who: "A", text: "SELECT ... WHERE id = 15 FOR UPDATE: no existe, bloquea el hueco donde estaría." },
+        { who: "B", text: "SELECT ... WHERE id = 17 FOR UPDATE: cae en el mismo hueco. Los huecos son compatibles." },
+        { who: "A", text: "INSERT de la fila 15: necesita el hueco que mantiene B. Espera." },
+        { who: "B", text: "INSERT de la fila 17: necesita el hueco que mantiene A. Espera.", tone: "neg" },
+        { who: "Motor", text: "Revierte a B con un error de abrazo mortal.", tone: "neg" },
+      ],
+    },
+    fix: {
+      pill: "Insertar sin comprobar antes",
+      waiting: 0,
+      result: "Sin espera",
+      steps: [
+        { who: "A", text: "INSERT ... ON DUPLICATE KEY UPDATE de la fila 15: bloquea solo su fila." },
+        { who: "B", text: "INSERT ... ON DUPLICATE KEY UPDATE de la fila 17: no espera a A." },
+        { who: "A", text: "COMMIT." },
+        { who: "B", text: "COMMIT. Ninguna tuvo que esperar por un hueco.", tone: "pos" },
+      ],
+    },
+  },
+  unknown: {
+    bad: {
+      pill: "El informe no dice el recurso",
+      waiting: 2,
+      result: "Sin clasificar",
+      steps: [
+        { who: "A", text: "Espera algo que tiene B." },
+        { who: "B", text: "Espera algo que tiene A." },
+        { who: "Motor", text: "Detecta el ciclo y revierte a B.", tone: "neg" },
+        { who: "Motor", text: "El informe no dice qué recurso esperaba cada una: no se sabe si es CT-01 o CT-02.", tone: "neg" },
+      ],
+    },
+    fix: {
+      pill: "Con log_lock_waits activo",
+      waiting: 2,
+      result: "Clasificado",
+      steps: [
+        { who: "Motor", text: "Se activa log_lock_waits: el servidor registra la fila de las esperas largas." },
+        { who: "A", text: "Ocurre otro abrazo: A y B esperan una fila." },
+        { who: "Motor", text: "El registro dice cuál fila esperaba cada una." },
+        { who: "Motor", text: "QueryLens ya puede clasificarlo como CT-01 o CT-02.", tone: "pos" },
+      ],
+    },
+  },
+};
+
+function DeadlockViz({ cfg, mode }: { cfg: Extract<VizConfig, { kind: "deadlock" }>; mode: Mode }) {
+  const script = DEADLOCK_SCRIPTS[cfg.scenario][mode];
+  const fixed = mode === "fix";
+  const n = script.steps.length;
+  const p = useProgress(0, 1100 * n, 250);
+  const shown = Math.min(n, Math.ceil(clamp01(p / 0.92) * n));
+  const done = shown === n;
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-2 text-[13px]">
+        <p className="text-muted">Qué hace cada transacción, en orden</p>
+        <span className={fixed ? "pill-pos" : "pill-neg"}>{script.pill}</span>
+      </div>
+
+      <ol className="mt-4 space-y-2" aria-label="Secuencia de eventos">
+        {script.steps.map((step, i) => {
+          const visible = i < shown;
+          return (
+            <li
+              key={i}
+              className="flex items-start gap-3 rounded bg-ground px-3 py-2.5 text-[13px] leading-5 transition-[opacity,transform] duration-300 ease-[var(--ease-out)]"
+              style={{
+                opacity: visible ? 1 : 0.12,
+                transform: visible ? "none" : "translateY(6px)",
+                borderLeft: `3px solid ${step.tone === "neg" ? "var(--negative)" : step.tone === "pos" ? "var(--positive)" : WHO_COLOR[step.who]}`,
+              }}
+            >
+              <span className="w-28 flex-none font-semibold" style={{ color: WHO_COLOR[step.who] === "var(--muted)" ? undefined : WHO_COLOR[step.who] }}>
+                {WHO_LABEL[step.who]}
+              </span>
+              <span style={{ color: step.tone === "neg" ? "var(--pill-neg-ink)" : step.tone === "pos" ? "var(--pill-pos-ink)" : undefined }}>{step.text}</span>
+            </li>
+          );
+        })}
+      </ol>
+
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <Stat label="Transacciones en espera" value={done ? script.waiting : "—"} />
+        <Stat label="Resultado" value={done ? script.result : "—"} tone={done ? (fixed ? "pos" : "neg") : undefined} />
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- cascada por transacción larga (CT-05)
+
+const CASCADE_SPAN_S = 60;
+const CASCADE_CLOSE_S = 15;
+
+function CascadeViz({ cfg, mode }: { cfg: Extract<VizConfig, { kind: "cascade" }>; mode: Mode }) {
+  const fixed = mode === "fix";
+  const p = useProgress(0, 5200, 250);
+  // Segundos simulados: la raíz sigue abierta (problemática) o se cierra por tiempo límite (corregida).
+  const t = p * CASCADE_SPAN_S;
+  const rootOpen = !fixed || t < CASCADE_CLOSE_S;
+  const rootAge = 45 + Math.min(t, fixed ? CASCADE_CLOSE_S : CASCADE_SPAN_S);
+  const sessions = Array.from({ length: cfg.sessions }, (_, i) => {
+    const end = fixed ? CASCADE_CLOSE_S + 1 + i * 1.5 : Infinity;
+    const wait = Math.max(0, Math.min(t - i * 0.4, end - i * 0.4));
+    return { wait, done: t >= end };
+  });
+  const waiting = sessions.filter((s) => !s.done && s.wait > 0).length;
+  const total = sessions.reduce((sum, s) => sum + s.wait, 0);
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-2 text-[13px]">
+        <p className="text-muted">Una sesión «idle in transaction» y las que esperan detrás</p>
+        <span className={fixed ? "pill-pos" : "pill-neg"}>{fixed ? "La raíz se cierra por tiempo límite" : "La raíz nunca cierra"}</span>
+      </div>
+
+      <div className="mt-4 rounded border border-control bg-ground px-3 py-2.5" style={{ borderLeft: `3px solid ${rootOpen ? "var(--negative)" : "var(--positive)"}` }}>
+        <div className="flex items-baseline justify-between gap-3 text-[13px]">
+          <span className="font-semibold">Sesión raíz</span>
+          <span className="text-muted">
+            {rootOpen ? `transacción abierta ${INT.format(rootAge)} s` : "transacción cerrada"}
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-3 space-y-2">
+        {sessions.map((s, i) => (
+          <div key={i}>
+            <div className="flex items-baseline justify-between text-[13px]">
+              <span>Sesión {i + 1}</span>
+              <span className="text-muted">{s.done ? "terminó" : s.wait > 0 ? `espera ${INT.format(s.wait)} s` : "—"}</span>
+            </div>
+            <div className="mt-1 h-2 rounded-full bg-raised">
+              <div
+                className="h-full rounded-full"
+                style={{ width: `${(s.wait / CASCADE_SPAN_S) * 100}%`, background: s.done ? "var(--positive)" : "var(--warning)" }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <Stat label="Sesiones en espera" value={waiting} tone={p > 0.9 ? (fixed ? "pos" : "neg") : undefined} />
+        <Stat label="Espera acumulada" value={`${INT.format(total)} s`} tone={p > 0.9 ? (fixed ? "pos" : "neg") : undefined} />
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- ampliación de bloqueos (CT-04)
+
+const AMP_COLS = 10;
+
+function AmplifyViz({ cfg, mode }: { cfg: Extract<VizConfig, { kind: "amplify" }>; mode: Mode }) {
+  const fixed = mode === "fix";
+  const p = useProgress(0, fixed ? 1500 : 3000, 250);
+  // Las filas que de verdad modifica la sentencia, repartidas por la tabla.
+  const modified = Array.from({ length: cfg.modified }, (_, i) => Math.floor(((i + 1) * cfg.rows) / (cfg.modified + 1)));
+  const lit = fixed ? (p > 0.25 ? cfg.rows : 0) : Math.floor(p * cfg.rows);
+  const locked = fixed ? (p > 0.25 ? cfg.modified : 0) : lit;
+  const factor = locked / cfg.modified;
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-2 text-[13px]">
+        <p className="text-muted">
+          UPDATE sobre <code className="font-mono text-fg">{cfg.table}</code> ({cfg.rows} filas)
+        </p>
+        <span className={fixed ? "pill-pos" : "pill-neg"}>{fixed ? "Con índice: salta a sus filas" : "Sin índice: recorre y bloquea todo"}</span>
+      </div>
+
+      <div
+        role="img"
+        aria-label={fixed ? "Con índice solo se bloquean las filas modificadas" : "Sin índice se bloquean todas las filas recorridas"}
+        className="mt-4 grid gap-1"
+        style={{ gridTemplateColumns: `repeat(${AMP_COLS}, minmax(0, 1fr))` }}
+      >
+        {Array.from({ length: cfg.rows }, (_, i) => {
+          const isMod = modified.includes(i);
+          const isLocked = fixed ? isMod && p > 0.25 : i < lit;
+          return (
+            <span
+              key={i}
+              className="block aspect-[2/1] rounded-[2px] transition-[background-color,transform] duration-200 ease-out"
+              style={{
+                background: isMod && isLocked ? "var(--accent)" : isLocked ? READ : "var(--raised)",
+                transform: isMod && isLocked ? "scale(1.2)" : "scale(1)",
+                zIndex: isMod && isLocked ? 1 : 0,
+              }}
+            />
+          );
+        })}
+      </div>
+
+      <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-1.5 text-[13px] text-muted">
+        <li className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-[2px]" style={{ background: READ }} />Fila bloqueada sin modificarla</li>
+        <li className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-[2px] bg-accent" />Fila modificada</li>
+        <li className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-[2px] bg-raised" />Fila libre</li>
+      </ul>
+
+      <div className="mt-4 grid grid-cols-3 gap-3">
+        <Stat label="Filas bloqueadas" value={INT.format(locked)} tone={p > 0.9 ? (fixed ? "pos" : "neg") : undefined} />
+        <Stat label="Filas modificadas" value={cfg.modified} />
+        <Stat label="Proporción" value={`${INT.format(factor)} ×`} tone={p > 0.9 ? (fixed ? "pos" : "neg") : undefined} />
+      </div>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------- selector
 
 export default function AntipatternViz({ doc }: { doc: AntipatternDoc }) {
@@ -418,6 +764,14 @@ export default function AntipatternViz({ doc }: { doc: AntipatternDoc }) {
             return <EstimateViz cfg={cfg} mode={mode} />;
           case "spill":
             return <SpillViz cfg={cfg} mode={mode} />;
+          case "nplus1":
+            return <NPlusOneViz cfg={cfg} mode={mode} />;
+          case "deadlock":
+            return <DeadlockViz cfg={cfg} mode={mode} />;
+          case "cascade":
+            return <CascadeViz cfg={cfg} mode={mode} />;
+          case "amplify":
+            return <AmplifyViz cfg={cfg} mode={mode} />;
         }
       }}
     </VizFrame>

@@ -4,7 +4,7 @@
 // simplemente no se dibuja.
 import type { Finding } from "@/types/database";
 
-export type NodeKind = "query" | "table" | "column" | "index" | "predicate" | "metric";
+export type NodeKind = "query" | "table" | "column" | "index" | "predicate" | "metric" | "session";
 export type Tone = "neutral" | "neg" | "pos" | "warn" | "accent";
 
 export interface GNode {
@@ -310,6 +310,141 @@ export function buildEvidenceGraph(finding: Finding): EvidenceGraph {
       if (time != null) {
         add({ id: "i", layer: 3, kind: "metric", title: ms(time), sub: calls != null ? `${INT.format(calls)} ejecuciones` : "en la ventana", tone: "warn" });
         link(spill != null ? "k" : "m", "i", "warn", "cuesta");
+      }
+      break;
+    }
+
+    case "n_plus_one": {
+      // El protagonista es la consulta padre que devuelve las filas y la hija que se repite por cada una.
+      nodes.length = 0;
+      const parentId = e.parent_query_id != null ? String(e.parent_query_id) : null;
+      const parentText = str(e, "parent_query_text") ?? str(e, "parent_canonic_query");
+      const childText = str(e, "query_text") ?? str(e, "canonic_query");
+      const rows = num(e, "parent_window_rows");
+      const calls = num(e, "child_window_calls");
+      const dev = num(e, "desvio");
+      const childTable = str(e, "child_table") ?? tables[0];
+      const filterCols = strs(e, "child_filter_columns").join(", ");
+      const fk = str(e, "constraint_name");
+
+      add({ id: "pq", layer: 0, kind: "query", title: parentId ? `query ${parentId}` : "consulta padre", sub: parentText ? cut(parentText, 48) : "la que lee la lista", tone: "neutral" });
+      if (rows != null) {
+        add({ id: "r", layer: 1, kind: "metric", title: `${INT.format(rows)} filas`, sub: "devueltas en la ventana", tone: "warn" });
+        link("pq", "r", "warn", "devuelve");
+      }
+      const child = add(queryNode(finding, e));
+      if (child) {
+        child.layer = 2;
+        child.tone = "neg";
+        child.sub = childText ? cut(childText, 48) : "la que se repite";
+        link(rows != null ? "r" : "pq", "q", "neg", "dispara una por fila");
+      }
+      if (calls != null) {
+        add({ id: "k", layer: 3, kind: "metric", title: `${INT.format(calls)} ejecuciones`, sub: dev != null ? `desvío de ${DEC.format(dev * 100)} % frente a las filas` : "en la misma ventana", tone: "neg" });
+        link("q", "k", "neg", "se ejecutó");
+      }
+      if (childTable) {
+        add({ id: "t0", layer: 3, kind: "table", title: childTable, sub: filterCols ? `filtra por ${filterCols}` : undefined, tone: "neutral" });
+        link("q", "t0", "neutral", fk ? "por la clave" : "lee");
+      }
+      if (fk) {
+        add({ id: "fk", layer: 4, kind: "index", title: fk, sub: "clave foránea que une ambas", tone: "warn", dashed: true });
+        link("t0", "fk", "warn", "unida por", true);
+      }
+      break;
+    }
+
+    case "inconsistent_lock_order_deadlock":
+    case "lock_mode_conversion_deadlock":
+    case "range_contention_deadlock":
+    case "lock_amplification_deadlock":
+    case "unclassified_deadlock": {
+      // El ciclo de espera: cada flecha va de quien bloquea a quien espera, y la última cierra el ciclo.
+      nodes.length = 0;
+      const trxs = (Array.isArray(e.transactions) ? (e.transactions as Evidence[]) : []).filter((t) => num(t, "process_id") != null).slice(0, 8);
+      const blockersOf = new Map<number, number[]>();
+      for (const t of trxs) {
+        const by = Array.isArray(t.blocked_by) ? t.blocked_by.filter((p): p is number => typeof p === "number") : [];
+        blockersOf.set(num(t, "process_id")!, by);
+      }
+      // Orden de capas siguiendo la cadena de bloqueo; lo que no se alcanza va al final.
+      const order: number[] = [];
+      let cur: number | undefined = trxs.length ? num(trxs[0], "process_id")! : undefined;
+      while (cur != null && !order.includes(cur)) {
+        order.push(cur);
+        const here: number = cur;
+        cur = [...blockersOf.entries()].find(([, by]) => by.includes(here))?.[0];
+      }
+      for (const t of trxs) if (!order.includes(num(t, "process_id")!)) order.push(num(t, "process_id")!);
+
+      const victim = num(e, "victim_process_id");
+      for (const t of trxs) {
+        const pid = num(t, "process_id")!;
+        const text = str(t, "canonic_query");
+        add({
+          id: `p${pid}`, layer: order.indexOf(pid), kind: "session", title: `pid ${pid}`,
+          sub: [pid === victim && "víctima", text && cut(text, 40)].filter(Boolean).join(" · ") || "sesión",
+          tone: pid === victim ? "neg" : "warn",
+        });
+      }
+      for (const [pid, by] of blockersOf) {
+        for (const b of by) link(`p${b}`, `p${pid}`, b === victim ? "neg" : "warn", "bloquea");
+      }
+      break;
+    }
+
+    case "long_transaction_cascade": {
+      // Aquí no hay una consulta única: el grafo es el de espera entre sesiones.
+      nodes.length = 0;
+      const root = e.root && typeof e.root === "object" ? (e.root as Evidence) : null;
+      const rootPid = root ? num(root, "process_id") : null;
+      const blocked = (Array.isArray(e.blocked_sessions) ? (e.blocked_sessions as Evidence[]) : [])
+        .filter((s) => num(s, "process_id") != null)
+        .slice(0, 12);
+      if (!root || rootPid == null) break;
+
+      const blockersOf = new Map<number, number[]>();
+      for (const s of blocked) {
+        const pids = Array.isArray(s.blocking_pids) ? s.blocking_pids.filter((p): p is number => typeof p === "number") : [];
+        blockersOf.set(num(s, "process_id")!, pids);
+      }
+      // Todo lo que está aguas arriba de una sesión (con guarda por si hay un ciclo).
+      const upstream = (pid: number, seen = new Set<number>()): Set<number> => {
+        for (const b of blockersOf.get(pid) ?? []) {
+          if (!seen.has(b)) {
+            seen.add(b);
+            upstream(b, seen);
+          }
+        }
+        return seen;
+      };
+      // Profundidad en la cola: el camino de espera más largo hasta la raíz.
+      const depthOf = (pid: number, seen = new Set<number>()): number => {
+        if (pid === rootPid || seen.has(pid)) return 0;
+        seen.add(pid);
+        const ds = (blockersOf.get(pid) ?? []).map((b) => depthOf(b, new Set(seen)));
+        return 1 + (ds.length ? Math.max(...ds) : 0);
+      };
+
+      const age = num(root, "transaction_age_s");
+      add({
+        id: `p${rootPid}`, layer: 0, kind: "session", title: `pid ${rootPid}`, tone: "neg",
+        sub: [str(root, "session_state"), age != null && `${DEC.format(age)} s abierta`].filter(Boolean).join(" · ") || "sesión raíz",
+      });
+      for (const s of blocked) {
+        const pid = num(s, "process_id")!;
+        const wait = num(s, "wait_s");
+        add({
+          id: `p${pid}`, layer: depthOf(pid), kind: "session", title: `pid ${pid}`, tone: "warn",
+          sub: wait != null ? `espera ${DEC.format(wait)} s` : "en espera",
+        });
+      }
+      // Solo el bloqueo directo: si 2332 espera a 2330 y 2331, y 2331 ya espera a 2330, basta 2331 → 2332.
+      for (const [pid, blockers] of blockersOf) {
+        for (const b of blockers) {
+          if (blockers.some((w) => w !== b && upstream(w).has(b))) continue;
+          link(`p${b}`, `p${pid}`, b === rootPid ? "neg" : "warn", "bloquea");
+        }
       }
       break;
     }

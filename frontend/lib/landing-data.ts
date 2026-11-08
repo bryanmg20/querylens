@@ -54,6 +54,7 @@ export const FEED_POOL: { severity: DemoSeverity; name: string; subject: string 
   { severity: "medium", name: "avoidable_full_scan", subject: "movimientos" },
   { severity: "medium", name: "baseline_degradation", subject: "q_7c10" },
   { severity: "low", name: "cardinality_misestimate", subject: "envios" },
+  { severity: "medium", name: "n_plus_one", subject: "pedidos" },
 ];
 
 // Respuesta de ejemplo de GET /diagnostics para la vista previa del tablero. La hora del
@@ -73,6 +74,7 @@ const SAMPLE_RECOMMENDATIONS: Record<string, string> = {
   baseline_degradation: "Comparar el plan actual con el anterior y revisar las estadísticas de la tabla.",
   cardinality_misestimate: "Actualizar las estadísticas de la tabla con ANALYZE.",
   disk_spill: "Aumentar la memoria de trabajo para esa consulta o reducir el tamaño del ordenamiento.",
+  n_plus_one: "Traer las filas relacionadas con un JOIN, o todas juntas con WHERE ... IN (...).",
 };
 
 const SAMPLE_ROWS: [string, "high" | "medium" | "low", string | null, string | null, number][] = [
@@ -81,6 +83,7 @@ const SAMPLE_ROWS: [string, "high" | "medium" | "low", string | null, string | n
   ["non_sargable_predicate", "medium", "clientes", "q_91ab", 3 * HOUR],
   ["avoidable_full_scan", "medium", "movimientos", "q_c4e9", 9 * HOUR],
   ["baseline_degradation", "medium", null, "q_7c10", 20 * HOUR],
+  ["n_plus_one", "medium", "pedidos", "q_5d08", 22 * HOUR],
   ["unused_index", "low", "pedidos", null, 2 * DAY],
   ["cardinality_misestimate", "low", "envios", "q_0b77", 3 * DAY],
   ["missing_index", "high", "facturas", "q_a1d3", 4 * DAY],

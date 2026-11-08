@@ -442,3 +442,14 @@ body {
     transition: none;
   }
 }
+
+/* Al exportar a PDF solo se imprime el informe, siempre sobre blanco, sea cual sea el tema. */
+@media print {
+  html,
+  body {
+    background: #fff !important;
+  }
+  @page {
+    margin: 14mm;
+  }
+}
