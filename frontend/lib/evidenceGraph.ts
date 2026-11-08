@@ -354,6 +354,45 @@ export function buildEvidenceGraph(finding: Finding): EvidenceGraph {
       break;
     }
 
+    case "inconsistent_lock_order_deadlock":
+    case "lock_mode_conversion_deadlock":
+    case "range_contention_deadlock":
+    case "lock_amplification_deadlock":
+    case "unclassified_deadlock": {
+      // El ciclo de espera: cada flecha va de quien bloquea a quien espera, y la última cierra el ciclo.
+      nodes.length = 0;
+      const trxs = (Array.isArray(e.transactions) ? (e.transactions as Evidence[]) : []).filter((t) => num(t, "process_id") != null).slice(0, 8);
+      const blockersOf = new Map<number, number[]>();
+      for (const t of trxs) {
+        const by = Array.isArray(t.blocked_by) ? t.blocked_by.filter((p): p is number => typeof p === "number") : [];
+        blockersOf.set(num(t, "process_id")!, by);
+      }
+      // Orden de capas siguiendo la cadena de bloqueo; lo que no se alcanza va al final.
+      const order: number[] = [];
+      let cur: number | undefined = trxs.length ? num(trxs[0], "process_id")! : undefined;
+      while (cur != null && !order.includes(cur)) {
+        order.push(cur);
+        const here: number = cur;
+        cur = [...blockersOf.entries()].find(([, by]) => by.includes(here))?.[0];
+      }
+      for (const t of trxs) if (!order.includes(num(t, "process_id")!)) order.push(num(t, "process_id")!);
+
+      const victim = num(e, "victim_process_id");
+      for (const t of trxs) {
+        const pid = num(t, "process_id")!;
+        const text = str(t, "canonic_query");
+        add({
+          id: `p${pid}`, layer: order.indexOf(pid), kind: "session", title: `pid ${pid}`,
+          sub: [pid === victim && "víctima", text && cut(text, 40)].filter(Boolean).join(" · ") || "sesión",
+          tone: pid === victim ? "neg" : "warn",
+        });
+      }
+      for (const [pid, by] of blockersOf) {
+        for (const b of by) link(`p${b}`, `p${pid}`, b === victim ? "neg" : "warn", "bloquea");
+      }
+      break;
+    }
+
     case "long_transaction_cascade": {
       // Aquí no hay una consulta única: el grafo es el de espera entre sesiones.
       nodes.length = 0;

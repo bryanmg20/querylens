@@ -28,6 +28,8 @@ const NODE_H_SERIES = 92;
 const GAP_Y = 14;
 const ROW_GAP = 56;
 const VERTICAL_BELOW = 640;
+const BACK_DROP = 56;
+const BACK_SIDE = 36;
 
 interface Box {
   x: number;
@@ -40,7 +42,11 @@ const nodeHeight = (n: GNode) => (n.series && n.series.length > 1 ? NODE_H_SERIE
 
 // Coloca los nodos por capas: de izquierda a derecha en pantallas anchas y de arriba abajo en
 // las estrechas. Devuelve la caja de cada nodo y el alto total.
-function layout(nodes: GNode[], width: number) {
+function layout(nodes: GNode[], edges: GEdge[], fullWidth: number) {
+  // Una flecha que vuelve a una capa anterior (el cierre de un ciclo) necesita espacio propio.
+  const layerOf = new Map(nodes.map((n) => [n.id, n.layer]));
+  const hasBack = edges.some((e) => (layerOf.get(e.to) ?? 0) <= (layerOf.get(e.from) ?? 0));
+  const width = fullWidth;
   const layers = [...new Set(nodes.map((n) => n.layer))].sort((a, b) => a - b);
   const rows = layers.map((l) => nodes.filter((n) => n.layer === l));
   // Con muchas capas (una cola larga de bloqueos) las columnas no caben: se apilan.
@@ -55,8 +61,10 @@ function layout(nodes: GNode[], width: number) {
     gapX = rows.length > 1 ? (width - rows.length * nodeW) / (rows.length - 1) : 0;
     const colH = rows.map((r) => r.reduce((s, n) => s + nodeHeight(n), 0) + (r.length - 1) * GAP_Y);
     height = Math.max(...colH);
+    const blockH = height;
+    if (hasBack) height += BACK_DROP + 12;
     rows.forEach((col, ci) => {
-      let y = (height - colH[ci]) / 2;
+      let y = (blockH - colH[ci]) / 2;
       for (const n of col) {
         const h = nodeHeight(n);
         boxes.set(n.id, { x: ci * (nodeW + gapX), y, w: nodeW, h });
@@ -65,7 +73,8 @@ function layout(nodes: GNode[], width: number) {
     });
   } else {
     const perRow = width < 480 ? 2 : 3;
-    const nodeW = Math.min(220, (width - (perRow - 1) * 12) / perRow);
+    const usable = hasBack ? width - BACK_SIDE - 4 : width;
+    const nodeW = Math.min(220, (usable - (perRow - 1) * 12) / perRow);
     const lines = rows.flatMap((r) => {
       const out: GNode[][] = [];
       for (let i = 0; i < r.length; i += perRow) out.push(r.slice(i, i + perRow));
@@ -75,7 +84,7 @@ function layout(nodes: GNode[], width: number) {
     for (const row of lines) {
       const rowW = row.length * nodeW + (row.length - 1) * 12;
       const rowH = Math.max(...row.map(nodeHeight));
-      row.forEach((n, i) => boxes.set(n.id, { x: (width - rowW) / 2 + i * (nodeW + 12), y, w: nodeW, h: nodeHeight(n) }));
+      row.forEach((n, i) => boxes.set(n.id, { x: (usable - rowW) / 2 + i * (nodeW + 12), y, w: nodeW, h: nodeHeight(n) }));
       y += rowH + ROW_GAP;
     }
     height = y - ROW_GAP;
@@ -95,7 +104,21 @@ function bezier(p: [number, number][], t: number): [number, number] {
 
 function edgeGeometry(a: Box, b: Box, vertical: boolean, t = 0.5) {
   let pts: [number, number][];
-  if (!vertical) {
+  if (!vertical && b.x <= a.x) {
+    // Flecha que vuelve hacia atrás (cierra un ciclo): rodea los nodos por debajo.
+    const x1 = a.x + a.w / 2;
+    const y1 = a.y + a.h;
+    const x2 = b.x + b.w / 2;
+    const y2 = b.y + b.h;
+    pts = [[x1, y1], [x1, y1 + BACK_DROP], [x2, y2 + BACK_DROP], [x2, y2]];
+  } else if (vertical && b.y <= a.y) {
+    // En vertical rodea los nodos por la derecha.
+    const x1 = a.x + a.w;
+    const y1 = a.y + a.h / 2;
+    const x2 = b.x + b.w;
+    const y2 = b.y + b.h / 2;
+    pts = [[x1, y1], [x1 + BACK_SIDE, y1], [x2 + BACK_SIDE, y2], [x2, y2]];
+  } else if (!vertical) {
     const x1 = a.x + a.w;
     const y1 = a.y + a.h / 2;
     const x2 = b.x;
@@ -151,7 +174,7 @@ export default function EvidenceGraphView({ graph }: { graph: EvidenceGraph }) {
     requestAnimationFrame(() => requestAnimationFrame(() => setShown(true)));
   }
 
-  const placed = useMemo(() => (width > 0 ? layout(graph.nodes, width) : null), [graph.nodes, width]);
+  const placed = useMemo(() => (width > 0 ? layout(graph.nodes, graph.edges, width) : null), [graph.nodes, graph.edges, width]);
   const connected = useMemo(() => {
     if (!hover) return null;
     const set = new Set<string>([hover]);
