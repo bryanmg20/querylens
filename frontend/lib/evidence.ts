@@ -26,6 +26,12 @@ const KNOWN: { keys: string[]; label: string; format: (v: number) => string }[] 
   { keys: ["baseline_median_ms"], label: "Mediana previa", format: fmtMs },
   { keys: ["window_mean_ms", "mean_time_ms"], label: "Tiempo medio", format: fmtMs },
   { keys: ["window_calls", "execution_count"], label: "Ejecuciones", format: (n) => INT.format(n) },
+  { keys: ["cycle_size"], label: "Transacciones en el ciclo", format: (n) => INT.format(n) },
+  { keys: ["occurrences"], label: "Veces que ocurrió", format: (n) => INT.format(n) },
+  { keys: ["blocked_count"], label: "Sesiones bloqueadas", format: (n) => INT.format(n) },
+  { keys: ["impact_wait_s"], label: "Espera acumulada", format: (n) => `${NUMBER.format(n)} s` },
+  { keys: ["child_window_calls"], label: "Ejecuciones de la hija", format: (n) => INT.format(n) },
+  { keys: ["parent_window_rows"], label: "Filas del padre", format: (n) => INT.format(n) },
   { keys: ["window_time_ms", "total_time_ms", "extra_time_ms"], label: "Tiempo total", format: fmtMs },
   { keys: ["window_disk_spill"], label: "Escritura temporal", format: (n) => INT.format(n) },
   { keys: ["index_scans"], label: "Lecturas del índice", format: (n) => INT.format(n) },
@@ -34,6 +40,7 @@ const KNOWN: { keys: string[]; label: string; format: (v: number) => string }[] 
 
 const TEXT: { key: string; label: string }[] = [
   { key: "relation", label: "Tabla" },
+  { key: "constraint_name", label: "Clave foránea" },
   { key: "index_name", label: "Índice" },
   { key: "suggested_index", label: "Índice sugerido" },
   { key: "column", label: "Columna" },

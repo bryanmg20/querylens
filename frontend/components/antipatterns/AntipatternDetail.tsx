@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { ANTIPATTERN_ORDER, getDoc, type AntipatternDoc } from "@/lib/antipatterns";
+import { useEffect, useState } from "react";
+import { ANTIPATTERN_GROUPS, getDoc, groupOf, type AntipatternDoc } from "@/lib/antipatterns";
 import Appear from "../Appear";
 import { IconCheck } from "../icons";
+import SectionTabs from "./SectionTabs";
 import AntipatternViz, { ModeSwitch, type Mode } from "./Viz";
 
 const DEC = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 });
@@ -14,6 +15,11 @@ const DEC = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 });
 // Diagnósticos y no se repiten aquí.
 export default function AntipatternDetail({ id }: { id: string }) {
   const doc = getDoc(id);
+  // Pestaña visible: arranca en la sección del patrón y la sigue si se navega a otro de otra sección.
+  const [section, setSection] = useState<string>(groupOf(id).key);
+  useEffect(() => {
+    setSection(groupOf(id).key);
+  }, [id]);
 
   if (!doc) {
     return (
@@ -26,44 +32,55 @@ export default function AntipatternDetail({ id }: { id: string }) {
     );
   }
 
-  const position = ANTIPATTERN_ORDER.indexOf(doc.id as (typeof ANTIPATTERN_ORDER)[number]);
-  const prev = ANTIPATTERN_ORDER[(position + ANTIPATTERN_ORDER.length - 1) % ANTIPATTERN_ORDER.length];
-  const next = ANTIPATTERN_ORDER[(position + 1) % ANTIPATTERN_ORDER.length];
+  // Se navega dentro de la sección del patrón (antipatrones o abrazos mortales), no entre las dos.
+  const group = groupOf(doc.id);
+  const ids = group.ids as readonly string[];
+  const position = ids.indexOf(doc.id);
+  const prev = ids[(position + ids.length - 1) % ids.length];
+  const next = ids[(position + 1) % ids.length];
+  const shown = ANTIPATTERN_GROUPS.find((g) => g.key === section) ?? group;
 
   return (
     <Shell title={doc.title}>
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-        <nav aria-label="Antipatrones" className="flex flex-wrap gap-2">
-          {ANTIPATTERN_ORDER.map((other) => {
-            const o = getDoc(other)!;
-            const selected = other === doc.id;
-            return (
-              <Link
-                key={other}
-                href={`/diagnostics/${other}`}
-                aria-current={selected ? "page" : undefined}
-                className={`inline-flex h-8 items-center gap-1.5 rounded-full px-3.5 text-[13px] transition-[background-color,color,transform] duration-150 active:scale-[0.97] ${
-                  selected ? "bg-raised text-fg" : "text-muted [@media(hover:hover)]:hover:bg-surface [@media(hover:hover)]:hover:text-fg"
-                }`}
-              >
-                <span className="text-muted">{o.code}</span>
-                {o.title.toLowerCase()}
-              </Link>
-            );
-          })}
-        </nav>
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <SectionTabs
+          label="Sección de Diagnósticos"
+          value={shown.key}
+          onChange={setSection}
+          tabs={ANTIPATTERN_GROUPS.map((g) => ({ key: g.key, label: g.title, count: g.ids.length }))}
+        />
         <div className="flex items-center gap-2 text-[13px] text-muted">
           <span>
-            {position + 1} / {ANTIPATTERN_ORDER.length}
+            {group.title}: {position + 1} / {ids.length}
           </span>
-          <Link href={`/diagnostics/${prev}`} aria-label="Antipatrón anterior" className="btn-outline h-8 w-8 px-0">
+          <Link href={`/diagnostics/${prev}`} aria-label="Anterior" className="btn-outline h-8 w-8 px-0">
             ←
           </Link>
-          <Link href={`/diagnostics/${next}`} aria-label="Antipatrón siguiente" className="btn-outline h-8 w-8 px-0">
+          <Link href={`/diagnostics/${next}`} aria-label="Siguiente" className="btn-outline h-8 w-8 px-0">
             →
           </Link>
         </div>
       </div>
+
+      <nav aria-label={shown.title} className="mt-3 flex flex-wrap gap-2">
+        {shown.ids.map((other) => {
+          const o = getDoc(other)!;
+          const selected = other === doc.id;
+          return (
+            <Link
+              key={other}
+              href={`/diagnostics/${other}`}
+              aria-current={selected ? "page" : undefined}
+              className={`inline-flex h-8 items-center gap-1.5 rounded-full px-3.5 text-[13px] transition-[background-color,color,transform] duration-150 active:scale-[0.97] ${
+                selected ? "bg-raised text-fg" : "text-muted [@media(hover:hover)]:hover:bg-surface [@media(hover:hover)]:hover:text-fg"
+              }`}
+            >
+              <span className="text-muted">{o.code}</span>
+              {o.title.toLowerCase()}
+            </Link>
+          );
+        })}
+      </nav>
 
       <div key={doc.id}>
         <header className="rise mt-10">
