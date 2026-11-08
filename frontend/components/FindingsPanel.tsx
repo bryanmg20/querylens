@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { ANTIPATTERN_ORDER, getDoc } from "@/lib/antipatterns";
+import { ANTIPATTERN_GROUPS, ANTIPATTERN_ORDER, getDoc } from "@/lib/antipatterns";
 import { findingQuery, findingTables } from "@/lib/evidence";
 import { SEVERITY_KEYS, SEVERITY_META, countBySeverity, severityKey } from "@/lib/insights";
 import type { Finding } from "@/types/database";
+import SectionTabs from "./antipatterns/SectionTabs";
 import FindingCard from "./FindingCard";
 import type { SeverityFilter } from "./KpiStrip";
 
@@ -18,6 +19,20 @@ export interface Filters {
 }
 
 export const NO_FILTERS: Filters = { severity: "all", pattern: "all", query: "" };
+
+/** Los hallazgos que pasan los filtros: lo que se ve en pantalla y lo que sale en el PDF. */
+export function filterFindings(findings: Finding[], filters: Filters): Finding[] {
+  const q = filters.query.trim().toLowerCase();
+  return findings.filter((f) => {
+    if (filters.severity !== "all" && severityKey(f.severidad) !== filters.severity) return false;
+    if (filters.pattern !== "all" && f.antipatron !== filters.pattern) return false;
+    if (q) {
+      const hay = [...findingTables(f), f.query_id ?? "", findingQuery(f) ?? ""].join(" ").toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
 
 // Todos los hallazgos del detection_engine, del más reciente al más viejo, uno por tarjeta. Los
 // filtros viven en la página para que la tira de indicadores también pueda cambiarlos.
@@ -41,22 +56,31 @@ export default function FindingsPanel({
   for (const f of findings) patternCounts.set(f.antipatron, (patternCounts.get(f.antipatron) ?? 0) + 1);
   const knownIds: string[] = [...ANTIPATTERN_ORDER].filter((id) => patternCounts.has(id));
   const unknownIds = [...patternCounts.keys()].filter((id) => !getDoc(id));
-  const patternIds = [...knownIds, ...unknownIds];
 
-  const q = filters.query.trim().toLowerCase();
-  const visible = findings.filter((f) => {
-    if (filters.severity !== "all" && severityKey(f.severidad) !== filters.severity) return false;
-    if (filters.pattern !== "all" && f.antipatron !== filters.pattern) return false;
-    if (q) {
-      const hay = [...findingTables(f), f.query_id ?? "", findingQuery(f) ?? ""].join(" ").toLowerCase();
-      if (!hay.includes(q)) return false;
-    }
-    return true;
-  });
+  // Dos secciones; solo salen los patrones con hallazgos. Los que no se reconocen van con los antipatrones.
+  const sections = ANTIPATTERN_GROUPS.map((g, i) => ({
+    key: g.key,
+    title: g.title,
+    ids: [...knownIds.filter((id) => (g.ids as readonly string[]).includes(id)), ...(i === 0 ? unknownIds : [])],
+  }));
+  const [section, setSection] = useState<string | null>(null);
+  const activeKey =
+    section ??
+    (filters.pattern !== "all" ? sections.find((g) => g.ids.includes(filters.pattern))?.key : undefined) ??
+    (sections.find((g) => g.ids.length > 0) ?? sections[0]).key;
+  const shownSection = sections.find((g) => g.key === activeKey) ?? sections[0];
+
+  const visible = filterFindings(findings, filters);
 
   const set = (patch: Partial<Filters>) => {
     setLimit(PAGE_SIZE);
     onFilters({ ...filters, ...patch });
+  };
+  const pickSection = (key: string) => {
+    setSection(key);
+    const target = sections.find((g) => g.key === key);
+    // Un filtro de la sección que se oculta ya no tiene a la vista su chip: se limpia.
+    if (filters.pattern !== "all" && target && !target.ids.includes(filters.pattern)) set({ pattern: "all" });
   };
   const tabs: { key: SeverityFilter; label: string; count: number }[] = [
     { key: "all", label: "Todas", count: findings.length },
@@ -72,12 +96,26 @@ export default function FindingsPanel({
     <section aria-labelledby="findings-title">
       <div className="flex items-baseline justify-between gap-3">
         <h2 id="findings-title" className="text-[20px] font-semibold tracking-[-0.01em]">
-          Antipatrones detectados
+          Hallazgos detectados
         </h2>
         {findings.length > 0 && (
-          <span className="text-[13px] text-muted">
-            {visible.length} {visible.length === 1 ? "hallazgo" : "hallazgos"}
-          </span>
+          <div className="flex items-center gap-4">
+            <span className="text-[13px] text-muted">
+              {visible.length} {visible.length === 1 ? "hallazgo" : "hallazgos"}
+            </span>
+            <button
+              type="button"
+              onClick={() => window.print()}
+              disabled={visible.length === 0}
+              className="btn-outline h-8"
+              title="Abre el diálogo de impresión: elige «Guardar como PDF». Incluye los hallazgos que estén filtrados."
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 4v11m0 0-4-4m4 4 4-4M5 19h14" />
+              </svg>
+              Exportar PDF
+            </button>
+          </div>
         )}
       </div>
 
@@ -85,7 +123,7 @@ export default function FindingsPanel({
         <p className="empty-frame mt-4">
           {waiting
             ? "Aún no hay hallazgos: se esperan después de la primera extracción."
-            : "No se han detectado antipatrones en esta base de datos."}
+            : "No se han detectado antipatrones ni abrazos mortales en esta base de datos."}
         </p>
       ) : (
         <>
@@ -142,19 +180,28 @@ export default function FindingsPanel({
             </label>
           </div>
 
-          <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Filtrar por antipatrón">
-            <Chip selected={filters.pattern === "all"} onClick={() => set({ pattern: "all" })}>
-              Todos los antipatrones <span className="text-muted">{findings.length}</span>
-            </Chip>
-            {patternIds.map((id) => {
-              const doc = getDoc(id);
-              return (
-                <Chip key={id} selected={filters.pattern === id} onClick={() => set({ pattern: filters.pattern === id ? "all" : id })}>
-                  {doc && <span className="text-muted">{doc.code}</span>} {doc ? doc.title.toLowerCase() : id}{" "}
-                  <span className="text-muted">{patternCounts.get(id)}</span>
-                </Chip>
-              );
-            })}
+          <div className="mt-3" role="group" aria-label="Filtrar por patrón">
+            <SectionTabs
+              label="Sección de patrones"
+              value={shownSection.key}
+              onChange={pickSection}
+              tabs={sections.map((g) => ({ key: g.key, label: g.title, count: g.ids.reduce((n, id) => n + (patternCounts.get(id) ?? 0), 0) }))}
+            />
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Chip selected={filters.pattern === "all"} onClick={() => set({ pattern: "all" })}>
+                Todos los patrones <span className="text-muted">{findings.length}</span>
+              </Chip>
+              {shownSection.ids.map((id) => {
+                const doc = getDoc(id);
+                return (
+                  <Chip key={id} selected={filters.pattern === id} onClick={() => set({ pattern: filters.pattern === id ? "all" : id })}>
+                    {doc && <span className="text-muted">{doc.code}</span>} {doc ? doc.title.toLowerCase() : id}{" "}
+                    <span className="text-muted">{patternCounts.get(id)}</span>
+                  </Chip>
+                );
+              })}
+              {shownSection.ids.length === 0 && <span className="text-[13px] text-muted">Sin hallazgos de este tipo.</span>}
+            </div>
           </div>
 
           {visible.length === 0 ? (

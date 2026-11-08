@@ -34,10 +34,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   if (pathname === "/") return <>{children}</>;
 
   return (
-    <div className="min-h-screen md:pl-[var(--rail)]">
+    <div className="min-h-screen md:pl-[var(--rail)] print:pl-0">
       <nav
         aria-label="Principal"
-        className="fixed inset-x-0 bottom-0 z-30 flex h-16 items-stretch border-t border-line bg-ground md:inset-y-0 md:right-auto md:h-auto md:w-[var(--rail)] md:flex-col md:items-center md:border-r md:border-t-0 md:py-4"
+        className="fixed inset-x-0 bottom-0 z-30 flex print:hidden h-16 items-stretch border-t border-line bg-ground md:inset-y-0 md:right-auto md:h-auto md:w-[var(--rail)] md:flex-col md:items-center md:border-r md:border-t-0 md:py-4"
       >
         <Link
           href="/"

@@ -4,15 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ActivityPanel } from "@/components/ActivityPanel";
 import DiagnosticsSkeleton from "@/components/DiagnosticsSkeleton";
-import FindingsPanel, { NO_FILTERS, type Filters } from "@/components/FindingsPanel";
+import FindingsPanel, { NO_FILTERS, filterFindings, type Filters } from "@/components/FindingsPanel";
 import HealthPanel from "@/components/HealthPanel";
 import KpiStrip from "@/components/KpiStrip";
 import MonitoringControl from "@/components/MonitoringControl";
+import PrintReport from "@/components/PrintReport";
 import ReadingGuide from "@/components/ReadingGuide";
 import StatusSummary from "@/components/StatusSummary";
 import { ApiError, fetchDiagnostics, setMonitoring } from "@/lib/api";
 import { useNow } from "@/lib/hooks";
-import { countBySeverity } from "@/lib/insights";
+import { getDoc } from "@/lib/antipatterns";
+import { SEVERITY_META, countBySeverity } from "@/lib/insights";
 import { clearAccessToken, getAccessToken } from "@/lib/session";
 import type { DiagnosticsResponse } from "@/types/database";
 
@@ -53,6 +55,15 @@ function headline(data: DiagnosticsResponse): { text: string; tone: string } {
     };
   }
   return { text: "No se han detectado antipatrones.", tone: "var(--positive)" };
+}
+
+// Los filtros activos en palabras, para el encabezado del PDF. null si no hay ninguno.
+function describeFilters(filters: Filters): string | null {
+  const parts: string[] = [];
+  if (filters.severity !== "all") parts.push(`severidad ${SEVERITY_META[filters.severity].label.toLowerCase()}`);
+  if (filters.pattern !== "all") parts.push(getDoc(filters.pattern)?.title.toLowerCase() ?? filters.pattern);
+  if (filters.query.trim()) parts.push(`búsqueda «${filters.query.trim()}»`);
+  return parts.length ? parts.join(", ") : null;
 }
 
 export default function DiagnosticsPage() {
@@ -161,7 +172,9 @@ export default function DiagnosticsPage() {
   const seconds = updatedAt ? Math.max(0, Math.round((now - updatedAt) / 1000)) : null;
 
   return (
-    <main className="mx-auto w-full max-w-[1320px] px-4 pb-24 pt-8 md:px-8 md:pb-12">
+    <main className="mx-auto w-full max-w-[1320px] px-4 pb-24 pt-8 md:px-8 md:pb-12 print:p-0">
+      {data && <PrintReport data={data} findings={filterFindings(data.diagnostics, filters)} filterNote={describeFilters(filters)} />}
+      <div className="print:hidden">
       <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
         <div className="min-w-0">
           <p className="text-[13px] text-muted">
@@ -269,6 +282,7 @@ export default function DiagnosticsPage() {
           </div>
         </>
       )}
+      </div>
     </main>
   );
 }
