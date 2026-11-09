@@ -122,6 +122,12 @@ CATALOG: dict[str, IssueDef] = {
         "Las estadisticas de queries se reiniciaron hace poco: los datos cubren una ventana corta.",
         "No requiere accion; los resultados ganan precision a medida que se acumula actividad.",
     ),
+    "TABLE_STATS_LOST": IssueDef(
+        "preflight", "config", INFO,
+        "Postgres perdio las estadisticas de las tablas (probable caida o apagado no "
+        "limpio): QueryLens usa el tamano del catalogo mientras tanto.",
+        "Ejecuta ANALYZE; en la base registrada.",
+    ),
     # ---------- MySQL ----------
     "PERFORMANCE_SCHEMA_OFF": IssueDef(
         "preflight", "config", BLOCKING,

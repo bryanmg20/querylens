@@ -20,9 +20,20 @@ from collectors.postgres.queries import (
 from collectors.postgres.queries import CAPTURE_TIMESTAMP_QUERY as PG_CAPTURE_TIMESTAMP_QUERY
 from collectors.postgres.queries import FOREIGN_KEYS_QUERY as PG_FOREIGN_KEYS_QUERY
 from collectors.postgres.queries import STATEMENTS_QUERY as PG_STATEMENTS_QUERY
+from collectors.postgres.queries import TABLES_QUERY as PG_TABLES_QUERY
 from querylens_contract.snapshot import ActiveQueryRow, CaptureTimestampRow, ForeignKeyRow
 
 pytestmark = pytest.mark.contract
+
+
+def test_pg_tables_query_falls_back_to_reltuples_after_a_crash():
+    # Tras una caida n_live_tup queda en 0 y reltuples conserva el tamano.
+    sql = " ".join(PG_TABLES_QUERY.split())
+    assert "JOIN pg_class c ON c.oid = s.relid" in sql
+    assert (
+        "CASE WHEN s.n_live_tup = 0 AND c.reltuples > 0 THEN c.reltuples::bigint "
+        "ELSE s.n_live_tup END AS live_rows"
+    ) in sql
 
 
 def test_stmt_query_defines_avg_rows_per_call():

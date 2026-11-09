@@ -11,14 +11,25 @@ FROM pg_stat_user_indexes;
 """
 
 
+# live_rows: n_live_tup, salvo que este en 0 con reltuples > 0. Tras una caida
+# (kill -9, apagado no limpio) Postgres descarta las estadisticas acumuladas y
+# n_live_tup queda en 0 hasta el proximo ANALYZE, mientras reltuples (catalogo)
+# conserva el tamano: sin esto AP-02/03/04 ven las tablas vacias. reltuples es
+# -1 en una tabla nunca analizada, y una tabla vaciada sin ANALYZE puede seguir
+# con el reltuples viejo (falso positivo posible, mucho menos grave). El
+# preflight avisa la caida con TABLE_STATS_LOST.
 TABLES_QUERY = """
 SELECT
-    schemaname AS schema_name,
-    relname AS table_name,
-    seq_scan AS seq_scans,
-    idx_scan AS idx_scans,
-    n_live_tup AS live_rows
-FROM pg_stat_user_tables;
+    s.schemaname AS schema_name,
+    s.relname AS table_name,
+    s.seq_scan AS seq_scans,
+    s.idx_scan AS idx_scans,
+    CASE WHEN s.n_live_tup = 0 AND c.reltuples > 0
+         THEN c.reltuples::bigint
+         ELSE s.n_live_tup
+    END AS live_rows
+FROM pg_stat_user_tables s
+JOIN pg_class c ON c.oid = s.relid;
 """
 
 
