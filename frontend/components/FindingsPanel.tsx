@@ -123,7 +123,7 @@ export default function FindingsPanel({
         <p className="empty-frame mt-4">
           {waiting
             ? "Aún no hay hallazgos: se esperan después de la primera extracción."
-            : "No se han detectado antipatrones ni abrazos mortales en esta base de datos."}
+            : "No se han detectado antipatrones ni abrazos mortales en esta sesión de detección."}
         </p>
       ) : (
         <>

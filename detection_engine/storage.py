@@ -1,3 +1,4 @@
+import hashlib
 import json
 from datetime import datetime
 from pathlib import Path
@@ -17,11 +18,121 @@ _SAMPLES_SCHEMA_PATH = Path(__file__).resolve().parent.parent / "querylens_datab
 
 
 def ensure_hallazgos_table(engine: Engine) -> None:
-    # CREATE TABLE IF NOT EXISTS: idempotente, se puede llamar siempre al arrancar
-    # sin importar si el contenedor ya la creo antes.
+    # public.problemas, public.detecciones y la vista public.hallazgos (y el
+    # renombre de la tabla anterior): idempotente, se puede llamar siempre al
+    # arrancar sin importar si db-roles ya lo aplico.
     ddl = _SCHEMA_PATH.read_text(encoding="utf-8")
     with engine.begin() as conn:
         conn.execute(text(ddl))
+
+
+# Abrazos mortales que el modulo de contencion identifica con una firma (patron
+# + sentencias del ciclo, deadlocks/cycles.deadlock_signature): el mismo abrazo
+# que se repite es el mismo problema.
+_SIGNED_DEADLOCKS = frozenset({
+    "inconsistent_lock_order_deadlock",  # CT-01
+    "lock_mode_conversion_deadlock",  # CT-02
+    "range_contention_deadlock",  # CT-03
+    "lock_amplification_deadlock",  # CT-04
+    "unclassified_deadlock",
+})
+
+# Patrones cuyo problema es la consulta sola: la tabla del hallazgo sale del
+# plan de esa ventana y puede cambiar sin que cambie el problema.
+_QUERY_ONLY = frozenset({
+    "baseline_degradation",  # AP-01
+    "disk_spill",  # AP-07
+    "cardinality_misestimate",  # AP-08
+})
+
+
+def _key(*parts: object) -> str:
+    return "|".join("" if part is None else str(part) for part in parts)
+
+
+def _qualified(schema: object, table: object) -> str | None:
+    if not table:
+        return None
+    return f"{schema}.{table}" if schema else str(table)
+
+
+_NO_TEXT = (None, "", "Not available")
+
+
+def _query_identity(finding: Hallazgo) -> str:
+    """La consulta por su texto normalizado, no por el query_id del motor: en
+    Postgres el query_id depende de la tabla interna, asi que borrar y crear la
+    tabla (escenarios, campanas, una migracion) le da otro a la misma consulta.
+    El texto es el canonico del pipeline o, si no lo hay (AP-01 solo trae
+    query_text, ya normalizado por el motor), el del motor. Va como huella
+    corta: el texto puede medir KB y la clave esta en un indice unico. Sin
+    ningun texto, el query_id."""
+    evidence = finding.evidencia or {}
+    for text in (evidence.get("canonic_query"), evidence.get("query_text")):
+        if text not in _NO_TEXT:
+            return "t" + hashlib.sha1(str(text).encode("utf-8")).hexdigest()[:16]
+    return _key(finding.query_id)
+
+
+def finding_key(finding: Hallazgo) -> str:
+    """Identidad del problema dentro de su antipatron: las detecciones con la
+    misma clave (y el mismo db_id) son el mismo problema y van a la misma fila
+    de public.problemas.
+
+    No incluye lo que puede cambiar de una ventana a otra sin que cambie el
+    problema: la severidad, la consulta que AP-05 asocia en cada snapshot, ni el
+    query_id (la consulta se identifica por su texto, ver _query_identity).
+    """
+    evidence = finding.evidencia or {}
+    antipatron = finding.antipatron
+
+    if antipatron == "unused_index":  # AP-05: el indice, sin la consulta
+        return _key(
+            _qualified(evidence.get("schema_name"), evidence.get("table_name")),
+            evidence.get("index_name"),
+            evidence.get("subtipo"),
+        )
+    if antipatron in _SIGNED_DEADLOCKS and evidence.get("signature"):
+        return _key(evidence["signature"])
+    if antipatron == "long_transaction_cascade":  # CT-05: una por transaccion
+        root = evidence.get("root") or {}
+        return _key(root.get("process_id"), root.get("transaction_start_time"))
+    query = _query_identity(finding)
+    if antipatron in _QUERY_ONLY:
+        # el schema separa el mismo texto corrido sobre schemas distintos
+        return _key(query, evidence.get("schema_name"))
+
+    table = _qualified(evidence.get("schema_name"), finding.table_name)
+    if antipatron == "non_sargable_predicate":  # AP-03: una por columna
+        return _key(query, table, evidence.get("column"))
+    # AP-02, AP-04, AP-06 y cualquier patron sin clave propia
+    return _key(query, table)
+
+
+# Una deteccion: actualiza (o crea) el problema con lo de esta deteccion y
+# anota la deteccion. El ON CONFLICT usa problemas_clave_uq.
+_SAVE_FINDING = """
+WITH problema AS (
+    INSERT INTO public.problemas AS p
+        (db_id, antipatron, finding_key, severidad, query_id, table_name, database_name,
+         evidencia, explicacion, recomendacion)
+    VALUES
+        (:db_id, :antipatron, :finding_key, :severidad, :query_id, :table_name, :database_name,
+         CAST(:evidencia AS JSONB), :explicacion, :recomendacion)
+    ON CONFLICT (db_id, antipatron, finding_key) DO UPDATE SET
+        severidad = EXCLUDED.severidad,
+        query_id = EXCLUDED.query_id,
+        table_name = EXCLUDED.table_name,
+        database_name = EXCLUDED.database_name,
+        evidencia = EXCLUDED.evidencia,
+        explicacion = EXCLUDED.explicacion,
+        recomendacion = EXCLUDED.recomendacion,
+        ultima_deteccion = now()
+    RETURNING p.id
+)
+INSERT INTO public.detecciones (problema_id, severidad)
+SELECT id, :severidad FROM problema
+"""
 
 
 def save_findings(engine: Engine, db_id: str | None, findings: list[Hallazgo]) -> None:
@@ -32,6 +143,7 @@ def save_findings(engine: Engine, db_id: str | None, findings: list[Hallazgo]) -
         {
             "db_id": db_id,
             "antipatron": finding.antipatron,
+            "finding_key": finding_key(finding),
             "severidad": finding.severidad,
             "query_id": str(finding.query_id) if finding.query_id is not None else None,
             "table_name": finding.table_name,
@@ -45,21 +157,12 @@ def save_findings(engine: Engine, db_id: str | None, findings: list[Hallazgo]) -
     ]
 
     with engine.begin() as conn:
-        conn.execute(
-            text(
-                """
-                INSERT INTO public.hallazgos
-                    (db_id, antipatron, severidad, query_id, table_name, database_name,
-                     evidencia, explicacion, recomendacion)
-                VALUES
-                    (:db_id, :antipatron, :severidad, :query_id, :table_name, :database_name,
-                     CAST(:evidencia AS JSONB), :explicacion, :recomendacion)
-                """
-            ),
-            rows,
-        )
+        conn.execute(text(_SAVE_FINDING), rows)
 
-    logger.info("Guardados %d hallazgos en public.hallazgos", len(findings))
+    logger.info(
+        "Guardadas %d detecciones de %d problemas en public.detecciones",
+        len(rows), len({(row["antipatron"], row["finding_key"]) for row in rows}),
+    )
 
 
 def ensure_statement_samples_table(engine: Engine) -> None:

@@ -5,17 +5,37 @@ from pydantic import BaseModel
 
 
 class Finding(BaseModel):
-    """Hallazgo (antipatrón) detectado por el detection_engine."""
+    """Un problema detectado por el detection_engine (public.problemas) con lo
+    que pasó en la sesión de detección actual. La evidencia, la explicación y
+    la recomendación son las de su última detección."""
 
     id: int
     antipatron: str
+    # La más alta que tuvo en la sesión: un pico no queda escondido y la lista
+    # no cambia de orden en cada actualización.
     severidad: str
+    # La de la última detección.
+    severidad_actual: str
     query_id: str | None
     table_name: str | None
     evidencia: dict[str, Any]
     explicacion: str
     recomendacion: str
+    # Última detección.
     detectado_en: datetime
+    # Primera detección, en todo el histórico.
+    primera_deteccion: datetime
+    veces_sesion: int
+    veces_total: int
+    # Detecciones de la sesión por severidad (solo las que tuvo).
+    por_severidad: dict[str, int]
+
+
+class ActivityBucket(BaseModel):
+    """Detecciones de una hora (inicio de la hora, en UTC)."""
+
+    hora: datetime
+    detecciones: int
 
 
 class LastRun(BaseModel):
@@ -61,7 +81,13 @@ class DiagnosticsResponse(BaseModel):
     is_active: bool
     # False cuando el usuario pauso el monitoreo desde la pagina de diagnosticos.
     monitoring_enabled: bool
-    # Hallazgos más recientes del detection_engine, del más nuevo al más viejo.
+    # Inicio de la sesión de detección: diagnostics trae solo los problemas
+    # detectados desde entonces.
+    detection_session_started_at: datetime
+    # Problemas con al menos una detección en la sesión, del detectado más
+    # recientemente al más viejo.
     diagnostics: list[Finding]
+    # Detecciones por hora de las últimas 24 h (solo las horas que tuvieron).
+    activity: list[ActivityBucket]
     health: Health
     server_time: datetime

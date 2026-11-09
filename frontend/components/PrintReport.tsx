@@ -1,7 +1,7 @@
 import { getDoc } from "@/lib/antipatterns";
 import { findingMetrics, findingQuery, findingTables } from "@/lib/evidence";
 import { formatDateTime } from "@/lib/format";
-import { SEVERITY_KEYS, SEVERITY_META, countBySeverity, severityKey } from "@/lib/insights";
+import { SEVERITY_KEYS, SEVERITY_META, countBySeverity, formatCount, severityBreakdown, severityKey } from "@/lib/insights";
 import type { DiagnosticsResponse, Finding } from "@/types/database";
 
 // El informe que sale al imprimir la página de Diagnósticos (Exportar PDF). En pantalla está
@@ -29,6 +29,10 @@ export default function PrintReport({
         <p className="text-[11px] text-neutral-600">
           Generado el {formatDateTime(new Date().toISOString())} · datos del servidor al {formatDateTime(data.server_time)}
         </p>
+        <p className="text-[11px] text-neutral-600">
+          Sesión de detección desde el {formatDateTime(data.detection_session_started_at)}: cada hallazgo cuenta sus
+          detecciones de la sesión y en total, con la severidad más alta que tuvo en la sesión.
+        </p>
       </header>
 
       <section className="mt-4">
@@ -53,18 +57,30 @@ export default function PrintReport({
             const tables = findingTables(f);
             const query = findingQuery(f);
             const metrics = findingMetrics(f);
+            const breakdown = severityBreakdown(f);
+            const current = severityKey(f.severidad_actual) !== severityKey(f.severidad)
+              ? SEVERITY_META[severityKey(f.severidad_actual)].label.toLowerCase()
+              : null;
             return (
               <article key={f.id} className="break-inside-avoid border border-neutral-400 border-l-[4px] border-l-black p-3">
                 <header className="flex flex-wrap items-baseline justify-between gap-x-3">
                   <h2 className="text-[14px] font-semibold">
                     {doc ? `${doc.code} · ${doc.title}` : f.antipatron}
                   </h2>
-                  <span className="font-semibold">Severidad {SEVERITY_META[severityKey(f.severidad)].label.toLowerCase()}</span>
+                  <span className="font-semibold">
+                    Severidad {SEVERITY_META[severityKey(f.severidad)].label.toLowerCase()}
+                    {current && ` (ahora ${current})`}
+                  </span>
                 </header>
                 <p className="mt-0.5 text-[11px] text-neutral-600">
-                  {[tables.length > 0 && `${tables.length === 1 ? "Tabla" : "Tablas"} ${tables.join(", ")}`, f.query_id && `query ${f.query_id}`, `detectado ${formatDateTime(f.detectado_en)}`]
+                  {[tables.length > 0 && `${tables.length === 1 ? "Tabla" : "Tablas"} ${tables.join(", ")}`, f.query_id && `query ${f.query_id}`]
                     .filter(Boolean)
                     .join(" · ")}
+                </p>
+                <p className="text-[11px] text-neutral-600">
+                  {formatCount(f.veces_sesion)} {f.veces_sesion === 1 ? "vez" : "veces"} en esta sesión
+                  {breakdown && ` (${breakdown})`} · {formatCount(f.veces_total)} en total desde el{" "}
+                  {formatDateTime(f.primera_deteccion)} · última {formatDateTime(f.detectado_en)}
                 </p>
 
                 <p className="mt-2">{f.explicacion}</p>

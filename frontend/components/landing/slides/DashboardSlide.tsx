@@ -61,7 +61,7 @@ export default function DashboardSlide({ active }: SlideProps) {
               </div>
               <div data-ui className="grid grid-cols-1 gap-6 sm:grid-cols-5">
                 <div className="min-w-0 sm:col-span-3 [&>section]:h-full">
-                  <ActivityPanel findings={data.diagnostics} serverTime={data.server_time} chartHeight={232} />
+                  <ActivityPanel points={data.activity} serverTime={data.server_time} chartHeight={232} />
                 </div>
                 <div className="min-w-0 sm:col-span-2 [&>section]:h-full">
                   <PatternsPanel findings={data.diagnostics} />

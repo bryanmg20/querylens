@@ -64,8 +64,11 @@ class DatabaseSessionResponse(DatabaseRegisteredResponse):
 
 class MonitoringUpdateRequest(BaseModel):
     enabled: bool
+    # Solo al iniciar o reanudar: empezar una sesión de detección nueva.
+    new_session: bool = False
 
 
 class MonitoringResponse(BaseModel):
     database_identifier: str
     monitoring_enabled: bool
+    detection_session_started_at: datetime

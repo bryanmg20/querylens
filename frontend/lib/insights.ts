@@ -1,6 +1,7 @@
 // Cálculos sobre los hallazgos que alimentan las gráficas. Todo sale de los
-// datos de la API: no se inventa ningún valor.
-import type { Finding } from "@/types/database";
+// datos de la API: no se inventa ningún valor. Cada hallazgo es un problema
+// (no una detección): los conteos por severidad y por patrón cuentan problemas.
+import type { ActivityPoint, Finding } from "@/types/database";
 
 export type SeverityKey = "high" | "medium" | "low" | "other";
 
@@ -44,61 +45,45 @@ export interface Activity {
 }
 
 const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
-const MAX_DAYS = 30;
 
-function startOfDay(ms: number): number {
-  const d = new Date(ms);
-  d.setHours(0, 0, 0, 0);
-  return d.getTime();
-}
-
-// Detecciones por hora (si todo cayó en las últimas 24 h) o por día (hasta 30),
-// contadas hacia atrás desde la hora del servidor.
-export function buildActivity(findings: Finding[], nowIso: string): Activity {
+// Detecciones por hora de las últimas 24 h, contadas hacia atrás desde la hora del servidor. La API
+// ya las trae sumadas por hora (todas las detecciones, no solo las de los hallazgos de la lista);
+// las horas sin detecciones no vienen y quedan en 0.
+export function buildActivity(points: ActivityPoint[], nowIso: string): Activity {
   const now = new Date(nowIso).getTime();
-  const times = findings.map((f) => new Date(f.detectado_en).getTime()).filter(Number.isFinite);
-  const oldest = times.length ? Math.min(...times) : now;
-  const hourly = now - oldest <= DAY;
-
-  if (hourly) {
-    const lastStart = Math.floor(now / HOUR) * HOUR;
-    const starts = Array.from({ length: 24 }, (_, i) => lastStart - (23 - i) * HOUR);
-    const counts = new Array(24).fill(0);
-    for (const t of times) {
-      const index = Math.floor((t - starts[0]) / HOUR);
-      if (index >= 0 && index < 24) counts[index] += 1;
-    }
-    return {
-      unit: "hora",
-      windowLabel: "Últimas 24 horas",
-      buckets: starts.map((start, i) => ({
-        label: new Date(start).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: false }),
-        count: counts[i],
-      })),
-    };
-  }
-
-  const days = Math.min(MAX_DAYS, Math.ceil((now - oldest) / DAY) + 1);
-  const today = startOfDay(now);
-  const starts = Array.from({ length: days }, (_, i) => {
-    const d = new Date(today);
-    d.setDate(d.getDate() - (days - 1 - i));
-    return d.getTime();
-  });
-  const counts = new Array(days).fill(0);
-  for (const t of times) {
-    const index = Math.round((startOfDay(t) - starts[0]) / DAY);
-    if (index >= 0 && index < days) counts[index] += 1;
+  const lastStart = Math.floor(now / HOUR) * HOUR;
+  const starts = Array.from({ length: 24 }, (_, i) => lastStart - (23 - i) * HOUR);
+  const counts = new Array(24).fill(0);
+  for (const point of points) {
+    const t = new Date(point.hora).getTime();
+    if (!Number.isFinite(t)) continue;
+    const index = Math.floor((t - starts[0]) / HOUR);
+    if (index >= 0 && index < 24) counts[index] += point.detecciones;
   }
   return {
-    unit: "día",
-    windowLabel: `Últimos ${days} días`,
+    unit: "hora",
+    windowLabel: "Últimas 24 horas",
     buckets: starts.map((start, i) => ({
-      label: new Date(start).toLocaleDateString("es-CO", { day: "numeric", month: "short" }).replace(".", ""),
+      label: new Date(start).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: false }),
       count: counts[i],
     })),
   };
+}
+
+// Detecciones de la sesión por severidad en palabras ("alta 200, media 880"), de la más alta a la
+// más baja. null si tuvo una sola severidad: ya la dice la etiqueta.
+export function severityBreakdown(finding: Finding): string | null {
+  const entries = Object.entries(finding.por_severidad ?? {}).filter(([, n]) => n > 0);
+  if (entries.length < 2) return null;
+  const order = (key: string) => SEVERITY_KEYS.indexOf(severityKey(key));
+  return entries
+    .sort(([a], [b]) => order(a) - order(b))
+    .map(([key, n]) => `${SEVERITY_META[severityKey(key)].label.toLowerCase()} ${formatCount(n)}`)
+    .join(", ");
+}
+
+export function formatCount(n: number): string {
+  return n.toLocaleString("es-CO");
 }
 
 // Marcas redondas del eje Y que terminan por encima del máximo (nunca pegado al borde).

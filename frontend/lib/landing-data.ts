@@ -89,6 +89,27 @@ const SAMPLE_ROWS: [string, "high" | "medium" | "low", string | null, string | n
   ["missing_index", "high", "facturas", "q_a1d3", 4 * DAY],
 ];
 
+// Detecciones de cada fila de SAMPLE_ROWS: en la sesión de ejemplo y en total.
+const SAMPLE_COUNTS: [number, number][] = [
+  [1240, 9400],
+  [310, 310],
+  [860, 2150],
+  [2150, 2150],
+  [95, 640],
+  [640, 3400],
+  [3400, 31000],
+  [12, 48],
+  [180, 180],
+];
+
+const SAMPLE_SESSION_START = at(5 * DAY);
+
+// Detecciones por hora de las últimas 24 h, con más actividad en la tarde.
+const SAMPLE_ACTIVITY = Array.from({ length: 24 }, (_, i) => ({
+  hora: new Date(Math.floor(SAMPLE_NOW / HOUR) * HOUR - (23 - i) * HOUR).toISOString(),
+  detecciones: 30 + ((i * 37) % 53) + (i > 15 ? 40 : 0),
+}));
+
 export const SAMPLE_DIAGNOSTICS: DiagnosticsResponse = {
   database_identifier: "db_7f3a91c2",
   connection_name: "Ventas - producción",
@@ -96,17 +117,24 @@ export const SAMPLE_DIAGNOSTICS: DiagnosticsResponse = {
   is_active: true,
   monitoring_enabled: true,
   server_time: at(0),
+  detection_session_started_at: SAMPLE_SESSION_START,
   diagnostics: SAMPLE_ROWS.map(([id, severidad, table_name, query_id, ago], i) => ({
     id: 100 - i,
     antipatron: id,
     severidad,
+    severidad_actual: severidad,
     table_name,
     query_id,
     evidencia: Object.fromEntries(byId(id).evidence),
     explicacion: byId(id).summary,
     recomendacion: SAMPLE_RECOMMENDATIONS[id],
     detectado_en: at(ago),
+    primera_deteccion: SAMPLE_COUNTS[i][1] > SAMPLE_COUNTS[i][0] ? at(30 * DAY) : SAMPLE_SESSION_START,
+    veces_sesion: SAMPLE_COUNTS[i][0],
+    veces_total: SAMPLE_COUNTS[i][1],
+    por_severidad: { [severidad]: SAMPLE_COUNTS[i][0] },
   })),
+  activity: SAMPLE_ACTIVITY,
   health: {
     last_run: {
       status: "ok",

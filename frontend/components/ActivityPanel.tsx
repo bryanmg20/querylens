@@ -1,19 +1,19 @@
 import { buildActivity, topPatterns } from "@/lib/insights";
-import type { Finding } from "@/types/database";
+import type { ActivityPoint, Finding } from "@/types/database";
 import ActivityChart from "./charts/ActivityChart";
 import BarList from "./charts/BarList";
 
 // Dos preguntas seguidas: cuándo se detectaron y qué antipatrones se repiten más.
 export function ActivityPanel({
-  findings,
+  points,
   serverTime,
   chartHeight,
 }: {
-  findings: Finding[];
+  points: ActivityPoint[];
   serverTime: string;
   chartHeight?: number;
 }) {
-  const activity = buildActivity(findings, serverTime);
+  const activity = buildActivity(points, serverTime);
 
   return (
     <section className="card p-5" aria-labelledby="activity-title">

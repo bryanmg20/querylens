@@ -60,8 +60,9 @@ Sin argumentos, `querylens` abre un menú. Cada opción también existe como sub
 | `list` | Bases registradas, su estado y su ventana |
 | `schedule ID --until T [--from T]` | Programa la ventana de recolección. `--from` es ahora por defecto |
 | `unschedule ID` | Quita la ventana; el monitoreo queda como esté |
-| `pause ID` / `resume ID` | Pausa o inicia/reanuda el monitoreo |
-| `report ID [--since 7d \| --from T --until T] [--format md\|csv\|json] [--include-evidence]` | Escribe un reporte en `reports/`. Sin rango usa la ventana programada o, si no hay, los últimos 7 días |
+| `pause ID` | Pausa el monitoreo |
+| `resume ID [--new-session]` | Inicia o reanuda el monitoreo. Con `--new-session` empieza una sesión de detección nueva: lo detectado hasta ahora pasa al histórico (no se borra nada). La primera vez que se inicia siempre es nueva |
+| `report ID [--since 7d \| --from T --until T \| --session] [--format md\|csv\|json] [--include-evidence]` | Escribe un reporte en `reports/`. `--session`: desde el inicio de la sesión de detección. Sin rango usa la ventana programada o, si no hay, los últimos 7 días |
 | `health ID` | Último ciclo del pipeline y problemas abiertos (extensión faltante, permisos, conexión) |
 
 Las horas (`T`) se escriben como `"2026-10-27 08:00"` (en `QL_TZ`), `now` o relativas a ahora: `+2h`, `+30min`, `-1 day`.
@@ -80,13 +81,25 @@ querylens report db_a1b2c3d4 --since 24h --format csv
 
 El servicio `scheduler` revisa las ventanas de todas las bases cada `SCHEDULER_INTERVAL_S`:
 
-1. Cuando llega `--from`, enciende el monitoreo de la base.
+1. Cuando llega `--from`, enciende el monitoreo de la base. Si estaba apagado, empieza también una sesión de detección nueva.
 2. Cuando llega `--until`, lo apaga.
 3. `REPORT_GRACE_S` después, escribe el reporte. El detector procesa en diferido los últimos snapshots, así que el reporte incluye también lo que detecte durante ese margen.
 
 Las ventanas se guardan en la base (`registered_databases`): un reinicio del servidor o del scheduler no pierde ninguna. Una pausa manual durante la ventana se respeta. Sin ventana, el monitoreo arranca con `resume`, sigue hasta que se pause y el reporte se pide con `report`.
 
 Registrar no cambia el monitoreo de una conexión que ya existía: si estaba activo sigue activo, si estaba en pausa sigue en pausa, y su ventana se conserva. Solo una base nueva empieza en pausa.
+
+### Sesión de detección
+
+Un problema que sigue presente se detecta en cada ciclo, pero se guarda una sola vez: cada detección solo anota la hora y la severidad. La sesión de detección decide qué cuenta como reciente: la página de Diagnósticos y `report --session` muestran solo los problemas detectados desde que empezó la sesión, cada uno con sus detecciones de la sesión y en total.
+
+La sesión solo cambia cuando el monitoreo arranca: con el monitoreo encendido, el detector todavía procesa los snapshots tomados antes del corte. Empieza una sesión nueva:
+
+- la primera vez que se inicia el monitoreo de una base;
+- al reanudar con sesión nueva: `resume ID --new-session` o «Reanudar con sesión nueva» en la interfaz. Reanudar sin esa opción sigue la misma sesión;
+- cuando el scheduler abre una ventana y el monitoreo estaba apagado. Si ya estaba encendido, sigue la misma sesión.
+
+No borra nada: sirve, por ejemplo, para pausar, corregir algo, reanudar con sesión nueva y ver si vuelve a aparecer. Con el monitoreo encendido no se puede empezar una sesión nueva. El reporte de una ventana se arma por sus fechas, así que no depende de la sesión.
 
 ### Reportes
 
@@ -96,7 +109,7 @@ Los reportes quedan en `reports/` del servidor (`/opt/querylens/reports/<id>-<fe
 scp servidor:/opt/querylens/reports/db_a1b2c3d4-20261027-180500.md .
 ```
 
-Cada reporte trae el resumen por severidad y por antipatrón, y el detalle de cada hallazgo: tabla, `query_id`, cuántas veces se detectó y entre qué fechas, la explicación y la recomendación. El detector inserta una fila por ciclo mientras el problema siga, y el reporte agrupa esas filas en un solo hallazgo. `evidencia` incluye texto normalizado de las consultas, por eso solo sale con `--include-evidence`.
+Cada reporte trae el resumen por severidad y por antipatrón, y una línea por problema: tabla, `query_id`, cuántas veces se detectó en el rango y entre qué fechas, la severidad más alta que tuvo (y la de la última detección, si es otra), cuántas detecciones tiene en total, la explicación y la recomendación. `evidencia` incluye texto normalizado de las consultas, por eso solo sale con `--include-evidence`.
 
 ### Interfaz web (opcional)
 
@@ -131,6 +144,8 @@ docker compose up -d --build --wait
 ```
 
 `db-roles` aplica en cada `up` los roles y las columnas nuevas de `registered_databases`, así que un volumen existente no necesita migraciones manuales para esta versión.
+
+Desde la versión que guarda cada problema una sola vez, la tabla anterior `public.hallazgos` se renombra a `public.hallazgos_v1` (no se borra) y sus filas no pasan a las tablas nuevas: los reportes empiezan desde la actualización. Si no se necesita, se puede borrar a mano con `DROP TABLE public.hallazgos_v1`.
 
 ## 8. Desinstalar
 

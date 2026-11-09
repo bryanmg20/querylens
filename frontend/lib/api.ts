@@ -97,12 +97,15 @@ export async function fetchDiagnostics(accessToken: string): Promise<Diagnostics
   return response.json();
 }
 
-// Pausa (enabled=false) o reanuda (enabled=true) el monitoreo de la base de
-// datos de la sesión. Lo atiende el Auth Service, que es quien escribe en
+// Pausa (enabled=false) o inicia/reanuda (enabled=true) el monitoreo de la base
+// de datos de la sesión. newSession, solo al iniciar o reanudar, empieza una
+// sesión de detección nueva: Diagnósticos pasa a contar solo lo detectado desde
+// ahora (no se borra nada). Lo atiende el Auth Service, que es quien escribe en
 // registered_databases; el token identifica la base.
 export async function setMonitoring(
   accessToken: string,
-  enabled: boolean
+  enabled: boolean,
+  newSession = false
 ): Promise<MonitoringResponse> {
   const response = await fetch(`${AUTH_SERVICE_URL}/databases/monitoring`, {
     method: "PATCH",
@@ -110,7 +113,7 @@ export async function setMonitoring(
       "Content-Type": "application/json",
       Authorization: `Bearer ${accessToken}`,
     },
-    body: JSON.stringify({ enabled }),
+    body: JSON.stringify({ enabled, new_session: newSession }),
   });
 
   if (!response.ok) {

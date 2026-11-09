@@ -1,27 +1,43 @@
 "use client";
 
 import { useState } from "react";
+import { formatDateTime, formatShortDateTime, timeAgo } from "@/lib/format";
 import { IconPause, IconPlay } from "./icons";
 
 // Iniciar / pausar / reanudar el monitoreo de la base de datos de la sesión. Registrar una base
 // lo deja apagado: `started` distingue una base que nunca se ha extraído (iniciar) de una que ya
 // tuvo ciclos (reanudar). Pausar pide confirmación porque detiene la recolección de nuevos
 // diagnósticos; la confirmación se despliega en la misma tarjeta.
+//
+// La sesión de detección (lo que la lista cuenta como reciente) solo cambia cuando el monitoreo
+// arranca: iniciar siempre empieza una, y al reanudar se elige seguir la misma o empezar otra. Con
+// el monitoreo encendido el detector todavía procesa snapshots de antes del corte.
 export default function MonitoringControl({
   enabled,
   started,
   busy,
   error,
+  sessionStartedAt,
+  serverTime,
   onChange,
 }: {
   enabled: boolean;
   started: boolean;
   busy: boolean;
   error: string | null;
-  onChange: (enabled: boolean) => void;
+  sessionStartedAt: string;
+  serverTime: string;
+  onChange: (enabled: boolean, newSession: boolean) => void;
 }) {
   const [confirming, setConfirming] = useState(false);
+  // Qué botón de reanudar se pulsó, para decir "Reanudando…" solo en ese.
+  const [resuming, setResuming] = useState<"same" | "new" | null>(null);
   const asking = enabled && confirming;
+
+  const resume = (newSession: boolean) => {
+    setResuming(newSession ? "new" : "same");
+    onChange(true, newSession);
+  };
 
   return (
     <section className="card p-5" aria-labelledby="monitoring-title">
@@ -47,30 +63,60 @@ export default function MonitoringControl({
         </span>
       </p>
 
-      {!enabled && (
-        <button type="button" disabled={busy} onClick={() => onChange(true)} className="btn-primary mt-4 w-full">
+      {started && (
+        <p
+          className="mt-3 text-[13px]"
+          title={`Desde el ${formatDateTime(sessionStartedAt)}. La lista cuenta lo detectado desde entonces.`}
+        >
+          <span className="block text-muted">Sesión de detección</span>
+          <span className="block">
+            Desde el {formatShortDateTime(sessionStartedAt)}{" "}
+            <span className="whitespace-nowrap text-muted">· {timeAgo(sessionStartedAt, serverTime)}</span>
+          </span>
+        </p>
+      )}
+
+      {!enabled && !started && (
+        <button type="button" disabled={busy} onClick={() => resume(true)} className="btn-primary mt-4 w-full">
           <IconPlay size={14} />
-          {busy
-            ? started
-              ? "Reanudando…"
-              : "Iniciando…"
-            : started
-              ? "Reanudar monitoreo"
-              : "Iniciar monitoreo"}
+          {busy ? "Iniciando…" : "Iniciar monitoreo"}
         </button>
       )}
 
+      {!enabled && started && (
+        <>
+          <div className="mt-4 grid gap-2">
+            <button type="button" disabled={busy} onClick={() => resume(false)} className="btn-primary w-full">
+              <IconPlay size={14} />
+              {busy && resuming === "same" ? "Reanudando…" : "Reanudar (misma sesión)"}
+            </button>
+            <button type="button" disabled={busy} onClick={() => resume(true)} className="btn-outline w-full">
+              {busy && resuming === "new" ? "Reanudando…" : "Reanudar con sesión nueva"}
+            </button>
+          </div>
+          <p className="mt-2 text-[13px] leading-5 text-muted">
+            Con sesión nueva, la lista empieza vacía y muestra solo lo que se detecte desde ahora; lo anterior queda en
+            el total de cada hallazgo, no se borra. Úsala después de corregir algo, para ver si vuelve a aparecer.
+          </p>
+        </>
+      )}
+
       {enabled && (
-        <button
-          type="button"
-          disabled={busy}
-          aria-expanded={asking}
-          onClick={() => setConfirming((v) => !v)}
-          className="btn-outline mt-4 w-full"
-        >
-          <IconPause size={14} />
-          Pausar monitoreo
-        </button>
+        <>
+          <button
+            type="button"
+            disabled={busy}
+            aria-expanded={asking}
+            onClick={() => setConfirming((v) => !v)}
+            className="btn-outline mt-4 w-full"
+          >
+            <IconPause size={14} />
+            Pausar monitoreo
+          </button>
+          <p className="mt-2 text-[13px] leading-5 text-muted">
+            Para empezar una sesión de detección nueva, pausa el monitoreo y reanúdalo con sesión nueva.
+          </p>
+        </>
       )}
 
       <div className="reveal" data-open={asking}>
@@ -86,7 +132,7 @@ export default function MonitoringControl({
                 disabled={busy}
                 onClick={() => {
                   setConfirming(false);
-                  onChange(false);
+                  onChange(false, false);
                 }}
                 className="btn-danger"
               >

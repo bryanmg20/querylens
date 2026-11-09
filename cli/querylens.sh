@@ -55,11 +55,19 @@ Sin comando abre el menu interactivo.
                             terminar, el scheduler escribe el reporte en
                             reports/. --from por defecto: ahora
   unschedule ID             Quita la ventana (el monitoreo sigue como esta)
-  pause ID | resume ID      Pausa o inicia/reanuda el monitoreo de ID
-  report ID [--since 7d | --from T --until T] [--format md|csv|json]
-            [--include-evidence]
-                            Escribe el reporte de hallazgos en reports/. Sin
-                            rango: la ventana programada o los ultimos 7 dias
+  pause ID                  Pausa el monitoreo de ID
+  resume ID [--new-session] Inicia o reanuda el monitoreo de ID. Con
+                            --new-session empieza una sesion de deteccion
+                            nueva: lo detectado hasta ahora pasa al historico
+                            (no se borra nada). La primera vez que se inicia
+                            siempre es nueva; el scheduler empieza una al abrir
+                            una ventana si el monitoreo estaba apagado
+  report ID [--since 7d | --from T --until T | --session]
+            [--format md|csv|json] [--include-evidence]
+                            Escribe el reporte de hallazgos en reports/, un
+                            problema por linea. --session: desde el inicio de
+                            la sesion de deteccion. Sin rango: la ventana
+                            programada o los ultimos 7 dias
   health ID                 Ultimo ciclo del pipeline y problemas abiertos
   scheduler                 Loop del servicio scheduler (no usar a mano)
   help                      Esta ayuda
@@ -228,7 +236,8 @@ SELECT database_identifier AS id,
             WHEN report_written_at IS NOT NULL THEN 'reporte listo'
             WHEN collect_until <= now() THEN 'terminada'
             WHEN collect_started_at IS NOT NULL THEN 'en curso'
-            ELSE 'programada' END AS ventana
+            ELSE 'programada' END AS ventana,
+       to_char(detection_session_started_at, 'YYYY-MM-DD HH24:MI') AS sesion_desde
 FROM registered_databases
 ORDER BY created_at
 SQL
@@ -257,14 +266,17 @@ SQL
     )
     [[ $valid == ok ]] || die "$valid"
 
-    # Si el inicio ya llego, la recoleccion arranca ya; si no, queda pausada y
-    # el scheduler la enciende a su hora. report_written_at vuelve a NULL: una
-    # ventana nueva tiene su propio reporte.
+    # Si el inicio ya llego, la recoleccion arranca ya (con una sesion de
+    # deteccion nueva si el monitoreo estaba apagado, como hace el scheduler);
+    # si no, queda pausada y el scheduler la enciende a su hora.
+    # report_written_at vuelve a NULL: una ventana nueva tiene su propio reporte.
     q -tA -v id="$id" -v from="$from" -v until="$until" <<'SQL'
 UPDATE registered_databases
 SET collect_from = :'from'::timestamptz,
     collect_until = :'until'::timestamptz,
     collect_started_at = CASE WHEN :'from'::timestamptz <= now() THEN now() END,
+    detection_session_started_at = CASE WHEN :'from'::timestamptz <= now() AND NOT monitoring_enabled
+                                        THEN now() ELSE detection_session_started_at END,
     report_written_at = NULL,
     monitoring_enabled = :'from'::timestamptz <= now(),
     updated_at = now()
@@ -290,15 +302,53 @@ RETURNING format('Ventana quitada de %s. Monitoreo: %s.', database_identifier,
 SQL
 }
 
+# resume ID [--new-session]
+cmd_resume() {
+    local id=${1:-} new_session=false
+    shift || true
+    while (($#)); do
+        case $1 in
+            --new-session) new_session=true; shift ;;
+            *) die "opcion desconocida: $1" ;;
+        esac
+    done
+    set_monitoring "$id" true "$new_session"
+}
+
+# La sesion de deteccion (lo que la pagina de diagnosticos y report --session
+# cuentan como reciente) solo cambia cuando el monitoreo arranca: con el
+# monitoreo encendido, el detector todavia procesa snapshots tomados antes del
+# corte. Empieza una nueva con --new-session y siempre la primera vez que se
+# inicia (sin ningun ciclo del pipeline, igual que la pagina). No borra nada.
 set_monitoring() {
-    local id=${1:-} enabled=$2
+    local id=${1:-} enabled=$2 new_session=${3:-false} active
     require_db "$id"
-    q -tA -v id="$id" -v enabled="$enabled" <<'SQL'
+    if [[ $new_session == true ]]; then
+        active=$(q -tA -v id="$id" <<'SQL'
+SELECT monitoring_enabled FROM registered_databases WHERE database_identifier = :'id'
+SQL
+        )
+        [[ $active == f ]] \
+            || die "el monitoreo de $id ya esta activo: pausalo (querylens pause $id) para empezar una sesion de deteccion nueva"
+    fi
+    q -tA -v id="$id" -v enabled="$enabled" -v new_session="$new_session" <<'SQL'
 UPDATE registered_databases
-SET monitoring_enabled = :'enabled'::boolean, updated_at = now()
+SET detection_session_started_at = CASE
+        WHEN :'enabled'::boolean AND NOT monitoring_enabled
+             AND (:'new_session'::boolean
+                  OR NOT EXISTS (SELECT 1 FROM pipeline_health.last_run WHERE db_id = :'id'))
+        THEN now() ELSE detection_session_started_at END,
+    monitoring_enabled = :'enabled'::boolean,
+    updated_at = now()
 WHERE database_identifier = :'id'
-RETURNING format('Monitoreo de %s: %s.', database_identifier,
-                 CASE WHEN monitoring_enabled THEN 'activo' ELSE 'pausado' END)
+RETURNING CASE
+    WHEN NOT monitoring_enabled THEN format('Monitoreo de %s: pausado.', database_identifier)
+    WHEN detection_session_started_at = now() THEN
+        format('Monitoreo de %s: activo. Sesion de deteccion nueva desde %s.', database_identifier,
+               to_char(detection_session_started_at, 'YYYY-MM-DD HH24:MI:SS'))
+    ELSE format('Monitoreo de %s: activo. Sigue la sesion de deteccion desde %s.', database_identifier,
+                to_char(detection_session_started_at, 'YYYY-MM-DD HH24:MI:SS'))
+END
 SQL
 }
 
@@ -366,6 +416,15 @@ write_report() {
     printf '%s\n' "$path"
 }
 
+# Inicio de la sesion de deteccion de ID.
+session_of() {
+    q -tA -v id="$1" <<'SQL'
+SELECT detection_session_started_at::text
+FROM registered_databases
+WHERE database_identifier = :'id'
+SQL
+}
+
 # Rango de la ventana programada de ID ("desde|hasta"), vacio si no tiene.
 window_of() {
     q -tA -F '|' -v id="$1" <<'SQL'
@@ -377,12 +436,14 @@ SQL
 
 cmd_report() {
     local id=${1:-} since='' from='' until='' format=md evidence=false window path grace=0
+    local session=false
     shift || true
     while (($#)); do
         case $1 in
             --since) since=${2:-}; shift 2 || die "falta el valor de --since" ;;
             --from) from=${2:-}; shift 2 || die "falta el valor de --from" ;;
             --until) until=${2:-}; shift 2 || die "falta el valor de --until" ;;
+            --session) session=true; shift ;;
             --format) format=${2:-}; shift 2 || die "falta el valor de --format" ;;
             --include-evidence) evidence=true; shift ;;
             *) die "opcion desconocida: $1" ;;
@@ -392,7 +453,11 @@ cmd_report() {
     [[ $format == md || $format == csv || $format == json ]] \
         || die "formato no soportado: $format (md, csv o json)"
 
-    if [[ -n $since ]]; then
+    if [[ $session == true ]]; then
+        [[ -z $since && -z $from && -z $until ]] || die "use --session solo, sin --since ni --from/--until"
+        from=$(session_of "$id")
+        until=$(require_ts now)
+    elif [[ -n $since ]]; then
         [[ -z $from && -z $until ]] || die "use --since o --from/--until, no los dos"
         from=$(require_ts "-$since")
         until=$(require_ts now)
@@ -428,10 +493,13 @@ scheduler_tick() {
     local grace=$1 ids id window path status=0
 
     # Solo una vez por ventana (collect_started_at): una pausa manual durante
-    # la ventana se respeta.
+    # la ventana se respeta. La ventana empieza una sesion de deteccion nueva
+    # si el monitoreo estaba apagado; si ya estaba encendido, sigue la misma.
     ids=$(q -tA <<'SQL'
 UPDATE registered_databases
-SET monitoring_enabled = true, collect_started_at = now(), updated_at = now()
+SET detection_session_started_at = CASE WHEN monitoring_enabled THEN detection_session_started_at
+                                        ELSE now() END,
+    monitoring_enabled = true, collect_started_at = now(), updated_at = now()
 WHERE collect_from <= now() AND collect_until > now() AND collect_started_at IS NULL
 RETURNING database_identifier
 SQL
@@ -505,7 +573,7 @@ ask_id() {
 }
 
 menu() {
-    local option menu_id from until format since
+    local option menu_id from until format since answer
     while :; do
         cat <<'EOF'
 
@@ -537,13 +605,26 @@ EOF
                 ;;
             5) (cmd_list) || true; ask_id; (cmd_unschedule "$menu_id") || true ;;
             6) (cmd_list) || true; ask_id; (set_monitoring "$menu_id" false) || true ;;
-            7) (cmd_list) || true; ask_id; (set_monitoring "$menu_id" true) || true ;;
+            7)
+                (cmd_list) || true
+                ask_id
+                read -r -p "Sesion de deteccion nueva? [s/N] (la primera vez siempre es nueva): " answer
+                if [[ $answer == [sS] ]]; then
+                    (cmd_resume "$menu_id" --new-session) || true
+                else
+                    (cmd_resume "$menu_id") || true
+                fi
+                ;;
             8)
                 (cmd_list) || true
                 ask_id
-                read -r -e -p "Ultimos (p. ej. 7d; vacio = la ventana programada o 7d): " since
+                read -r -e -p "Ultimos (p. ej. 7d; sesion = la sesion actual; vacio = la ventana programada o 7d): " since
                 read -r -e -p "Formato [md/csv/json] (md): " format
-                (cmd_report "$menu_id" ${since:+--since "$since"} --format "${format:-md}") || true
+                if [[ $since == sesion ]]; then
+                    (cmd_report "$menu_id" --session --format "${format:-md}") || true
+                else
+                    (cmd_report "$menu_id" ${since:+--since "$since"} --format "${format:-md}") || true
+                fi
                 ;;
             9) (cmd_list) || true; ask_id; (cmd_health "$menu_id") || true ;;
             0 | q | salir) exit 0 ;;
@@ -563,7 +644,7 @@ main() {
         schedule) cmd_schedule "$@" ;;
         unschedule) cmd_unschedule "$@" ;;
         pause) set_monitoring "${1:-}" false ;;
-        resume) set_monitoring "${1:-}" true ;;
+        resume) cmd_resume "$@" ;;
         report) cmd_report "$@" ;;
         health) cmd_health "$@" ;;
         scheduler) cmd_scheduler ;;

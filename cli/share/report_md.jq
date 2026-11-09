@@ -9,6 +9,7 @@
 "",
 "- Base: \(if .base.engine == "mysql" then "toda la base" else "`\(.base.database_name)`" end) (\(.base.engine)), id `\(.base.database_identifier)`",
 "- Rango: \(.desde | ts) a \(.hasta | ts)",
+"- Sesión de detección actual desde: \(.base.sesion_desde | ts)",
 "- Generado: \(.generado | ts)",
 "",
 "## Resumen",
@@ -16,14 +17,16 @@
 if .resumen.hallazgos == 0 then
   "Sin hallazgos en el rango."
 else
-  "\(.resumen.hallazgos) hallazgos distintos (\(.resumen.detecciones) detecciones en total).",
+  "\(.resumen.hallazgos) problemas distintos (\(.resumen.detecciones) detecciones en el rango).",
   "",
-  "| Severidad | Hallazgos |",
+  "Cada problema cuenta con la severidad más alta que tuvo en el rango.",
+  "",
+  "| Severidad | Problemas |",
   "|---|---|",
   (.resumen.por_severidad | to_entries | sort_by($order[.key] // 9)[]
    | "| \(.key | sev) | \(.value) |"),
   "",
-  "| Antipatrón | Hallazgos |",
+  "| Antipatrón | Problemas |",
   "|---|---|",
   (.resumen.por_antipatron | to_entries[] | "| \(.key | cell) | \(.value) |"),
   "",
@@ -36,7 +39,14 @@ else
         "#### \(.antipatron)\(if .table_name then " en `\(.table_name)`" else "" end)",
         "",
         (if .query_id then "- query_id: `\(.query_id)`" else empty end),
-        "- Detectado \(.veces) \(if .veces == 1 then "vez" else "veces" end), entre \(.primera | ts) y \(.ultima | ts)",
+        (if .indice then "- Índice: `\(.indice)`" else empty end),
+        (if .columna then "- Columna: `\(.columna)`" else empty end),
+        "- Detectado \(.veces) \(if .veces == 1 then "vez" else "veces" end) en el rango, entre \(.primera | ts) y \(.ultima | ts)",
+        (if (.por_severidad | length) > 1 then
+           "- Por severidad: \(.por_severidad | to_entries | sort_by($order[.key] // 9) | map("\(.key | sev) \(.value)") | join(", "))"
+         else empty end),
+        (if .severidad_actual != .severidad then "- Severidad de la última detección: \(.severidad_actual | sev)" else empty end),
+        "- Histórico: \(.veces_historico) \(if .veces_historico == 1 then "detección" else "detecciones" end) desde \(.primera_historica | ts)",
         "",
         "**Explicación:** \(.explicacion)",
         "",

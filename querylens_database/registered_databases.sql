@@ -38,6 +38,15 @@ CREATE TABLE IF NOT EXISTS registered_databases (
     collect_until TIMESTAMPTZ,
     collect_started_at TIMESTAMPTZ,
     report_written_at TIMESTAMPTZ,
+    -- Inicio de la sesion de deteccion: la pagina de diagnosticos y el reporte
+    -- con --session cuentan como "esta sesion" solo las detecciones
+    -- posteriores; las anteriores quedan en el historico (no se borra nada).
+    -- Solo cambia cuando el monitoreo arranca (con el monitoreo encendido el
+    -- detector todavia procesa snapshots de antes del corte): al iniciar por
+    -- primera vez, al reanudar con sesion nueva (pagina de diagnosticos,
+    -- querylens resume --new-session) y cuando el scheduler abre una ventana
+    -- con el monitoreo apagado.
+    detection_session_started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -49,6 +58,11 @@ ALTER TABLE registered_databases
     ADD COLUMN IF NOT EXISTS collect_until TIMESTAMPTZ,
     ADD COLUMN IF NOT EXISTS collect_started_at TIMESTAMPTZ,
     ADD COLUMN IF NOT EXISTS report_written_at TIMESTAMPTZ;
+
+-- Volumenes creados antes de la sesion de deteccion: las bases ya registradas
+-- empiezan su primera sesion al aplicar esto (now() se evalua una vez).
+ALTER TABLE registered_databases
+    ADD COLUMN IF NOT EXISTS detection_session_started_at TIMESTAMPTZ NOT NULL DEFAULT now();
 
 -- Volumenes creados cuando el monitoreo nacia encendido. Solo cambia el valor
 -- por defecto: las bases ya registradas siguen como estan.
