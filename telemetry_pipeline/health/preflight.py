@@ -34,6 +34,22 @@ SELECT dealloc,
        stats_reset > now() - interval '1 hour' AS recently_reset
 FROM pg_stat_statements_info
 """
+# Huella de una caida: tras un apagado no limpio Postgres descarta las
+# estadisticas acumuladas (n_live_tup en 0, last_analyze y last_autoanalyze en
+# NULL) y stats_reset no cambia, asi que no hay otra forma de verlo. reltuples
+# (catalogo) sobrevive: una tabla con filas segun el catalogo y 0 segun las
+# estadisticas, sin ningun ANALYZE registrado, es una tabla cuyas estadisticas
+# se perdieron. TABLES_QUERY usa reltuples mientras tanto.
+PG_TABLE_STATS_LOST = """
+SELECT count(*) AS tables,
+       (array_agg(s.schemaname || '.' || s.relname ORDER BY c.reltuples DESC))[1:3] AS examples
+FROM pg_stat_user_tables s
+JOIN pg_class c ON c.oid = s.relid
+WHERE s.n_live_tup = 0
+  AND c.reltuples > 0
+  AND s.last_analyze IS NULL
+  AND s.last_autoanalyze IS NULL
+"""
 MY_SETTINGS = """
 SELECT @@performance_schema AS performance_schema,
        @@version AS version,
@@ -148,6 +164,13 @@ def check_postgres(conn, previous: dict | None = None) -> PreflightResult:
             result.issues.append(("STATEMENTS_EVICTING", {"evicted": dealloc - before}))
         if info.get("recently_reset"):
             result.issues.append(("STATS_RECENTLY_RESET", {}))
+
+    lost = _first_row(conn, PG_TABLE_STATS_LOST)
+    if lost is not None and int(lost.get("tables") or 0) > 0:
+        result.issues.append(("TABLE_STATS_LOST", {
+            "tables": int(lost["tables"]),
+            "examples": list(lost.get("examples") or []),
+        }))
     return result
 
 

@@ -158,6 +158,32 @@ def test_missing_extension_is_left_to_collect():
     assert conn.rollback_calls == 1
 
 
+def test_tables_with_lost_stats_report_the_crash():
+    conn = _pg_conn()
+    conn.answers["n_live_tup = 0"] = [
+        {"tables": 4, "examples": ["public.items_pedido", "public.pedidos", "public.clientes"]}
+    ]
+    report = _run(conn)
+    assert _codes(report) == {"TABLE_STATS_LOST"}
+    params = report.issues[("TABLE_STATS_LOST", "")]
+    assert params["tables"] == 4
+    assert params["examples"] == ["public.items_pedido", "public.pedidos", "public.clientes"]
+
+
+def test_no_table_with_lost_stats_reports_nothing():
+    conn = _pg_conn()
+    conn.answers["n_live_tup = 0"] = [{"tables": 0, "examples": None}]
+    assert _codes(_run(conn)) == set()
+
+
+def test_lost_stats_query_error_is_discarded():
+    conn = _pg_conn()
+    conn.answers["n_live_tup = 0"] = RuntimeError("permission denied")
+    report = _run(conn)
+    assert _codes(report) == set()
+    assert conn.rollback_calls == 1
+
+
 # ---------- MySQL ----------
 
 
