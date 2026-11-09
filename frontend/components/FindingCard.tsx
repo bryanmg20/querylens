@@ -6,7 +6,7 @@ import { getDoc } from "@/lib/antipatterns";
 import { buildEvidenceGraph } from "@/lib/evidenceGraph";
 import { findingMetrics, findingQuery, findingTables } from "@/lib/evidence";
 import { formatDateTime, timeAgo } from "@/lib/format";
-import { SEVERITY_META, severityKey } from "@/lib/insights";
+import { SEVERITY_META, formatCount, severityBreakdown, severityKey } from "@/lib/insights";
 import type { Finding } from "@/types/database";
 import EvidenceGraphView from "./antipatterns/EvidenceGraph";
 
@@ -26,6 +26,11 @@ export default function FindingCard({
   // El grafo se construye y se monta la primera vez que se abre, no con cada tarjeta de la lista.
   const [graphMounted, setGraphMounted] = useState(false);
   const meta = SEVERITY_META[severityKey(finding.severidad)];
+  // La etiqueta es la severidad más alta de la sesión; si la última detección tuvo otra, se dice al lado.
+  const current = severityKey(finding.severidad_actual) !== severityKey(finding.severidad)
+    ? SEVERITY_META[severityKey(finding.severidad_actual)].label.toLowerCase()
+    : null;
+  const breakdown = severityBreakdown(finding);
   const doc = getDoc(finding.antipatron);
   const metrics = findingMetrics(finding);
   const query = findingQuery(finding);
@@ -38,7 +43,10 @@ export default function FindingCard({
     <article className="rise card p-5" style={{ ["--i" as string]: Math.min(index, 8) }}>
       <header className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5">
-          <span className={meta.pill}>{meta.label}</span>
+          <span className={meta.pill} title="La severidad más alta que tuvo en esta sesión">
+            {meta.label}
+          </span>
+          {current && <span className="text-[13px] text-muted">ahora {current}</span>}
           {doc && <span className="pill-neu">{doc.code}</span>}
           <h3 className="text-[16px] font-semibold">{doc?.title ?? finding.antipatron}</h3>
         </div>
@@ -98,8 +106,15 @@ export default function FindingCard({
             Evidencia (JSON)
           </Toggle>
         </div>
-        <div className="flex items-center gap-4 text-muted">
-          <span title={formatDateTime(finding.detectado_en)}>Detectado {timeAgo(finding.detectado_en, serverTime)}</span>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-muted">
+          <span title={breakdown ? `En esta sesión: ${breakdown}` : undefined}>
+            {formatCount(finding.veces_sesion)} {finding.veces_sesion === 1 ? "vez" : "veces"} en esta sesión
+            {breakdown && ` (${breakdown})`}
+          </span>
+          <span title={`Primera detección: ${formatDateTime(finding.primera_deteccion)}`}>
+            {formatCount(finding.veces_total)} en total
+          </span>
+          <span title={formatDateTime(finding.detectado_en)}>Última {timeAgo(finding.detectado_en, serverTime)}</span>
           {doc && (
             <Link
               href={`/diagnostics/${doc.id}`}

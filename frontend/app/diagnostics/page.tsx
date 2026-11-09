@@ -12,6 +12,7 @@ import PrintReport from "@/components/PrintReport";
 import ReadingGuide from "@/components/ReadingGuide";
 import StatusSummary from "@/components/StatusSummary";
 import { ApiError, fetchDiagnostics, setMonitoring } from "@/lib/api";
+import { formatDateTime, formatShortDateTime } from "@/lib/format";
 import { useNow } from "@/lib/hooks";
 import { getDoc } from "@/lib/antipatterns";
 import { SEVERITY_META, countBySeverity } from "@/lib/insights";
@@ -54,7 +55,7 @@ function headline(data: DiagnosticsResponse): { text: string; tone: string } {
       tone: "var(--warning)",
     };
   }
-  return { text: "No se han detectado antipatrones.", tone: "var(--positive)" };
+  return { text: "No se han detectado antipatrones en esta sesión.", tone: "var(--positive)" };
 }
 
 // Los filtros activos en palabras, para el encabezado del PDF. null si no hay ninguno.
@@ -139,7 +140,7 @@ export default function DiagnosticsPage() {
     };
   }, [router]);
 
-  async function handleMonitoringChange(enabled: boolean) {
+  async function handleMonitoringChange(enabled: boolean, newSession: boolean) {
     const token = getAccessToken();
     if (!token) {
       router.replace("/conectar");
@@ -148,12 +149,27 @@ export default function DiagnosticsPage() {
 
     setMonitoringBusy(true);
     setMonitoringError(null);
+    const sessionBefore = data ? new Date(data.detection_session_started_at).getTime() : null;
     try {
-      const result = await setMonitoring(token, enabled);
-      // Se refleja de inmediato; el siguiente polling confirma el estado.
+      const result = await setMonitoring(token, enabled, newSession);
+      // Se refleja de inmediato; el siguiente polling confirma el estado. Con una sesión nueva la
+      // lista vuelve a empezar vacía.
+      const sessionChanged =
+        sessionBefore !== null && new Date(result.detection_session_started_at).getTime() !== sessionBefore;
       setData((current) =>
-        current ? { ...current, monitoring_enabled: result.monitoring_enabled } : current
+        current
+          ? {
+              ...current,
+              monitoring_enabled: result.monitoring_enabled,
+              detection_session_started_at: result.detection_session_started_at,
+              diagnostics: sessionChanged ? [] : current.diagnostics,
+            }
+          : current
       );
+      if (sessionChanged) {
+        setFilters(NO_FILTERS);
+        refresh.current();
+      }
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         clearAccessToken();
@@ -183,9 +199,12 @@ export default function DiagnosticsPage() {
             {data ? data.connection_name : "Diagnósticos"}
           </p>
           <h1 className="mt-2 text-[24px] font-semibold leading-8 tracking-[-0.02em] md:text-[32px] md:leading-10">Diagnósticos</h1>
-          <p className="mt-1 max-w-2xl text-[14px] leading-5 text-muted">
+          <p
+            className="mt-1 max-w-2xl text-[14px] leading-5 text-muted"
+            title={data ? `Inicio de la sesión de detección: ${formatDateTime(data.detection_session_started_at)}` : undefined}
+          >
             {data
-              ? `Lo que QueryLens encontró en ${data.connection_name} durante la última ventana de observación.`
+              ? `Desde el ${formatShortDateTime(data.detection_session_started_at)}, lo que QueryLens encontró en ${data.connection_name}.`
               : "Consultando…"}
           </p>
           {summary && (
@@ -262,12 +281,12 @@ export default function DiagnosticsPage() {
                 started={data.health.last_run != null}
                 busy={monitoringBusy}
                 error={monitoringError}
+                sessionStartedAt={data.detection_session_started_at}
+                serverTime={data.server_time}
                 onChange={handleMonitoringChange}
               />
               <HealthPanel issues={data.health.issues} serverTime={data.server_time} />
-              {data.diagnostics.length > 0 && (
-                <ActivityPanel findings={data.diagnostics} serverTime={data.server_time} />
-              )}
+              {data.activity.length > 0 && <ActivityPanel points={data.activity} serverTime={data.server_time} />}
             </div>
 
             <div className="order-first min-w-0 lg:order-none">

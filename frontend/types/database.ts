@@ -49,16 +49,34 @@ export interface DatabaseSessionResponse extends DatabaseRegisteredResponse {
   token_type: string;
 }
 
+// Un problema detectado (una fila aunque se haya detectado miles de veces), con lo que pasó en la
+// sesión de detección actual. Evidencia, explicación y recomendación son las de su última detección.
 export interface Finding {
   id: number;
   antipatron: string;
+  // La más alta que tuvo en la sesión.
   severidad: string;
+  // La de la última detección.
+  severidad_actual: string;
   query_id: string | null;
   table_name: string | null;
   evidencia: Record<string, unknown>;
   explicacion: string;
   recomendacion: string;
+  // Última detección.
   detectado_en: string;
+  // Primera detección, en todo el histórico.
+  primera_deteccion: string;
+  veces_sesion: number;
+  veces_total: number;
+  // Detecciones de la sesión por severidad (solo las que tuvo).
+  por_severidad: Record<string, number>;
+}
+
+// Detecciones de una hora de las últimas 24 h (inicio de la hora).
+export interface ActivityPoint {
+  hora: string;
+  detecciones: number;
 }
 
 export interface LastRun {
@@ -98,7 +116,11 @@ export interface DiagnosticsResponse {
   engine: string;
   is_active: boolean;
   monitoring_enabled: boolean;
+  // Inicio de la sesión de detección: diagnostics trae solo lo detectado desde entonces.
+  detection_session_started_at: string;
   diagnostics: Finding[];
+  // Solo las horas que tuvieron detecciones.
+  activity: ActivityPoint[];
   health: Health;
   server_time: string;
 }
@@ -117,4 +139,5 @@ export interface ApiErrorResponse {
 export interface MonitoringResponse {
   database_identifier: string;
   monitoring_enabled: boolean;
+  detection_session_started_at: string;
 }
