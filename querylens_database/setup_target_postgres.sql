@@ -10,6 +10,9 @@
 -- toca, y correrlo de nuevo no rompe nada.
 --
 -- Al final:
+--   * pregunta si querylens_monitor puede pedir planes de ejecucion (SELECT
+--     sobre las tablas; por defecto no). -v ql_grant_select=1 o 0 responde
+--     sin preguntar (ver 4b.);
 --   * pide la contrasena de querylens_monitor (\password: no queda en el
 --     historial ni en ps). Si el rol ya tenia una, pregunta antes;
 --   * dice si hace falta reiniciar Postgres. Solo lo pide si cambio algo
@@ -273,15 +276,61 @@ GRANT USAGE ON SCHEMA querylens TO querylens_monitor;
 GRANT EXECUTE ON FUNCTION querylens.log_files() TO querylens_monitor;
 GRANT EXECUTE ON FUNCTION querylens.read_log(text, bigint, bigint) TO querylens_monitor;
 
--- EXPLAIN (planes genericos de las consultas lentas) necesita SELECT sobre
--- las tablas, y con SELECT el rol podria leer los datos. Es decision del
--- dueno de la base: sin esto QueryLens funciona, pero sin los antipatrones
--- que dependen del plan. Para darlo, por schema:
+-- ---------------------------------------------------------------------------
+-- 4b. Planes de ejecucion (por base, opcional). EXPLAIN necesita SELECT sobre
+--     las tablas, y con SELECT el rol podria leer los datos. Es decision del
+--     dueno de la base: se pregunta, y por defecto no se da. Sin esto
+--     QueryLens funciona, pero AP-02 a AP-05 solo ven los planes que
+--     auto_explain dejo en el log. -v ql_grant_select=1 (o 0) responde sin
+--     preguntar; si el rol ya puede leer todas las tablas, no se pregunta.
 --
---   GRANT USAGE ON SCHEMA <schema> TO querylens_monitor;
---   GRANT SELECT ON ALL TABLES IN SCHEMA <schema> TO querylens_monitor;
---   ALTER DEFAULT PRIVILEGES FOR ROLE <dueno> IN SCHEMA <schema>
---       GRANT SELECT ON TABLES TO querylens_monitor;
+--     Con si: USAGE y SELECT sobre las tablas de cada schema de la aplicacion
+--     (todos menos los del sistema y querylens), y ALTER DEFAULT PRIVILEGES
+--     para que tambien queden las tablas que se creen despues (las del dueno
+--     del schema y las de los duenos de sus tablas). El teardown lo quita con
+--     DROP OWNED.
+-- ---------------------------------------------------------------------------
+CREATE TEMP VIEW ql_app_schemas AS
+SELECT n.oid, n.nspname
+FROM pg_namespace n
+WHERE n.nspname NOT IN ('information_schema', 'querylens')
+  AND n.nspname NOT LIKE 'pg\_%';
+
+CREATE TEMP VIEW ql_app_tables AS
+SELECT c.oid, s.nspname, c.relowner
+FROM pg_class c
+JOIN ql_app_schemas s ON s.oid = c.relnamespace
+WHERE c.relkind IN ('r', 'p', 'v', 'm', 'f');
+
+SELECT count(*) > 0
+       AND bool_and(has_table_privilege('querylens_monitor', oid, 'SELECT')) AS ql_select_complete
+FROM ql_app_tables \gset
+
+\if :{?ql_grant_select}
+\elif :ql_select_complete
+    \set ql_grant_select 0
+\else
+    \echo ''
+    \echo 'Planes de ejecucion: QueryLens puede pedir el plan (EXPLAIN) de las'
+    \echo 'consultas que corrieron. Para eso querylens_monitor necesita SELECT sobre'
+    \echo 'las tablas, y con SELECT podria leer los datos. Sin esto, AP-02 a AP-05'
+    \echo 'solo ven los planes que auto_explain deja en el log.'
+    \prompt 'Dar SELECT a querylens_monitor? [s/N]: ' ql_grant_select
+\endif
+SELECT lower(trim(:'ql_grant_select')) IN ('1', 's', 'si', 'sí', 'y', 'yes', 'true', 'on') AS ql_do_grant \gset
+
+\if :ql_do_grant
+SELECT format('GRANT USAGE ON SCHEMA %I TO querylens_monitor', nspname),
+       format('GRANT SELECT ON ALL TABLES IN SCHEMA %I TO querylens_monitor', nspname)
+FROM ql_app_schemas ORDER BY nspname \gexec
+-- pg_database_owner (dueno de public desde PG 15) no crea tablas: se salta.
+SELECT DISTINCT format('ALTER DEFAULT PRIVILEGES FOR ROLE %I IN SCHEMA %I GRANT SELECT ON TABLES TO querylens_monitor',
+                       pg_get_userbyid(o.owner), o.nspname)
+FROM (SELECT nspname, relowner AS owner FROM ql_app_tables
+      UNION
+      SELECT n.nspname, n.nspowner FROM pg_namespace n JOIN ql_app_schemas USING (oid)) o
+WHERE pg_get_userbyid(o.owner) <> 'pg_database_owner' \gexec
+\endif
 
 -- ---------------------------------------------------------------------------
 -- 5. Contrasena y resultado.
@@ -334,7 +383,21 @@ SELECT count(*) FILTER (WHERE source = 'command line') > 0 AS ql_overridden,
        string_agg(name, ', ' ORDER BY name) FILTER (WHERE source = 'command line') AS ql_overridden_names,
        count(*) FILTER (WHERE source <> 'command line' AND context = 'postmaster') > 0 AS ql_needs_restart
 FROM ql_missing \gset
+
+-- Con si y sin tablas todavia, cuenta como autorizado (ALTER DEFAULT
+-- PRIVILEGES cubre las que se creen).
+SELECT :'ql_do_grant'::bool
+       OR (count(*) > 0 AND bool_and(has_table_privilege('querylens_monitor', oid, 'SELECT'))) AS ql_select_ok,
+       (SELECT coalesce(string_agg(nspname, ', ' ORDER BY nspname), '')
+        FROM ql_app_schemas) AS ql_select_schemas
+FROM ql_app_tables \gset
 \echo ''
+\if :ql_select_ok
+    \echo 'Planes de ejecucion (EXPLAIN): autorizados en' :ql_select_schemas
+\else
+    \echo 'Planes de ejecucion (EXPLAIN): no autorizados. AP-02 a AP-05 quedan'
+    \echo 'limitados; para darlos, correr de nuevo con -v ql_grant_select=1.'
+\endif
 \if :ql_overridden
     \echo 'Falta un paso: estos parametros vienen de la linea de comandos de'
     \echo 'Postgres y ganan sobre lo que configuro este script:' :ql_overridden_names

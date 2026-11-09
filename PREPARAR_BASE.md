@@ -20,12 +20,13 @@ No sirve en servicios administrados (RDS, Aurora, Cloud SQL, Azure): los scripts
    ```bash
    psql -U postgres -d <base> -f setup_target_postgres.sql
    ```
-2. Escribir la contraseña de `querylens_monitor` cuando la pida. Si el usuario ya existía, el script pregunta antes de cambiarla.
-3. Leer la última línea:
+2. Responder si `querylens_monitor` puede pedir planes de ejecución (`Dar SELECT a querylens_monitor? [s/N]`). Por defecto no. Ver [Planes de ejecución](#planes-de-ejecución-explain) antes de decidir. Para no tener la pregunta, agregar `-v ql_grant_select=1` (o `=0`) al comando.
+3. Escribir la contraseña de `querylens_monitor` cuando la pida. Si el usuario ya existía, el script pregunta antes de cambiarla.
+4. Leer las últimas líneas. `Planes de ejecucion (EXPLAIN): ...` dice qué se decidió, y la última línea:
    - `Listo: ...`: no hay más pasos.
    - `Falta un paso: reinicie Postgres ...`: reiniciar una vez (`sudo systemctl restart postgresql`). No hace falta volver a correr el script.
    - `Falta un paso: estos parametros vienen de la linea de comandos ...`: Postgres arranca con flags `-c` (systemd, Docker) que ganan sobre el script. Cambiar esos flags con los valores de la tabla de abajo y reiniciar.
-4. Con varias bases en el mismo servidor, correr el script en cada una. Desde la segunda ya no pide reinicio.
+5. Con varias bases en el mismo servidor, correr el script en cada una. Desde la segunda ya no pide reinicio. La pregunta de los planes es por base.
 
 Si QueryLens corre en el mismo servidor y Postgres está instalado fuera de Docker, el host a registrar es `host.docker.internal`. Hay que permitir esa conexión una vez:
 
@@ -56,7 +57,7 @@ Después, `sudo systemctl reload postgresql`, o reiniciar si cambió `listen_add
 | `log_error_verbosity` / `log_min_messages` | `default` / `warning` | Solo si estaban en `terse` o más alto que `error`: los abrazos mortales necesitan el detalle |
 | `log_lock_waits` | `on` | La fila que espera cada sesión de un abrazo mortal cuando la aplicación manda los valores aparte (`$1`) |
 
-Las listas (`*_preload_libraries`, `log_destination`) se completan; lo que ya tenían se conserva. Por base, el script crea la extensión `pg_stat_statements`, el esquema `querylens` con las funciones `log_files()` y `read_log()` (solo leen archivos `.json` del directorio de logs) y le da `CONNECT` a `querylens_monitor`. El rol tiene `pg_monitor`: lee estadísticas, no datos. En la tabla `querylens.setup_changes` queda anotado cada cambio con el valor de antes, para poder deshacerlo.
+Las listas (`*_preload_libraries`, `log_destination`) se completan; lo que ya tenían se conserva. Por base, el script crea la extensión `pg_stat_statements`, el esquema `querylens` con las funciones `log_files()` y `read_log()` (solo leen archivos `.json` del directorio de logs) y le da `CONNECT` a `querylens_monitor`. El rol tiene `pg_monitor`: lee estadísticas, no datos, salvo que se autoricen los [planes de ejecución](#planes-de-ejecución-explain). En la tabla `querylens.setup_changes` queda anotado cada cambio con el valor de antes, para poder deshacerlo.
 
 </details>
 
@@ -66,14 +67,18 @@ Las listas (`*_preload_libraries`, `log_destination`) se completan; lo que ya te
    ```bash
    mysql -u root -p <base> < setup_target_mysql.sql
    ```
+   Así `querylens_monitor` no puede pedir planes de ejecución. El script no puede preguntarlo, porque `mysql` lo lee por la entrada. Para darlos (ver [Planes de ejecución](#planes-de-ejecución-explain) antes de decidir), correrlo así, desde la carpeta del script:
+   ```bash
+   mysql -u root -p <base> -e "SET @ql_grant_select = 1; source setup_target_mysql.sql"
+   ```
 2. La primera vez, la salida muestra la contraseña generada para `querylens_monitor` (columna `generated password`). Anotarla: es la que se usa en `querylens add`. Las siguientes corridas no la cambian. Para generar otra:
    ```sql
    ALTER USER 'querylens_monitor'@'%' IDENTIFIED BY RANDOM PASSWORD;
    ```
-3. Leer la última línea:
+3. Leer las últimas líneas. `planes_de_ejecucion` dice si están autorizados, y la última línea:
    - `Listo: ...`: no hay más pasos.
    - `Falta un paso: reinicie MySQL ...`: reiniciar una vez (`sudo systemctl restart mysql`). No hace falta volver a correr el script.
-4. Con varias bases en el mismo servidor, correr el script con cada una. Desde la segunda ya no pide reinicio.
+4. Con varias bases en el mismo servidor, correr el script con cada una. Desde la segunda ya no pide reinicio. Los planes se autorizan por base.
 
 Si MySQL corre en el mismo servidor que QueryLens y fuera de Docker, el host a registrar es `host.docker.internal`, y `bind-address` (en `my.cnf`) debe aceptar conexiones desde la red de Docker.
 
@@ -88,32 +93,28 @@ Si MySQL corre en el mismo servidor que QueryLens y fuera de Docker, el host a r
 | `innodb_print_all_deadlocks` / `log_error_verbosity` | `ON` / `3` | Cada abrazo mortal llega al log de errores |
 | Consumers `statements_digest`, `events_statements_current`, `events_statements_history`, `global_instrumentation`, `thread_instrumentation` e instrumentos `statement/%` | activos | Vienen activos por defecto; el script los reactiva si alguien los apagó |
 
-La configuración queda con `SET PERSIST` en `mysqld-auto.cnf`, que gana sobre `my.cnf`. El valor de antes de cada variable queda anotado en la tabla `querylens.setup_changes` (una base `querylens` que solo usa el script), para poder deshacerlo. Los consumers no se persisten: si `my.cnf` los desactiva, hay que quitar esa línea. El usuario recibe `SELECT` sobre `performance_schema`, `PROCESS` (consultas en curso, bloqueos y abrazos mortales), `SELECT` sobre `mysql.innodb_index_stats` (tamaño de cada índice) y `SHOW VIEW` sobre la base, que le permite conectarse a ella y ver sus tablas e índices sin leer datos.
+La configuración queda con `SET PERSIST` en `mysqld-auto.cnf`, que gana sobre `my.cnf`. El valor de antes de cada variable queda anotado en la tabla `querylens.setup_changes` (una base `querylens` que solo usa el script), para poder deshacerlo. Los consumers no se persisten: si `my.cnf` los desactiva, hay que quitar esa línea. El usuario recibe `SELECT` sobre `performance_schema`, `PROCESS` (consultas en curso, bloqueos y abrazos mortales), `SELECT` sobre `mysql.innodb_index_stats` (tamaño de cada índice) y `SHOW VIEW` sobre la base, que le permite conectarse a ella y ver sus tablas e índices sin leer datos. Con los [planes de ejecución](#planes-de-ejecución-explain) autorizados recibe además `SELECT` sobre la base.
 
 </details>
 
-## Opcional: planes de ejecución (`EXPLAIN`)
+## Planes de ejecución (`EXPLAIN`)
 
-Los scripts no dan acceso a los datos. Sin eso, QueryLens ve las consultas, sus tiempos, los bloqueos y los índices, pero no puede pedir el plan de las consultas lentas, y los antipatrones que dependen del plan no aparecen. Para `EXPLAIN`, el usuario necesita `SELECT` sobre las tablas, y con `SELECT` podría leer los datos. Es decisión del dueño de la base.
+Para pedir el plan de una consulta (`EXPLAIN`), `querylens_monitor` necesita `SELECT` sobre las tablas, y con `SELECT` podría leer los datos. Es decisión del dueño de la base: el script de cada motor la pide, y por defecto no da el permiso.
 
-PostgreSQL, por schema:
+Sin `SELECT`, QueryLens ve las consultas, sus tiempos, los bloqueos y los índices, pero los antipatrones que leen el plan no ven todas las consultas. Son AP-02 (escaneo completo evitable), AP-03 (predicado no sargable), AP-04 (índice ausente) y AP-05 (índice sin uso). En Postgres solo ven las consultas que `auto_explain` registró en el log, las de 50 ms o más. En MySQL, que no tiene `auto_explain`, no aparecen. El resto (N+1, escritura a disco, cardinalidad mal estimada en Postgres, degradación y abrazos mortales) funciona igual.
 
-```sql
-GRANT USAGE ON SCHEMA <schema> TO querylens_monitor;
-GRANT SELECT ON ALL TABLES IN SCHEMA <schema> TO querylens_monitor;
-ALTER DEFAULT PRIVILEGES FOR ROLE <dueno> IN SCHEMA <schema>
-    GRANT SELECT ON TABLES TO querylens_monitor;
-```
+| | PostgreSQL | MySQL |
+|---|---|---|
+| Cómo se decide | Pregunta `[s/N]`, o `-v ql_grant_select=1` / `=0` | Variable `@ql_grant_select = 1` antes del script; sin ella, no |
+| Qué da | `USAGE` y `SELECT` sobre las tablas de cada schema de la base (menos los del sistema y `querylens`), y `ALTER DEFAULT PRIVILEGES` para las tablas que se creen después | `SELECT` sobre la base |
+| Correrlo de nuevo | Si el rol ya puede leer todas las tablas, no pregunta | Lo ya dado se conserva |
+| Quitarlo | El teardown lo quita con el resto | El teardown lo quita con el resto |
 
-MySQL:
-
-```sql
-GRANT SELECT ON `<base>`.* TO 'querylens_monitor'@'%';
-```
+En Postgres, `ALTER DEFAULT PRIVILEGES` cubre las tablas que creen el dueño del schema y los dueños de las tablas que ya existían. Si después otro rol crea tablas, hay que correr el script de nuevo.
 
 ## Comprobar
 
-Después de registrar la base, `querylens health <id>` muestra lo que le falta a la base, con la solución. Sin `EXPLAIN` (la sección anterior) es normal ver `EXPLAIN_PERMISSION_DENIED`. Cualquier otro problema de configuración indica que falta un paso de esta guía.
+Después de registrar la base, `querylens health <id>` muestra lo que le falta a la base, con la solución. Si no se autorizaron los planes (la sección anterior), es normal ver `EXPLAIN_PERMISSION_DENIED`. Cualquier otro problema de configuración indica que falta un paso de esta guía.
 
 ## Quitar QueryLens de la base
 

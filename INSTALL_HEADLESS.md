@@ -24,6 +24,8 @@ psql -U postgres -d <base> -f querylens_database/setup_target_postgres.sql   # P
 mysql -u root -p <base> < querylens_database/setup_target_mysql.sql          # MySQL
 ```
 
+El script pregunta si `querylens_monitor` puede pedir planes de ejecución (`SELECT` sobre las tablas, con el que también podría leer los datos). Por defecto no. Sin ellos, parte de las detecciones de escaneos e índices no aparece, y `querylens health` lo avisa con `EXPLAIN_PERMISSION_DENIED`. En MySQL la respuesta va en una variable (`-e "SET @ql_grant_select = 1; source ..."`). Ver [Planes de ejecución](PREPARAR_BASE.md#planes-de-ejecución-explain).
+
 ## 3. Instalar QueryLens
 
 ```bash
