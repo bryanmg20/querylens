@@ -37,10 +37,12 @@ GRANT SELECT ON public.registered_databases TO ql_pipeline, ql_api;
 -- cambian el monitoreo y la ventana de recoleccion.
 GRANT SELECT (database_identifier, connection_name, engine, database_name,
               is_active, monitoring_enabled, collect_from, collect_until,
-              collect_started_at, report_written_at, created_at)
+              collect_started_at, report_written_at, detection_session_started_at,
+              created_at)
     ON public.registered_databases TO ql_cli;
 GRANT UPDATE (monitoring_enabled, collect_from, collect_until,
-              collect_started_at, report_written_at, updated_at)
+              collect_started_at, report_written_at, detection_session_started_at,
+              updated_at)
     ON public.registered_databases TO ql_cli;
 
 -- pipeline_health: lo escribe solo el pipeline (upsert, resolver, purgar) y
@@ -62,7 +64,10 @@ GRANT SELECT, INSERT ON pgmq.a_analyze_job TO ql_detector;
 -- (CREATE TABLE/INDEX IF NOT EXISTS, ADD COLUMN IF NOT EXISTS), lo que exige
 -- CREATE sobre el schema aunque ya existan y ser su dueno.
 GRANT CREATE ON SCHEMA public TO ql_detector;
+-- public.hallazgos: la tabla anterior (hallazgos.sql la renombra) o la vista
 ALTER TABLE IF EXISTS public.hallazgos OWNER TO ql_detector;
+ALTER TABLE IF EXISTS public.problemas OWNER TO ql_detector;
+ALTER TABLE IF EXISTS public.detecciones OWNER TO ql_detector;
 ALTER TABLE IF EXISTS public.statement_samples OWNER TO ql_detector;
 ALTER TABLE IF EXISTS public.contention_state OWNER TO ql_detector;
 ALTER TABLE IF EXISTS public.deadlock_events OWNER TO ql_detector;
@@ -75,7 +80,7 @@ SET ROLE ql_detector;
 \i /querylens_database/contention_state.sql
 RESET ROLE;
 
-GRANT SELECT ON public.hallazgos TO ql_api, ql_cli;
+GRANT SELECT ON public.hallazgos, public.problemas, public.detecciones TO ql_api, ql_cli;
 -- el reporte y el health del pipeline (DEADLOCKS_MISSED) comparan los abrazos
 -- capturados con el contador del motor
 GRANT SELECT ON public.deadlock_events TO ql_cli, ql_pipeline;
