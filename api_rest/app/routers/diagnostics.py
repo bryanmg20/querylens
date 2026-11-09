@@ -6,13 +6,66 @@ from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.schemas import DiagnosticsResponse, Finding, Health, HealthIssue, LastRun
+from app.schemas import (
+    ActivityBucket,
+    DiagnosticsResponse,
+    Finding,
+    Health,
+    HealthIssue,
+    LastRun,
+)
 from app.security import get_database_identifier
 
 router = APIRouter(prefix="/diagnostics", tags=["diagnostics"])
 
 UNDEFINED_TABLE = "42P01"  # relation does not exist (SQLSTATE)
-MAX_FINDINGS = 50
+# Problemas (no detecciones): cada uno es una fila aunque se haya detectado
+# miles de veces.
+MAX_FINDINGS = 200
+ACTIVITY_WINDOW = timedelta(hours=24)
+
+# Un problema por fila con lo de la sesión: cuántas veces, la severidad más
+# alta (alta 3, media 2, baja 1) y cuántas de cada una. El total recorre el
+# índice (problema_id, detectado_en) de public.detecciones.
+SESSION_FINDINGS_SQL = """
+WITH s AS (
+    SELECT d.problema_id,
+           count(*) AS veces_sesion,
+           max(CASE d.severidad WHEN 'high' THEN 3 WHEN 'medium' THEN 2 WHEN 'low' THEN 1 ELSE 0 END)
+               AS rango_severidad,
+           count(*) FILTER (WHERE d.severidad = 'high') AS altas,
+           count(*) FILTER (WHERE d.severidad = 'medium') AS medias,
+           count(*) FILTER (WHERE d.severidad = 'low') AS bajas,
+           max(d.detectado_en) AS ultima
+    FROM public.detecciones d
+    JOIN public.problemas p ON p.id = d.problema_id
+    WHERE p.db_id = :identifier AND d.detectado_en >= :since
+    GROUP BY d.problema_id
+)
+SELECT p.id, p.antipatron,
+       CASE s.rango_severidad WHEN 3 THEN 'high' WHEN 2 THEN 'medium' WHEN 1 THEN 'low'
+            ELSE p.severidad END AS severidad,
+       p.severidad AS severidad_actual,
+       p.query_id, p.table_name, p.evidencia, p.explicacion, p.recomendacion,
+       s.ultima AS detectado_en,
+       p.primera_deteccion,
+       s.veces_sesion,
+       (SELECT count(*) FROM public.detecciones x WHERE x.problema_id = p.id) AS veces_total,
+       s.altas, s.medias, s.bajas
+FROM s
+JOIN public.problemas p ON p.id = s.problema_id
+ORDER BY s.ultima DESC, p.id DESC
+LIMIT :limit
+"""
+
+ACTIVITY_SQL = """
+SELECT date_trunc('hour', d.detectado_en) AS hora, count(*) AS detecciones
+FROM public.detecciones d
+JOIN public.problemas p ON p.id = d.problema_id
+WHERE p.db_id = :identifier AND d.detectado_en >= :since
+GROUP BY 1
+ORDER BY 1
+"""
 
 
 def _rows(db: Session, sql: str, params: dict) -> list[dict]:
@@ -32,18 +85,27 @@ def _rows(db: Session, sql: str, params: dict) -> list[dict]:
         return []
 
 
-def fetch_latest_findings(db: Session, database_identifier: str) -> list[Finding]:
-    """Hallazgos del detection_engine para esta base, del más reciente al más viejo."""
+def fetch_session_findings(db: Session, database_identifier: str, since: datetime) -> list[Finding]:
+    """Problemas detectados desde `since` (inicio de la sesión de detección),
+    del detectado más recientemente al más viejo."""
 
     rows = _rows(
         db,
-        "SELECT id, antipatron, severidad, query_id, table_name, evidencia, "
-        "       explicacion, recomendacion, detectado_en "
-        "FROM public.hallazgos WHERE db_id = :identifier "
-        "ORDER BY detectado_en DESC, id DESC LIMIT :limit",
-        {"identifier": database_identifier, "limit": MAX_FINDINGS},
+        SESSION_FINDINGS_SQL,
+        {"identifier": database_identifier, "since": since, "limit": MAX_FINDINGS},
     )
-    return [Finding(**row) for row in rows]
+    findings = []
+    for row in rows:
+        counts = {"high": row.pop("altas"), "medium": row.pop("medias"), "low": row.pop("bajas")}
+        findings.append(Finding(**row, por_severidad={k: n for k, n in counts.items() if n}))
+    return findings
+
+
+def fetch_activity(db: Session, database_identifier: str, since: datetime) -> list[ActivityBucket]:
+    """Detecciones por hora desde `since` (las horas sin detecciones no vienen)."""
+
+    rows = _rows(db, ACTIVITY_SQL, {"identifier": database_identifier, "since": since})
+    return [ActivityBucket(**row) for row in rows]
 
 
 def fetch_health(db: Session, database_identifier: str, since: datetime) -> Health:
@@ -84,7 +146,8 @@ def get_diagnostics(
     row = (
         db.execute(
             text(
-                "SELECT connection_name, engine, is_active, monitoring_enabled "
+                "SELECT connection_name, engine, is_active, monitoring_enabled, "
+                "       detection_session_started_at "
                 "FROM registered_databases WHERE database_identifier = :identifier"
             ),
             {"identifier": database_identifier},
@@ -99,13 +162,16 @@ def get_diagnostics(
         )
 
     now = datetime.now(timezone.utc)
+    session_start = row["detection_session_started_at"]
     return DiagnosticsResponse(
         database_identifier=database_identifier,
         connection_name=row["connection_name"],
         engine=row["engine"],
         is_active=row["is_active"],
         monitoring_enabled=row["monitoring_enabled"],
-        diagnostics=fetch_latest_findings(db, database_identifier),
+        detection_session_started_at=session_start,
+        diagnostics=fetch_session_findings(db, database_identifier, since=session_start),
+        activity=fetch_activity(db, database_identifier, since=now - ACTIVITY_WINDOW),
         health=fetch_health(db, database_identifier, since=now - timedelta(hours=since_hours)),
         server_time=now,
     )
