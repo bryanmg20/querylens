@@ -10,11 +10,14 @@
 --                por la cola los snapshots del final del rango
 --   :'evidence'  true/false: incluir la columna evidencia
 --
--- El detector inserta una fila por ventana mientras la regla dispare (no hay
--- ciclo de vida de hallazgos, ver detection_engine/references/
--- 001_ciclo_vida_hallazgos.md): se agrupan por (antipatron, query_id,
--- database_name, table_name) y de cada grupo queda la deteccion mas reciente, con cuantas
--- veces se detecto y entre que fechas.
+-- El detector guarda cada problema una vez (public.problemas, por db_id +
+-- antipatron + finding_key) y una fila por deteccion (public.detecciones,
+-- con su hora y su severidad; ver querylens_database/hallazgos.sql). El
+-- reporte trae un problema por linea con las detecciones del rango: cuantas,
+-- entre que fechas, la severidad mas alta y la de la ultima, y cuantas de cada
+-- severidad; mas las del historico completo. La explicacion, la recomendacion
+-- y la evidencia son las de la ultima deteccion del problema, aunque sea
+-- posterior al rango.
 --
 -- calidad_deadlocks compara los abrazos mortales que conto el motor
 -- (pipeline_health.cycle_samples, un delta por ciclo) con los que QueryLens
@@ -24,27 +27,52 @@
 -- cubre los ~10 s anteriores a la muestra, asi que en los bordes puede haber
 -- un abrazo de diferencia.
 WITH base AS (
-    SELECT database_identifier, connection_name, engine, database_name
+    SELECT database_identifier, connection_name, engine, database_name,
+           detection_session_started_at AS sesion_desde
     FROM registered_databases
     WHERE database_identifier = :'id'
 ), h AS (
-    SELECT id, antipatron, severidad, query_id, table_name, database_name, evidencia,
-           explicacion, recomendacion, detectado_en
-    FROM public.hallazgos
-    WHERE db_id = :'id'
-      AND detectado_en >= :'from'::timestamptz
-      AND detectado_en < :'until'::timestamptz + make_interval(secs => :'grace'::int)
-), g AS (
-    SELECT DISTINCT ON (antipatron, query_id, database_name, table_name)
-           antipatron, severidad, database_name, table_name, query_id,
-           explicacion, recomendacion,
-           CASE WHEN :'evidence'::boolean THEN evidencia END AS evidencia,
-           count(*) OVER w AS veces,
-           min(detectado_en) OVER w AS primera,
-           max(detectado_en) OVER w AS ultima
+    -- detecciones del rango
+    SELECT d.problema_id, d.severidad, d.detectado_en
+    FROM public.detecciones d
+    JOIN public.problemas p ON p.id = d.problema_id
+    WHERE p.db_id = :'id'
+      AND d.detectado_en >= :'from'::timestamptz
+      AND d.detectado_en < :'until'::timestamptz + make_interval(secs => :'grace'::int)
+), r AS (
+    SELECT problema_id,
+           count(*) AS veces,
+           min(detectado_en) AS primera,
+           max(detectado_en) AS ultima,
+           -- severidad mas alta del rango: alta 3, media 2, baja 1
+           max(CASE severidad WHEN 'high' THEN 3 WHEN 'medium' THEN 2 WHEN 'low' THEN 1 ELSE 0 END)
+               AS rango_severidad,
+           (array_agg(severidad ORDER BY detectado_en DESC))[1] AS severidad_actual
     FROM h
-    WINDOW w AS (PARTITION BY antipatron, query_id, database_name, table_name)
-    ORDER BY antipatron, query_id, database_name, table_name, detectado_en DESC, id DESC
+    GROUP BY problema_id
+), rs AS (
+    SELECT problema_id, severidad, count(*) AS n
+    FROM h
+    GROUP BY problema_id, severidad
+), g AS (
+    SELECT p.antipatron,
+           CASE r.rango_severidad WHEN 3 THEN 'high' WHEN 2 THEN 'medium' WHEN 1 THEN 'low'
+                ELSE r.severidad_actual END AS severidad,
+           r.severidad_actual,
+           (SELECT json_object_agg(rs.severidad, rs.n) FROM rs WHERE rs.problema_id = p.id)
+               AS por_severidad,
+           p.database_name, p.table_name, p.query_id,
+           -- lo que distingue dos problemas de la misma consulta y tabla: el
+           -- indice (AP-05) o la columna (AP-03), aunque no se pida la evidencia
+           p.evidencia->>'index_name' AS indice,
+           p.evidencia->>'column' AS columna,
+           p.explicacion, p.recomendacion,
+           CASE WHEN :'evidence'::boolean THEN p.evidencia END AS evidencia,
+           r.veces, r.primera, r.ultima,
+           (SELECT count(*) FROM public.detecciones x WHERE x.problema_id = p.id) AS veces_historico,
+           p.primera_deteccion AS primera_historica
+    FROM r
+    JOIN public.problemas p ON p.id = r.problema_id
 ), s AS (
     SELECT deadlocks_since_prev, counter_reset, log_bytes_since_prev,
            seconds_since_prev, log_window_overrun
