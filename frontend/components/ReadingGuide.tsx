@@ -8,12 +8,12 @@ const POINTS = [
     text: "Una consulta o un índice que gasta más recursos de los necesarios. QueryLens los detecta observando cómo se ejecutan tus consultas, sin tocar tu base de datos.",
   },
   {
-    title: "Cómo leer la severidad",
-    text: "Alta es lo que más impacto tiene y conviene atender primero. Media se planifica, y baja es informativa. Toca una severidad arriba para filtrar la lista.",
+    title: "Cómo se ordena la lista",
+    text: "Primero va lo que más impacto tuvo: el tiempo de base de datos que costó el problema en esta sesión. La severidad (alta, media, baja) dice cuánto se aparta de la regla y desempata. Toca una severidad arriba para filtrar la lista.",
   },
   {
     title: "Qué hacer con cada hallazgo",
-    text: "Cada tarjeta trae la evidencia y una recomendación. Abre «¿Qué es esto?» para ver, con una animación, por qué ocurre y cómo evitarlo.",
+    text: "Cada tarjeta trae la evidencia, una recomendación y el riesgo de aplicarla. El estado de evaluación dice qué patologías no se pudieron revisar y cómo habilitarlas.",
   },
 ];
 

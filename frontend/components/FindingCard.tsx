@@ -5,7 +5,7 @@ import { useState } from "react";
 import { getDoc } from "@/lib/antipatterns";
 import { buildEvidenceGraph } from "@/lib/evidenceGraph";
 import { findingMetrics, findingQuery, findingTables } from "@/lib/evidence";
-import { formatDateTime, timeAgo } from "@/lib/format";
+import { formatDateTime, formatDuration, timeAgo } from "@/lib/format";
 import { SEVERITY_META, formatCount, severityBreakdown, severityKey } from "@/lib/insights";
 import type { Finding } from "@/types/database";
 import EvidenceGraphView from "./antipatterns/EvidenceGraph";
@@ -41,23 +41,31 @@ export default function FindingCard({
 
   return (
     <article className="rise card p-5" style={{ ["--i" as string]: Math.min(index, 8) }}>
-      <header className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5">
+      {/* Siempre dos líneas: arriba la identidad del hallazgo y su impacto; abajo dónde ocurrió.
+          El query_id se recorta a una línea (MySQL lo trae largo) y completo queda en el title. */}
+      <header>
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
           <span className={meta.pill} title="La severidad más alta que tuvo en esta sesión">
             {meta.label}
           </span>
           {current && <span className="text-[13px] text-muted">ahora {current}</span>}
           {doc && <span className="pill-neu">{doc.code}</span>}
           <h3 className="text-[16px] font-semibold">{doc?.title ?? finding.antipatron}</h3>
+          <Impact finding={finding} />
         </div>
-        <p className="flex flex-wrap gap-x-4 text-[13px] text-muted">
+        <p className="mt-2 flex min-w-0 items-center gap-x-4 text-[13px] text-muted">
+          {finding.database_name && (
+            <span className="flex-none whitespace-nowrap">
+              Base <code className="font-mono text-fg">{finding.database_name}</code>
+            </span>
+          )}
           {tables.length > 0 && (
-            <span>
+            <span className="min-w-0 max-w-[40%] truncate" title={tables.join(", ")}>
               {tables.length === 1 ? "Tabla" : "Tablas"} <code className="font-mono text-fg">{tables.join(", ")}</code>
             </span>
           )}
           {finding.query_id && (
-            <span>
+            <span className="min-w-0 truncate" title={finding.query_id}>
               query <code className="font-mono text-fg">{finding.query_id}</code>
             </span>
           )}
@@ -73,7 +81,9 @@ export default function FindingCard({
       )}
 
       {metrics.length > 0 && (
-        <dl className="mt-3 grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2">
+        // Seis columnas fijas: con el tope de 6 de findingMetrics, todos los hallazgos caben en una
+        // fila y los recuadros miden lo mismo en cualquier tarjeta. En pantallas angostas baja a 3 y 2.
+        <dl className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
           {metrics.map((m) => (
             <div key={m.label} className="min-w-0 rounded bg-ground px-3 py-2">
               <dt className="text-[13px] leading-4 text-muted">{m.label}</dt>
@@ -89,6 +99,13 @@ export default function FindingCard({
         <span className="font-semibold">Recomendación </span>
         {finding.recomendacion}
       </p>
+
+      {finding.riesgo && (
+        <p className="notice-warn mt-2 leading-5">
+          <span className="font-semibold">Riesgo de aplicarla </span>
+          {finding.riesgo}
+        </p>
+      )}
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-[13px]">
         <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
@@ -149,6 +166,36 @@ export default function FindingCard({
         </div>
       </div>
     </article>
+  );
+}
+
+// El impacto ordena la lista: el tiempo de base de datos que costó el problema en la sesión (en
+// contención, la espera acumulada). Los abrazos mortales no lo traen: el informe del motor no dice
+// cuánto esperó cada transacción, y se dice así en vez de mostrar un cero.
+function Impact({ finding }: { finding: Finding }) {
+  const session = finding.impacto_sesion_ms;
+  if (session == null) {
+    return (
+      <span
+        className="impact sm:ml-auto"
+        title="No se pudo medir (en un abrazo mortal, el informe del motor no dice cuánto esperó cada transacción): entre los hallazgos sin impacto decide la severidad."
+      >
+        Impacto <span className="text-fg">sin medir</span>
+      </span>
+    );
+  }
+  const last = finding.impacto_ms;
+  return (
+    <span
+      className="impact sm:ml-auto"
+      title={
+        last != null
+          ? `Tiempo que costó en esta sesión. En su última ventana: ${formatDuration(last)}.`
+          : "Tiempo que costó en esta sesión."
+      }
+    >
+      Impacto <span className="font-semibold text-fg">{formatDuration(session)}</span>
+    </span>
   );
 }
 

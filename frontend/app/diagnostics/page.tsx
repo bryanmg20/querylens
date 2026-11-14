@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ActivityPanel } from "@/components/ActivityPanel";
 import DiagnosticsSkeleton from "@/components/DiagnosticsSkeleton";
+import EvaluationPanel from "@/components/EvaluationPanel";
 import FindingsPanel, { NO_FILTERS, filterFindings, type Filters } from "@/components/FindingsPanel";
 import HealthPanel from "@/components/HealthPanel";
 import KpiStrip from "@/components/KpiStrip";
@@ -52,6 +53,14 @@ function headline(data: DiagnosticsResponse): { text: string; tone: string } {
   if (total > 0) {
     return {
       text: `${total} ${total === 1 ? "hallazgo" : "hallazgos"}, ninguno de severidad alta.`,
+      tone: "var(--warning)",
+    };
+  }
+  // Sin hallazgos solo es una buena noticia si las patologías se pudieron evaluar.
+  const notEvaluated = (data.evaluation ?? []).filter((e) => e.aplica && e.estado === "no_evaluada").length;
+  if (notEvaluated > 0) {
+    return {
+      text: `Sin hallazgos en esta sesión, pero ${notEvaluated} ${notEvaluated === 1 ? "patología no se pudo evaluar" : "patologías no se pudieron evaluar"}: revisa el estado de evaluación.`,
       tone: "var(--warning)",
     };
   }
@@ -285,6 +294,7 @@ export default function DiagnosticsPage() {
                 serverTime={data.server_time}
                 onChange={handleMonitoringChange}
               />
+              <EvaluationPanel evaluation={data.evaluation ?? []} engine={data.engine} serverTime={data.server_time} />
               <HealthPanel issues={data.health.issues} serverTime={data.server_time} />
               {data.activity.length > 0 && <ActivityPanel points={data.activity} serverTime={data.server_time} />}
             </div>
