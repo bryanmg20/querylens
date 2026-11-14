@@ -124,9 +124,10 @@ CATALOG: dict[str, IssueDef] = {
     ),
     "TABLE_STATS_LOST": IssueDef(
         "preflight", "config", INFO,
-        "Postgres perdio las estadisticas de las tablas (probable caida o apagado no "
-        "limpio): QueryLens usa el tamano del catalogo mientras tanto.",
-        "Ejecuta ANALYZE; en la base registrada.",
+        "Postgres no tiene estadisticas actuales de algunas tablas. QueryLens usa "
+        "temporalmente las estimaciones del catalogo; esto puede ocurrir tras una "
+        "interrupcion o antes de que se ejecute ANALYZE.",
+        "Ejecuta ANALYZE; en la base registrada para actualizar las estadisticas.",
     ),
     # ---------- MySQL ----------
     "PERFORMANCE_SCHEMA_OFF": IssueDef(

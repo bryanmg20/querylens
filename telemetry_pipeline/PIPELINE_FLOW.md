@@ -247,7 +247,11 @@ run_engine(dialect, factory, db_id)                     main.py
     connect            falla → classify(scope=connection) → AUTH_FAILED, HOST_UNREACHABLE, ...
     PreflightStage     health/preflight.py; cada HEALTH_PREFLIGHT_TTL_S (300 s) por base:
                        version/track_counts/pg_stat_statements_info (PG),
-                       @@performance_schema/setup_consumers (MySQL)
+                       @@performance_schema/setup_consumers/Uptime y FIRST_SEEN (MySQL).
+                       Entre medio, los avisos que se arreglan en el momento (TABLE_STATS_LOST,
+                       TRACK_COUNTS_OFF, PS_CONSUMER_DISABLED, PERFORMANCE_SCHEMA_OFF) repiten
+                       solo su consulta cada RECHECK_INTERVAL_S (30 s) mientras sigan abiertos
+                       (RECHECKS): se resuelven poco despues del arreglo, no TTL despues
     CollectStage       error por sección → classify(scope=collect): PG_STATEMENTS_NOT_INSTALLED (42P01),
                        _NOT_PRELOADED (55000), _OUTDATED (42703), PS_SELECT_DENIED (1142), ...
     post_collect       health/checks.py, antes de normalize/redact:

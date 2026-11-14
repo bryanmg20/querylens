@@ -232,14 +232,15 @@ def test_mysql_preflight_never_reads_grants():
 
 
 def test_within_ttl_reuses_result_without_marking_scope():
+    # STATS_RECENTLY_RESET no se arregla con una accion: espera al TTL
     clock = _Clock(0, 100)
-    first = _run(_pg_conn(track_counts="off"), clock=clock)
+    first = _run(_pg_conn(recently_reset=True), clock=clock)
     assert "preflight" in first.scopes
 
-    conn = _pg_conn()  # ya arreglado, pero el TTL no vencio
+    conn = _pg_conn()  # ya no aplica, pero el TTL no vencio
     second = _run(conn, clock=clock)
     assert conn.sent == []
-    assert _codes(second) == {"TRACK_COUNTS_OFF"}
+    assert _codes(second) == {"STATS_RECENTLY_RESET"}
     assert "preflight" not in second.scopes, "sin re-evaluar no se puede resolver nada"
 
 
@@ -280,3 +281,147 @@ def test_unknown_dialect_is_a_noop():
     conn = _Conn({})
     report = _run(conn, dialect="oracle")
     assert conn.sent == [] and report.scopes == set()
+
+
+# ---------- rechequeo de avisos arreglables dentro del TTL ----------
+
+
+def _lost(conn, tables):
+    conn.answers["n_live_tup = 0"] = [{"tables": tables, "examples": ["public.t"] if tables else None}]
+    return conn
+
+
+def test_analyze_resolves_table_stats_lost_on_the_next_recheck():
+    clock = _Clock(0, 30)
+    first = _run(_lost(_pg_conn(), 3), clock=clock)
+    assert _codes(first) == {"TABLE_STATS_LOST"}
+
+    conn = _lost(_Conn({}), 0)  # el usuario corrio ANALYZE
+    second = _run(conn, clock=clock)
+    assert _codes(second) == set()
+    assert "preflight" in second.scopes, "el aviso tiene que resolverse ya, no al vencer el TTL"
+    assert conn.sent == [preflight.PG_TABLE_STATS_LOST], "solo se repite la consulta del aviso abierto"
+
+
+def test_table_stats_lost_still_open_is_kept_with_fresh_params():
+    clock = _Clock(0, 30)
+    _run(_lost(_pg_conn(), 3), clock=clock)
+    second = _run(_lost(_Conn({}), 1), clock=clock)
+    assert _codes(second) == {"TABLE_STATS_LOST"}
+    assert second.issues[("TABLE_STATS_LOST", "")]["tables"] == 1
+
+
+def test_recheck_query_error_keeps_the_cached_issue():
+    clock = _Clock(0, 30)
+    _run(_lost(_pg_conn(), 3), clock=clock)
+    conn = _Conn({"n_live_tup = 0": RuntimeError("timeout")})
+    second = _run(conn, clock=clock)
+    assert _codes(second) == {"TABLE_STATS_LOST"}, "sin evaluar no se da por resuelto"
+    assert conn.rollback_calls == 1
+
+
+def test_track_counts_on_resolves_on_the_next_recheck():
+    clock = _Clock(0, 30)
+    _run(_pg_conn(track_counts="off"), clock=clock)
+    conn = _Conn({"current_setting('track_counts')": [{"track_counts": "on"}]})
+    second = _run(conn, clock=clock)
+    assert _codes(second) == set()
+    assert conn.sent == [preflight.PG_TRACK_COUNTS]
+
+
+def test_enabled_consumers_resolve_on_the_next_recheck():
+    clock = _Clock(0, 30)
+    _run(_my_conn(consumers={"statements_digest": "NO"}), dialect="mysql", clock=clock)
+    conn = _Conn({"setup_consumers": [{"name": "statements_digest", "enabled": "YES"}]})
+    second = _run(conn, dialect="mysql", clock=clock)
+    assert _codes(second) == set()
+    assert "preflight" in second.scopes
+
+
+def test_recheck_keeps_the_other_cached_issues_and_the_ttl_cadence():
+    clock = _Clock(0, 30, 290, 301)
+    _run(_lost(_pg_conn(recently_reset=True), 2), clock=clock)
+
+    second = _run(_lost(_Conn({}), 0), clock=clock)  # t=30: ANALYZE hecho
+    assert _codes(second) == {"STATS_RECENTLY_RESET"}, "lo no arreglable sigue cacheado"
+
+    third = _run(_Conn({}), clock=clock)  # t=290: sin avisos arreglables, no consulta nada
+    assert _codes(third) == {"STATS_RECENTLY_RESET"}
+    assert "preflight" not in third.scopes
+
+    conn = _pg_conn()
+    fourth = _run(conn, clock=clock)  # t=301: vence el TTL del chequeo de t=0
+    assert "preflight" in fourth.scopes
+    assert any("server_version_num" in sql for sql in conn.sent), "chequeo completo al vencer el TTL"
+
+
+def test_recheck_waits_for_the_interval():
+    clock = _Clock(0, 10, 29, 30)
+    _run(_lost(_pg_conn(), 3), clock=clock)
+    for _ in range(2):  # t=10 y t=29: antes del intervalo, ni una consulta
+        conn = _lost(_Conn({}), 0)
+        report = _run(conn, clock=clock)
+        assert conn.sent == []
+        assert _codes(report) == {"TABLE_STATS_LOST"}
+        assert "preflight" not in report.scopes
+    conn = _lost(_Conn({}), 0)
+    assert _codes(_run(conn, clock=clock)) == set()  # t=30
+    assert conn.sent == [preflight.PG_TABLE_STATS_LOST]
+
+
+def test_interval_counts_from_the_last_recheck():
+    clock = _Clock(0, 30, 50, 60)
+    _run(_lost(_pg_conn(), 3), clock=clock)
+    _run(_lost(_Conn({}), 2), clock=clock)  # t=30: rechequeo, sigue abierto
+    conn = _lost(_Conn({}), 0)
+    _run(conn, clock=clock)  # t=50: 20 s desde el rechequeo
+    assert conn.sent == []
+    conn = _lost(_Conn({}), 0)
+    assert _codes(_run(conn, clock=clock)) == set()  # t=60
+
+
+# ---------- MySQL: performance_schema y estadisticas reiniciadas ----------
+
+
+def _recent(conn, restarted=0, digests_reset=0):
+    conn.answers["global_status"] = [{"restarted": restarted, "digests_reset": digests_reset}]
+    return conn
+
+
+def test_mysql_restart_reports_recently_reset_stats():
+    report = _run(_recent(_my_conn(), restarted=1), dialect="mysql")
+    assert _codes(report) == {"STATS_RECENTLY_RESET"}
+
+
+def test_mysql_truncated_digests_report_recently_reset_stats():
+    report = _run(_recent(_my_conn(), digests_reset=1), dialect="mysql")
+    assert _codes(report) == {"STATS_RECENTLY_RESET"}
+
+
+def test_mysql_old_stats_report_nothing():
+    assert _codes(_run(_recent(_my_conn()), dialect="mysql")) == set()
+
+
+def test_mysql_recently_reset_query_error_is_discarded():
+    conn = _my_conn()
+    conn.answers["global_status"] = RuntimeError("denied")
+    assert _codes(_run(conn, dialect="mysql")) == set()
+
+
+def test_performance_schema_on_after_restart_resolves_on_the_next_recheck():
+    clock = _Clock(0, 30)
+    _run(_my_conn(ps=0), dialect="mysql", clock=clock)
+    conn = _recent(_my_conn(ps=1), restarted=1)  # reinicio con performance_schema=ON
+    report = _run(conn, dialect="mysql", clock=clock)
+    assert _codes(report) == {"STATS_RECENTLY_RESET"}, "el reinicio que lo encendio se informa"
+    assert "preflight" in report.scopes
+    assert not any("@@version" in sql for sql in conn.sent), "no es el chequeo completo"
+
+
+def test_performance_schema_still_off_stays():
+    clock = _Clock(0, 30)
+    _run(_my_conn(ps=0), dialect="mysql", clock=clock)
+    conn = _my_conn(ps=0)
+    report = _run(conn, dialect="mysql", clock=clock)
+    assert _codes(report) == {"PERFORMANCE_SCHEMA_OFF"}
+    assert not [sql for sql in conn.sent if "setup_consumers" in sql]
