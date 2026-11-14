@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { flushSync } from "react-dom";
 import { ActivityPanel } from "@/components/ActivityPanel";
 import DiagnosticsSkeleton from "@/components/DiagnosticsSkeleton";
 import EvaluationPanel from "@/components/EvaluationPanel";
@@ -87,6 +88,9 @@ export default function DiagnosticsPage() {
   const [monitoringError, setMonitoringError] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [guideOpen, setGuideOpen] = useState(false);
+  // Imprimir todos los hallazgos de la sesión, sin los filtros de la lista (antes de empezar una
+  // sesión nueva). Vuelve a false al cerrar el diálogo de impresión.
+  const [printAll, setPrintAll] = useState(false);
   const refresh = useRef<() => void>(() => {});
   const now = useNow(1000);
 
@@ -193,12 +197,26 @@ export default function DiagnosticsPage() {
     }
   }
 
+  function printAllFindings() {
+    // flushSync: el informe tiene que estar renderizado con todos los hallazgos antes de que se
+    // abra el diálogo de impresión.
+    flushSync(() => setPrintAll(true));
+    window.addEventListener("afterprint", () => setPrintAll(false), { once: true });
+    window.print();
+  }
+
   const summary = data ? headline(data) : null;
   const seconds = updatedAt ? Math.max(0, Math.round((now - updatedAt) / 1000)) : null;
 
   return (
     <main className="mx-auto w-full max-w-[1320px] px-4 pb-24 pt-8 md:px-8 md:pb-12 print:p-0">
-      {data && <PrintReport data={data} findings={filterFindings(data.diagnostics, filters)} filterNote={describeFilters(filters)} />}
+      {data && (
+        <PrintReport
+          data={data}
+          findings={printAll ? data.diagnostics : filterFindings(data.diagnostics, filters)}
+          filterNote={printAll ? null : describeFilters(filters)}
+        />
+      )}
       <div className="print:hidden">
       <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
         <div className="min-w-0">
@@ -292,7 +310,9 @@ export default function DiagnosticsPage() {
                 error={monitoringError}
                 sessionStartedAt={data.detection_session_started_at}
                 serverTime={data.server_time}
+                findingsCount={data.diagnostics.length}
                 onChange={handleMonitoringChange}
+                onExportAll={printAllFindings}
               />
               <EvaluationPanel evaluation={data.evaluation ?? []} engine={data.engine} serverTime={data.server_time} />
               <HealthPanel issues={data.health.issues} serverTime={data.server_time} />
