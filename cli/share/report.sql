@@ -135,18 +135,18 @@ WITH base AS (
            (array_agg(estado ORDER BY hasta DESC))[1] AS estado_final
     FROM ev
     GROUP BY codigo
-), cf AS (
-    -- problemas que dejaron ciclos sin snapshot y que tocan el rango. El tramo
-    -- va del primer al ultimo ciclo que fallo (last_seen), recortado al rango;
-    -- no hasta resolved_at, que es el siguiente ciclo bueno y puede llegar
-    -- horas despues si el monitoreo estuvo apagado
-    SELECT code, message, remediation,
+), cf_cortes AS (
+    -- cortes que dejaron ciclos sin snapshot y que tocan el rango: una fila de
+    -- issues por corte (si se resuelve y vuelve, es otra fila). El corte va del
+    -- primer al ultimo ciclo que fallo (last_seen), recortado al rango; no
+    -- hasta resolved_at, que es el siguiente ciclo bueno y puede llegar horas
+    -- despues si el monitoreo estuvo apagado
+    SELECT code, message, remediation, last_seen,
            greatest(first_seen, :'from'::timestamptz) AS desde,
            least(last_seen, :'until'::timestamptz) AS hasta,
            resolved_at IS NULL AS abierto,
-           -- ciclos que fallaron en este episodio (una fila por episodio: si
-           -- se resuelve y vuelve, es otra fila); puede incluir ciclos fuera
-           -- del rango si el episodio lo cruza
+           -- ciclos que fallaron en el corte; puede incluir ciclos fuera del
+           -- rango si el corte lo cruza
            occurrences AS ciclos
     FROM pipeline_health.issues
     WHERE db_id = :'id'
@@ -154,6 +154,19 @@ WITH base AS (
       AND scope IN ('connection', 'credentials', 'pipeline', 'enqueue')
       AND first_seen < :'until'::timestamptz
       AND last_seen >= :'from'::timestamptz
+), cf AS (
+    -- una linea por codigo: una base que falla de forma intermitente deja
+    -- decenas de cortes iguales. Textos del corte mas reciente
+    SELECT code,
+           (array_agg(message ORDER BY last_seen DESC))[1] AS message,
+           (array_agg(remediation ORDER BY last_seen DESC))[1] AS remediation,
+           min(desde) AS desde,
+           max(hasta) AS hasta,
+           bool_or(abierto) AS abierto,
+           sum(ciclos) AS ciclos,
+           count(*) AS cortes
+    FROM cf_cortes
+    GROUP BY code
 )
 SELECT json_build_object(
     'base', (SELECT row_to_json(base) FROM base),
@@ -221,7 +234,8 @@ SELECT json_build_object(
         SELECT coalesce(json_agg(
                    json_build_object(
                        'codigo', code, 'mensaje', message, 'accion', remediation,
-                       'desde', desde, 'hasta', hasta, 'abierto', abierto, 'ciclos', ciclos
+                       'desde', desde, 'hasta', hasta, 'abierto', abierto, 'ciclos', ciclos,
+                       'cortes', cortes
                    ) ORDER BY desde, code), '[]')
         FROM cf
     ),

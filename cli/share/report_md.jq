@@ -97,10 +97,17 @@ end
      "",
      "Tramos sin extracción: QueryLens no pudo leer la base, el detector no corrió y ninguna patología se evaluó en ese tiempo. Esas ventanas no se cuentan en el estado de evaluación.",
      "",
+     # una linea por codigo (report.sql agrupa los cortes)
      ($fallidos[]
-      | (if (.desde | ts) == (.hasta | ts) then "el \(.desde | ts)" else "de \(.desde | ts) a \(.hasta | ts)" end) as $cuando
-      | (if .ciclos == null then "" else ", \(.ciclos) \(if .ciclos == 1 then "ciclo" else "ciclos" end)" end) as $n
-      | "- **\(.codigo)**, \($cuando)\($n)\(if .abierto then " (sigue abierto)" else "" end): \(.mensaje | cell) \(.accion | cell)")
+      | "\(.ciclos) \(if .ciclos == 1 then "ciclo" else "ciclos" end)" as $n
+      | (if (.cortes // 1) > 1 then
+           ": \($n) en \(.cortes) cortes, entre \(.desde | ts) y \(.hasta | ts)"
+         elif (.desde | ts) == (.hasta | ts) then
+           ", el \(.desde | ts), \($n)"
+         else
+           ", de \(.desde | ts) a \(.hasta | ts), \($n)"
+         end) as $cuando
+      | "- **\(.codigo)**\($cuando)\(if .abierto then " (sigue abierto)" else "" end): \(.mensaje | cell) \(.accion | cell)")
    else empty end))
 ,
 "",
