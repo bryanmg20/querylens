@@ -285,3 +285,36 @@ CATALOG: dict[str, IssueDef] = {
         "No requiere accion.",
     ),
 }
+
+# EXPLAIN_FAILED con "la tabla no existe" (Postgres 42P01, MySQL 1146): una
+# causa posible es una tabla eliminada cuyas queries siguen en las estadisticas
+# del motor y se reintentan en cada ciclo. No se puede afirmar (tambien puede
+# ser una tabla de otro schema fuera del search_path), asi que va como
+# sugerencia, antes del texto de siempre. params.undefined_table es el motor.
+_UNDEFINED_TABLE_HINTS = {
+    "postgres": (
+        "Si alguna de esas queries usa una tabla que ya se elimino, sus estadisticas "
+        "siguen en pg_stat_statements y se reintentan en cada ciclo: puedes limpiarlas "
+        "con SELECT pg_stat_statements_reset(); (borra las estadisticas de todas las queries). "
+        "Despues del reset veras durante una hora un aviso informativo de estadisticas "
+        "reiniciadas; es esperado."
+    ),
+    "mysql": (
+        "Si alguna de esas queries usa una tabla que ya se elimino, sus estadisticas "
+        "siguen en performance_schema y se reintentan en cada ciclo: puedes limpiarlas "
+        "con TRUNCATE TABLE performance_schema.events_statements_summary_by_digest; "
+        "(borra las estadisticas de todas las queries del servidor). Despues veras "
+        "durante una hora un aviso informativo de estadisticas reiniciadas; es esperado."
+    ),
+}
+
+
+def remediation_for(code: str, params: dict | None = None) -> str:
+    """El remedio del catalogo, con la sugerencia que dependa de los params del
+    ciclo (hoy solo EXPLAIN_FAILED con undefined_table)."""
+    remediation = CATALOG[code].remediation
+    if code == "EXPLAIN_FAILED":
+        hint = _UNDEFINED_TABLE_HINTS.get((params or {}).get("undefined_table"))
+        if hint:
+            return f"{hint} {remediation}"
+    return remediation
