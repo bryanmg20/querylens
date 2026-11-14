@@ -203,14 +203,15 @@ export const ANTIPATTERN_DOCS: Record<string, AntipatternDoc> = {
   unused_index: {
     id: "unused_index",
     code: "AP-05",
-    title: "Índice sin uso",
+    title: "Índice sin uso o redundante",
     family: "Costo sin beneficio",
-    tagline: "Se actualiza en cada escritura y nadie lo lee.",
-    summary: "Un índice que nadie lee sigue ocupando espacio y retrasa cada INSERT, UPDATE y DELETE.",
-    rule: "Cero lecturas del índice durante la ventana de estadísticas disponible, y sin aparecer en los planes reales.",
+    tagline: "Se actualiza en cada escritura y nadie lo lee, u otro índice ya hace su trabajo.",
+    summary: "Un índice que nadie lee, o que repite a otro, sigue ocupando espacio y retrasa cada INSERT, UPDATE y DELETE.",
+    rule: "Sin uso: cero lecturas del índice durante la ventana de estadísticas disponible, y sin aparecer en los planes reales. Redundante: no es único y duplica exactamente a otro índice o es el comienzo de uno más ancho, y ese otro índice es el que se usa.",
     what: [
       "Un índice acelera las lecturas, pero cada INSERT, UPDATE o DELETE también tiene que actualizarlo. Si ninguna consulta lo usa, solo se paga el costo.",
       "QueryLens lo detecta cuando el contador de lecturas del índice es cero en la ventana de estadísticas disponible, y comprueba que tampoco aparezca en los planes reales.",
+      "Es redundante cuando tiene las mismas columnas, en el mismo orden, que otro índice, o cuando sus columnas son el comienzo de otro índice más ancho: si ese otro es el que se usa, ya resuelve las mismas búsquedas. Un índice único nunca cuenta como redundante, porque garantiza que no haya valores repetidos.",
     ],
     causes: [
       { title: "Se creó «por si acaso»", text: "Nadie midió si alguna consulta lo necesitaba." },

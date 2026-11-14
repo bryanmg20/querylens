@@ -1,6 +1,7 @@
 // Cálculos sobre los hallazgos que alimentan las gráficas. Todo sale de los
 // datos de la API: no se inventa ningún valor. Cada hallazgo es un problema
 // (no una detección): los conteos por severidad y por patrón cuentan problemas.
+import { getDoc } from "@/lib/antipatterns";
 import type { ActivityPoint, Finding } from "@/types/database";
 
 export type SeverityKey = "high" | "medium" | "low" | "other";
@@ -27,8 +28,9 @@ export function countBySeverity(findings: Finding[]): Record<SeverityKey, number
 export function topPatterns(findings: Finding[], limit: number): { label: string; value: number }[] {
   const counts = new Map<string, number>();
   for (const finding of findings) counts.set(finding.antipatron, (counts.get(finding.antipatron) ?? 0) + 1);
+  // Etiqueta: el nombre en español del catálogo; el identificador interno solo si no está.
   return [...counts.entries()]
-    .map(([label, value]) => ({ label, value }))
+    .map(([id, value]) => ({ label: getDoc(id)?.title ?? id, value }))
     .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label))
     .slice(0, limit);
 }

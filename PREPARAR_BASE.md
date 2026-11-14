@@ -101,7 +101,7 @@ La configuración queda con `SET PERSIST` en `mysqld-auto.cnf`, que gana sobre `
 
 Para pedir el plan de una consulta (`EXPLAIN`), `querylens_monitor` necesita `SELECT` sobre las tablas, y con `SELECT` podría leer los datos. Es decisión del dueño de la base: el script de cada motor la pide, y por defecto no da el permiso.
 
-Sin `SELECT`, QueryLens ve las consultas, sus tiempos, los bloqueos y los índices, pero los antipatrones que leen el plan no ven todas las consultas. Son AP-02 (escaneo completo evitable), AP-03 (predicado no sargable), AP-04 (índice ausente) y AP-05 (índice sin uso). En Postgres solo ven las consultas que `auto_explain` registró en el log, las de 50 ms o más. En MySQL, que no tiene `auto_explain`, no aparecen. El resto (N+1, escritura a disco, cardinalidad mal estimada en Postgres, degradación y abrazos mortales) funciona igual.
+Sin `SELECT`, QueryLens ve las consultas, sus tiempos, los bloqueos y los índices, pero los antipatrones que leen el plan no ven todas las consultas. Son AP-02 (escaneo completo evitable), AP-03 (predicado no sargable), AP-04 (índice ausente) y AP-05 (índice sin uso o redundante). En Postgres solo ven las consultas que `auto_explain` registró en el log, las de 50 ms o más. En MySQL, que no tiene `auto_explain`, no aparecen. El resto (N+1, escritura a disco, cardinalidad mal estimada en Postgres, degradación y abrazos mortales) funciona igual.
 
 | | PostgreSQL | MySQL |
 |---|---|---|

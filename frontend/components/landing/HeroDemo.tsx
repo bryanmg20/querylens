@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { getDoc } from "@/lib/antipatterns";
 import { FEED_POOL, type DemoSeverity } from "@/lib/landing-data";
 import { useCountUp } from "@/lib/hooks";
 import { SEVERITY_META } from "@/lib/insights";
@@ -130,7 +131,7 @@ export default function HeroDemo({ running = true }: { running?: boolean }) {
                 <span className={meta.pill}>{meta.label}</span>
               </span>
               <span className="min-w-0 flex-1">
-                <code className="block truncate font-mono text-[13px] font-medium">{item.name}</code>
+                <span className="block truncate text-[13px] font-medium">{getDoc(item.name)?.title ?? item.name}</span>
                 <span className="block truncate text-[13px] text-muted">{item.subject}</span>
               </span>
               {index === 0 && <span className="pill-pos flex-none">Nuevo</span>}
