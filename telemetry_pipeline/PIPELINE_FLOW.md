@@ -154,6 +154,13 @@ run_engine(dialect, connection_factory, db_id)                  main.py
   │                                          run_engine lo pisa con el
   │                                          database_identifier de la fila)
   │
+  ├─ payload["collection_status"] = report.snapshot_status()   health/report.py
+  │     estado de la recolección del ciclo: status, sections_failed y los
+  │     issues de este ciclo (code, severity, section, message, remediation;
+  │     sin params). El detector lo usa para marcar qué patologías no pudo
+  │     evaluar y por qué (detection_engine/evaluation.py): una sección que
+  │     falló llega como lista vacía, igual que una sin filas.
+  │
   ├─ SnapshotPayload.from_snapshot(payload)                  ../contract/querylens_contract/snapshot.py
   │     valida el dict contra los modelos pydantic (11 secciones)
   │     ValidationError → logger.error + return None (motor omitido, no aborta)

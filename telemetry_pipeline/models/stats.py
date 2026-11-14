@@ -20,3 +20,5 @@ class Stats(TypedDict, total=False):
     non_explainable_candidates: list[dict]
     query_explain: list[dict]
     canonic_explains: list[dict]
+    # HealthReport.snapshot_status(): lo agrega main._cycle antes de validar
+    collection_status: dict

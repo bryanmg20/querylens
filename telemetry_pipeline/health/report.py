@@ -3,7 +3,7 @@
 Los stages agregan issues y marcan que scopes evaluaron; main.run_engine lo
 vuelca al final con writer.flush. No toca la base: probarlo no necesita fakes.
 """
-from health.catalog import BLOCKING, CATALOG, DEGRADED
+from health.catalog import BLOCKING, CATALOG, DEGRADED, remediation_for
 
 _RECORDED_ATTR = "_health_recorded"
 
@@ -70,3 +70,25 @@ class HealthReport:
         if DEGRADED in severities:
             return "degraded"
         return "ok"
+
+    def snapshot_status(self) -> dict:
+        """El estado de la recoleccion que viaja dentro del snapshot
+        (SnapshotPayload.collection_status): el detector lo usa para marcar
+        que patologias no pudo evaluar y por que. Lleva los textos del
+        catalogo, como las filas de pipeline_health.issues, pero no los
+        params: no hacen falta para eso. Ordenado, para que el mismo ciclo de
+        siempre el mismo JSON."""
+        return {
+            "status": self.status(),
+            "sections_failed": sorted(self.sections_failed),
+            "issues": [
+                {
+                    "code": code,
+                    "severity": CATALOG[code].severity,
+                    "section": section,
+                    "message": CATALOG[code].message,
+                    "remediation": remediation_for(code, self.issues[(code, section)]),
+                }
+                for code, section in sorted(self.issues)
+            ],
+        }
