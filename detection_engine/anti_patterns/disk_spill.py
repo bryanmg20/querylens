@@ -242,6 +242,11 @@ def detect_disk_spill(
                 recomendacion=_recommendation(spilled_table, spilled_sort),
                 query_id=candidate.query_id,
                 table_name=", ".join(tables) if tables else None,
+                database_name=candidate.database_name,
+                riesgo=_risk(spilled_table, spilled_sort),
+                # impacto del informe: tiempo de la sentencia en la ventana
+                # (evidencia.window_time_ms, el mismo valor que da la severidad)
+                impacto_ms=round(window.total_ms, 3),
             )
         )
     return findings
@@ -280,4 +285,22 @@ def _recommendation(spilled_table: bool, spilled_sort: bool) -> str:
     return (
         "Revisar el plan y el volumen de datos; evaluar filtros, agrupaciones, ordenamientos "
         "e indices antes de aumentar memoria global."
+    )
+
+
+def _risk(spilled_table: bool, spilled_sort: bool) -> str:
+    # Riesgo de aplicar la recomendacion (no la gravedad del problema); sigue
+    # las mismas variantes que _recommendation
+    if spilled_sort and not spilled_table:
+        return (
+            "Un indice para el ORDER BY encarece las escrituras sobre la tabla. sort_buffer_size "
+            "se reserva por cada ordenamiento de cada sesion: subirlo de forma global puede agotar "
+            "la memoria del servidor cuando hay muchas conexiones, por eso se sube solo en la "
+            "sesion que lo necesita."
+        )
+    return (
+        "La memoria de trabajo (work_mem en Postgres; tmp_table_size y sort_buffer_size en MySQL) "
+        "se reserva por operacion y por sesion: subirla de forma global puede agotar la memoria "
+        "del servidor cuando hay muchas conexiones. Un indice nuevo encarece las escrituras sobre "
+        "la tabla, y cambiar filtros o agrupaciones cambia lo que devuelve la consulta."
     )

@@ -1,6 +1,6 @@
 import { getDoc } from "@/lib/antipatterns";
 import { findingMetrics, findingQuery, findingTables } from "@/lib/evidence";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, formatDuration } from "@/lib/format";
 import { SEVERITY_KEYS, SEVERITY_META, countBySeverity, formatCount, severityBreakdown, severityKey } from "@/lib/insights";
 import type { DiagnosticsResponse, Finding } from "@/types/database";
 
@@ -46,7 +46,34 @@ export default function PrintReport({
           ))}
         </p>
         {filterNote && <p className="mt-1 text-[11px] text-neutral-600">Filtros aplicados: {filterNote}</p>}
+        <p className="mt-1 text-[11px] text-neutral-600">
+          Ordenados por impacto: el tiempo de base de datos que costó cada problema en la sesión (en contención, la
+          espera acumulada). Los empates van por severidad y por código.
+        </p>
       </section>
+
+      {(data.evaluation ?? []).length > 0 && (
+        <section className="mt-4 break-inside-avoid">
+          <h2 className="text-[13px] font-semibold">Estado de evaluación por patología</h2>
+          <p className="text-[11px] text-neutral-600">
+            Sin hallazgos no es lo mismo que no evaluada. Estado de la última ventana procesada.
+          </p>
+          <table className="mt-1 w-full border-collapse text-[11px]">
+            <tbody>
+              {data.evaluation.map((e) => (
+                <tr key={e.codigo} className="border-t border-neutral-300 align-top">
+                  <td className="w-14 py-0.5 font-mono">{e.codigo}</td>
+                  <td className="py-0.5">{getDoc(e.antipatron)?.title ?? e.antipatron}</td>
+                  <td className="w-24 py-0.5">
+                    {!e.aplica ? "No aplica" : e.estado === "evaluada" ? "Evaluada" : e.estado === "parcial" ? "En parte" : "No evaluada"}
+                  </td>
+                  <td className="py-0.5">{e.aplica ? e.motivos.map((m) => `${m.mensaje} ${m.accion}`).join(" ") : ""}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
 
       {findings.length === 0 ? (
         <p className="mt-6">No hay hallazgos para los filtros aplicados.</p>
@@ -73,7 +100,12 @@ export default function PrintReport({
                   </span>
                 </header>
                 <p className="mt-0.5 text-[11px] text-neutral-600">
-                  {[tables.length > 0 && `${tables.length === 1 ? "Tabla" : "Tablas"} ${tables.join(", ")}`, f.query_id && `query ${f.query_id}`]
+                  {[
+                    `Impacto ${f.impacto_sesion_ms != null ? formatDuration(f.impacto_sesion_ms) : "sin medir"}`,
+                    f.database_name && `Base ${f.database_name}`,
+                    tables.length > 0 && `${tables.length === 1 ? "Tabla" : "Tablas"} ${tables.join(", ")}`,
+                    f.query_id && `query ${f.query_id}`,
+                  ]
                     .filter(Boolean)
                     .join(" · ")}
                 </p>
@@ -104,6 +136,12 @@ export default function PrintReport({
                   <strong>Recomendación: </strong>
                   {f.recomendacion}
                 </p>
+                {f.riesgo && (
+                  <p className="mt-1">
+                    <strong>Riesgo de aplicarla: </strong>
+                    {f.riesgo}
+                  </p>
+                )}
               </article>
             );
           })}

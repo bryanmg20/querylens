@@ -62,6 +62,19 @@ _HIGH_Q_ERROR = 100
 # si empezo despues del snapshot anterior.
 _NEW_QUERY_WINDOW = timedelta(seconds=10)
 
+# Riesgo de aplicar la recomendacion (no la gravedad del problema). Un solo
+# texto para todas las variantes de la recomendacion: todas parten de ANALYZE
+# y agregan estadisticas mas detalladas.
+_RISK = (
+    "ANALYZE lee una muestra de la tabla y consume I/O mientras corre; al "
+    "cambiar las estadisticas puede cambiar el plan de otras consultas de la "
+    "misma tabla, asi que conviene revisar las mas criticas despues. Las "
+    "estadisticas extendidas, los histogramas y un objetivo de estadisticas "
+    "mas alto hacen mas lento cada ANALYZE y la planificacion de las "
+    "consultas de esa tabla. Si se opta por un indice compuesto, encarece las "
+    "escrituras sobre la tabla."
+)
+
 
 @dataclass
 class _RowsWindow:
@@ -69,6 +82,10 @@ class _RowsWindow:
     rows: int
     # True si la query aparecio en esta ventana y se uso su acumulado completo
     new_query: bool = False
+    # tiempo de base de datos de la sentencia en la ventana (el impacto del
+    # hallazgo). None si el snapshot no trae el tiempo. No decide si hay
+    # hallazgo: la regla solo mira ejecuciones y filas
+    total_ms: float | None = None
 
 
 # Misma conversion que statement_history.parse_instant; se duplica a proposito
@@ -86,32 +103,37 @@ def _parse_instant(value) -> datetime | None:
     return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
 
 
-def _current_counters(snapshot: SnapshotPayload) -> dict[str, tuple[int, int | None, str | None]]:
-    # (ejecuciones, filas devueltas, counters_epoch) por query, sumando las filas
-    # repetidas igual que la fila guardada en statement_samples: si no, la resta
-    # compararia el valor de una sola fila contra la suma de todas
-    counters: dict[str, tuple[int, int | None, str | None]] = {}
+def _current_counters(snapshot: SnapshotPayload) -> dict[str, tuple[int, int | None, float | None, str | None]]:
+    # (ejecuciones, filas devueltas, tiempo total, counters_epoch) por query,
+    # sumando las filas repetidas igual que la fila guardada en
+    # statement_samples: si no, la resta compararia el valor de una sola fila
+    # contra la suma de todas
+    counters: dict[str, tuple[int, int | None, float | None, str | None]] = {}
     for statement in snapshot.statements:
         if statement.query_id is None or statement.execution_count is None:
             continue
         key = str(statement.query_id)
-        calls, rows, epoch = counters.get(key, (0, None, statement.counters_epoch))
+        calls, rows, total_ms, epoch = counters.get(key, (0, None, None, statement.counters_epoch))
         if statement.rows_returned is not None:
             rows = (rows or 0) + statement.rows_returned
-        counters[key] = (calls + statement.execution_count, rows, epoch)
+        if statement.total_time_ms is not None:
+            total_ms = (total_ms or 0.0) + statement.total_time_ms
+        counters[key] = (calls + statement.execution_count, rows, total_ms, epoch)
     return counters
 
 
 def _rows_window(
     calls: int,
     rows: int | None,
+    total_ms: float | None,
     epoch: datetime | None,
     previous: StatementHistory | None,
     previous_snapshot_at: datetime | None,
     captured_at: datetime,
 ) -> _RowsWindow | None:
-    # Ejecuciones y filas devueltas entre el snapshot anterior y este. None si
-    # no se puede medir o si la query no se ejecuto en la ventana.
+    # Ejecuciones, filas devueltas y tiempo entre el snapshot anterior y este.
+    # None si no se puede medir o si la query no se ejecuto en la ventana. El
+    # tiempo nunca descarta la ventana: solo es el impacto.
     if rows is None:
         return None
 
@@ -127,7 +149,7 @@ def _rows_window(
         started_in_window = captured_at - epoch <= _NEW_QUERY_WINDOW
         started_after_previous = previous_snapshot_at is not None and epoch > previous_snapshot_at
         if started_in_window or started_after_previous:
-            return _RowsWindow(calls=calls, rows=rows, new_query=True)
+            return _RowsWindow(calls=calls, rows=rows, new_query=True, total_ms=total_ms)
         return None
     # fila guardada antes de que existiera esta columna: aun no hay con que restar
     if previous.rows_returned is None:
@@ -139,7 +161,8 @@ def _rows_window(
     delta_rows = rows - previous.rows_returned
     if delta_calls <= 0 or delta_rows < 0:
         return None
-    return _RowsWindow(calls=delta_calls, rows=delta_rows)
+    delta_ms = None if total_ms is None else max(total_ms - previous.total_time_ms, 0.0)
+    return _RowsWindow(calls=delta_calls, rows=delta_rows, total_ms=delta_ms)
 
 
 def _parse_select(canonic_query: str | None) -> exp.Select | None:
@@ -313,14 +336,16 @@ def detect_cardinality_misestimates(
         query_id = str(candidate.query_id)
         # contadores desde statements (suma de filas repetidas); si el candidato
         # no aparece ahi, se usan los suyos
-        calls, rows, epoch_raw = counters.get(
+        calls, rows, total_ms, epoch_raw = counters.get(
             query_id,
-            (candidate.execution_count or 0, candidate.rows_returned, candidate.counters_epoch),
+            (candidate.execution_count or 0, candidate.rows_returned, candidate.total_time_ms,
+             candidate.counters_epoch),
         )
         epoch = _parse_instant(candidate.counters_epoch or epoch_raw)
-        # solo para exigir que se haya ejecutado desde el snapshot anterior
+        # solo para exigir que se haya ejecutado desde el snapshot anterior (y
+        # para medir su tiempo en la ventana, que es el impacto)
         window = _rows_window(
-            calls, rows, epoch, history.get(query_id), previous_snapshot_at, captured_at,
+            calls, rows, total_ms, epoch, history.get(query_id), previous_snapshot_at, captured_at,
         )
         if window is None:
             continue
@@ -366,6 +391,8 @@ def detect_cardinality_misestimates(
                     "direccion": direction,
                     "explain_source": explain.explain_source,
                     "window_calls": window.calls,
+                    # impacto: tiempo de la sentencia en la ventana
+                    "window_time_ms": window.total_ms,
                     "query_new_in_window": window.new_query,
                 },
                 explicacion=(
@@ -378,6 +405,9 @@ def detect_cardinality_misestimates(
                 recomendacion=_recommendation(candidate, columns_by_table, tables),
                 query_id=candidate.query_id,
                 table_name=table_name,
+                database_name=candidate.database_name,
+                riesgo=_RISK,
+                impacto_ms=None if window.total_ms is None else round(window.total_ms, 3),
             )
         )
 

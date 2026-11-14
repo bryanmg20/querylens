@@ -38,6 +38,17 @@ _MEDIUM_EXTRA_MS = 1_000
 # la variacion habitual de esa query. No se usa porque no forma parte de la
 # regla declarada en el informe; si se agrega, hay que declararlo ahi primero.
 
+# Riesgo de aplicar la recomendacion (no la gravedad del problema). La
+# recomendacion es revisar, que no cambia nada: el riesgo es el de las
+# correcciones que suelen salir de esa revision.
+_RISK = (
+    "Revisar no cambia nada en la base. El riesgo esta en la correccion que "
+    "salga de esa revision: actualizar las estadisticas (ANALYZE) puede cambiar "
+    "el plan de otras consultas de la misma tabla, y volver a crear un indice "
+    "eliminado encarece las escrituras sobre la tabla y, en Postgres sin "
+    "CONCURRENTLY, las bloquea mientras se construye."
+)
+
 
 def _severity(extra_ms: float) -> str:
     if extra_ms >= _HIGH_EXTRA_MS:
@@ -123,6 +134,12 @@ def detect_baseline_degradation(
                     "contencion por bloqueos o carga concurrente en el servidor."
                 ),
                 query_id=statement.query_id,
+                database_name=statement.database_name,
+                riesgo=_RISK,
+                # impacto del informe: tiempo de la sentencia en la ventana
+                # (evidencia.impact_ms). La severidad sale del tiempo extra, que
+                # es otra cosa: lo que costo de mas respecto a su linea base
+                impacto_ms=round(window.total_ms, 3),
             )
         )
     return findings

@@ -112,6 +112,7 @@ def finding(report: DeadlockReport, signature: str, recurrence: dict, captured_a
         recomendacion=_recommendation(report, suggested),
         query_id=trx.query_id,
         table_name=table,
+        riesgo=_RISK,
     )
 
 

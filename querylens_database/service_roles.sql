@@ -71,6 +71,7 @@ ALTER TABLE IF EXISTS public.detecciones OWNER TO ql_detector;
 ALTER TABLE IF EXISTS public.statement_samples OWNER TO ql_detector;
 ALTER TABLE IF EXISTS public.contention_state OWNER TO ql_detector;
 ALTER TABLE IF EXISTS public.deadlock_events OWNER TO ql_detector;
+ALTER TABLE IF EXISTS public.estado_evaluacion OWNER TO ql_detector;
 
 -- Crearlas aqui (como ql_detector) si faltan, para poder dar el SELECT de la
 -- api-rest antes del primer arranque del detector.
@@ -78,9 +79,13 @@ SET ROLE ql_detector;
 \i /querylens_database/hallazgos.sql
 \i /querylens_database/statement_samples.sql
 \i /querylens_database/contention_state.sql
+\i /querylens_database/estado_evaluacion.sql
 RESET ROLE;
 
 GRANT SELECT ON public.hallazgos, public.problemas, public.detecciones TO ql_api, ql_cli;
+-- estado de evaluacion por patologia: lo muestran la pagina de diagnosticos y
+-- el reporte
+GRANT SELECT ON public.estado_evaluacion TO ql_api, ql_cli;
 -- el reporte y el health del pipeline (DEADLOCKS_MISSED) comparan los abrazos
 -- capturados con el contador del motor
 GRANT SELECT ON public.deadlock_events TO ql_cli, ql_pipeline;

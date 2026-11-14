@@ -5,7 +5,10 @@ falla en silencio (track_counts apagado, consumers de performance_schema
 desactivados, version por debajo del minimo soportado...). Corre como mucho una vez cada
 HEALTH_PREFLIGHT_TTL_S por base: entre medio se reinyecta el resultado
 cacheado SIN marcar el scope 'preflight', asi que nada se da por resuelto sin
-volver a evaluarlo.
+volver a evaluarlo. Excepcion: los avisos que el usuario arregla en el momento
+(RECHECKS: TABLE_STATS_LOST, TRACK_COUNTS_OFF, PS_CONSUMER_DISABLED,
+PERFORMANCE_SCHEMA_OFF) se vuelven a evaluar cada RECHECK_INTERVAL_S mientras
+sigan abiertos, para que desaparezcan poco despues del arreglo y no TTL despues.
 
 Todas las consultas son legibles por un rol sin superusuario. En MySQL quedan
 fuera del STATEMENTS_QUERY por su forma (SELECT @@..., performance_schema,
@@ -14,7 +17,7 @@ information_schema): el pipeline no se observa a si mismo.
 import math
 import os
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from sqlalchemy import text
 
@@ -23,11 +26,19 @@ from logger import get_logger
 logger = get_logger(__name__)
 
 DEFAULT_TTL_S = 300.0
+# Cada cuanto se repiten, dentro del TTL, las consultas de los avisos
+# arreglables que sigan abiertos. 30 s: lo que tarda Diagnosticos en
+# refrescarse; mas seguido el usuario no lo notaria y la consulta (la de
+# TABLE_STATS_LOST recorre las tablas) se repetiria de mas si el aviso persiste.
+RECHECK_INTERVAL_S = 30.0
 
 PG_SETTINGS = """
 SELECT current_setting('server_version_num')::int AS version_num,
        current_setting('server_version') AS version,
        current_setting('track_counts') AS track_counts
+"""
+PG_TRACK_COUNTS = """
+SELECT current_setting('track_counts') AS track_counts
 """
 PG_STATEMENTS_INFO = """
 SELECT dealloc,
@@ -54,6 +65,22 @@ MY_SETTINGS = """
 SELECT @@performance_schema AS performance_schema,
        @@version AS version,
        @@performance_schema_max_sql_text_length AS sql_text_limit
+"""
+MY_PERFORMANCE_SCHEMA = """
+SELECT @@performance_schema AS performance_schema
+"""
+# performance_schema no guarda cuando se reinicio, como stats_reset en
+# Postgres. Dos huellas: el servidor arranco hace menos de una hora (en MySQL
+# performance_schema vive en memoria y se pierde al reiniciar) o la consulta mas
+# antigua del resumen por digest aparecio hace menos de una hora (un TRUNCATE
+# de events_statements_summary_by_digest). Las queries del propio pipeline
+# entran en el resumen, asi que tras un TRUNCATE no queda vacio por mucho.
+MY_RECENTLY_RESET = """
+SELECT
+  (SELECT CAST(VARIABLE_VALUE AS UNSIGNED) FROM performance_schema.global_status
+    WHERE VARIABLE_NAME = 'Uptime') < 3600 AS restarted,
+  (SELECT MIN(FIRST_SEEN) FROM performance_schema.events_statements_summary_by_digest)
+    > NOW() - INTERVAL 1 HOUR AS digests_reset
 """
 MY_CONSUMERS = """
 SELECT NAME AS name, ENABLED AS enabled
@@ -88,6 +115,8 @@ class PreflightResult:
 
 # clave de la base -> (instante del chequeo, resultado)
 _CACHE: dict[str, tuple[float, PreflightResult]] = {}
+# clave de la base -> instante del ultimo rechequeo de avisos arreglables
+_RECHECKED_AT: dict[str, float] = {}
 
 # Una entrada que no se refresca en este tiempo es de una base que ya no se
 # monitorea (se desregistro o cambio de host/usuario). Las activas se refrescan
@@ -98,6 +127,7 @@ MIN_EVICT_AFTER_S = 3600.0
 
 def reset_cache() -> None:
     _CACHE.clear()
+    _RECHECKED_AT.clear()
 
 
 def ttl_from_env() -> float:
@@ -132,6 +162,33 @@ def _rows(conn, sql):
         return []
 
 
+def _track_counts_issues(track_counts) -> list[tuple[str, dict]]:
+    return [("TRACK_COUNTS_OFF", {})] if track_counts == "off" else []
+
+
+def _table_stats_lost_issues(lost) -> list[tuple[str, dict]]:
+    if lost is None or int(lost.get("tables") or 0) == 0:
+        return []
+    return [("TABLE_STATS_LOST", {
+        "tables": int(lost["tables"]),
+        "examples": list(lost.get("examples") or []),
+    })]
+
+
+def _recently_reset_issues(row) -> list[tuple[str, dict]]:
+    if row is None or not (row.get("restarted") or row.get("digests_reset")):
+        return []
+    return [("STATS_RECENTLY_RESET", {})]
+
+
+def _consumer_issues(rows) -> list[tuple[str, dict]]:
+    disabled = sorted(
+        str(row.get("name")) for row in rows
+        if str(row.get("enabled")).upper() != "YES"
+    )
+    return [("PS_CONSUMER_DISABLED", {"consumers": disabled})] if disabled else []
+
+
 def check_postgres(conn, previous: dict | None = None) -> PreflightResult:
     """previous = facts del preflight anterior de esta base (para deltas)."""
     previous = previous or {}
@@ -148,8 +205,7 @@ def check_postgres(conn, previous: dict | None = None) -> PreflightResult:
             elif version_num < PG_FULL_VERSION_NUM:
                 missing = [name for since, name in PG_MISSING_BEFORE if version_num < since]
                 result.issues.append(("PG_VERSION_LIMITED", {"server_version_num": version_num, "missing": missing}))
-        if settings.get("track_counts") == "off":
-            result.issues.append(("TRACK_COUNTS_OFF", {}))
+        result.issues += _track_counts_issues(settings.get("track_counts"))
 
     # Sin la extension esto falla: lo reporta el collect con el SQLSTATE exacto.
     info = _first_row(conn, PG_STATEMENTS_INFO)
@@ -165,12 +221,7 @@ def check_postgres(conn, previous: dict | None = None) -> PreflightResult:
         if info.get("recently_reset"):
             result.issues.append(("STATS_RECENTLY_RESET", {}))
 
-    lost = _first_row(conn, PG_TABLE_STATS_LOST)
-    if lost is not None and int(lost.get("tables") or 0) > 0:
-        result.issues.append(("TABLE_STATS_LOST", {
-            "tables": int(lost["tables"]),
-            "examples": list(lost.get("examples") or []),
-        }))
+    result.issues += _table_stats_lost_issues(_first_row(conn, PG_TABLE_STATS_LOST))
     return result
 
 
@@ -186,16 +237,87 @@ def check_mysql(conn, previous: dict | None = None) -> PreflightResult:
             # Sin performance_schema setup_consumers no dice nada util.
             return result
 
-    disabled = sorted(
-        str(row.get("name")) for row in _rows(conn, MY_CONSUMERS)
-        if str(row.get("enabled")).upper() != "YES"
-    )
-    if disabled:
-        result.issues.append(("PS_CONSUMER_DISABLED", {"consumers": disabled}))
+    result.issues += _consumer_issues(_rows(conn, MY_CONSUMERS))
+    result.issues += _recently_reset_issues(_first_row(conn, MY_RECENTLY_RESET))
     return result
 
 
 CHECKS = {"postgres": check_postgres, "mysql": check_mysql}
+
+
+# Avisos que el usuario arregla en el momento (ANALYZE, recargar la
+# configuracion, un UPDATE de setup_consumers, reiniciar MySQL con
+# performance_schema). Mientras uno siga abierto, su consulta se repite cada
+# RECHECK_INTERVAL_S aunque el resultado este cacheado: si no, el aviso seguiria
+# hasta TTL despues del arreglo. Sin avisos de estos, nada cambia (todo
+# cacheado). Fuera a proposito: STATEMENTS_EVICTING (delta de dealloc entre dos
+# preflights, depende de la cadencia del TTL), STATS_RECENTLY_RESET (vence solo,
+# no hay arreglo) y PG_VERSION_* (actualizar el servidor es raro, y LIMITED es
+# permanente en PG 15/16: se repetiria para siempre sin cambiar nada). Cada
+# funcion devuelve los avisos que reemplazan a su codigo, o None si la consulta
+# fallo (se conserva el aviso cacheado: no se da por resuelto sin evaluarlo).
+def _recheck_track_counts(conn):
+    row = _first_row(conn, PG_TRACK_COUNTS)
+    return None if row is None else _track_counts_issues(row.get("track_counts"))
+
+
+def _recheck_table_stats_lost(conn):
+    row = _first_row(conn, PG_TABLE_STATS_LOST)
+    return None if row is None else _table_stats_lost_issues(row)
+
+
+def _recheck_consumers(conn):
+    try:
+        rows = [dict(row) for row in conn.execute(text(MY_CONSUMERS)).mappings()]
+    except Exception as e:
+        conn.rollback()
+        logger.debug(f"health | preflight | {type(e).__name__}")
+        return None
+    return _consumer_issues(rows)
+
+
+def _recheck_performance_schema(conn):
+    # Con performance_schema apagado el chequeo completo no miro consumers ni el
+    # reinicio: si ya esta encendido, se evaluan aca para no esperar al TTL (tras
+    # el reinicio que lo enciende, STATS_RECENTLY_RESET va a aparecer).
+    row = _first_row(conn, MY_PERFORMANCE_SCHEMA)
+    if row is None:
+        return None
+    if not int(row.get("performance_schema") or 0):
+        return [("PERFORMANCE_SCHEMA_OFF", {})]
+    return _consumer_issues(_rows(conn, MY_CONSUMERS)) + _recently_reset_issues(
+        _first_row(conn, MY_RECENTLY_RESET)
+    )
+
+
+RECHECKS = {
+    "TRACK_COUNTS_OFF": _recheck_track_counts,
+    "TABLE_STATS_LOST": _recheck_table_stats_lost,
+    "PS_CONSUMER_DISABLED": _recheck_consumers,
+    "PERFORMANCE_SCHEMA_OFF": _recheck_performance_schema,
+}
+
+
+def recheck_fixable(conn, result: PreflightResult) -> PreflightResult | None:
+    """El resultado cacheado con los avisos arreglables vueltos a evaluar, o
+    None si no tenia ninguno (no se consulto nada)."""
+    open_codes = [code for code, _ in result.issues if code in RECHECKS]
+    if not open_codes:
+        return None
+    fresh = {}
+    for code in dict.fromkeys(open_codes):
+        issues = RECHECKS[code](conn)
+        if issues is not None:
+            fresh[code] = issues
+    kept = [(code, params) for code, params in result.issues if code not in fresh]
+    added = [issue for issues in fresh.values() for issue in issues]
+    # Un rechequeo puede traer un codigo que ya estaba (o que trae otro): uno solo
+    seen, merged = set(), []
+    for code, params in added + kept:
+        if code not in seen:
+            seen.add(code)
+            merged.append((code, params))
+    return replace(result, issues=merged)
 
 
 def _cache_key(collector) -> str:
@@ -211,6 +333,7 @@ def _evict_stale(now: float, ttl: float) -> None:
     for key, (checked_at, _) in list(_CACHE.items()):
         if now - checked_at > horizon:
             del _CACHE[key]
+            _RECHECKED_AT.pop(key, None)
 
 
 class PreflightStage:
@@ -231,9 +354,22 @@ class PreflightStage:
         cached = _CACHE.get(key)
         if cached is not None and now - cached[0] < ttl:
             result = cached[1]
+            last = _RECHECKED_AT.get(key, cached[0])
+            rechecked = recheck_fixable(conn, result) if now - last >= RECHECK_INTERVAL_S else None
+            if rechecked is not None:
+                _RECHECKED_AT[key] = now
+                # Se conserva el instante del chequeo completo: la cadencia
+                # del TTL (y el delta de dealloc) no cambia. El scope se marca
+                # porque el resultado vuelve a estar evaluado: los avisos
+                # cacheados se reinyectan abajo y solo se resuelve lo que el
+                # rechequeo ya no encontro.
+                result = rechecked
+                _CACHE[key] = (cached[0], result)
+                self.report.checked("preflight")
         else:
             result = check(conn, cached[1].facts if cached is not None else None)
             _CACHE[key] = (now, result)
+            _RECHECKED_AT.pop(key, None)
             _evict_stale(now, ttl)
             self.report.checked("preflight")
 

@@ -304,6 +304,38 @@ class CanonicExplain(BaseModel):
     canonical_plan: CanonicalPlan
 
 
+class CollectionIssue(BaseModel):
+    """Un problema del estado de la recoleccion (pipeline_health.issues) que
+    estaba abierto en el ciclo que armo el snapshot. Los textos ya vienen
+    redactados para el usuario, igual que en pipeline_health: quien los
+    consume no necesita conocer los codigos. Nunca lleva texto ni
+    identificadores de consultas."""
+    code: str
+    # blocking | degraded | info
+    severity: str
+    # Seccion del snapshot que no se pudo leer; "" si el problema no es de una.
+    section: str = ""
+    message: str = ""
+    remediation: str = ""
+
+
+class CollectionStatus(BaseModel):
+    """Estado de la recoleccion del ciclo que armo el snapshot.
+
+    Una seccion que no se pudo leer viaja como lista vacia, igual que una que
+    no tenia filas: sections_failed es lo que las distingue. Con esto el
+    detector marca como no evaluadas las patologias que dependen de esa
+    seccion, con el codigo que lo explica (SegundoInforme 6.3), en vez de
+    leer la ausencia de hallazgos como ausencia del problema.
+
+    No incluye lo que el pipeline calcula despues de encolar
+    (LOG_WINDOW_OVERRUN, DEADLOCKS_MISSED, PAYLOAD_TOO_LARGE)."""
+    # ok | degraded | failed
+    status: str
+    sections_failed: list[str] = Field(default_factory=list)
+    issues: list[CollectionIssue] = Field(default_factory=list)
+
+
 class SnapshotPayload(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
@@ -330,6 +362,10 @@ class SnapshotPayload(BaseModel):
     # La escribe DeadlocksStage, no el collect: default [] por los goldens previos.
     deadlocks: ListOrNone[DeadlockReport] = []
     canonic_explains: ListOrNone[CanonicExplain] = []
+    # La escribe main._cycle con el HealthReport del ciclo. None: el snapshot
+    # no la trae (goldens previos, mensajes encolados antes de este campo): el
+    # consumidor no sabe si alguna seccion fallo.
+    collection_status: CollectionStatus | None = None
 
     @field_validator("statements", mode="after")
     @classmethod

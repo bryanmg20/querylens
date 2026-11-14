@@ -1,10 +1,18 @@
 # Reporte en Markdown a partir del JSON de report.sql (jq -r).
 {"high": 0, "medium": 1, "low": 2} as $order
 | {"high": "Alta", "medium": "Media", "low": "Baja"} as $names
+| (.nombres // {}) as $patterns
 | def sev: $names[.] // .;
+  # nombre en espanol del patron (report.sql, nombres); si falta, el interno
+  def nombre: $patterns[.] // .;
   def ts: if . == null then "-" else .[0:16] | sub("T"; " ") end;
   def cell: tostring | gsub("\\|"; "\\|") | gsub("\n"; " ");
   def num: if . == null then "sin dato" else tostring end;
+  # milisegundos en la unidad que se lee mejor
+  def dur: if . == null then "sin medir"
+           elif . >= 60000 then "\(. / 60000 * 10 | round / 10) min"
+           elif . >= 1000 then "\(. / 1000 * 10 | round / 10) s"
+           else "\(. * 10 | round / 10) ms" end;
 "# Reporte de hallazgos: \(.base.connection_name)",
 "",
 "- Base: \(if .base.engine == "mysql" then "toda la base" else "`\(.base.database_name)`" end) (\(.base.engine)), id `\(.base.database_identifier)`",
@@ -28,32 +36,79 @@ else
   "",
   "| Antipatrón | Problemas |",
   "|---|---|",
-  (.resumen.por_antipatron | to_entries[] | "| \(.key | cell) | \(.value) |"),
+  (.resumen.por_antipatron | to_entries[] | "| \(.key | nombre | cell) | \(.value) |"),
   "",
   "## Detalle",
-  (.hallazgos | group_by($order[.severidad] // 9)[]
+  "",
+  "Ordenado por impacto: el tiempo de base de datos que costó cada problema en el rango (en contención, la espera acumulada de las sesiones afectadas). Los empates van por severidad y por código. Los abrazos mortales no traen impacto: el informe del motor no dice cuánto esperó cada transacción.",
+  (.hallazgos | to_entries[]
+   | .key as $i | .value
    | "",
-     "### Severidad \(.[0].severidad | sev)",
-     (.[]
-      | "",
-        "#### \(.antipatron)\(if .table_name then " en `\(.table_name)`" else "" end)",
-        "",
-        (if .query_id then "- query_id: `\(.query_id)`" else empty end),
-        (if .indice then "- Índice: `\(.indice)`" else empty end),
-        (if .columna then "- Columna: `\(.columna)`" else empty end),
-        "- Detectado \(.veces) \(if .veces == 1 then "vez" else "veces" end) en el rango, entre \(.primera | ts) y \(.ultima | ts)",
-        (if (.por_severidad | length) > 1 then
-           "- Por severidad: \(.por_severidad | to_entries | sort_by($order[.key] // 9) | map("\(.key | sev) \(.value)") | join(", "))"
-         else empty end),
-        (if .severidad_actual != .severidad then "- Severidad de la última detección: \(.severidad_actual | sev)" else empty end),
-        "- Histórico: \(.veces_historico) \(if .veces_historico == 1 then "detección" else "detecciones" end) desde \(.primera_historica | ts)",
-        "",
-        "**Explicación:** \(.explicacion)",
-        "",
-        "**Recomendación:** \(.recomendacion)",
-        (if .evidencia != null then "", "Evidencia:", "", "```json", (.evidencia | tojson), "```" else empty end))
-  )
+     "### \($i + 1). \(if .codigo then "\(.codigo) " else "" end)\(.antipatron | nombre)\(if .table_name then " en `\(.table_name)`" else "" end)",
+     "",
+     "- Severidad: \(.severidad | sev) · Impacto en el rango: \(.impacto_ms | dur)",
+     (if .database_name then "- Base: `\(.database_name)`" else empty end),
+     (if .query_id then "- query_id: `\(.query_id)`" else empty end),
+     (if .indice then "- Índice: `\(.indice)`" else empty end),
+     (if .columna then "- Columna: `\(.columna)`" else empty end),
+     "- Detectado \(.veces) \(if .veces == 1 then "vez" else "veces" end) en el rango, entre \(.primera | ts) y \(.ultima | ts)",
+     (if (.por_severidad | length) > 1 then
+        "- Por severidad: \(.por_severidad | to_entries | sort_by($order[.key] // 9) | map("\(.key | sev) \(.value)") | join(", "))"
+      else empty end),
+     (if .severidad_actual != .severidad then "- Severidad de la última detección: \(.severidad_actual | sev)" else empty end),
+     "- Histórico: \(.veces_historico) \(if .veces_historico == 1 then "detección" else "detecciones" end) desde \(.primera_historica | ts)",
+     "",
+     "**Explicación:** \(.explicacion)",
+     "",
+     "**Recomendación:** \(.recomendacion)",
+     (if .riesgo then "", "**Riesgo de aplicarla:** \(.riesgo)" else empty end),
+     (if .evidencia != null then "", "Evidencia:", "", "```json", (.evidencia | tojson), "```" else empty end))
 end
+,
+"",
+"## Estado de evaluación por patología",
+"",
+((.ciclos_fallidos // []) as $fallidos
+ | (if (.evaluacion | length) == 0 then
+   if ($fallidos | length) > 0 then
+     "Ninguna patología se pudo evaluar en el rango: QueryLens no pudo extraer la telemetría de la base (ver los tramos sin extracción abajo)."
+   else
+     "Sin datos del detector en el rango: no se sabe qué patologías se evaluaron."
+   end
+ else
+   "Ventanas de 10 s del rango en que cada patología se pudo evaluar. Sin hallazgos no es lo mismo que no evaluada.",
+   "",
+   "| Patología | Evaluada | En parte | No evaluada | Motivo |",
+   "|---|---|---|---|---|",
+   (.evaluacion[]
+    | if .aplica then
+        "| \(.codigo) \(.antipatron | nombre | cell) | \(.ventanas.evaluada) | \(.ventanas.parcial) | \(.ventanas.no_evaluada) | \(.motivos | map(.codigo) | unique | join(", ") | if . == "" then "-" else cell end) |"
+      else
+        "| \(.codigo) \(.antipatron | nombre | cell) | - | - | - | No aplica en PostgreSQL |"
+      end),
+   "",
+   (.evaluacion | map(select(.aplica) | .motivos[]) | unique_by(.codigo) | if length > 0 then
+      "Qué hacer:",
+      "",
+      (.[] | "- **\(.codigo)**: \(.mensaje | cell) \(.accion | cell)")
+    else empty end)
+ end),
+  (if ($fallidos | length) > 0 then
+     "",
+     "Tramos sin extracción: QueryLens no pudo leer la base, el detector no corrió y ninguna patología se evaluó en ese tiempo. Esas ventanas no se cuentan en el estado de evaluación.",
+     "",
+     # una linea por codigo (report.sql agrupa los cortes)
+     ($fallidos[]
+      | "\(.ciclos) \(if .ciclos == 1 then "ciclo" else "ciclos" end)" as $n
+      | (if (.cortes // 1) > 1 then
+           ": \($n) en \(.cortes) cortes, entre \(.desde | ts) y \(.hasta | ts)"
+         elif (.desde | ts) == (.hasta | ts) then
+           ", el \(.desde | ts), \($n)"
+         else
+           ", de \(.desde | ts) a \(.hasta | ts), \($n)"
+         end) as $cuando
+      | "- **\(.codigo)**\($cuando)\(if .abierto then " (sigue abierto)" else "" end): \(.mensaje | cell) \(.accion | cell)")
+   else empty end))
 ,
 "",
 "## Calidad de la captura de abrazos mortales",
@@ -82,7 +137,7 @@ end
      (if ($q.por_patron | length) > 0 then
         "| Patrón (capturados con detalle) | Abrazos |",
         "|---|---|",
-        ($q.por_patron | to_entries[] | "| \(.key | cell) | \(.value) |"),
+        ($q.por_patron | to_entries[] | "| \(.key | nombre | cell) | \(.value) |"),
         ""
       else empty end),
      (if $q.alcance == "servidor" then

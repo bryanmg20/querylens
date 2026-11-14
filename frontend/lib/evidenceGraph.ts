@@ -60,7 +60,13 @@ function bytes(n: number): string {
   return n >= 1_048_576 ? `${DEC.format(n / 1_048_576)} MB` : `${DEC.format(n / 1024)} KB`;
 }
 
+// Subtipos y direcciones que manda el detector. AP-03 los manda en inglés
+// (non_sargable_predicate.py, _SUBTIPO_MENSAJES); las claves en español quedan
+// por si algún hallazgo guardado las trae.
 const SUBTYPES: Record<string, string> = {
+  function_on_column: "función sobre la columna",
+  arithmetic_on_column: "operación sobre la columna",
+  implicit_cast: "conversión de tipo implícita",
   funcion_sobre_columna: "función sobre la columna",
   aritmetica_sobre_columna: "operación sobre la columna",
   cast_implicito: "conversión de tipo implícita",
@@ -71,6 +77,28 @@ const SUBTYPES: Record<string, string> = {
 
 function humanize(raw: string): string {
   return SUBTYPES[raw] ?? raw.replace(/_/g, " ");
+}
+
+// Método de acceso del plan canónico (telemetry_pipeline/stages/explain_normalizer.py).
+const ACCESS_METHODS: Record<string, string> = {
+  full_table_scan: "escaneo completo de la tabla",
+  full_index_scan: "escaneo completo del índice",
+  index_lookup: "búsqueda por índice",
+};
+
+function accessMethod(raw: string): string {
+  return ACCESS_METHODS[raw] ?? raw.replace(/_/g, " ");
+}
+
+// Unidad del desborde de AP-07 (detection_engine/anti_patterns/disk_spill.py, _UNIT_*).
+const SPILL_UNITS: Record<string, string> = {
+  bloques_8kb: "bloques de 8 KB",
+  tablas_temporales_disco: "tablas temporales",
+  merge_passes: "pasadas de ordenamiento",
+};
+
+function spillUnit(raw: string): string {
+  return SPILL_UNITS[raw] ?? raw.replace(/_/g, " ");
 }
 
 function queryNode(finding: Finding, e: Evidence): GNode | null {
@@ -178,7 +206,8 @@ export function buildEvidenceGraph(finding: Finding): EvidenceGraph {
       const subtype = str(e, "subtipo");
       if (predicate) {
         add({ id: "p", layer: 1, kind: "predicate", title: cut(predicate, 42), sub: subtype ? humanize(subtype) : undefined, tone: "neg" });
-        link("q", "p", "neutral", str(e, "access_method")?.replace(/_/g, " ") ?? "filtra por");
+        const method = str(e, "access_method");
+        link("q", "p", "neutral", method ? accessMethod(method) : "filtra por");
       }
       if (column) {
         add({ id: "c", layer: 2, kind: "column", title: column, sub: relation ? `en ${relation}` : undefined, tone: "warn" });
@@ -304,7 +333,7 @@ export function buildEvidenceGraph(finding: Finding): EvidenceGraph {
       add({ id: "m", layer: 1, kind: "metric", title: "Memoria de trabajo", sub: "no alcanza", tone: "warn" });
       link("q", "m", "warn", "ordena o agrupa");
       if (spill != null) {
-        add({ id: "k", layer: 2, kind: "metric", title: `${INT.format(spill)} ${unit ? cut(unit, 22) : "escrituras"}`, sub: "temporales en disco", tone: "neg" });
+        add({ id: "k", layer: 2, kind: "metric", title: `${INT.format(spill)} ${unit ? cut(spillUnit(unit), 26) : "escrituras"}`, sub: "temporales en disco", tone: "neg" });
         link("m", "k", "neg", "se desborda");
       }
       if (time != null) {

@@ -102,6 +102,9 @@ const SAMPLE_COUNTS: [number, number][] = [
   [180, 180],
 ];
 
+// Impacto de cada fila de SAMPLE_ROWS en la sesión (ms), de mayor a menor: la lista va ordenada por impacto.
+const SAMPLE_IMPACT_MS = [5_400_000, 1_850_000, 960_000, 610_000, 240_000, 182_000, 36_000, 9_500, 4_200];
+
 const SAMPLE_SESSION_START = at(5 * DAY);
 
 // Detecciones por hora de las últimas 24 h, con más actividad en la tarde.
@@ -121,19 +124,25 @@ export const SAMPLE_DIAGNOSTICS: DiagnosticsResponse = {
   diagnostics: SAMPLE_ROWS.map(([id, severidad, table_name, query_id, ago], i) => ({
     id: 100 - i,
     antipatron: id,
+    codigo: ANTIPATTERN_DOCS[id].code,
     severidad,
     severidad_actual: severidad,
     table_name,
+    database_name: "ventas",
     query_id,
     evidencia: Object.fromEntries(byId(id).evidence),
     explicacion: byId(id).summary,
     recomendacion: SAMPLE_RECOMMENDATIONS[id],
+    riesgo: null,
+    impacto_ms: Math.round(SAMPLE_IMPACT_MS[i] / SAMPLE_COUNTS[i][0]),
+    impacto_sesion_ms: SAMPLE_IMPACT_MS[i],
     detectado_en: at(ago),
     primera_deteccion: SAMPLE_COUNTS[i][1] > SAMPLE_COUNTS[i][0] ? at(30 * DAY) : SAMPLE_SESSION_START,
     veces_sesion: SAMPLE_COUNTS[i][0],
     veces_total: SAMPLE_COUNTS[i][1],
     por_severidad: { [severidad]: SAMPLE_COUNTS[i][0] },
   })),
+  evaluation: [],
   activity: SAMPLE_ACTIVITY,
   health: {
     last_run: {

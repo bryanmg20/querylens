@@ -12,6 +12,16 @@ export function formatShortDateTime(iso: string): string {
     .replace(/\s/g, " ");
 }
 
+const DURATION = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 });
+
+// Milisegundos en la unidad que se lee mejor: "850 ms", "12,4 s", "3,2 min", "1,5 h".
+export function formatDuration(ms: number): string {
+  if (ms >= 3_600_000) return `${DURATION.format(ms / 3_600_000)} h`;
+  if (ms >= 60_000) return `${DURATION.format(ms / 60_000)} min`;
+  if (ms >= 1_000) return `${DURATION.format(ms / 1_000)} s`;
+  return `${DURATION.format(ms)} ms`;
+}
+
 export function secondsBetween(fromIso: string, toIso: string): number {
   return (new Date(toIso).getTime() - new Date(fromIso).getTime()) / 1000;
 }

@@ -34,8 +34,9 @@ export function filterFindings(findings: Finding[], filters: Filters): Finding[]
   });
 }
 
-// Todos los hallazgos del detection_engine, del más reciente al más viejo, uno por tarjeta. Los
-// filtros viven en la página para que la tira de indicadores también pueda cambiarlos.
+// Todos los hallazgos del detection_engine en el orden de la API (por impacto de la sesión, con la
+// severidad y el código como desempate), uno por tarjeta. Los filtros no cambian el orden. Viven en
+// la página para que la tira de indicadores también pueda cambiarlos.
 export default function FindingsPanel({
   findings,
   waiting,
@@ -203,6 +204,11 @@ export default function FindingsPanel({
               {shownSection.ids.length === 0 && <span className="text-[13px] text-muted">Sin hallazgos de este tipo.</span>}
             </div>
           </div>
+
+          <p className="mt-4 text-[13px] text-muted">
+            Ordenados por impacto: primero lo que más tiempo de base de datos costó en esta sesión. Los empates van por
+            severidad.
+          </p>
 
           {visible.length === 0 ? (
             <p className="empty-frame mt-4">Ningún hallazgo coincide con estos filtros.</p>

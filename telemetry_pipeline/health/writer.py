@@ -11,7 +11,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import ProgrammingError
 
 from health import cycle_sample
-from health.catalog import CATALOG
+from health.catalog import CATALOG, remediation_for
 from health.report import HealthReport
 from logger import get_logger
 
@@ -167,7 +167,7 @@ def _issue_rows(db_id: str, report: HealthReport) -> list[dict]:
             "severity": definition.severity,
             "section": section,
             "message": definition.message,
-            "remediation": definition.remediation,
+            "remediation": remediation_for(code, params),
             "params": json.dumps(params, sort_keys=True, default=str),
         })
     return rows

@@ -154,6 +154,13 @@ run_engine(dialect, connection_factory, db_id)                  main.py
   │                                          run_engine lo pisa con el
   │                                          database_identifier de la fila)
   │
+  ├─ payload["collection_status"] = report.snapshot_status()   health/report.py
+  │     estado de la recolección del ciclo: status, sections_failed y los
+  │     issues de este ciclo (code, severity, section, message, remediation;
+  │     sin params). El detector lo usa para marcar qué patologías no pudo
+  │     evaluar y por qué (detection_engine/evaluation.py): una sección que
+  │     falló llega como lista vacía, igual que una sin filas.
+  │
   ├─ SnapshotPayload.from_snapshot(payload)                  ../contract/querylens_contract/snapshot.py
   │     valida el dict contra los modelos pydantic (11 secciones)
   │     ValidationError → logger.error + return None (motor omitido, no aborta)
@@ -247,7 +254,11 @@ run_engine(dialect, factory, db_id)                     main.py
     connect            falla → classify(scope=connection) → AUTH_FAILED, HOST_UNREACHABLE, ...
     PreflightStage     health/preflight.py; cada HEALTH_PREFLIGHT_TTL_S (300 s) por base:
                        version/track_counts/pg_stat_statements_info (PG),
-                       @@performance_schema/setup_consumers (MySQL)
+                       @@performance_schema/setup_consumers/Uptime y FIRST_SEEN (MySQL).
+                       Entre medio, los avisos que se arreglan en el momento (TABLE_STATS_LOST,
+                       TRACK_COUNTS_OFF, PS_CONSUMER_DISABLED, PERFORMANCE_SCHEMA_OFF) repiten
+                       solo su consulta cada RECHECK_INTERVAL_S (30 s) mientras sigan abiertos
+                       (RECHECKS): se resuelven poco despues del arreglo, no TTL despues
     CollectStage       error por sección → classify(scope=collect): PG_STATEMENTS_NOT_INSTALLED (42P01),
                        _NOT_PRELOADED (55000), _OUTDATED (42703), PS_SELECT_DENIED (1142), ...
     post_collect       health/checks.py, antes de normalize/redact:

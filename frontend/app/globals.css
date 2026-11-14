@@ -188,6 +188,15 @@ body {
     color: var(--pill-neu-ink);
   }
 
+  /* Recuadro del impacto en el hallazgo: más alto que una pastilla y con borde, para que se lea
+     primero; el número va en el color del texto. */
+  .impact {
+    @apply inline-flex h-7 flex-none items-center gap-1.5 whitespace-nowrap rounded border px-2.5 text-[13px];
+    background: var(--pill-neu-bg);
+    border-color: var(--control);
+    color: var(--pill-neu-ink);
+  }
+
   .notice {
     @apply rounded px-3 py-2.5 text-[13px] text-fg;
   }
