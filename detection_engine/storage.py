@@ -1,13 +1,18 @@
 import hashlib
 import json
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
+from catalog import CODES, code_of
 from models import Hallazgo, StatementHistory
 from logger import get_logger
+
+if TYPE_CHECKING:
+    from evaluation import PathologyState
 
 logger = get_logger(__name__)
 
@@ -15,6 +20,15 @@ logger = get_logger(__name__)
 # de la base compartida de QueryLens.
 _SCHEMA_PATH = Path(__file__).resolve().parent.parent / "querylens_database" / "hallazgos.sql"
 _SAMPLES_SCHEMA_PATH = Path(__file__).resolve().parent.parent / "querylens_database" / "statement_samples.sql"
+_EVALUATION_SCHEMA_PATH = Path(__file__).resolve().parent.parent / "querylens_database" / "estado_evaluacion.sql"
+
+# Problemas guardados antes de que existiera la columna codigo: se completa con
+# el catalogo, que es la unica lista de codigos. Los que se vuelven a detectar
+# la reciben con el upsert de save_findings.
+_BACKFILL_CODE = """
+UPDATE public.problemas SET codigo = :codigo
+WHERE codigo IS NULL AND antipatron = :antipatron
+"""
 
 
 def ensure_hallazgos_table(engine: Engine) -> None:
@@ -22,8 +36,11 @@ def ensure_hallazgos_table(engine: Engine) -> None:
     # renombre de la tabla anterior): idempotente, se puede llamar siempre al
     # arrancar sin importar si db-roles ya lo aplico.
     ddl = _SCHEMA_PATH.read_text(encoding="utf-8")
+    codes = [{"antipatron": antipatron, "codigo": code_of(antipatron)} for antipatron in CODES]
+    codes.append({"antipatron": "unclassified_deadlock", "codigo": code_of("unclassified_deadlock")})
     with engine.begin() as conn:
         conn.execute(text(ddl))
+        conn.execute(text(_BACKFILL_CODE), codes)
 
 
 # Abrazos mortales que el modulo de contencion identifica con una firma (patron
@@ -68,9 +85,9 @@ def _query_identity(finding: Hallazgo) -> str:
     corta: el texto puede medir KB y la clave esta en un indice unico. Sin
     ningun texto, el query_id."""
     evidence = finding.evidencia or {}
-    for text in (evidence.get("canonic_query"), evidence.get("query_text")):
-        if text not in _NO_TEXT:
-            return "t" + hashlib.sha1(str(text).encode("utf-8")).hexdigest()[:16]
+    for candidate in (evidence.get("canonic_query"), evidence.get("query_text")):
+        if candidate not in _NO_TEXT:
+            return "t" + hashlib.sha1(str(candidate).encode("utf-8")).hexdigest()[:16]
     return _key(finding.query_id)
 
 
@@ -110,16 +127,18 @@ def finding_key(finding: Hallazgo) -> str:
 
 
 # Una deteccion: actualiza (o crea) el problema con lo de esta deteccion y
-# anota la deteccion. El ON CONFLICT usa problemas_clave_uq.
+# anota la deteccion con su severidad y su impacto. El ON CONFLICT usa
+# problemas_clave_uq.
 _SAVE_FINDING = """
 WITH problema AS (
     INSERT INTO public.problemas AS p
-        (db_id, antipatron, finding_key, severidad, query_id, table_name, database_name,
-         evidencia, explicacion, recomendacion)
+        (db_id, antipatron, codigo, finding_key, severidad, query_id, table_name, database_name,
+         evidencia, explicacion, recomendacion, riesgo, impacto_ms)
     VALUES
-        (:db_id, :antipatron, :finding_key, :severidad, :query_id, :table_name, :database_name,
-         CAST(:evidencia AS JSONB), :explicacion, :recomendacion)
+        (:db_id, :antipatron, :codigo, :finding_key, :severidad, :query_id, :table_name, :database_name,
+         CAST(:evidencia AS JSONB), :explicacion, :recomendacion, :riesgo, :impacto_ms)
     ON CONFLICT (db_id, antipatron, finding_key) DO UPDATE SET
+        codigo = EXCLUDED.codigo,
         severidad = EXCLUDED.severidad,
         query_id = EXCLUDED.query_id,
         table_name = EXCLUDED.table_name,
@@ -127,11 +146,13 @@ WITH problema AS (
         evidencia = EXCLUDED.evidencia,
         explicacion = EXCLUDED.explicacion,
         recomendacion = EXCLUDED.recomendacion,
+        riesgo = EXCLUDED.riesgo,
+        impacto_ms = EXCLUDED.impacto_ms,
         ultima_deteccion = now()
     RETURNING p.id
 )
-INSERT INTO public.detecciones (problema_id, severidad)
-SELECT id, :severidad FROM problema
+INSERT INTO public.detecciones (problema_id, severidad, impacto_ms)
+SELECT id, :severidad, :impacto_ms FROM problema
 """
 
 
@@ -143,6 +164,7 @@ def save_findings(engine: Engine, db_id: str | None, findings: list[Hallazgo]) -
         {
             "db_id": db_id,
             "antipatron": finding.antipatron,
+            "codigo": code_of(finding.antipatron),
             "finding_key": finding_key(finding),
             "severidad": finding.severidad,
             "query_id": str(finding.query_id) if finding.query_id is not None else None,
@@ -152,6 +174,9 @@ def save_findings(engine: Engine, db_id: str | None, findings: list[Hallazgo]) -
             "evidencia": json.dumps(finding.evidencia, default=str),
             "explicacion": finding.explicacion,
             "recomendacion": finding.recomendacion,
+            # un detector que no escribio el riesgo deja NULL, no un texto vacio
+            "riesgo": finding.riesgo or None,
+            "impacto_ms": finding.impacto_ms,
         }
         for finding in findings
     ]
@@ -163,6 +188,79 @@ def save_findings(engine: Engine, db_id: str | None, findings: list[Hallazgo]) -
         "Guardadas %d detecciones de %d problemas en public.detecciones",
         len(rows), len({(row["antipatron"], row["finding_key"]) for row in rows}),
     )
+
+
+def ensure_evaluation_table(engine: Engine) -> None:
+    # public.estado_evaluacion: idempotente, igual que ensure_hallazgos_table
+    ddl = _EVALUATION_SCHEMA_PATH.read_text(encoding="utf-8")
+    with engine.begin() as conn:
+        conn.execute(text(ddl))
+
+
+# Las ventanas de un mismo tramo con el mismo estado y los mismos motivos
+# comparten fila (ver querylens_database/estado_evaluacion.sql).
+EVALUATION_BUCKET = timedelta(minutes=10)
+# Mismo plazo que el estado de la recoleccion (pipeline_health): 15 dias.
+EVALUATION_RETENTION = timedelta(days=15)
+
+# El WHERE ignora un reintento del mismo job (misma hora de encolado) y un
+# snapshot que llega despues de uno mas nuevo: no cuentan dos veces la ventana.
+_SAVE_EVALUATION = """
+INSERT INTO public.estado_evaluacion AS e
+    (db_id, codigo, antipatron, tramo, estado, firma, motivos, detalle, desde, hasta)
+VALUES
+    (:db_id, :codigo, :antipatron, :tramo, :estado, :firma,
+     CAST(:motivos AS JSONB), CAST(:detalle AS JSONB), :captured_at, :captured_at)
+ON CONFLICT (db_id, codigo, tramo, estado, firma) DO UPDATE SET
+    ventanas = e.ventanas + 1,
+    hasta = EXCLUDED.hasta,
+    motivos = EXCLUDED.motivos,
+    detalle = EXCLUDED.detalle
+WHERE e.hasta < EXCLUDED.hasta
+"""
+
+_PURGE_EVALUATION = """
+DELETE FROM public.estado_evaluacion
+WHERE db_id = :db_id AND hasta < :before
+"""
+
+
+def evaluation_bucket(captured_at: datetime) -> datetime:
+    """Inicio del tramo de la ventana, en UTC para que no dependa de la zona
+    de quien lo calcula."""
+    instant = captured_at.astimezone(timezone.utc)
+    seconds = EVALUATION_BUCKET.total_seconds()
+    return datetime.fromtimestamp(instant.timestamp() // seconds * seconds, tz=timezone.utc)
+
+
+def save_evaluation(
+    engine: Engine, db_id: str, captured_at: datetime, states: "list[PathologyState]",
+) -> None:
+    """Anota el estado de evaluacion de cada patologia para la ventana de
+    captured_at (la hora en que se encolo su snapshot)."""
+    if not states:
+        return
+    tramo = evaluation_bucket(captured_at)
+    rows = [
+        {
+            "db_id": db_id,
+            "codigo": state.codigo,
+            "antipatron": state.antipatron,
+            "tramo": tramo,
+            "estado": state.estado,
+            "firma": state.firma,
+            "motivos": json.dumps([reason.to_dict() for reason in state.motivos]),
+            "detalle": json.dumps(state.detalle, default=str),
+            "captured_at": captured_at,
+        }
+        for state in states
+    ]
+    with engine.begin() as conn:
+        conn.execute(text(_SAVE_EVALUATION), rows)
+        conn.execute(
+            text(_PURGE_EVALUATION),
+            {"db_id": db_id, "before": captured_at - EVALUATION_RETENTION},
+        )
 
 
 def ensure_statement_samples_table(engine: Engine) -> None:

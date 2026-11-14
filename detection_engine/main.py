@@ -10,15 +10,19 @@ from sqlalchemy import text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import OperationalError
 
-from models import Hallazgo
+from models import Hallazgo, StatementHistory
 from anti_patterns.statement_history import STALE_AFTER, next_statement_histories
 from anti_patterns.engine import detect_all
 from deadlocks import run_contention
+from evaluation import EVALUADA, PathologyState, drop_unreliable_findings, evaluate_pathologies
+from prioritization import prioritize
 from querylens_connection import get_connection_querylens_db
 from storage import (
+    ensure_evaluation_table,
     ensure_hallazgos_table,
     ensure_statement_samples_table,
     load_statement_history,
+    save_evaluation,
     save_findings,
     save_statement_histories,
 )
@@ -73,6 +77,21 @@ def archive_job(engine: Engine, msg_id: int) -> None:
         )
 
 
+# Que patologias se pudieron evaluar con este snapshot. Una falla aca no tiene
+# que tumbar el job: sin el estado, los hallazgos se guardan igual que antes.
+def evaluate_coverage(
+    snapshot: SnapshotPayload,
+    history: dict[str, StatementHistory],
+    captured_at: datetime,
+    msg_id,
+) -> list[PathologyState]:
+    try:
+        return evaluate_pathologies(snapshot, history, captured_at)
+    except Exception:
+        logger.exception("  Job %s | no se pudo calcular el estado de evaluacion, se omite", msg_id)
+        return []
+
+
 # Valida el mensaje contra el contrato, corre las reglas y reporta los hallazgos
 def process_job(engine: Engine, job: dict) -> list[Hallazgo]:
     msg_id = job["msg_id"]
@@ -93,6 +112,13 @@ def process_job(engine: Engine, job: dict) -> list[Hallazgo]:
     findings = detect_all(snapshot, history=history, captured_at=captured_at)
     # contencion (CT-01 a CT-05) con su propio estado; sus hallazgos se guardan con los demas
     findings += run_contention(engine, snapshot, fallback_captured_at=captured_at)
+
+    # Estado de evaluacion por patologia: una regla a la que le falto una fuente
+    # (seccion que no se pudo leer) no opina en esta ventana
+    states = evaluate_coverage(snapshot, history, captured_at, msg_id)
+    findings, dropped = drop_unreliable_findings(findings, states)
+    # Orden por impacto (SegundoInforme 6.2): asi se informan y se guardan
+    findings = prioritize(findings)
 
     logger.info(
         "Job %s recibido | db_id=%s | enqueued_at=%s",
@@ -116,6 +142,18 @@ def process_job(engine: Engine, job: dict) -> list[Hallazgo]:
     if not snapshot.statements:
         logger.warning("  Job %s no trae 'statements'. Snapshot vacio?", msg_id)
 
+    not_evaluated = [state for state in states if state.estado != EVALUADA]
+    if not_evaluated:
+        logger.info(
+            "  evaluacion | %s",
+            " | ".join(f"{state.codigo} {state.estado} ({state.firma})" for state in not_evaluated),
+        )
+    if dropped:
+        logger.warning(
+            "  %d hallazgo(s) descartados: a su regla le falto una fuente en este snapshot (%s)",
+            len(dropped), ", ".join(sorted({finding.antipatron for finding in dropped})),
+        )
+
     logger.info("  hallazgos=%d", len(findings))
     print(f"\n--- RESULTADOS (msg_id={msg_id}) ---")
     print(f"db_id: {snapshot.db_id}")
@@ -123,18 +161,27 @@ def process_job(engine: Engine, job: dict) -> list[Hallazgo]:
     for finding in findings:
         print(
             f"- {finding.antipatron} | severidad={finding.severidad} "
-            f"| query_id={finding.query_id} | table={finding.table_name}"
+            f"| query_id={finding.query_id} | table={finding.table_name} "
+            f"| impacto_ms={finding.impacto_ms}"
         )
         logger.warning(
-            "  hallazgo=%s | severidad=%s | query_id=%s | table=%s",
+            "  hallazgo=%s | severidad=%s | query_id=%s | table=%s | impacto_ms=%s",
             finding.antipatron,
             finding.severidad,
             finding.query_id,
             finding.table_name,
+            finding.impacto_ms,
         )
     print("----------------------------------\n")
 
     save_findings(engine, snapshot.db_id, findings)
+    # Como run_contention: si falla, los hallazgos ya quedaron guardados y la
+    # proxima ventana vuelve a anotar su estado
+    if snapshot.db_id and states:
+        try:
+            save_evaluation(engine, snapshot.db_id, captured_at, states)
+        except Exception:
+            logger.exception("  Job %s | no se pudo guardar el estado de evaluacion", msg_id)
     # despues de detectar: si se guardara antes, la ventana actual entraria en su propia linea base
     if snapshot.db_id:
         save_statement_histories(
@@ -154,6 +201,7 @@ def main(oneshot: bool = False) -> None:
     engine = get_connection_querylens_db()
     ensure_hallazgos_table(engine)
     ensure_statement_samples_table(engine)
+    ensure_evaluation_table(engine)
 
     backoff = POLL_INTERVAL_SECONDS
     try:

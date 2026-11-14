@@ -94,6 +94,7 @@ def finding(report: DeadlockReport, signature: str, recurrence: dict, captured_a
         recomendacion=_recommendation(report),
         query_id=victim.query_id if victim and victim.query_id is not None else None,
         table_name=", ".join(table_names) if table_names else None,
+        riesgo=_RISK,
     )
 
 

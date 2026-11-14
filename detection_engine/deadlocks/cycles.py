@@ -36,6 +36,14 @@ _TARGETS_FROM_CTID = (
     "transacciones esperaban la misma fila o filas distintas, pero no cual."
 )
 
+# Impacto (SegundoInforme 6.2): en contencion es la espera acumulada de las
+# sesiones afectadas. El informe de abrazo mortal no dice cuanto espero cada
+# transaccion (Postgres solo lo escribe con log_lock_waits y para esperas de
+# mas de deadlock_timeout; InnoDB da la antiguedad de la transaccion, no su
+# espera), asi que los hallazgos de abrazo mortal salen con impacto_ms en
+# None: en el orden por impacto cuentan como 0 y entre ellos deciden la
+# severidad y el codigo. CT-05 si lo mide (impact_wait_s).
+
 # Severidad: un abrazo aislado lo resuelve el motor y la aplicacion reintenta;
 # el mismo patron repetido es un defecto de diseño que ya cuesta transacciones
 # revertidas. 3 es el valor inicial a calibrar.

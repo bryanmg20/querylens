@@ -113,6 +113,29 @@ _SUBTIPO_MENSAJES = {
     ),
 }
 
+# Riesgo de aplicar la recomendacion de cada subtipo (no la gravedad del
+# problema).
+_SUBTIPO_RIESGOS = {
+    "function_on_column": (
+        "Reescribir la condicion puede cambiar el resultado si la comparacion nueva no es "
+        "equivalente (los limites de un rango de fechas, mayusculas y minusculas, valores nulos): "
+        "hay que comprobar que devuelve las mismas filas. Un indice de expresion solo sirve a las "
+        "consultas que usan exactamente esa expresion, ocupa espacio y encarece las escrituras "
+        "sobre la tabla."
+    ),
+    "arithmetic_on_column": (
+        "Mover la operacion al lado de la constante puede cambiar el resultado en los bordes "
+        "(redondeo, division entera, desbordamiento, valores nulos): hay que comprobar que "
+        "devuelve las mismas filas."
+    ),
+    "implicit_cast": (
+        "Cambiar el tipo del valor en la consulta puede cambiar que filas coinciden (por ejemplo, "
+        "'007' y 7 dejan de ser iguales al comparar como texto): hay que comprobar el resultado. "
+        "Cambiar el tipo de la columna reescribe la tabla, la bloquea mientras dura y afecta a "
+        "todo el codigo que la lee o la escribe."
+    ),
+}
+
 
 def _has_column(node: exp.Expression) -> bool:
     return node.find(exp.Column) is not None
@@ -357,6 +380,10 @@ class _RowsWindow:
     rows: int
     # True si la query aparecio en esta ventana y se uso su acumulado completo
     new_query: bool = False
+    # tiempo de base de datos de la sentencia en la ventana (el impacto del
+    # hallazgo). None si el snapshot no trae el tiempo. No decide si hay
+    # hallazgo: la regla solo mira ejecuciones y filas
+    total_ms: float | None = None
 
 
 def _parse_instant(value) -> datetime | None:
@@ -372,31 +399,35 @@ def _parse_instant(value) -> datetime | None:
     return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
 
 
-def _current_counters(snapshot: SnapshotPayload) -> dict[str, tuple[int, int | None, str | None]]:
-    # (ejecuciones, filas devueltas, counters_epoch) por query, sumando las filas
-    # repetidas igual que la fila guardada en statement_samples
-    counters: dict[str, tuple[int, int | None, str | None]] = {}
+def _current_counters(snapshot: SnapshotPayload) -> dict[str, tuple[int, int | None, float | None, str | None]]:
+    # (ejecuciones, filas devueltas, tiempo total, counters_epoch) por query,
+    # sumando las filas repetidas igual que la fila guardada en statement_samples
+    counters: dict[str, tuple[int, int | None, float | None, str | None]] = {}
     for statement in snapshot.statements:
         if statement.query_id is None or statement.execution_count is None:
             continue
         key = str(statement.query_id)
-        calls, rows, epoch = counters.get(key, (0, None, statement.counters_epoch))
+        calls, rows, total_ms, epoch = counters.get(key, (0, None, None, statement.counters_epoch))
         if statement.rows_returned is not None:
             rows = (rows or 0) + statement.rows_returned
-        counters[key] = (calls + statement.execution_count, rows, epoch)
+        if statement.total_time_ms is not None:
+            total_ms = (total_ms or 0.0) + statement.total_time_ms
+        counters[key] = (calls + statement.execution_count, rows, total_ms, epoch)
     return counters
 
 
 def _rows_window(
     calls: int,
     rows: int | None,
+    total_ms: float | None,
     epoch: datetime | None,
     previous: StatementHistory | None,
     previous_snapshot_at: datetime | None,
     captured_at: datetime,
 ) -> _RowsWindow | None:
-    # Ejecuciones y filas devueltas entre el snapshot anterior y este. None si
-    # no se puede medir o si la query no se ejecuto en la ventana.
+    # Ejecuciones, filas devueltas y tiempo entre el snapshot anterior y este.
+    # None si no se puede medir o si la query no se ejecuto en la ventana. El
+    # tiempo nunca descarta la ventana: solo es el impacto.
     if rows is None:
         return None
 
@@ -409,7 +440,7 @@ def _rows_window(
         started_in_window = captured_at - epoch <= _NEW_QUERY_WINDOW
         started_after_previous = previous_snapshot_at is not None and epoch > previous_snapshot_at
         if started_in_window or started_after_previous:
-            return _RowsWindow(calls=calls, rows=rows, new_query=True)
+            return _RowsWindow(calls=calls, rows=rows, new_query=True, total_ms=total_ms)
         return None
     # fila guardada antes de que existiera esta columna: aun no hay con que restar
     if previous.rows_returned is None:
@@ -421,7 +452,8 @@ def _rows_window(
     delta_rows = rows - previous.rows_returned
     if delta_calls <= 0 or delta_rows < 0:
         return None
-    return _RowsWindow(calls=delta_calls, rows=delta_rows)
+    delta_ms = None if total_ms is None else max(total_ms - previous.total_time_ms, 0.0)
+    return _RowsWindow(calls=delta_calls, rows=delta_rows, total_ms=delta_ms)
 
 
 def _simple_select_table(canonic_query: str | None) -> str | None:
@@ -534,12 +566,15 @@ def detect_non_sargable_predicates(
         query_id = str(candidate.query_id)
         # contadores desde statements (suma de filas repetidas); si el candidato
         # no aparece ahi, se usan los suyos
-        calls, rows, epoch_raw = counters.get(
+        calls, rows, total_ms, epoch_raw = counters.get(
             query_id,
-            (candidate.execution_count or 0, candidate.rows_returned, candidate.counters_epoch),
+            (candidate.execution_count or 0, candidate.rows_returned, candidate.total_time_ms,
+             candidate.counters_epoch),
         )
         epoch = _parse_instant(candidate.counters_epoch or epoch_raw)
-        window = _rows_window(calls, rows, epoch, history.get(query_id), previous_snapshot_at, captured_at)
+        window = _rows_window(
+            calls, rows, total_ms, epoch, history.get(query_id), previous_snapshot_at, captured_at,
+        )
         if window is None or window.calls < min_window_calls:
             continue
 
@@ -623,6 +658,8 @@ def detect_non_sargable_predicates(
                             "estimated_rows": operation.estimated_rows,
                             "window_calls": window.calls,
                             "window_rows": window.rows,
+                            # impacto: tiempo de la sentencia en la ventana
+                            "window_time_ms": window.total_ms,
                             "query_new_in_window": window.new_query,
                             "explain_source": explain.explain_source,
                         },
@@ -630,6 +667,9 @@ def detect_non_sargable_predicates(
                         recomendacion=recomendacion,
                         query_id=candidate.query_id,
                         table_name=real_table,
+                        database_name=candidate.database_name,
+                        riesgo=_SUBTIPO_RIESGOS[subtipo],
+                        impacto_ms=None if window.total_ms is None else round(window.total_ms, 3),
                     )
                 )
 
