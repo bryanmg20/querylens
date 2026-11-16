@@ -15,7 +15,7 @@ REQUISITOS
 USO (desde la raiz del repo)
   python ql_sandbox/scenarios/run_scenario.py --list
   python ql_sandbox/scenarios/run_scenario.py disk_spill
-  python ql_sandbox/scenarios/run_scenario.py avoidable_full_scan --engine mysql
+  python ql_sandbox/scenarios/run_scenario.py missing_index --engine mysql
   python ql_sandbox/scenarios/run_scenario.py all --engine both
   python ql_sandbox/scenarios/run_scenario.py n_plus_one --engine both --docker
 
@@ -305,24 +305,34 @@ SCENARIOS = {
             ],
         ),
         Scenario(
-            name="avoidable_full_scan",
-            descripcion="AP-02 y AP-04: WHERE c = ? sobre 1.000.000 de filas, sin indice en c.",
+            name="missing_index",
+            descripcion=(
+                "AP-04 (escenario del informe): WHERE c = ? sobre 1.000.000 de filas, sin indice "
+                "en c (~10 filas por ejecucion). AP-02 se evalua en este mismo escenario."
+            ),
             workload="full_scan",
             workers=4,
             expectations=[
                 Expectation(
-                    "avoidable_full_scan sobre ql_scn",
-                    lambda f: f["antipatron"] == "avoidable_full_scan" and f.get("table_name") == "ql_scn",
-                    nota="necesita EXPLAIN: la consulta debe estar en top_impact y ejecutandose al tomar el snapshot",
-                ),
-                Expectation(
-                    "missing_index sobre ql_scn.c",
+                    "missing_index sobre ql_scn.c con la recomendacion de un indice sobre c",
                     lambda f: (
                         f["antipatron"] == "missing_index"
                         and f.get("table_name") == "ql_scn"
                         and (f.get("evidencia") or {}).get("equality_columns") == ["c"]
+                        and (f.get("evidencia") or {}).get("suggested_index") == "CREATE INDEX ON ql_scn (c)"
                     ),
-                    nota="mismas condiciones de escaneo completo que avoidable_full_scan",
+                    nota="necesita el plan: la consulta debe estar en top_impact y en auto_explain (o el sample)",
+                ),
+                Expectation(
+                    "avoidable_full_scan sobre ql_scn con la fraccion real de filas devueltas",
+                    lambda f: (
+                        f["antipatron"] == "avoidable_full_scan"
+                        and f.get("table_name") == "ql_scn"
+                        and (f.get("evidencia") or {}).get("access_method") == "full_table_scan"
+                        and (f.get("evidencia") or {}).get("selectivity") is not None
+                        and (f.get("evidencia") or {}).get("selectivity") <= 0.1
+                    ),
+                    nota="mismas condiciones de escaneo completo que missing_index (informe: AP-02 dentro de AP-04)",
                 ),
             ],
         ),
@@ -472,6 +482,9 @@ SCENARIOS = {
     ]
 }
 
+# nombres anteriores de los escenarios, para que los comandos viejos sigan sirviendo
+SCENARIO_ALIASES = {"avoidable_full_scan": "missing_index"}
+
 
 # ------------------------------------------------------------------
 # Utilidades
@@ -599,9 +612,15 @@ def root_env() -> dict[str, str]:
 
 def run_pipeline(engine: str) -> None:
     if USE_DOCKER:
-        # el contenedor ya trae las variables de conexion (MONITOR_*, QUERYLENS_*)
+        # El contenedor trae QUERYLENS_*, pero ya no MONITOR_*: el servicio toma
+        # las bases de registered_databases. Se pasa el host del sandbox (el
+        # resto de MONITOR_* tiene por defecto los valores del sandbox), asi el
+        # escenario no necesita una base registrada con el monitoreo encendido,
+        # que el servicio tambien recolectaria cada 10 s en paralelo.
         run(["docker", "cp", str(PIPELINE_ONE_ENGINE), f"{compose_container('pipeline')}:/tmp/pipeline_one_engine.py"])
-        run(["docker", "exec", "-e", "QL_PIPELINE_DIR=/app", "-w", "/app", compose_container("pipeline"),
+        run(["docker", "exec", "-e", "QL_PIPELINE_DIR=/app",
+             "-e", "MONITOR_PG_HOST=host.docker.internal", "-e", "MONITOR_MY_HOST=host.docker.internal",
+             "-w", "/app", compose_container("pipeline"),
              "python", "/tmp/pipeline_one_engine.py", engine])
         return
     run([venv_python(PIPELINE_DIR), str(PIPELINE_ONE_ENGINE), engine], cwd=PIPELINE_DIR, env=root_env())
@@ -779,6 +798,7 @@ def main() -> int:
             print(f"  {scenario.name:<24} {scenario.descripcion}")
         return 0
 
+    args.scenario = SCENARIO_ALIASES.get(args.scenario, args.scenario)
     if args.scenario == "all":
         # el de linea base al final: es el mas largo
         names = [name for name in SCENARIOS if name != "baseline_degradation"] + ["baseline_degradation"]
