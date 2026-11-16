@@ -16,9 +16,9 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from querylens_contract import SnapshotPayload
 
-import test_cardinality_misestimate as ap08
+import test_ap05_unused_index as ap05
+import test_ap08_cardinality_misestimate as ap08
 import test_predicate_fixes as scans
-import test_unused_index as ap05
 from anti_patterns.avoidable_full_scan import detect_avoidable_full_scans
 from anti_patterns.baseline_degradation import detect_baseline_degradation
 from anti_patterns.disk_spill import detect_disk_spill

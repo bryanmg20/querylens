@@ -8,8 +8,9 @@ motores y limitado a SELECT simples:
   4. la tabla tiene >= 10.000 filas vivas
   5. devuelve <= 10 % de las filas: (filas de la ventana / ejecuciones) / filas vivas
 
-Las pruebas de full_index_scan y de los predicados del pipeline estan en
-test_predicate_fixes.py (D6); aca van las condiciones de la regla.
+Las pruebas con prefijo d6 son las correcciones pedidas en
+telemetry_pipeline/references/008, con los casos de la bateria del 007
+(ql_sandbox/explain_predicados).
 """
 from datetime import datetime, timedelta, timezone
 
@@ -171,6 +172,32 @@ def test_only_top_impact_queries_are_evaluated():
 
 def test_counters_reset_is_not_compared_with_the_previous_period():
     assert _detect(_snapshot(epoch="2026-11-16 09:30:00.000000")) == []
+
+
+# --------------------------------- D6: full_index_scan cuenta como escaneo completo
+
+
+def _full_index_scan(canonic_query):
+    # MySQL recorre entero el indice de created_at: una entrada por fila
+    operation = {
+        "type": "scan", "access_method": "full_index_scan", "relation": "ql_pt_orders",
+        "table_name": None, "estimated_rows": 99835, "index_name": "idx_created_at",
+        "predicate": "(DATE(ql_pt_orders.created_at) = '$1')",
+    }
+    snapshot = _snapshot(canonic_query=canonic_query, operations=[operation], query_id=MYSQL_ID)
+    return _detect(snapshot, _history(MYSQL_ID))
+
+
+def test_d6_full_index_scan_counts_in_simple_select():
+    # caso 13 (MySQL): DATE(created_at) recorre todo el indice de created_at
+    findings = _full_index_scan("SELECT id FROM ql_pt_orders WHERE CAST(created_at AS DATE) = $1")
+    assert [(f.table_name, f.evidencia["access_method"]) for f in findings] == [("ql_pt_orders", "full_index_scan")]
+
+
+def test_d6_full_index_scan_with_limit_is_not_evaluated():
+    # caso 26: ORDER BY ... LIMIT recorre el indice en orden y corta enseguida
+    query = "SELECT id FROM ql_pt_orders WHERE total > $1 ORDER BY created_at DESC LIMIT $2"
+    assert _full_index_scan(query) == []
 
 
 # ------------------------------------------------- consulta nueva en la ventana
