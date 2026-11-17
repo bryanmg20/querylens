@@ -547,6 +547,25 @@ def exec_server_sql(engine: str, sql: str) -> None:
         run(["docker", "exec", "-i", MYSQL_CONTAINER, "mysql", "-uroot", "-pql_root"], input_text=sql)
 
 
+# Postgres le da otro queryid a la misma consulta cuando la tabla se recrea, y
+# las entradas de las tablas borradas siguen en pg_stat_statements con todo su
+# tiempo acumulado: en los escenarios siguientes ocupan top_impact_queries y
+# las consultas del escenario en curso no entran (AP-05 no tiene con que
+# asociar el indice). Una aplicacion no recrea sus tablas cada dos minutos:
+# se borran solo las entradas de las tablas de los escenarios, como indica la
+# accion que da QueryLens en el estado de evaluacion. El resto no se toca.
+# En MySQL no hace falta: el digest no depende de la tabla.
+FORGET_SCENARIO_STATEMENTS = (
+    "SELECT count(pg_stat_statements_reset(0, 0, queryid)) FROM pg_stat_statements"
+    " WHERE query ~ '(ql_scn|ql_n1_)';"
+)
+
+
+def forget_scenario_statements(engine: str) -> None:
+    if engine == "postgres":
+        exec_sql(engine, FORGET_SCENARIO_STATEMENTS)
+
+
 def querylens_sql(sql: str) -> str:
     return run([
         "docker", "exec", "-i", compose_container("postgres"), "psql", "-U", "ql_user", "-d", "ql_demo", "-At",
@@ -704,13 +723,16 @@ def run_scenario(scenario: Scenario, engine: str, keep: bool) -> list[tuple[Expe
 
     results: dict[int, dict | None] = {}
     try:
-        if engine in scenario.server_setup:
-            log(f"Configuracion del servidor: {scenario.server_setup[engine].strip()}")
-            exec_server_sql(engine, scenario.server_setup[engine])
         log("Preparando ql_scn (1.000.000 de filas)...")
         exec_sql(engine, SETUP_SQL[engine])
         if scenario.extra_setup:
             exec_sql(engine, scenario.extra_setup(engine))
+        # despues de preparar la tabla: con temptable_use_mmap = OFF, el INSERT
+        # de 1.000.000 de filas de MySQL falla con ERROR 1146 sobre su tabla
+        # temporal (el error de TempTable del sandbox); solo lo necesita la carga
+        if engine in scenario.server_setup:
+            log(f"Configuracion del servidor: {scenario.server_setup[engine].strip()}")
+            exec_server_sql(engine, scenario.server_setup[engine])
 
         if scenario.cut_snapshot:
             log("Snapshot de corte (sus hallazgos no cuentan)...")
@@ -764,6 +786,7 @@ def run_scenario(scenario: Scenario, engine: str, keep: bool) -> list[tuple[Expe
             log(f"Configuracion restaurada: {scenario.server_teardown[engine].strip()}")
         if not keep:
             exec_sql(engine, TEARDOWN_SQL)
+            forget_scenario_statements(engine)
             log("Tablas del escenario eliminadas.")
 
     return [(expectation, results.get(index)) for index, expectation in enumerate(scenario.expectations)]
