@@ -1,0 +1,1082 @@
+{
+  "generated_at": "2026-11-17 07:17:51",
+  "method": "paired_blocks_per_template_p95_bootstrap",
+  "profile": "serious",
+  "config": {
+    "block_s": 45.0,
+    "aa_pairs": 8,
+    "pipeline_pairs": 16,
+    "instr_pairs": 6,
+    "stress_pairs": 4,
+    "burn_pairs": 4,
+    "settle_s": 5.0,
+    "warmup_s": 300.0,
+    "cadence_s": 10.0,
+    "stress_cadence_s": 2.0,
+    "workers": 2,
+    "bootstrap": 2000,
+    "seed": 708527272
+  },
+  "umbral_pct": 5.0,
+  "preflight_warnings": [],
+  "verdict": "CUMPLE",
+  "engines": {
+    "mysql": {
+      "samples_total": 132634,
+      "failures_total": 0,
+      "arms": {
+        "aa": {
+          "pairs": 8,
+          "min_template_n_base": 1377,
+          "min_template_n_treat": 1375,
+          "p95_pct": -0.27167573819633084,
+          "p95_ci": [
+            -3.9101117898187385,
+            2.7494267830403185
+          ],
+          "mean_pct": -0.35198052184372,
+          "mean_ci": [
+            -1.0845592430758213,
+            0.255350959150619
+          ],
+          "throughput_pct": 0.06514036093030764,
+          "throughput_ci": [
+            -1.2572877020377677,
+            1.1880316613783046
+          ],
+          "enough_samples": true,
+          "failures": 0,
+          "server_base": {
+            "monitor_calls_per_s": 0.0,
+            "monitor_exec_ms_per_s": 0.0,
+            "monitor_rows_examined_per_s": 0.0,
+            "cpu_pct_of_core": 196.98281837738583
+          },
+          "server_treat": {
+            "monitor_calls_per_s": 0.0,
+            "monitor_exec_ms_per_s": 0.0,
+            "monitor_rows_examined_per_s": 0.0,
+            "cpu_pct_of_core": 197.13596945662735
+          },
+          "server_errors": [],
+          "noise_floor_ok": true
+        },
+        "pipeline": {
+          "pairs": 16,
+          "min_template_n_base": 2755,
+          "min_template_n_treat": 2740,
+          "p95_pct": 1.2427793563590361,
+          "p95_ci": [
+            -0.5695847036403427,
+            2.959451976825245
+          ],
+          "mean_pct": 0.5297784195066102,
+          "mean_ci": [
+            -0.06042935420329201,
+            1.18814079111901
+          ],
+          "throughput_pct": 0.5681722336981675,
+          "throughput_ci": [
+            -0.03649962541601158,
+            1.1319829843136906
+          ],
+          "enough_samples": true,
+          "failures": 0,
+          "server_base": {
+            "monitor_calls_per_s": 0.0,
+            "monitor_exec_ms_per_s": 0.0,
+            "monitor_rows_examined_per_s": 0.0,
+            "cpu_pct_of_core": 197.08747889720803
+          },
+          "server_treat": {
+            "monitor_calls_per_s": 5.362422645437507,
+            "monitor_exec_ms_per_s": 2.99700757153476,
+            "monitor_rows_examined_per_s": 97.23609743775928,
+            "cpu_pct_of_core": 197.65619185992173
+          },
+          "server_errors": [],
+          "cycles": {
+            "cycles": 64,
+            "failed": 0,
+            "errors": [],
+            "wall_s_mean": 0.190970769140625,
+            "wall_s_max": 0.409186126,
+            "duty_cycle_pct": 1.9096997659702026,
+            "candidates_mean": 10.0,
+            "auto_explain_plans_mean": 0.0,
+            "log_bytes_read_mean": null
+          },
+          "during_extraction": {
+            "n_overlapping": 571,
+            "n_clear": 26905,
+            "mean_pct": 7.782714803533719,
+            "p95_pct": 12.867232196492973
+          },
+          "verdict": "CUMPLE"
+        },
+        "instrumentation": {
+          "pairs": 6,
+          "min_template_n_base": 1042,
+          "min_template_n_treat": 1031,
+          "p95_pct": 3.301254247109786,
+          "p95_ci": [
+            -0.8290631951314409,
+            7.519638949736995
+          ],
+          "mean_pct": 1.4846567373777209,
+          "mean_ci": [
+            0.29740988961410864,
+            2.87364776052903
+          ],
+          "throughput_pct": 0.8608121592213669,
+          "throughput_ci": [
+            -0.39710859370702833,
+            2.5512804223201195
+          ],
+          "enough_samples": true,
+          "failures": 0,
+          "server_base": {
+            "monitor_calls_per_s": 0.0,
+            "monitor_exec_ms_per_s": 0.0,
+            "monitor_rows_examined_per_s": 0.0,
+            "cpu_pct_of_core": 197.0613437463614
+          },
+          "server_treat": {
+            "monitor_calls_per_s": 0.0,
+            "monitor_exec_ms_per_s": 0.0,
+            "monitor_rows_examined_per_s": 0.0,
+            "cpu_pct_of_core": 197.16531791145349
+          },
+          "server_errors": [],
+          "verdict": "INCONCLUSO",
+          "toggled": {
+            "consumers": {
+              "events_statements_current": "YES",
+              "statements_digest": "YES"
+            }
+          }
+        }
+      },
+      "verdict": "CUMPLE",
+      "noise_floor_ok": true,
+      "health": {
+        "db_id": "querylens-db-01:mysql",
+        "last_run": {
+          "status": "ok",
+          "sections_failed": [],
+          "finished_at": "2026-11-17 07:14:59.850537+00:00"
+        },
+        "open_issues": [
+          {
+            "code": "STATS_RECENTLY_RESET",
+            "severity": "info",
+            "occurrences": 64
+          }
+        ]
+      },
+      "warnings": [],
+      "blocks": [
+        {
+          "arm": "pipeline",
+          "pair": 0,
+          "side": "off",
+          "start_ns": 5838177521728,
+          "end_ns": 5883177692228,
+          "server": {
+            "cpu_usec": 88837369,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000172544,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 0,
+          "side": "on",
+          "start_ns": 5884345161027,
+          "end_ns": 5929345298614,
+          "server": {
+            "cpu_usec": 89071286,
+            "monitor_calls": 243,
+            "monitor_exec_ms": 192.998701,
+            "monitor_rows_examined": 4319
+          },
+          "server_span_ns": 45000693850,
+          "server_error": null
+        },
+        {
+          "arm": "instrumentation",
+          "pair": 2,
+          "side": "off",
+          "start_ns": 5930513361172,
+          "end_ns": 5975513478582,
+          "server": {
+            "cpu_usec": 88652241,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000119224,
+          "server_error": null
+        },
+        {
+          "arm": "instrumentation",
+          "pair": 2,
+          "side": "on",
+          "start_ns": 5976683149436,
+          "end_ns": 6021683300334,
+          "server": {
+            "cpu_usec": 88786307,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000153382,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 11,
+          "side": "on",
+          "start_ns": 6022855648669,
+          "end_ns": 6067855818166,
+          "server": {
+            "cpu_usec": 88952610,
+            "monitor_calls": 240,
+            "monitor_exec_ms": 134.902274,
+            "monitor_rows_examined": 4352
+          },
+          "server_span_ns": 45000758882,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 11,
+          "side": "off",
+          "start_ns": 6069017026129,
+          "end_ns": 6114017171210,
+          "server": {
+            "cpu_usec": 88662272,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000147516,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 5,
+          "side": "off",
+          "start_ns": 6115186346910,
+          "end_ns": 6160186467317,
+          "server": {
+            "cpu_usec": 88709245,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000123153,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 5,
+          "side": "on",
+          "start_ns": 6161359461950,
+          "end_ns": 6206359569335,
+          "server": {
+            "cpu_usec": 88969189,
+            "monitor_calls": 243,
+            "monitor_exec_ms": 119.02556199999998,
+            "monitor_rows_examined": 4421
+          },
+          "server_span_ns": 45000501773,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 2,
+          "side": "A1",
+          "start_ns": 6207532733718,
+          "end_ns": 6252532886941,
+          "server": {
+            "cpu_usec": 88869386,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000155367,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 2,
+          "side": "A2",
+          "start_ns": 6253701095488,
+          "end_ns": 6298701266699,
+          "server": {
+            "cpu_usec": 88869422,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000173936,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 0,
+          "side": "A2",
+          "start_ns": 6299865138001,
+          "end_ns": 6344865290948,
+          "server": {
+            "cpu_usec": 88913920,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000155120,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 0,
+          "side": "A1",
+          "start_ns": 6346044487135,
+          "end_ns": 6391044634317,
+          "server": {
+            "cpu_usec": 88873399,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000149457,
+          "server_error": null
+        },
+        {
+          "arm": "instrumentation",
+          "pair": 5,
+          "side": "off",
+          "start_ns": 6392218176953,
+          "end_ns": 6437218292806,
+          "server": {
+            "cpu_usec": 88870680,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000118478,
+          "server_error": null
+        },
+        {
+          "arm": "instrumentation",
+          "pair": 5,
+          "side": "on",
+          "start_ns": 6438402293998,
+          "end_ns": 6483402428663,
+          "server": {
+            "cpu_usec": 88930151,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000136078,
+          "server_error": null
+        },
+        {
+          "arm": "instrumentation",
+          "pair": 1,
+          "side": "on",
+          "start_ns": 6484575176443,
+          "end_ns": 6529575338751,
+          "server": {
+            "cpu_usec": 88812809,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000164463,
+          "server_error": null
+        },
+        {
+          "arm": "instrumentation",
+          "pair": 1,
+          "side": "off",
+          "start_ns": 6530751143296,
+          "end_ns": 6575751264385,
+          "server": {
+            "cpu_usec": 88798840,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000123523,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 6,
+          "side": "A2",
+          "start_ns": 6576926742807,
+          "end_ns": 6621926899126,
+          "server": {
+            "cpu_usec": 88821136,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000159284,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 6,
+          "side": "A1",
+          "start_ns": 6623100094959,
+          "end_ns": 6668100312857,
+          "server": {
+            "cpu_usec": 88446362,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000220502,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 14,
+          "side": "on",
+          "start_ns": 6669279240350,
+          "end_ns": 6714279556660,
+          "server": {
+            "cpu_usec": 88957702,
+            "monitor_calls": 243,
+            "monitor_exec_ms": 171.96246200000002,
+            "monitor_rows_examined": 4421
+          },
+          "server_span_ns": 45000756950,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 14,
+          "side": "off",
+          "start_ns": 6715450800656,
+          "end_ns": 6760451127146,
+          "server": {
+            "cpu_usec": 88649663,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000328515,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 10,
+          "side": "off",
+          "start_ns": 6761629532163,
+          "end_ns": 6806629675738,
+          "server": {
+            "cpu_usec": 88823842,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000145679,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 10,
+          "side": "on",
+          "start_ns": 6807797668205,
+          "end_ns": 6852797865249,
+          "server": {
+            "cpu_usec": 89090097,
+            "monitor_calls": 240,
+            "monitor_exec_ms": 124.792824,
+            "monitor_rows_examined": 4352
+          },
+          "server_span_ns": 45000685955,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 2,
+          "side": "on",
+          "start_ns": 6853967332458,
+          "end_ns": 6898967438357,
+          "server": {
+            "cpu_usec": 89058235,
+            "monitor_calls": 240,
+            "monitor_exec_ms": 119.47690999999998,
+            "monitor_rows_examined": 4352
+          },
+          "server_span_ns": 45000590872,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 2,
+          "side": "off",
+          "start_ns": 6900141574281,
+          "end_ns": 6945141750018,
+          "server": {
+            "cpu_usec": 88647596,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000179855,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 5,
+          "side": "A2",
+          "start_ns": 6946313706738,
+          "end_ns": 6991313849758,
+          "server": {
+            "cpu_usec": 88230679,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000145054,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 5,
+          "side": "A1",
+          "start_ns": 6992485709099,
+          "end_ns": 7037485872528,
+          "server": {
+            "cpu_usec": 88101791,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000166054,
+          "server_error": null
+        },
+        {
+          "arm": "instrumentation",
+          "pair": 4,
+          "side": "off",
+          "start_ns": 7038664856227,
+          "end_ns": 7083665016585,
+          "server": {
+            "cpu_usec": 88589712,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000162472,
+          "server_error": null
+        },
+        {
+          "arm": "instrumentation",
+          "pair": 4,
+          "side": "on",
+          "start_ns": 7084845808116,
+          "end_ns": 7129845990394,
+          "server": {
+            "cpu_usec": 88783447,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000185854,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 4,
+          "side": "A1",
+          "start_ns": 7131011258349,
+          "end_ns": 7176011586133,
+          "server": {
+            "cpu_usec": 88751623,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000329677,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 4,
+          "side": "A2",
+          "start_ns": 7177183933772,
+          "end_ns": 7222184074218,
+          "server": {
+            "cpu_usec": 88663876,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000142982,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 12,
+          "side": "on",
+          "start_ns": 7223359588446,
+          "end_ns": 7268359749822,
+          "server": {
+            "cpu_usec": 88952929,
+            "monitor_calls": 243,
+            "monitor_exec_ms": 126.84004900000002,
+            "monitor_rows_examined": 4420
+          },
+          "server_span_ns": 45000620390,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 12,
+          "side": "off",
+          "start_ns": 7269529936311,
+          "end_ns": 7314530091066,
+          "server": {
+            "cpu_usec": 88669431,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000157219,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 7,
+          "side": "A1",
+          "start_ns": 7315707966368,
+          "end_ns": 7360708119794,
+          "server": {
+            "cpu_usec": 88734717,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000155851,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 7,
+          "side": "A2",
+          "start_ns": 7361871886120,
+          "end_ns": 7406872272557,
+          "server": {
+            "cpu_usec": 88808068,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000389624,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 3,
+          "side": "A2",
+          "start_ns": 7408041248404,
+          "end_ns": 7453041421983,
+          "server": {
+            "cpu_usec": 88699728,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000176124,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 3,
+          "side": "A1",
+          "start_ns": 7454209077693,
+          "end_ns": 7499209206433,
+          "server": {
+            "cpu_usec": 88651734,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000130895,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 1,
+          "side": "off",
+          "start_ns": 7500378655191,
+          "end_ns": 7545378797474,
+          "server": {
+            "cpu_usec": 88686956,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000144347,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 1,
+          "side": "on",
+          "start_ns": 7546545209401,
+          "end_ns": 7591545325803,
+          "server": {
+            "cpu_usec": 88958584,
+            "monitor_calls": 243,
+            "monitor_exec_ms": 127.49893100000008,
+            "monitor_rows_examined": 4421
+          },
+          "server_span_ns": 45000616295,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 8,
+          "side": "off",
+          "start_ns": 7592714248633,
+          "end_ns": 7637714405072,
+          "server": {
+            "cpu_usec": 88796974,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000158212,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 8,
+          "side": "on",
+          "start_ns": 7638885697575,
+          "end_ns": 7683885884859,
+          "server": {
+            "cpu_usec": 88884917,
+            "monitor_calls": 240,
+            "monitor_exec_ms": 117.55253999999991,
+            "monitor_rows_examined": 4352
+          },
+          "server_span_ns": 45000620098,
+          "server_error": null
+        },
+        {
+          "arm": "instrumentation",
+          "pair": 0,
+          "side": "on",
+          "start_ns": 7685056265540,
+          "end_ns": 7730056404969,
+          "server": {
+            "cpu_usec": 88732244,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000141713,
+          "server_error": null
+        },
+        {
+          "arm": "instrumentation",
+          "pair": 0,
+          "side": "off",
+          "start_ns": 7731226722221,
+          "end_ns": 7776226846046,
+          "server": {
+            "cpu_usec": 88795714,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000126240,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 9,
+          "side": "off",
+          "start_ns": 7777394840575,
+          "end_ns": 7822394977789,
+          "server": {
+            "cpu_usec": 88834528,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000139178,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 9,
+          "side": "on",
+          "start_ns": 7823566291294,
+          "end_ns": 7868566456868,
+          "server": {
+            "cpu_usec": 89141749,
+            "monitor_calls": 243,
+            "monitor_exec_ms": 169.15403300000003,
+            "monitor_rows_examined": 4421
+          },
+          "server_span_ns": 45000725972,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 4,
+          "side": "off",
+          "start_ns": 7869746720302,
+          "end_ns": 7914746865571,
+          "server": {
+            "cpu_usec": 88846451,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000147553,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 4,
+          "side": "on",
+          "start_ns": 7915921685623,
+          "end_ns": 7960921835004,
+          "server": {
+            "cpu_usec": 89100354,
+            "monitor_calls": 240,
+            "monitor_exec_ms": 128.75662499999999,
+            "monitor_rows_examined": 4352
+          },
+          "server_span_ns": 45000626511,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 1,
+          "side": "A1",
+          "start_ns": 7962101358654,
+          "end_ns": 8007101498940,
+          "server": {
+            "cpu_usec": 88711991,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000142520,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 1,
+          "side": "A2",
+          "start_ns": 8008277218400,
+          "end_ns": 8053277381968,
+          "server": {
+            "cpu_usec": 88685634,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000165602,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 3,
+          "side": "on",
+          "start_ns": 8054452211022,
+          "end_ns": 8099452369154,
+          "server": {
+            "cpu_usec": 89065937,
+            "monitor_calls": 240,
+            "monitor_exec_ms": 124.44783400000006,
+            "monitor_rows_examined": 4352
+          },
+          "server_span_ns": 45000681669,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 3,
+          "side": "off",
+          "start_ns": 8100634026993,
+          "end_ns": 8145634155901,
+          "server": {
+            "cpu_usec": 88821230,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000131081,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 6,
+          "side": "on",
+          "start_ns": 8146808650678,
+          "end_ns": 8191808827482,
+          "server": {
+            "cpu_usec": 88688942,
+            "monitor_calls": 243,
+            "monitor_exec_ms": 124.29100500000004,
+            "monitor_rows_examined": 4421
+          },
+          "server_span_ns": 45000715441,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 6,
+          "side": "off",
+          "start_ns": 8192984894983,
+          "end_ns": 8237985070840,
+          "server": {
+            "cpu_usec": 88294026,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000178342,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 7,
+          "side": "on",
+          "start_ns": 8239167561135,
+          "end_ns": 8284167717388,
+          "server": {
+            "cpu_usec": 88576971,
+            "monitor_calls": 240,
+            "monitor_exec_ms": 120.62192899999991,
+            "monitor_rows_examined": 4351
+          },
+          "server_span_ns": 45000550761,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 7,
+          "side": "off",
+          "start_ns": 8285347224261,
+          "end_ns": 8330347376651,
+          "server": {
+            "cpu_usec": 88779673,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000154834,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 15,
+          "side": "off",
+          "start_ns": 8331515895878,
+          "end_ns": 8376516031410,
+          "server": {
+            "cpu_usec": 88726309,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000137545,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 15,
+          "side": "on",
+          "start_ns": 8377683668625,
+          "end_ns": 8422683790432,
+          "server": {
+            "cpu_usec": 88993437,
+            "monitor_calls": 240,
+            "monitor_exec_ms": 128.17796900000008,
+            "monitor_rows_examined": 4352
+          },
+          "server_span_ns": 45000583216,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 13,
+          "side": "on",
+          "start_ns": 8423855716815,
+          "end_ns": 8468855946141,
+          "server": {
+            "cpu_usec": 88682170,
+            "monitor_calls": 240,
+            "monitor_exec_ms": 127.3772379999998,
+            "monitor_rows_examined": 4352
+          },
+          "server_span_ns": 45000656500,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 13,
+          "side": "off",
+          "start_ns": 8470025431712,
+          "end_ns": 8515025606680,
+          "server": {
+            "cpu_usec": 88249453,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000177974,
+          "server_error": null
+        },
+        {
+          "arm": "instrumentation",
+          "pair": 3,
+          "side": "on",
+          "start_ns": 8516208443265,
+          "end_ns": 8561208600349,
+          "server": {
+            "cpu_usec": 88303255,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000159198,
+          "server_error": null
+        },
+        {
+          "arm": "instrumentation",
+          "pair": 3,
+          "side": "off",
+          "start_ns": 8562385860504,
+          "end_ns": 8607385997690,
+          "server": {
+            "cpu_usec": 88359996,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_rows_examined": 0
+          },
+          "server_span_ns": 45000139200,
+          "server_error": null
+        }
+      ]
+    }
+  }
+}

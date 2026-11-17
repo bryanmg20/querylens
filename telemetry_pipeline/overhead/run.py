@@ -245,14 +245,15 @@ def health_rows(engine):
 def plan_arms(engine, cfg, args):
     """[(arm, n_pares, base, treat)]. El orden no importa: stats.interleave
     mezcla los pares de todos los brazos."""
-    arms = [("aa", cfg["aa_pairs"], "A1", "A2"),
+    arms = [("aa", args.aa_pairs or cfg["aa_pairs"], "A1", "A2"),
             ("pipeline", args.pairs or cfg["pipeline_pairs"], "off", "on")]
     if args.stress:
         arms.append(("stress", cfg["stress_pairs"], "off", "on"))
     if args.positive_control:
         arms.append(("positive_control", cfg["burn_pairs"], "off", "on"))
-    if cfg["instr_pairs"] and not args.skip_instrumentation:
-        arms.append(("instrumentation", cfg["instr_pairs"], "off", "on"))
+    instr_pairs = args.instr_pairs or cfg["instr_pairs"]
+    if instr_pairs and not args.skip_instrumentation:
+        arms.append(("instrumentation", instr_pairs, "off", "on"))
     return arms
 
 
@@ -543,6 +544,10 @@ def main(argv=None):
     parser.add_argument("--profile", choices=sorted(PROFILES), default="quick")
     parser.add_argument("--engine", choices=["postgres", "mysql", "both"], default="both")
     parser.add_argument("--pairs", type=int, help="pares del brazo pipeline (pisa el perfil)")
+    parser.add_argument("--aa-pairs", type=int,
+                        help="pares del brazo A/A, el piso de ruido del host (pisa el perfil)")
+    parser.add_argument("--instr-pairs", type=int,
+                        help="pares del brazo de instrumentacion (pisa el perfil)")
     parser.add_argument("--block-s", type=float, help="segundos por bloque (pisa el perfil)")
     parser.add_argument("--cadence", type=float, default=10.0,
                         help="cadencia del pipeline (runner.DEFAULT_INTERVAL_S)")
@@ -596,6 +601,8 @@ def main(argv=None):
         "profile": args.profile,
         "config": {**cfg, "block_s": args.block_s or cfg["block_s"],
                    "pipeline_pairs": args.pairs or cfg["pipeline_pairs"],
+                   "aa_pairs": args.aa_pairs or cfg["aa_pairs"],
+                   "instr_pairs": args.instr_pairs or cfg["instr_pairs"],
                    "settle_s": SETTLE_S, "warmup_s": args.warmup_s, "cadence_s": args.cadence,
                    "stress_cadence_s": STRESS_CADENCE_S, "workers": args.workers,
                    "bootstrap": args.bootstrap, "seed": seed},
