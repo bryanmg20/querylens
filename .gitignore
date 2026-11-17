@@ -19,3 +19,5 @@ reports/*
 # Resultados de las mediciones del sandbox: quedan solo en local. Los
 # scripts de ql_sandbox/mediciones crean la carpeta al correr.
 ql_sandbox/mediciones/resultados/
+# Corridas del banco de pruebas: igual, solo en local.
+ql_sandbox/banco/resultados/
