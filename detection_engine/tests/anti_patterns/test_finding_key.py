@@ -13,7 +13,7 @@ from unittest import mock
 
 from models import Hallazgo
 from storage import finding_key, save_findings
-from test_unused_index import CAPTURED_AT, QUERY_ID, _detect, _index, _scan, _snapshot, _sysbench_indexes
+from test_ap05_unused_index import CAPTURED_AT, QUERY_ID, _detect, _index, _scan, _snapshot, _sysbench_indexes
 
 
 def _finding(antipatron, severidad="medium", query_id="q1", table_name="orders", **evidencia):

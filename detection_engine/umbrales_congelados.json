@@ -1,0 +1,79 @@
+{
+ "descripcion": "Umbrales de deteccion congelados para la campana de validacion final (SegundoInforme 7.3 y Tabla 17). Cambiar uno de estos valores obliga a repetir la campana completa: actualizar aca el valor, la version y el motivo, y volver a correr ql_sandbox/banco/banco.py. Lo verifica tests/test_umbrales_congelados.py. Las duraciones van en segundos.",
+ "version": 1,
+ "congelado_en": null,
+ "calibracion": null,
+ "umbrales": {
+  "AP-01 degradacion respecto a la linea base": {
+   "anti_patterns.baseline_degradation.DEFAULT_MIN_CALLS": 5,
+   "anti_patterns.baseline_degradation.DEFAULT_BASELINE_WINDOW": 60,
+   "anti_patterns.baseline_degradation.DEFAULT_MIN_RATIO": 2.0,
+   "anti_patterns.baseline_degradation.DEFAULT_MIN_ABS_INCREASE_MS": 1.0,
+   "anti_patterns.baseline_degradation._HIGH_EXTRA_MS": 10000,
+   "anti_patterns.baseline_degradation._MEDIUM_EXTRA_MS": 1000,
+   "anti_patterns.statement_history.WINDOW_MIN_CALLS": 5,
+   "anti_patterns.statement_history.HISTORY_WINDOWS": 90
+  },
+  "AP-02 escaneo completo evitable": {
+   "anti_patterns.avoidable_full_scan.DEFAULT_MIN_LIVE_ROWS": 10000,
+   "anti_patterns.avoidable_full_scan.DEFAULT_MAX_SELECTIVITY": 0.1,
+   "anti_patterns.avoidable_full_scan.DEFAULT_MIN_WINDOW_CALLS": 2,
+   "anti_patterns.avoidable_full_scan._NEW_QUERY_WINDOW": 10
+  },
+  "AP-03 predicado no sargable": {
+   "anti_patterns.non_sargable_predicate.DEFAULT_MIN_LIVE_ROWS": 10000,
+   "anti_patterns.non_sargable_predicate.DEFAULT_MAX_SELECTIVITY": 0.1,
+   "anti_patterns.non_sargable_predicate.DEFAULT_MIN_WINDOW_CALLS": 2,
+   "anti_patterns.non_sargable_predicate._NEW_QUERY_WINDOW": 10
+  },
+  "AP-04 indice ausente": {
+   "anti_patterns.missing_index.DEFAULT_MIN_LIVE_ROWS": 10000,
+   "anti_patterns.missing_index.DEFAULT_MAX_SELECTIVITY": 0.1,
+   "anti_patterns.missing_index.DEFAULT_MIN_WINDOW_CALLS": 2,
+   "anti_patterns.missing_index._NEW_QUERY_WINDOW": 10
+  },
+  "AP-05 indice no utilizado o redundante": {
+   "anti_patterns.unused_index.DEFAULT_MIN_STATS_WINDOW": 1800
+  },
+  "AP-06 patron N+1": {
+   "anti_patterns.n_plus_one._MIN_CHILD_CALLS": 50,
+   "anti_patterns.n_plus_one._MATCH_TOLERANCE": 0.2,
+   "anti_patterns.n_plus_one._MIN_PARENT_ROWS_PER_CALL": 2,
+   "anti_patterns.n_plus_one._HIGH_CHILD_CALLS": 500,
+   "anti_patterns.n_plus_one._NEW_QUERY_WINDOW": 10
+  },
+  "AP-07 vertido a disco": {
+   "anti_patterns.disk_spill._HIGH_WINDOW_MS": 10000,
+   "anti_patterns.disk_spill._MEDIUM_WINDOW_MS": 1000,
+   "anti_patterns.disk_spill._NEW_QUERY_WINDOW": 10
+  },
+  "AP-08 error grave de estimacion de cardinalidad": {
+   "anti_patterns.cardinality_misestimate._MIN_Q_ERROR": 10,
+   "anti_patterns.cardinality_misestimate._MIN_ROWS": 100,
+   "anti_patterns.cardinality_misestimate._HIGH_Q_ERROR": 100,
+   "anti_patterns.cardinality_misestimate._NEW_QUERY_WINDOW": 10
+  },
+  "CT-04 ampliacion de bloqueos por ausencia de indice": {
+   "deadlocks.cycles._LOCK_AMPLIFICATION_RATIO": 10
+  },
+  "CT-05 cascada por transaccion larga": {
+   "deadlocks.ct05_long_transaction_cascade.MIN_ROOT_AGE_S": 30,
+   "deadlocks.ct05_long_transaction_cascade.MIN_WAIT_S": 5,
+   "deadlocks.ct05_long_transaction_cascade.MIN_BLOCKED": 2,
+   "deadlocks.ct05_long_transaction_cascade._HIGH_IMPACT_WAIT_S": 120,
+   "deadlocks.state.MAX_SAMPLE_GAP": 60
+  },
+  "Reglas activas": {
+   "anti_patterns.engine.ACTIVE_RULES": [
+    "disk_spill",
+    "baseline_degradation",
+    "n_plus_one",
+    "avoidable_full_scan",
+    "non_sargable_predicate",
+    "missing_index",
+    "cardinality_misestimate",
+    "unused_index"
+   ]
+  }
+ }
+}
