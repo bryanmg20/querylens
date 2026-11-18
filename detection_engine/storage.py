@@ -127,7 +127,8 @@ def finding_key(finding: Hallazgo) -> str:
 
 
 # Una deteccion: actualiza (o crea) el problema con lo de esta deteccion y
-# anota la deteccion con su severidad y su impacto. El ON CONFLICT usa
+# anota la deteccion con su severidad, su impacto, su evidencia y la
+# instantanea de la que salio. El ON CONFLICT usa
 # problemas_clave_uq.
 _SAVE_FINDING = """
 WITH problema AS (
@@ -151,12 +152,20 @@ WITH problema AS (
         ultima_deteccion = now()
     RETURNING p.id
 )
-INSERT INTO public.detecciones (problema_id, severidad, impacto_ms)
-SELECT id, :severidad, :impacto_ms FROM problema
+INSERT INTO public.detecciones (problema_id, severidad, impacto_ms, evidencia, snapshot_msg_id)
+SELECT id, :severidad, :impacto_ms, CAST(:evidencia AS JSONB), :snapshot_msg_id FROM problema
 """
 
 
-def save_findings(engine: Engine, db_id: str | None, findings: list[Hallazgo]) -> None:
+def save_findings(
+    engine: Engine,
+    db_id: str | None,
+    findings: list[Hallazgo],
+    snapshot_msg_id: int | None = None,
+) -> None:
+    # snapshot_msg_id: msg_id del snapshot en la cola. El detector lo archiva
+    # en pgmq.a_analyze_job, asi que cada deteccion queda enlazada con la
+    # instantanea de la que salio (RNF-06)
     if not findings:
         return
 
@@ -177,6 +186,7 @@ def save_findings(engine: Engine, db_id: str | None, findings: list[Hallazgo]) -
             # un detector que no escribio el riesgo deja NULL, no un texto vacio
             "riesgo": finding.riesgo or None,
             "impacto_ms": finding.impacto_ms,
+            "snapshot_msg_id": snapshot_msg_id,
         }
         for finding in findings
     ]

@@ -183,21 +183,35 @@ def wait_cycles(db_id: str, since: str, cycles: int) -> None:
 def fetch_findings(db_id: str, since: str, until: str | None = None) -> list[dict]:
     """Problemas detectados en la ventana, uno por problema: cuando se detecto
     por primera vez dentro de ella y cuantas veces. La evidencia es la de su
-    ultima deteccion."""
-    upper = f" AND detectado_en <= {lit(until)}::timestamptz" if until else ""
+    ultima deteccion dentro de la ventana (la del problema si esa deteccion es
+    anterior a la columna).
+
+    Para M7 cuenta, entre las detecciones de la ventana, las que no guardaron
+    su evidencia y las que no quedaron enlazadas con su instantanea: sin
+    snapshot_msg_id, o con uno que no esta en pgmq.a_analyze_job con el mismo
+    db_id."""
+    upper = f" AND d.detectado_en <= {lit(until)}::timestamptz" if until else ""
     raw = rs.querylens_sql(
         "SELECT coalesce(json_agg(t ORDER BY t.primera_deteccion), '[]') FROM ("
         " SELECT p.id AS problema_id, p.antipatron, p.codigo, p.table_name, p.query_id, p.database_name,"
-        "        p.finding_key, p.severidad, p.evidencia,"
+        "        p.finding_key, p.severidad, coalesce(d.ultima_evidencia, p.evidencia) AS evidencia,"
         "        coalesce(p.explicacion, '') <> '' AS con_explicacion,"
         "        coalesce(p.recomendacion, '') <> '' AS con_recomendacion,"
         "        coalesce(p.riesgo, '') <> '' AS con_riesgo,"
-        "        d.primera_deteccion, d.detecciones, d.deteccion_ids"
+        "        d.primera_deteccion, d.detecciones, d.deteccion_ids,"
+        "        d.detecciones_sin_evidencia, d.detecciones_sin_enlace"
         " FROM public.problemas p JOIN ("
-        "   SELECT problema_id, min(detectado_en) AS primera_deteccion, count(*) AS detecciones,"
-        "          array_agg(id ORDER BY id) AS deteccion_ids"
-        f"   FROM public.detecciones WHERE detectado_en >= {lit(since)}::timestamptz{upper}"
-        "   GROUP BY problema_id) d ON d.problema_id = p.id"
+        "   SELECT d.problema_id, min(d.detectado_en) AS primera_deteccion, count(*) AS detecciones,"
+        "          array_agg(d.id ORDER BY d.id) AS deteccion_ids,"
+        "          (array_agg(d.evidencia ORDER BY d.id DESC))[1] AS ultima_evidencia,"
+        "          count(*) FILTER (WHERE d.evidencia IS NULL) AS detecciones_sin_evidencia,"
+        "          count(*) FILTER (WHERE a.msg_id IS NULL) AS detecciones_sin_enlace"
+        "   FROM public.detecciones d"
+        "   JOIN public.problemas dp ON dp.id = d.problema_id"
+        "   LEFT JOIN pgmq.a_analyze_job a"
+        "     ON a.msg_id = d.snapshot_msg_id AND a.message ->> 'db_id' IS NOT DISTINCT FROM dp.db_id"
+        f"   WHERE d.detectado_en >= {lit(since)}::timestamptz{upper}"
+        "   GROUP BY d.problema_id) d ON d.problema_id = p.id"
         f" WHERE p.db_id = {lit(db_id)}) t;"
     )
     return json.loads(raw or "[]")

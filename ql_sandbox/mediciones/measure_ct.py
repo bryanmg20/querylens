@@ -630,10 +630,12 @@ def capture_findings(db_id, since, pid_sets):
     """Copia de los hallazgos de contencion de esta repeticion, en cuanto el
     hallazgo de cada abrazo (por su conjunto de pid) ya esta guardado.
 
-    Un abrazo repetido sobre las mismas tablas es un solo problema (doc 005), y
-    public.hallazgos muestra en todas sus detecciones la evidencia de la ultima.
-    Si se leyera solo al final, las repeticiones anteriores no tendrian sus pid
-    ni sus recursos: evaluate() usa esta copia para cada deteccion."""
+    Un abrazo repetido sobre las mismas tablas es un solo problema (doc 005).
+    En un volumen anterior a public.detecciones.evidencia, public.hallazgos
+    muestra en todas sus detecciones la evidencia de la ultima: si se leyera
+    solo al final, las repeticiones anteriores no tendrian sus pid ni sus
+    recursos. Con la columna, cada deteccion trae la suya y la copia da lo
+    mismo. evaluate() usa esta copia para cada deteccion."""
     wanted = [sorted(pids) for pids in pid_sets]
     found = []
 

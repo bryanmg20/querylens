@@ -375,8 +375,28 @@ def test_m7_checklist_counts_each_problem_once_per_run():
     assert completeness["incompletos"][0]["faltan"] == ["con_riesgo"]
 
 
-def test_m7_is_not_measurable_without_the_snapshot_link():
+def _linked(finding, without_link=0, without_evidence=0):
+    return {**finding, "detecciones_sin_enlace": without_link, "detecciones_sin_evidencia": without_evidence}
+
+
+def test_m7_is_not_measurable_in_a_run_older_than_the_snapshot_link():
     metrics = metricas.compute([_injection("missing_index", [_ap04(), _ap02()])])
     assert metrics["resumen"]["M7"]["veredicto"] == "NO MEDIBLE"
-    linked = [{**_ap04(), "snapshot": 1}, {**_ap02(), "snapshot": 1}]
-    assert metricas.compute([_injection("missing_index", linked)])["resumen"]["M7"]["veredicto"] == "CUMPLE"
+    assert metrics["completitud"]["sin_dato_de_enlace"] == 2
+
+
+def test_m7_passes_when_every_detection_is_linked_to_its_snapshot():
+    metrics = metricas.compute([_injection("missing_index", [_linked(_ap04()), _linked(_ap02())])])
+    assert metrics["resumen"]["M7"]["veredicto"] == "CUMPLE"
+    assert (metrics["completitud"]["problemas"], metrics["completitud"]["completos"]) == (2, 2)
+
+
+def test_m7_fails_when_a_detection_has_no_snapshot_or_no_evidence():
+    # una deteccion sin instantanea archivada, u otra sin su evidencia, deja incompleto al problema
+    findings = [_linked(_ap04(), without_link=1), _linked(_ap02(), without_evidence=2)]
+    metrics = metricas.compute([_injection("missing_index", findings)])
+    completeness = metrics["completitud"]
+    assert metrics["resumen"]["M7"]["veredicto"] == "NO CUMPLE"
+    assert completeness["faltantes"]["con_enlace_a_instantanea"] == 1
+    assert completeness["faltantes"]["con_evidencia"] == 1
+    assert [item["faltan"] for item in completeness["incompletos"]] == [["con_enlace_a_instantanea"], ["con_evidencia"]]

@@ -73,7 +73,7 @@ Todo hallazgo que no coincide con ninguno de los tres es un **falso positivo** d
 
 **M4 en los antipatrones.** El informe dice "≤ 2 ventanas (120 s)", porque se escribió con ventanas de 60 s. Se mantiene el límite en segundos, y la latencia también se reporta en ventanas.
 
-M5 (sobrecosto) se mide con `telemetry_pipeline/overhead`. M6 (anonimización) se mide con `scenarios/check_literal_leak.py`. M7 (completitud) es la lista de chequeo sobre los hallazgos de la campaña.
+M5 (sobrecosto) se mide con `telemetry_pipeline/overhead`. M6 (anonimización) se mide con `scenarios/check_literal_leak.py`. M7 (completitud) es la lista de chequeo sobre los hallazgos de la campaña: explicación, recomendación y riesgo de cada problema, y la evidencia y el enlace con la instantánea (`snapshot_msg_id` en `pgmq.a_analyze_job`) de cada detección.
 
 ## Salida (`resultados/<corrida>/`, no se versiona)
 
