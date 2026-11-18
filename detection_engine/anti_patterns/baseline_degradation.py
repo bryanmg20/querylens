@@ -11,13 +11,17 @@ from .statement_history import WINDOW_MIN_CALLS, evaluate_statements
 # Regla AP-01 del SegundoInforme (Tabla 2), ajustada a ventanas de 10 s: huella
 # con >= 5 ejecuciones en la ventana cuya latencia media es >= 2,0 veces la
 # mediana de las 60 ventanas previas (10 min, lo mismo que 10 ventanas de 60 s)
-# y al menos 1 ms mayor en valor absoluto. La lista de ventanas la arma
+# y al menos 10 ms mayor en valor absoluto. La lista de ventanas la arma
 # statement_history.py con el mismo minimo de ejecuciones.
+# El minimo absoluto era 1 ms; la calibracion del 2026-11-18 (#60) lo subio a
+# 10 ms: en los controles de MySQL, las escrituras de sysbench (~0,4 ms) tienen
+# ventanas sueltas de 1-4 ms mas (vaciado de InnoDB) que daban 31 FP, y las
+# degradaciones reales del escenario de AP-01 suben entre 57 y 751 ms.
 # Pendiente: llevar los valores de 10 s a la fila de AP-01 del informe.
 DEFAULT_MIN_CALLS = WINDOW_MIN_CALLS
 DEFAULT_BASELINE_WINDOW = 60
 DEFAULT_MIN_RATIO = 2.0
-DEFAULT_MIN_ABS_INCREASE_MS = 1.0
+DEFAULT_MIN_ABS_INCREASE_MS = 10.0
 
 # Severidad por tiempo extra consumido en la ventana (ms), no por el ratio:
 # una query de 2ms que se duplica con 40 llamadas pesa menos que una de 50ms
