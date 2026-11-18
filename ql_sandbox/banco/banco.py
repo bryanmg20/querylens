@@ -228,6 +228,26 @@ def stats_window_minutes(engine: str) -> float:
     return float(out.strip().splitlines()[-1]) / 60
 
 
+def reset_statement_stats(engine: str) -> None:
+    """Pone en cero las estadisticas de sentencias del motor (pg_stat_statements
+    o el resumen por digest de MySQL).
+
+    El pipeline elige las consultas a analizar (EXPLAIN y auto_explain) por el
+    top 10 de tiempo total acumulado. Con horas de carga base acumuladas, la
+    consulta nueva de un escenario tarda mas en entrar a ese top 10, y AP-05
+    indice no utilizado o redundante y AP-08 error grave de estimacion de
+    cardinalidad se atrasan (calibracion del 2026-11-18: 139 s con 230 min
+    acumulados frente a 40 s con 31 min). Es una limitacion del pipeline, no
+    del banco, y se declara en el informe. No toca las estadisticas de uso de
+    los indices ni el arranque del motor, asi que la ventana de AP-05 sigue
+    igual."""
+    if engine == "postgres":
+        ct.pg_sandbox("SELECT pg_stat_statements_reset();")
+    else:
+        ct.mysql_root("TRUNCATE TABLE performance_schema.events_statements_summary_by_digest;")
+    log(f"{engine} | estadisticas de sentencias en cero")
+
+
 # ------------------------------------------------------------------
 # Corridas
 # ------------------------------------------------------------------
@@ -399,6 +419,8 @@ def run_engine(engine: str, units: list[tuple], args, out: Path) -> int:
     log(f"{engine} | base registrada {db_id}, monitoreo encendido")
     unfinished = consecutive = 0
     try:
+        if args.reiniciar_sentencias:
+            reset_statement_stats(engine)
         start_base_load(engine, args.tasa)
         wait_cycle(db_id)
         for position, (unit_id, _, kind, name, rep) in enumerate(units, 1):
@@ -455,7 +477,8 @@ def summary_line(unit: dict) -> str:
         rows = [r for r in unit["ct"]["results"] if r.get("phase") == "positivo"]
         return f"{sum(bool(r.get('correct')) for r in rows)}/{len(rows)} inyecciones con el hallazgo correcto"
     manifest = mf.AP_MANIFESTS.get(unit.get("scenario"))
-    kinds = [mf.classify(finding, engine, manifest)[0] for finding in unit["hallazgos"]]
+    injected = unit["tipo"] != "control"
+    kinds = [mf.classify(finding, engine, manifest, injected)[0] for finding in unit["hallazgos"]]
     text = f"{kinds.count('no_declarado')} no declarados, {kinds.count('colateral')} colaterales, " \
            f"{kinds.count('linea_base')} de linea base"
     if manifest is None:
@@ -476,6 +499,8 @@ def main() -> int:
     parser.add_argument("--smoke", action="store_true", help="1 repeticion y 1 control de 2 min")
     parser.add_argument("--etiqueta", default=None, help="nombre de la corrida (campana, calibracion...)")
     parser.add_argument("--reanudar", metavar="CORRIDA", help="seguir una corrida cortada (carpeta en resultados/)")
+    parser.add_argument("--reiniciar-sentencias", action="store_true",
+                        help="poner en cero las estadisticas de sentencias al empezar cada motor (ver reset_statement_stats)")
     args = parser.parse_args()
 
     preflight()
@@ -485,6 +510,7 @@ def main() -> int:
         # los parametros son los de la corrida original, no los de esta linea de comandos
         args.engine, args.reps, args.controles = meta["engine"], meta["reps"], meta["controles"]
         args.minutos_control, args.tasa, args.solo = meta["minutos_control"], meta["tasa_carga_base"], meta["solo"]
+        args.reiniciar_sentencias = meta.get("reiniciar_sentencias", False)
     else:
         if args.smoke:
             args.reps, args.controles, args.minutos_control = 1, 1, 2
@@ -495,6 +521,7 @@ def main() -> int:
             "run_id": out.name, "inicio": ql_now(), "fin": None, "commit": git_commit(),
             "engine": args.engine, "reps": args.reps, "controles": args.controles,
             "minutos_control": args.minutos_control, "tasa_carga_base": args.tasa, "solo": args.solo,
+            "reiniciar_sentencias": args.reiniciar_sentencias,
             "observacion_s": [OBSERVE_MIN_S, OBSERVE_MAX_S],
             "versiones": {engine: ct.server_version(engine) for engine in mf.ENGINES},
         }
@@ -511,6 +538,8 @@ def main() -> int:
     for name in ("M1", "M2", "M3", "M4"):
         item = metrics["resumen"][name]
         print(f"{name}: {item['cumplen']}/{item['de']} combinaciones | {item['veredicto']}")
+    item = metrics["resumen"]["M7"]
+    print(f"M7: {item['cumplen']}/{item['de']} problemas | {item['veredicto']}")
     print(f"Reporte: {out / 'reporte.md'}")
     if unfinished:
         print(f"{unfinished} corridas sin terminar: python ql_sandbox/banco/banco.py --reanudar {out.name}")

@@ -359,7 +359,8 @@ def markdown(metrics: dict, meta: dict) -> str:
         f"Inicio {meta.get('inicio')} · fin {meta.get('fin') or 'sin terminar'} · "
         f"{meta.get('reps')} repeticiones por escenario · {meta.get('controles')} corridas de control de "
         f"{meta.get('minutos_control')} min por motor · carga base: sysbench oltp_read_write, 4 hilos, "
-        f"{meta.get('tasa_carga_base')} tx/s · commit `{meta.get('commit', '?')}`", "",
+        f"{meta.get('tasa_carga_base')} tx/s · commit `{meta.get('commit', '?')}`"
+        + (" · estadisticas de sentencias en cero al empezar cada motor" if meta.get("reiniciar_sentencias") else ""), "",
         "## Veredicto (Tabla 7)", "",
         "| Metrica | Umbral | Combinaciones que cumplen | Veredicto |", "|---|---|---|---|",
         f"| M1 exhaustividad | >= {mf.M1_MIN:.2f} en cada combinacion | {summary['M1']['cumplen']}/{summary['M1']['de']} | {summary['M1']['veredicto']} |",
