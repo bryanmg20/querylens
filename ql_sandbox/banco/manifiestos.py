@@ -44,6 +44,9 @@ import json
 from dataclasses import dataclass, field
 
 ENGINES = ("postgres", "mysql")
+# Orden en que la campana corre los motores con --engine both (el reporte
+# sigue el de ENGINES)
+ENGINE_RUN_ORDER = ("mysql", "postgres")
 
 # codigo -> antipatron del hallazgo (detection_engine/catalog.py)
 ANTIPATRON = {

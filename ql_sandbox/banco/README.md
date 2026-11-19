@@ -27,6 +27,8 @@ El banco no toma instantáneas por su cuenta. Solo inyecta y lee lo que QueryLen
 
 **Carga base.** `scripts/base_load.sh` corre sysbench `oltp_read_write` con 4 hilos a una tasa fija (50 tx/s por defecto, `--tasa`). Corre todo el tiempo en el motor que se mide. Las inyecciones se hacen sobre ella, y las corridas de control son la carga base sola.
 
+Con `--engine both` corre primero MySQL completo y después Postgres (`ENGINE_RUN_ORDER` en `manifiestos.py`). El reporte muestra Postgres primero.
+
 **Por motor, en este orden:**
 
 | Paso | Qué es | Fuente | Duración aprox. por repetición |

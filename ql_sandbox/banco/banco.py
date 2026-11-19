@@ -359,7 +359,7 @@ def run_contention(engine: str, db_id: str, reps: int) -> dict:
 def plan(args) -> list[tuple]:
     """Corridas de la campana, en orden: (id, motor, tipo, escenario, repeticion)."""
     only = set(args.solo.split(",")) if args.solo else None
-    engines = list(mf.ENGINES) if args.engine == "both" else [args.engine]
+    engines = list(mf.ENGINE_RUN_ORDER) if args.engine == "both" else [args.engine]
 
     def wanted(name: str) -> bool:
         return only is None or name in only
