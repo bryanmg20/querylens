@@ -276,11 +276,14 @@ AP_MANIFESTS = {
     ]
 }
 
-# Orden de ejecucion: los cortos primero, AP-05 al final de los cortos (el
-# motor tiene que llevar 30 min encendido) y el de linea base al final.
+# Orden de ejecucion: AP-05 primero, luego los cortos y el de linea base al
+# final. La consulta del escenario de AP-05 es liviana y el pipeline elige las
+# candidatas por tiempo acumulado, asi que va justo despues de poner en cero las
+# sentencias (limitacion declarada en el informe). "No utilizado" ademas
+# necesita la ventana de 30 min de los indices: run_engine espera si hace falta.
 AP_ORDER = (
-    "missing_index", "non_sargable_predicate", "cardinality_misestimate", "n_plus_one", "disk_spill",
-    "unused_index", "baseline_degradation",
+    "unused_index", "missing_index", "non_sargable_predicate", "cardinality_misestimate", "n_plus_one",
+    "disk_spill", "baseline_degradation",
 )
 
 # ------------------------------------------------------------------

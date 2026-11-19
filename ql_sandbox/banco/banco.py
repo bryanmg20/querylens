@@ -252,6 +252,15 @@ def reset_statement_stats(engine: str) -> None:
 # Corridas
 # ------------------------------------------------------------------
 
+def wait_stats_window(engine: str, name: str) -> None:
+    """"No utilizado" (AP-05) solo se evalua con la ventana de estadisticas de
+    los indices cerrada: si el motor lleva poco encendido, se espera."""
+    missing = mf.AP05_STATS_WINDOW_MIN + 1 - stats_window_minutes(engine)
+    if missing > 0:
+        log(f"{engine} | {name}: el motor lleva poco encendido; se esperan {missing:.0f} min")
+        time.sleep(missing * 60)
+
+
 def run_injection(engine: str, db_id: str, name: str, rep: int) -> dict:
     scenario = rs.SCENARIOS[name]
     manifest = mf.AP_MANIFESTS[name]
@@ -259,11 +268,7 @@ def run_injection(engine: str, db_id: str, name: str, rep: int) -> dict:
     extra = {}
 
     if "AP-05" in manifest.codes():
-        # "no utilizado" solo se evalua con la ventana de estadisticas cerrada
-        missing = mf.AP05_STATS_WINDOW_MIN + 1 - stats_window_minutes(engine)
-        if missing > 0:
-            log(f"{engine} | {name}: el motor lleva poco encendido; se esperan {missing:.0f} min")
-            time.sleep(missing * 60)
+        wait_stats_window(engine, name)
         extra["ventana_estadisticas_min"] = round(stats_window_minutes(engine), 1)
 
     try:
@@ -420,6 +425,12 @@ def run_engine(engine: str, units: list[tuple], args, out: Path) -> int:
     unfinished = consecutive = 0
     try:
         if args.reiniciar_sentencias:
+            # AP-05 va primero para entrar al top 10 con las sentencias recien
+            # en cero: si tuviera que esperar la ventana de los indices despues
+            # del reinicio, la carga base acumularia esos 30 min. Se espera antes
+            first_name = next((name for _, _, kind, name, _ in units if kind == "inyeccion"), None)
+            if first_name and "AP-05" in mf.AP_MANIFESTS[first_name].codes():
+                wait_stats_window(engine, first_name)
             reset_statement_stats(engine)
         start_base_load(engine, args.tasa)
         wait_cycle(db_id)

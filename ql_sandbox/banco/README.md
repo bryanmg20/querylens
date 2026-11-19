@@ -31,12 +31,15 @@ El banco no toma instantáneas por su cuenta. Solo inyecta y lee lo que QueryLen
 
 | Paso | Qué es | Fuente | Duración aprox. por repetición |
 |---|---|---|---|
-| 1 | 6 escenarios de antipatrones | tabla y carga de `scenarios/run_scenario.py` | 1–3 min |
-| 2 | Bloque de contención | casos `positivo` de `mediciones/measure_ct.py` | ~30 s por caso |
-| 3 | Escenario de AP-01 degradación respecto a la línea base | `run_scenario.py` | ~12 min |
-| 4 | Corridas de control | carga base sola | 30 min |
+| 1 | Escenario de AP-05 índice no utilizado o redundante | tabla y carga de `scenarios/run_scenario.py` | ~2 min |
+| 2 | Los otros 5 escenarios de antipatrones | `run_scenario.py` | 1–3 min |
+| 3 | Bloque de contención | casos `positivo` de `mediciones/measure_ct.py` | ~30 s por caso |
+| 4 | Escenario de AP-01 degradación respecto a la línea base | `run_scenario.py` | ~12 min |
+| 5 | Corridas de control | carga base sola | 30 min |
 
-El escenario de AP-05 índice no utilizado o redundante espera, si hace falta, a que el motor lleve 30 min encendido: antes de eso "no utilizado" no se evalúa.
+**Por qué AP-05 índice no utilizado o redundante va primero.** El detector asocia cada hallazgo a una consulta de la tabla que esté entre las candidatas del pipeline, que se eligen por tiempo total acumulado. La consulta del escenario es liviana (lee con índice), así que corre justo después de poner en cero las estadísticas de sentencias (`--reiniciar-sentencias`). Es una limitación del pipeline y se declara en el informe.
+
+Además, "no utilizado" solo se evalúa con 30 min de estadísticas de los índices. Si el motor lleva menos tiempo encendido, el banco espera antes de poner en cero las sentencias.
 
 **Escenarios.** Son 22 para 24 combinaciones patología-motor:
 
