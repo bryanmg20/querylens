@@ -81,6 +81,58 @@ jobs:
           name: report-detector
           path: report-detector.xml
 
+  services:
+    # Pruebas del auth service y de la API REST (issue #56). Cada servicio con
+    # su lock de pruebas (requirements-dev.txt, mismas versiones que su imagen)
+    # y su propio pytest.ini. Las que usan base crean una temporal en este
+    # Postgres con el DDL de querylens_database/; QL_TEST_DB_REQUIRED=1 hace
+    # que fallen en vez de saltarse si el Postgres no responde.
+    name: services (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [auth_service, api_rest]
+
+    services:
+      postgres:
+        # 15+: problemas usa UNIQUE ... NULLS NOT DISTINCT.
+        image: mirror.gcr.io/library/postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 55434:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      QL_TEST_PG_HOST: 127.0.0.1
+      QL_TEST_PG_PORT: "55434"
+      QL_TEST_PG_USER: postgres
+      QL_TEST_PG_PASSWORD: postgres
+      QL_TEST_DB_REQUIRED: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: ${{ matrix.service }}/requirements-dev.txt
+      - run: pip install --require-hashes -r ${{ matrix.service }}/requirements-dev.txt
+      - name: pruebas
+        working-directory: ${{ matrix.service }}
+        run: python -m pytest --junitxml=../report-${{ matrix.service }}.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: report-${{ matrix.service }}
+          path: report-${{ matrix.service }}.xml
+
   stack:
     # Levanta docker-compose.yml tal cual (red interna, roles por servicio,
     # nginx con el perfil ui) y lo prueba desde fuera solo por el puerto de
