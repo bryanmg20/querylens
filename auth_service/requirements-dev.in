@@ -1,0 +1,8 @@
+# Pruebas del auth service. El lock es requirements-dev.txt
+# (scripts/lock_requirements.sh), resuelto con requirements.txt como
+# restriccion: las pruebas corren con las mismas versiones que la imagen.
+-r requirements.in
+# La misma version que el pipeline (telemetry_pipeline/requirements-dev.txt).
+pytest==9.1.1
+# TestClient de FastAPI.
+httpx
