@@ -85,6 +85,32 @@ class ActivityBucket(BaseModel):
     detecciones: int
 
 
+class DeadlockQuality(BaseModel):
+    """Cuántos abrazos mortales contó el motor, cuántos capturó QueryLens y
+    cuántos se perdieron, en la sesión de detección. Es el mismo cálculo de
+    `calidad_deadlocks` en cli/share/report.sql (ahí la ventana es la del
+    reporte): pipeline_health.cycle_samples contra public.deadlock_events.
+    CT-05 no es un abrazo mortal y no entra."""
+
+    # MySQL: el contador y los encabezados del log son de todo el servidor.
+    alcance: str
+    # None: ningún ciclo de la ventana pudo comparar el contador con el anterior.
+    hubo: int | None = None
+    capturados: int
+    con_detalle: int
+    sin_detalle: int
+    por_patron: dict[str, int]
+    # Los que el motor contó y QueryLens no capturó.
+    perdidos: int | None = None
+    # Casi siempre un borde de la ventana o un reinicio del contador.
+    capturados_de_mas: int | None = None
+    reinicios_contador: int
+    ciclos: int
+    ciclos_con_desborde: int
+    # Ciclos con más de 120 s desde el anterior: lo de ese tramo no se leyó.
+    huecos_largos: int
+
+
 class LastRun(BaseModel):
     """Resultado del último ciclo de extracción del pipeline para esta base."""
 
@@ -140,4 +166,7 @@ class DiagnosticsResponse(BaseModel):
     # Detecciones por hora de las últimas 24 h (solo las horas que tuvieron).
     activity: list[ActivityBucket]
     health: Health
+    # Calidad de la captura de abrazos mortales en la sesión. None si las
+    # tablas que la calculan todavía no existen.
+    calidad_deadlocks: DeadlockQuality | None = None
     server_time: datetime
