@@ -1,7 +1,7 @@
-# AP-07: qué sentencias evalúa (propuesta, sin implementar)
+# AP-07: qué sentencias evalúa (propuesta, no adoptada)
 
-> **Estado:** pendiente de decidir. Por ahora AP-07 queda como está.
-> Analizado el 2026-10-12 al revisar los detectores que no usan EXPLAIN.
+> **Estado:** decidido el 2026-11-20: se adopta la **opción 4** (dejarlo como está). AP-07 solo evalúa las sentencias candidatas que admiten plan, y la limitación quedó declarada en la fila de AP-07 de la Tabla 2 del Informe final. Cambiar el detector después de congelar los umbrales habría obligado a repetir la campaña de validación.
+> Analizado el 2026-10-12 al revisar los detectores que no usan EXPLAIN. El análisis de abajo se conserva como registro de la decisión.
 
 ## 1. Cómo está hoy
 
@@ -10,7 +10,7 @@
 - **Postgres:** `temp_blks_written` (bloques de 8 KB);
 - **MySQL:** `SUM_CREATED_TMP_DISK_TABLES` (tablas temporales creadas en disco).
 
-La severidad depende del tiempo que consumió en la ventana: ≥ 60 s `high`, ≥ 5 s `medium`, y si no, `low`.
+La severidad depende del tiempo que consumió en la ventana. Cuando se escribió este análisis, con ventanas de 60 s: ≥ 60 s `high`, ≥ 5 s `medium`, y si no, `low`. Hoy, con ventanas de 10 s: ≥ 10 s `high`, ≥ 1 s `medium`, y si no, `low` (`disk_spill.py`, `_HIGH_WINDOW_MS` y `_MEDIUM_WINDOW_MS`). Tampoco se mide solo `SUM_CREATED_TMP_DISK_TABLES` en MySQL: ya se considera también `SUM_SORT_MERGE_PASSES`.
 
 Recorre solo los candidatos porque, cuando se escribió, únicamente ellos traían `canonic_query`. Desde AP-06 (patrón N+1), **todos los statements traen `canonic_query`**, así que esa razón ya no existe.
 
@@ -88,11 +88,13 @@ Ajustes al banco de pruebas que van junto con la opción 1 (la regla no cambia):
 ## 7. Otros pendientes de AP-07
 
 - **Fila del informe:** declarar la regla única para ambos motores (aumento > 0), sin mínimo de ejecuciones y, si se adopta, el alcance de la opción 1.
-- **`SUM_SORT_MERGE_PASSES`:** el informe lo usa en MySQL pero el pipeline no lo recolecta, así que hoy solo se ven las tablas temporales en disco, no los ordenamientos. Agregarlo toca el colector de MySQL. Ver la sección 8.
+- **`SUM_SORT_MERGE_PASSES`:** *(resuelto: el colector de MySQL ya lo recolecta y `disk_spill.py` lo considera)*. Cuando se escribió este análisis, el informe lo usaba en MySQL pero el pipeline no lo recolectaba, así que hoy solo se ven las tablas temporales en disco, no los ordenamientos. Agregarlo toca el colector de MySQL. Ver la sección 8.
 - **`temptable_use_mmap` en MySQL 8.0:** hay un rango de tamaños en que la tabla temporal se escribe a disco en archivos mmap sin que `SUM_CREATED_TMP_DISK_TABLES` lo cuente. El escenario lo pone en `OFF` mientras corre. Ver la sección 8.
 - **Pipeline:** `select_disk_spill_indicator` usa el acumulado (`> 0`), así que toda consulta que alguna vez vertió queda como candidata a EXPLAIN para siempre. Con la opción 1, AP-07 deja de depender de ese selector.
 
 ## 8. Qué ve y qué no ve AP-07 en MySQL (probado el 2026-10-12, MySQL 8.0.46)
+
+> **Actualización (2026-11-20):** la brecha de los ordenamientos (8.1) se cerró: el colector de MySQL recolecta `SUM_SORT_MERGE_PASSES` y AP-07 lo considera, así que lo que sigue describe cómo estaba el 2026-10-12. La brecha de los archivos mmap (8.2) sigue abierta y está declarada como limitación en la fila de AP-07 de la Tabla 2.
 
 MySQL tiene dos mecanismos distintos cuando una operación no cabe en memoria, y cada uno tiene su propio contador.
 

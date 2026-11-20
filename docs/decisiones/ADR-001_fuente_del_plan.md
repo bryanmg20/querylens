@@ -1,6 +1,6 @@
 # ADR-001. Fuente del plan de ejecución de las sentencias candidatas
 
-- **Estado:** aceptada.
+- **Estado:** aceptada. Ajustada el 29 de octubre de 2026 (ver «Ajuste posterior»).
 - **Fecha:** 12 de octubre de 2026.
 - **Evaluación completa:** Segundo Informe, secciones 9.1 a 9.4 (Tabla 10).
 - **Evidencia:** `docs/evidencia/eval_opcion_c/` (script: `telemetry_pipeline/ci/eval_opcion_c.py`) y las corridas `docs/evidencia/overhead_v2_20261012_123930` (PostgreSQL) y `docs/evidencia/overhead_v2_20261012_112108` (MySQL).
@@ -35,3 +35,20 @@ Se adopta la **alternativa C**, con la mayor puntuación ponderada (4,3 frente a
   - En MySQL, las muestras de más de 1 024 bytes llegan cortadas y quedan sin plan (`QUERY_TEXT_TRUNCATED`), igual que las consultas nuevas cuando la tabla de digests está llena.
 - **Requisito operativo:** auto_explain, el registro en formato JSON y las dos funciones de lectura deben instalarse con un superusuario, según `telemetry_pipeline/references/006_instalacion_auto_explain.md`. Por eso esta fuente no está disponible en servicios gestionados (Amazon RDS, Aurora, Cloud SQL, Azure), donde se usa el plan genérico.
 - **Alternativas descartadas:** A y B se retiraron del código. Sus pruebas se conservan como evidencia de la iteración en `telemetry_pipeline/references/005_evaluacion_alternativas_query_real.md`.
+
+## Ajuste posterior (29 de octubre de 2026)
+
+La alternativa C se mantiene, pero cambió su forma en los dos motores para que AP-08 (error grave de estimación de cardinalidad) compare la estimación del plan con las filas reales **de la misma ejecución** de la que sale el plan, y no con el promedio de todas las ejecuciones de la sentencia, que no corresponde al plan explicado.
+
+- **PostgreSQL:** auto_explain registra el plan con `auto_explain.log_analyze = on` y `auto_explain.log_timing = off`, de modo que cada nodo trae sus filas reales sin medir tiempos por nodo. QUERYLENS sigue sin ejecutar `EXPLAIN ANALYZE`: el motor cuenta las filas mientras ejecuta las consultas de la aplicación.
+- **MySQL:** el plan sale de `EXPLAIN FORMAT=JSON` sobre el texto de la **ejecución más lenta** de cada sentencia entre las que conserva `performance_schema.events_statements_history`, junto con las filas que devolvió esa ejecución (`ROWS_SENT`). `QUERY_SAMPLE_TEXT` queda como respaldo: su plan no trae filas reales, así que AP-08 no se evalúa sobre él.
+
+Esto corrige dos afirmaciones de la decisión original:
+
+- **«En MySQL no agrega ninguna fuente».** Ahora el recolector lee también `events_statements_history`, un consumidor que viene activo por defecto. Se exige un historial de al menos 100 sentencias por hilo (`performance_schema_events_statements_history_size`, que por defecto vale 10 y requiere reiniciar el servidor), y `setup_target_mysql.sql` lo deja en ese valor.
+- **El costo de la instrumentación.** Las cifras de la sección «Decisión» son de la configuración del 12 de octubre, sin `log_analyze`. El costo de `log_analyze` con `log_timing = off` se evaluó aparte, en `detection_engine/references/004_ap08_filas_misma_ejecucion.md`, y no con el arnés de la medición de sobrecosto (M5).
+
+**Límite nuevo (MySQL).** El historial conserva solo las últimas sentencias de cada conexión, así que la ejecución de una sentencia candidata puede haber salido de él cuando llega el ciclo. En ese caso la sentencia recibe el plan de la muestra y AP-08 no se evalúa sobre ella. En una carga con muchas sentencias de relleno en las mismas conexiones, las consultas lentas y poco frecuentes se emparejaron con su ejecución entre el 5 % y el 18 % de los ciclos con un historial de 10, y entre el 50 % y el 84 % con uno de 100.
+
+- **Evidencia del ajuste:** `ql_sandbox/campana_cardinalidad_ap08/` y `detection_engine/references/004_ap08_filas_misma_ejecucion.md`.
+- **Validación:** la campaña final del 18 y 19 de noviembre de 2026 detectó AP-08 en las 10 inyecciones de cada motor (Informe final, sección 13.2).
