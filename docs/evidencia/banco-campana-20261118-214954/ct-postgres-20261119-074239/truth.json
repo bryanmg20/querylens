@@ -1,0 +1,2734 @@
+{
+ "meta": {
+  "run_id": "ct-postgres-20261119-074239",
+  "engine": "postgres",
+  "version": "17.11 (Debian 17.11-1.pgdg13+2)",
+  "db_id": "db_39389b4c",
+  "reps": 10,
+  "started": "2026-11-19 12:42:47.819517+00",
+  "phases": [
+   {
+    "phase": "positivo",
+    "started": "2026-11-19 12:43:13.793462+00",
+    "counter_before": 40,
+    "finished": "2026-11-19 13:02:00.841165+00",
+    "counter_after": 60,
+    "cli_report": {
+     "alcance": "base",
+     "hubo": 20,
+     "capturados": 20,
+     "con_detalle": 20,
+     "sin_detalle": 0,
+     "por_patron": {
+      "inconsistent_lock_order_deadlock": 10,
+      "lock_mode_conversion_deadlock": 10
+     },
+     "perdidos": 0,
+     "capturados_de_mas": 0,
+     "reinicios_contador": 0,
+     "ciclos": 113,
+     "ciclos_con_desborde": 0,
+     "log_kb_s_promedio": 0.2,
+     "log_kb_s_max": 1.1,
+     "hueco_max_s": 10,
+     "huecos_largos": 0
+    }
+   }
+  ],
+  "spacing_s": 14,
+  "event_timeout_s": 40,
+  "finished": "2026-11-19 13:02:06.060086+00"
+ },
+ "runs": [
+  {
+   "started": "2026-11-19 12:43:14.34561+00",
+   "finished": "2026-11-19 12:43:18.293288+00",
+   "rc": 0,
+   "seconds": 3.8,
+   "output": "[CT-01/postgres] MODE=literal SESSIONS=2 GAP=0.5 VARIANT=cuentas DBNAME=ql_demo\n[CT-01/postgres] sesion 1 pid=337018: fila 1 y despues fila 2\n[CT-01/postgres] sesion 2 pid=337021: fila 2 y despues fila 1\n[CT-01/postgres] escenario terminado a las 12:43:18 UTC; victima: sesion 1\n[CT-01/postgres] hallazgo esperado antes de las 12:43:33 UTC (M4: detection_delay_s <= 15)\n",
+   "script": "postgres/simulate_ct01_deadlock_order_postgres.sh",
+   "env": {},
+   "pids": [
+    337018,
+    337021
+   ],
+   "victim_pid": 337018,
+   "root_pid": null,
+   "deadlock": true,
+   "findings_snapshot": [
+    {
+     "id": 53831,
+     "antipatron": "inconsistent_lock_order_deadlock",
+     "severidad": "high",
+     "table_name": "ql_ct01_cuentas",
+     "evidencia": {
+      "risk": "Cambiar el orden de acceso toca la logica de la aplicacion: todas las rutas que modifican estas tablas tienen que seguir el mismo orden, o el ciclo reaparece entre la ruta nueva y una vieja. Tomar los bloqueos por adelantado (SELECT ... FOR UPDATE ordenado) alarga el tiempo que se retienen y puede aumentar la espera de otras sesiones.",
+      "source": "postgres_log",
+      "tables": [
+       "ql_ct01_cuentas"
+      ],
+      "signature": "7fc4cb957a43e64f",
+      "cycle_size": 2,
+      "captured_at": "2026-11-19T12:43:25.060289+00:00",
+      "detected_at": "2026-11-19 12:43:17.580000",
+      "limitations": [
+       "El informe no dice que mantenia cada transaccion: no se puede confirmar que retenia en modo exclusivo lo que la otra pedia. Si cada una habia leido antes con FOR SHARE la fila que despues pidio, el patron es conversion de modo (CT-02) y no orden inconsistente."
+      ],
+      "occurrences": 22,
+      "transactions": [
+       {
+        "holds": null,
+        "victim": true,
+        "query_id": -197319350911618811,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2398659"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct01_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337021
+        ],
+        "process_id": 337018,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "transaction_id": "2398630",
+        "undo_log_entries": null
+       },
+       {
+        "holds": null,
+        "victim": false,
+        "query_id": null,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 2"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2398630"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct01_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337018
+        ],
+        "process_id": 337021,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "transaction_id": null,
+        "undo_log_entries": null
+       }
+      ],
+      "database_name": "ql_demo",
+      "first_seen_at": "2026-11-16 11:06:03.422000",
+      "signature_parts": [
+       [
+        "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "ql_ct01_cuentas",
+        "",
+        "X,row"
+       ],
+       [
+        "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "ql_ct01_cuentas",
+        "",
+        "X,row"
+       ]
+      ],
+      "detection_delay_s": 7.5,
+      "victim_process_id": 337018
+     },
+     "recomendacion": "Imponer un orden de acceso unico sobre ql_ct01_cuentas: toda transaccion que modifique varias filas o tablas debe tomarlas en el mismo orden (por ejemplo, por clave primaria ascendente), o bloquearlas todas al inicio con SELECT ... FOR UPDATE ordenado por esa clave. Mantener las transacciones cortas reduce la ventana del ciclo. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (SQLSTATE 40P01).",
+     "detectado_en": "2026-11-19T12:43:25.865524+00:00"
+    }
+   ],
+   "counter_before": 40,
+   "counter_after": 41,
+   "case": "ct01",
+   "phase": "positivo",
+   "rep": 1
+  },
+  {
+   "started": "2026-11-19 12:43:32.661642+00",
+   "finished": "2026-11-19 12:43:36.571662+00",
+   "rc": 0,
+   "seconds": 3.7,
+   "output": "[CT-01/postgres] MODE=literal SESSIONS=2 GAP=0.5 VARIANT=cuentas DBNAME=ql_demo\n[CT-01/postgres] sesion 1 pid=337071: fila 1 y despues fila 2\n[CT-01/postgres] sesion 2 pid=337072: fila 2 y despues fila 1\n[CT-01/postgres] escenario terminado a las 12:43:36 UTC; victima: sesion 1\n[CT-01/postgres] hallazgo esperado antes de las 12:43:51 UTC (M4: detection_delay_s <= 15)\n",
+   "script": "postgres/simulate_ct01_deadlock_order_postgres.sh",
+   "env": {},
+   "pids": [
+    337071,
+    337072
+   ],
+   "victim_pid": 337071,
+   "root_pid": null,
+   "deadlock": true,
+   "findings_snapshot": [
+    {
+     "id": 53852,
+     "antipatron": "inconsistent_lock_order_deadlock",
+     "severidad": "high",
+     "table_name": "ql_ct01_cuentas",
+     "evidencia": {
+      "risk": "Cambiar el orden de acceso toca la logica de la aplicacion: todas las rutas que modifican estas tablas tienen que seguir el mismo orden, o el ciclo reaparece entre la ruta nueva y una vieja. Tomar los bloqueos por adelantado (SELECT ... FOR UPDATE ordenado) alarga el tiempo que se retienen y puede aumentar la espera de otras sesiones.",
+      "source": "postgres_log",
+      "tables": [
+       "ql_ct01_cuentas"
+      ],
+      "signature": "7fc4cb957a43e64f",
+      "cycle_size": 2,
+      "captured_at": "2026-11-19T12:43:45.066496+00:00",
+      "detected_at": "2026-11-19 12:43:35.874000",
+      "limitations": [
+       "El informe no dice que mantenia cada transaccion: no se puede confirmar que retenia en modo exclusivo lo que la otra pedia. Si cada una habia leido antes con FOR SHARE la fila que despues pidio, el patron es conversion de modo (CT-02) y no orden inconsistente."
+      ],
+      "occurrences": 23,
+      "transactions": [
+       {
+        "holds": null,
+        "victim": true,
+        "query_id": -197319350911618811,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2399579"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct01_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337072
+        ],
+        "process_id": 337071,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "transaction_id": "2399550",
+        "undo_log_entries": null
+       },
+       {
+        "holds": null,
+        "victim": false,
+        "query_id": null,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 2"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2399550"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct01_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337071
+        ],
+        "process_id": 337072,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "transaction_id": null,
+        "undo_log_entries": null
+       }
+      ],
+      "database_name": "ql_demo",
+      "first_seen_at": "2026-11-16 11:06:03.422000",
+      "signature_parts": [
+       [
+        "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "ql_ct01_cuentas",
+        "",
+        "X,row"
+       ],
+       [
+        "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "ql_ct01_cuentas",
+        "",
+        "X,row"
+       ]
+      ],
+      "detection_delay_s": 9.2,
+      "victim_process_id": 337071
+     },
+     "recomendacion": "Imponer un orden de acceso unico sobre ql_ct01_cuentas: toda transaccion que modifique varias filas o tablas debe tomarlas en el mismo orden (por ejemplo, por clave primaria ascendente), o bloquearlas todas al inicio con SELECT ... FOR UPDATE ordenado por esa clave. Mantener las transacciones cortas reduce la ventana del ciclo. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (SQLSTATE 40P01).",
+     "detectado_en": "2026-11-19T12:43:45.839676+00:00"
+    }
+   ],
+   "counter_before": 41,
+   "counter_after": 42,
+   "case": "ct01",
+   "phase": "positivo",
+   "rep": 2
+  },
+  {
+   "started": "2026-11-19 12:43:50.956894+00",
+   "finished": "2026-11-19 12:43:54.868701+00",
+   "rc": 0,
+   "seconds": 3.7,
+   "output": "[CT-01/postgres] MODE=literal SESSIONS=2 GAP=0.5 VARIANT=cuentas DBNAME=ql_demo\n[CT-01/postgres] sesion 1 pid=337124: fila 1 y despues fila 2\n[CT-01/postgres] sesion 2 pid=337125: fila 2 y despues fila 1\n[CT-01/postgres] escenario terminado a las 12:43:54 UTC; victima: sesion 1\n[CT-01/postgres] hallazgo esperado antes de las 12:44:09 UTC (M4: detection_delay_s <= 15)\n",
+   "script": "postgres/simulate_ct01_deadlock_order_postgres.sh",
+   "env": {},
+   "pids": [
+    337124,
+    337125
+   ],
+   "victim_pid": 337124,
+   "root_pid": null,
+   "deadlock": true,
+   "findings_snapshot": [
+    {
+     "id": 53863,
+     "antipatron": "inconsistent_lock_order_deadlock",
+     "severidad": "high",
+     "table_name": "ql_ct01_cuentas",
+     "evidencia": {
+      "risk": "Cambiar el orden de acceso toca la logica de la aplicacion: todas las rutas que modifican estas tablas tienen que seguir el mismo orden, o el ciclo reaparece entre la ruta nueva y una vieja. Tomar los bloqueos por adelantado (SELECT ... FOR UPDATE ordenado) alarga el tiempo que se retienen y puede aumentar la espera de otras sesiones.",
+      "source": "postgres_log",
+      "tables": [
+       "ql_ct01_cuentas"
+      ],
+      "signature": "7fc4cb957a43e64f",
+      "cycle_size": 2,
+      "captured_at": "2026-11-19T12:43:55.094940+00:00",
+      "detected_at": "2026-11-19 12:43:54.154000",
+      "limitations": [
+       "El informe no dice que mantenia cada transaccion: no se puede confirmar que retenia en modo exclusivo lo que la otra pedia. Si cada una habia leido antes con FOR SHARE la fila que despues pidio, el patron es conversion de modo (CT-02) y no orden inconsistente."
+      ],
+      "occurrences": 24,
+      "transactions": [
+       {
+        "holds": null,
+        "victim": true,
+        "query_id": -197319350911618811,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2400527"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct01_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337125
+        ],
+        "process_id": 337124,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "transaction_id": "2400506",
+        "undo_log_entries": null
+       },
+       {
+        "holds": null,
+        "victim": false,
+        "query_id": null,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 2"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2400506"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct01_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337124
+        ],
+        "process_id": 337125,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "transaction_id": null,
+        "undo_log_entries": null
+       }
+      ],
+      "database_name": "ql_demo",
+      "first_seen_at": "2026-11-16 11:06:03.422000",
+      "signature_parts": [
+       [
+        "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "ql_ct01_cuentas",
+        "",
+        "X,row"
+       ],
+       [
+        "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "ql_ct01_cuentas",
+        "",
+        "X,row"
+       ]
+      ],
+      "detection_delay_s": 0.9,
+      "victim_process_id": 337124
+     },
+     "recomendacion": "Imponer un orden de acceso unico sobre ql_ct01_cuentas: toda transaccion que modifique varias filas o tablas debe tomarlas en el mismo orden (por ejemplo, por clave primaria ascendente), o bloquearlas todas al inicio con SELECT ... FOR UPDATE ordenado por esa clave. Mantener las transacciones cortas reduce la ventana del ciclo. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (SQLSTATE 40P01).",
+     "detectado_en": "2026-11-19T12:43:55.76054+00:00"
+    }
+   ],
+   "counter_before": 42,
+   "counter_after": 43,
+   "case": "ct01",
+   "phase": "positivo",
+   "rep": 3
+  },
+  {
+   "started": "2026-11-19 12:44:09.192708+00",
+   "finished": "2026-11-19 12:44:13.099683+00",
+   "rc": 0,
+   "seconds": 3.7,
+   "output": "[CT-01/postgres] MODE=literal SESSIONS=2 GAP=0.5 VARIANT=cuentas DBNAME=ql_demo\n[CT-01/postgres] sesion 1 pid=337167: fila 1 y despues fila 2\n[CT-01/postgres] sesion 2 pid=337168: fila 2 y despues fila 1\n[CT-01/postgres] escenario terminado a las 12:44:12 UTC; victima: sesion 1\n[CT-01/postgres] hallazgo esperado antes de las 12:44:27 UTC (M4: detection_delay_s <= 15)\n",
+   "script": "postgres/simulate_ct01_deadlock_order_postgres.sh",
+   "env": {},
+   "pids": [
+    337167,
+    337168
+   ],
+   "victim_pid": 337167,
+   "root_pid": null,
+   "deadlock": true,
+   "findings_snapshot": [
+    {
+     "id": 53884,
+     "antipatron": "inconsistent_lock_order_deadlock",
+     "severidad": "high",
+     "table_name": "ql_ct01_cuentas",
+     "evidencia": {
+      "risk": "Cambiar el orden de acceso toca la logica de la aplicacion: todas las rutas que modifican estas tablas tienen que seguir el mismo orden, o el ciclo reaparece entre la ruta nueva y una vieja. Tomar los bloqueos por adelantado (SELECT ... FOR UPDATE ordenado) alarga el tiempo que se retienen y puede aumentar la espera de otras sesiones.",
+      "source": "postgres_log",
+      "tables": [
+       "ql_ct01_cuentas"
+      ],
+      "signature": "7fc4cb957a43e64f",
+      "cycle_size": 2,
+      "captured_at": "2026-11-19T12:44:15.063971+00:00",
+      "detected_at": "2026-11-19 12:44:12.392000",
+      "limitations": [
+       "El informe no dice que mantenia cada transaccion: no se puede confirmar que retenia en modo exclusivo lo que la otra pedia. Si cada una habia leido antes con FOR SHARE la fila que despues pidio, el patron es conversion de modo (CT-02) y no orden inconsistente."
+      ],
+      "occurrences": 25,
+      "transactions": [
+       {
+        "holds": null,
+        "victim": true,
+        "query_id": -197319350911618811,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2401440"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct01_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337168
+        ],
+        "process_id": 337167,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "transaction_id": "2401401",
+        "undo_log_entries": null
+       },
+       {
+        "holds": null,
+        "victim": false,
+        "query_id": null,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 2"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2401401"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct01_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337167
+        ],
+        "process_id": 337168,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "transaction_id": null,
+        "undo_log_entries": null
+       }
+      ],
+      "database_name": "ql_demo",
+      "first_seen_at": "2026-11-16 11:06:03.422000",
+      "signature_parts": [
+       [
+        "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "ql_ct01_cuentas",
+        "",
+        "X,row"
+       ],
+       [
+        "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "ql_ct01_cuentas",
+        "",
+        "X,row"
+       ]
+      ],
+      "detection_delay_s": 2.7,
+      "victim_process_id": 337167
+     },
+     "recomendacion": "Imponer un orden de acceso unico sobre ql_ct01_cuentas: toda transaccion que modifique varias filas o tablas debe tomarlas en el mismo orden (por ejemplo, por clave primaria ascendente), o bloquearlas todas al inicio con SELECT ... FOR UPDATE ordenado por esa clave. Mantener las transacciones cortas reduce la ventana del ciclo. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (SQLSTATE 40P01).",
+     "detectado_en": "2026-11-19T12:44:15.863264+00:00"
+    }
+   ],
+   "counter_before": 43,
+   "counter_after": 44,
+   "case": "ct01",
+   "phase": "positivo",
+   "rep": 4
+  },
+  {
+   "started": "2026-11-19 12:44:27.441362+00",
+   "finished": "2026-11-19 12:44:31.430967+00",
+   "rc": 0,
+   "seconds": 3.7,
+   "output": "[CT-01/postgres] MODE=literal SESSIONS=2 GAP=0.5 VARIANT=cuentas DBNAME=ql_demo\n[CT-01/postgres] sesion 1 pid=337220: fila 1 y despues fila 2\n[CT-01/postgres] sesion 2 pid=337221: fila 2 y despues fila 1\n[CT-01/postgres] escenario terminado a las 12:44:31 UTC; victima: sesion 1\n[CT-01/postgres] hallazgo esperado antes de las 12:44:46 UTC (M4: detection_delay_s <= 15)\n",
+   "script": "postgres/simulate_ct01_deadlock_order_postgres.sh",
+   "env": {},
+   "pids": [
+    337220,
+    337221
+   ],
+   "victim_pid": 337220,
+   "root_pid": null,
+   "deadlock": true,
+   "findings_snapshot": [
+    {
+     "id": 53905,
+     "antipatron": "inconsistent_lock_order_deadlock",
+     "severidad": "high",
+     "table_name": "ql_ct01_cuentas",
+     "evidencia": {
+      "risk": "Cambiar el orden de acceso toca la logica de la aplicacion: todas las rutas que modifican estas tablas tienen que seguir el mismo orden, o el ciclo reaparece entre la ruta nueva y una vieja. Tomar los bloqueos por adelantado (SELECT ... FOR UPDATE ordenado) alarga el tiempo que se retienen y puede aumentar la espera de otras sesiones.",
+      "source": "postgres_log",
+      "tables": [
+       "ql_ct01_cuentas"
+      ],
+      "signature": "7fc4cb957a43e64f",
+      "cycle_size": 2,
+      "captured_at": "2026-11-19T12:44:35.054462+00:00",
+      "detected_at": "2026-11-19 12:44:30.663000",
+      "limitations": [
+       "El informe no dice que mantenia cada transaccion: no se puede confirmar que retenia en modo exclusivo lo que la otra pedia. Si cada una habia leido antes con FOR SHARE la fila que despues pidio, el patron es conversion de modo (CT-02) y no orden inconsistente."
+      ],
+      "occurrences": 26,
+      "transactions": [
+       {
+        "holds": null,
+        "victim": true,
+        "query_id": -197319350911618811,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2402312"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct01_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337221
+        ],
+        "process_id": 337220,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "transaction_id": "2402290",
+        "undo_log_entries": null
+       },
+       {
+        "holds": null,
+        "victim": false,
+        "query_id": null,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 2"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2402290"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct01_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337220
+        ],
+        "process_id": 337221,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "transaction_id": null,
+        "undo_log_entries": null
+       }
+      ],
+      "database_name": "ql_demo",
+      "first_seen_at": "2026-11-16 11:06:03.422000",
+      "signature_parts": [
+       [
+        "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "ql_ct01_cuentas",
+        "",
+        "X,row"
+       ],
+       [
+        "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "ql_ct01_cuentas",
+        "",
+        "X,row"
+       ]
+      ],
+      "detection_delay_s": 4.4,
+      "victim_process_id": 337220
+     },
+     "recomendacion": "Imponer un orden de acceso unico sobre ql_ct01_cuentas: toda transaccion que modifique varias filas o tablas debe tomarlas en el mismo orden (por ejemplo, por clave primaria ascendente), o bloquearlas todas al inicio con SELECT ... FOR UPDATE ordenado por esa clave. Mantener las transacciones cortas reduce la ventana del ciclo. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (SQLSTATE 40P01).",
+     "detectado_en": "2026-11-19T12:44:35.778202+00:00"
+    }
+   ],
+   "counter_before": 44,
+   "counter_after": 45,
+   "case": "ct01",
+   "phase": "positivo",
+   "rep": 5
+  },
+  {
+   "started": "2026-11-19 12:44:45.910583+00",
+   "finished": "2026-11-19 12:44:49.852754+00",
+   "rc": 0,
+   "seconds": 3.8,
+   "output": "[CT-01/postgres] MODE=literal SESSIONS=2 GAP=0.5 VARIANT=cuentas DBNAME=ql_demo\n[CT-01/postgres] sesion 1 pid=337264: fila 1 y despues fila 2\n[CT-01/postgres] sesion 2 pid=337265: fila 2 y despues fila 1\n[CT-01/postgres] escenario terminado a las 12:44:49 UTC; victima: sesion 1\n[CT-01/postgres] hallazgo esperado antes de las 12:45:04 UTC (M4: detection_delay_s <= 15)\n",
+   "script": "postgres/simulate_ct01_deadlock_order_postgres.sh",
+   "env": {},
+   "pids": [
+    337264,
+    337265
+   ],
+   "victim_pid": 337264,
+   "root_pid": null,
+   "deadlock": true,
+   "findings_snapshot": [
+    {
+     "id": 53926,
+     "antipatron": "inconsistent_lock_order_deadlock",
+     "severidad": "high",
+     "table_name": "ql_ct01_cuentas",
+     "evidencia": {
+      "risk": "Cambiar el orden de acceso toca la logica de la aplicacion: todas las rutas que modifican estas tablas tienen que seguir el mismo orden, o el ciclo reaparece entre la ruta nueva y una vieja. Tomar los bloqueos por adelantado (SELECT ... FOR UPDATE ordenado) alarga el tiempo que se retienen y puede aumentar la espera de otras sesiones.",
+      "source": "postgres_log",
+      "tables": [
+       "ql_ct01_cuentas"
+      ],
+      "signature": "7fc4cb957a43e64f",
+      "cycle_size": 2,
+      "captured_at": "2026-11-19T12:44:55.048080+00:00",
+      "detected_at": "2026-11-19 12:44:49.153000",
+      "limitations": [
+       "El informe no dice que mantenia cada transaccion: no se puede confirmar que retenia en modo exclusivo lo que la otra pedia. Si cada una habia leido antes con FOR SHARE la fila que despues pidio, el patron es conversion de modo (CT-02) y no orden inconsistente."
+      ],
+      "occurrences": 27,
+      "transactions": [
+       {
+        "holds": null,
+        "victim": true,
+        "query_id": -197319350911618811,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2403230"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct01_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337265
+        ],
+        "process_id": 337264,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "transaction_id": "2403202",
+        "undo_log_entries": null
+       },
+       {
+        "holds": null,
+        "victim": false,
+        "query_id": null,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 2"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2403202"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct01_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337264
+        ],
+        "process_id": 337265,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "transaction_id": null,
+        "undo_log_entries": null
+       }
+      ],
+      "database_name": "ql_demo",
+      "first_seen_at": "2026-11-16 11:06:03.422000",
+      "signature_parts": [
+       [
+        "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "ql_ct01_cuentas",
+        "",
+        "X,row"
+       ],
+       [
+        "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "ql_ct01_cuentas",
+        "",
+        "X,row"
+       ]
+      ],
+      "detection_delay_s": 5.9,
+      "victim_process_id": 337264
+     },
+     "recomendacion": "Imponer un orden de acceso unico sobre ql_ct01_cuentas: toda transaccion que modifique varias filas o tablas debe tomarlas en el mismo orden (por ejemplo, por clave primaria ascendente), o bloquearlas todas al inicio con SELECT ... FOR UPDATE ordenado por esa clave. Mantener las transacciones cortas reduce la ventana del ciclo. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (SQLSTATE 40P01).",
+     "detectado_en": "2026-11-19T12:44:55.860522+00:00"
+    }
+   ],
+   "counter_before": 45,
+   "counter_after": 46,
+   "case": "ct01",
+   "phase": "positivo",
+   "rep": 6
+  },
+  {
+   "started": "2026-11-19 12:45:04.23949+00",
+   "finished": "2026-11-19 12:45:08.154471+00",
+   "rc": 0,
+   "seconds": 3.7,
+   "output": "[CT-01/postgres] MODE=literal SESSIONS=2 GAP=0.5 VARIANT=cuentas DBNAME=ql_demo\n[CT-01/postgres] sesion 1 pid=337314: fila 1 y despues fila 2\n[CT-01/postgres] sesion 2 pid=337315: fila 2 y despues fila 1\n[CT-01/postgres] escenario terminado a las 12:45:07 UTC; victima: sesion 1\n[CT-01/postgres] hallazgo esperado antes de las 12:45:22 UTC (M4: detection_delay_s <= 15)\n",
+   "script": "postgres/simulate_ct01_deadlock_order_postgres.sh",
+   "env": {},
+   "pids": [
+    337314,
+    337315
+   ],
+   "victim_pid": 337314,
+   "root_pid": null,
+   "deadlock": true,
+   "findings_snapshot": [
+    {
+     "id": 53947,
+     "antipatron": "inconsistent_lock_order_deadlock",
+     "severidad": "high",
+     "table_name": "ql_ct01_cuentas",
+     "evidencia": {
+      "risk": "Cambiar el orden de acceso toca la logica de la aplicacion: todas las rutas que modifican estas tablas tienen que seguir el mismo orden, o el ciclo reaparece entre la ruta nueva y una vieja. Tomar los bloqueos por adelantado (SELECT ... FOR UPDATE ordenado) alarga el tiempo que se retienen y puede aumentar la espera de otras sesiones.",
+      "source": "postgres_log",
+      "tables": [
+       "ql_ct01_cuentas"
+      ],
+      "signature": "7fc4cb957a43e64f",
+      "cycle_size": 2,
+      "captured_at": "2026-11-19T12:45:15.049655+00:00",
+      "detected_at": "2026-11-19 12:45:07.450000",
+      "limitations": [
+       "El informe no dice que mantenia cada transaccion: no se puede confirmar que retenia en modo exclusivo lo que la otra pedia. Si cada una habia leido antes con FOR SHARE la fila que despues pidio, el patron es conversion de modo (CT-02) y no orden inconsistente."
+      ],
+      "occurrences": 28,
+      "transactions": [
+       {
+        "holds": null,
+        "victim": true,
+        "query_id": -197319350911618811,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2404104"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct01_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337315
+        ],
+        "process_id": 337314,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "transaction_id": "2404078",
+        "undo_log_entries": null
+       },
+       {
+        "holds": null,
+        "victim": false,
+        "query_id": null,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 2"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2404078"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct01_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337314
+        ],
+        "process_id": 337315,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "transaction_id": null,
+        "undo_log_entries": null
+       }
+      ],
+      "database_name": "ql_demo",
+      "first_seen_at": "2026-11-16 11:06:03.422000",
+      "signature_parts": [
+       [
+        "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "ql_ct01_cuentas",
+        "",
+        "X,row"
+       ],
+       [
+        "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "ql_ct01_cuentas",
+        "",
+        "X,row"
+       ]
+      ],
+      "detection_delay_s": 7.6,
+      "victim_process_id": 337314
+     },
+     "recomendacion": "Imponer un orden de acceso unico sobre ql_ct01_cuentas: toda transaccion que modifique varias filas o tablas debe tomarlas en el mismo orden (por ejemplo, por clave primaria ascendente), o bloquearlas todas al inicio con SELECT ... FOR UPDATE ordenado por esa clave. Mantener las transacciones cortas reduce la ventana del ciclo. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (SQLSTATE 40P01).",
+     "detectado_en": "2026-11-19T12:45:15.780927+00:00"
+    }
+   ],
+   "counter_before": 46,
+   "counter_after": 47,
+   "case": "ct01",
+   "phase": "positivo",
+   "rep": 7
+  },
+  {
+   "started": "2026-11-19 12:45:22.523148+00",
+   "finished": "2026-11-19 12:45:26.448901+00",
+   "rc": 0,
+   "seconds": 3.7,
+   "output": "[CT-01/postgres] MODE=literal SESSIONS=2 GAP=0.5 VARIANT=cuentas DBNAME=ql_demo\n[CT-01/postgres] sesion 1 pid=337359: fila 1 y despues fila 2\n[CT-01/postgres] sesion 2 pid=337368: fila 2 y despues fila 1\n[CT-01/postgres] escenario terminado a las 12:45:26 UTC; victima: sesion 1\n[CT-01/postgres] hallazgo esperado antes de las 12:45:41 UTC (M4: detection_delay_s <= 15)\n",
+   "script": "postgres/simulate_ct01_deadlock_order_postgres.sh",
+   "env": {},
+   "pids": [
+    337359,
+    337368
+   ],
+   "victim_pid": 337359,
+   "root_pid": null,
+   "deadlock": true,
+   "findings_snapshot": [
+    {
+     "id": 53968,
+     "antipatron": "inconsistent_lock_order_deadlock",
+     "severidad": "high",
+     "table_name": "ql_ct01_cuentas",
+     "evidencia": {
+      "risk": "Cambiar el orden de acceso toca la logica de la aplicacion: todas las rutas que modifican estas tablas tienen que seguir el mismo orden, o el ciclo reaparece entre la ruta nueva y una vieja. Tomar los bloqueos por adelantado (SELECT ... FOR UPDATE ordenado) alarga el tiempo que se retienen y puede aumentar la espera de otras sesiones.",
+      "source": "postgres_log",
+      "tables": [
+       "ql_ct01_cuentas"
+      ],
+      "signature": "7fc4cb957a43e64f",
+      "cycle_size": 2,
+      "captured_at": "2026-11-19T12:45:35.058426+00:00",
+      "detected_at": "2026-11-19 12:45:25.733000",
+      "limitations": [
+       "El informe no dice que mantenia cada transaccion: no se puede confirmar que retenia en modo exclusivo lo que la otra pedia. Si cada una habia leido antes con FOR SHARE la fila que despues pidio, el patron es conversion de modo (CT-02) y no orden inconsistente."
+      ],
+      "occurrences": 29,
+      "transactions": [
+       {
+        "holds": null,
+        "victim": true,
+        "query_id": -197319350911618811,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2404991"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct01_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337368
+        ],
+        "process_id": 337359,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "transaction_id": "2404970",
+        "undo_log_entries": null
+       },
+       {
+        "holds": null,
+        "victim": false,
+        "query_id": null,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 2"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2404970"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct01_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337359
+        ],
+        "process_id": 337368,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "transaction_id": null,
+        "undo_log_entries": null
+       }
+      ],
+      "database_name": "ql_demo",
+      "first_seen_at": "2026-11-16 11:06:03.422000",
+      "signature_parts": [
+       [
+        "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "ql_ct01_cuentas",
+        "",
+        "X,row"
+       ],
+       [
+        "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "ql_ct01_cuentas",
+        "",
+        "X,row"
+       ]
+      ],
+      "detection_delay_s": 9.3,
+      "victim_process_id": 337359
+     },
+     "recomendacion": "Imponer un orden de acceso unico sobre ql_ct01_cuentas: toda transaccion que modifique varias filas o tablas debe tomarlas en el mismo orden (por ejemplo, por clave primaria ascendente), o bloquearlas todas al inicio con SELECT ... FOR UPDATE ordenado por esa clave. Mantener las transacciones cortas reduce la ventana del ciclo. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (SQLSTATE 40P01).",
+     "detectado_en": "2026-11-19T12:45:35.789386+00:00"
+    }
+   ],
+   "counter_before": 47,
+   "counter_after": 48,
+   "case": "ct01",
+   "phase": "positivo",
+   "rep": 8
+  },
+  {
+   "started": "2026-11-19 12:45:40.79391+00",
+   "finished": "2026-11-19 12:45:44.711435+00",
+   "rc": 0,
+   "seconds": 3.7,
+   "output": "[CT-01/postgres] MODE=literal SESSIONS=2 GAP=0.5 VARIANT=cuentas DBNAME=ql_demo\n[CT-01/postgres] sesion 1 pid=337411: fila 1 y despues fila 2\n[CT-01/postgres] sesion 2 pid=337412: fila 2 y despues fila 1\n[CT-01/postgres] escenario terminado a las 12:45:44 UTC; victima: sesion 1\n[CT-01/postgres] hallazgo esperado antes de las 12:45:59 UTC (M4: detection_delay_s <= 15)\n",
+   "script": "postgres/simulate_ct01_deadlock_order_postgres.sh",
+   "env": {},
+   "pids": [
+    337411,
+    337412
+   ],
+   "victim_pid": 337411,
+   "root_pid": null,
+   "deadlock": true,
+   "findings_snapshot": [
+    {
+     "id": 53979,
+     "antipatron": "inconsistent_lock_order_deadlock",
+     "severidad": "high",
+     "table_name": "ql_ct01_cuentas",
+     "evidencia": {
+      "risk": "Cambiar el orden de acceso toca la logica de la aplicacion: todas las rutas que modifican estas tablas tienen que seguir el mismo orden, o el ciclo reaparece entre la ruta nueva y una vieja. Tomar los bloqueos por adelantado (SELECT ... FOR UPDATE ordenado) alarga el tiempo que se retienen y puede aumentar la espera de otras sesiones.",
+      "source": "postgres_log",
+      "tables": [
+       "ql_ct01_cuentas"
+      ],
+      "signature": "7fc4cb957a43e64f",
+      "cycle_size": 2,
+      "captured_at": "2026-11-19T12:45:45.049218+00:00",
+      "detected_at": "2026-11-19 12:45:43.999000",
+      "limitations": [
+       "El informe no dice que mantenia cada transaccion: no se puede confirmar que retenia en modo exclusivo lo que la otra pedia. Si cada una habia leido antes con FOR SHARE la fila que despues pidio, el patron es conversion de modo (CT-02) y no orden inconsistente."
+      ],
+      "occurrences": 30,
+      "transactions": [
+       {
+        "holds": null,
+        "victim": true,
+        "query_id": -197319350911618811,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2405881"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct01_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337412
+        ],
+        "process_id": 337411,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "transaction_id": "2405853",
+        "undo_log_entries": null
+       },
+       {
+        "holds": null,
+        "victim": false,
+        "query_id": null,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 2"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2405853"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct01_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337411
+        ],
+        "process_id": 337412,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "transaction_id": null,
+        "undo_log_entries": null
+       }
+      ],
+      "database_name": "ql_demo",
+      "first_seen_at": "2026-11-16 11:06:03.422000",
+      "signature_parts": [
+       [
+        "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "ql_ct01_cuentas",
+        "",
+        "X,row"
+       ],
+       [
+        "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "ql_ct01_cuentas",
+        "",
+        "X,row"
+       ]
+      ],
+      "detection_delay_s": 1.1,
+      "victim_process_id": 337411
+     },
+     "recomendacion": "Imponer un orden de acceso unico sobre ql_ct01_cuentas: toda transaccion que modifique varias filas o tablas debe tomarlas en el mismo orden (por ejemplo, por clave primaria ascendente), o bloquearlas todas al inicio con SELECT ... FOR UPDATE ordenado por esa clave. Mantener las transacciones cortas reduce la ventana del ciclo. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (SQLSTATE 40P01).",
+     "detectado_en": "2026-11-19T12:45:45.692963+00:00"
+    }
+   ],
+   "counter_before": 48,
+   "counter_after": 49,
+   "case": "ct01",
+   "phase": "positivo",
+   "rep": 9
+  },
+  {
+   "started": "2026-11-19 12:45:59.074512+00",
+   "finished": "2026-11-19 12:46:02.979822+00",
+   "rc": 0,
+   "seconds": 3.7,
+   "output": "[CT-01/postgres] MODE=literal SESSIONS=2 GAP=0.5 VARIANT=cuentas DBNAME=ql_demo\n[CT-01/postgres] sesion 1 pid=337463: fila 1 y despues fila 2\n[CT-01/postgres] sesion 2 pid=337464: fila 2 y despues fila 1\n[CT-01/postgres] escenario terminado a las 12:46:02 UTC; victima: sesion 1\n[CT-01/postgres] hallazgo esperado antes de las 12:46:17 UTC (M4: detection_delay_s <= 15)\n",
+   "script": "postgres/simulate_ct01_deadlock_order_postgres.sh",
+   "env": {},
+   "pids": [
+    337463,
+    337464
+   ],
+   "victim_pid": 337463,
+   "root_pid": null,
+   "deadlock": true,
+   "findings_snapshot": [
+    {
+     "id": 54000,
+     "antipatron": "inconsistent_lock_order_deadlock",
+     "severidad": "high",
+     "table_name": "ql_ct01_cuentas",
+     "evidencia": {
+      "risk": "Cambiar el orden de acceso toca la logica de la aplicacion: todas las rutas que modifican estas tablas tienen que seguir el mismo orden, o el ciclo reaparece entre la ruta nueva y una vieja. Tomar los bloqueos por adelantado (SELECT ... FOR UPDATE ordenado) alarga el tiempo que se retienen y puede aumentar la espera de otras sesiones.",
+      "source": "postgres_log",
+      "tables": [
+       "ql_ct01_cuentas"
+      ],
+      "signature": "7fc4cb957a43e64f",
+      "cycle_size": 2,
+      "captured_at": "2026-11-19T12:46:05.050728+00:00",
+      "detected_at": "2026-11-19 12:46:02.282000",
+      "limitations": [
+       "El informe no dice que mantenia cada transaccion: no se puede confirmar que retenia en modo exclusivo lo que la otra pedia. Si cada una habia leido antes con FOR SHARE la fila que despues pidio, el patron es conversion de modo (CT-02) y no orden inconsistente."
+      ],
+      "occurrences": 31,
+      "transactions": [
+       {
+        "holds": null,
+        "victim": true,
+        "query_id": -197319350911618811,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2406820"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct01_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337464
+        ],
+        "process_id": 337463,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "transaction_id": "2406799",
+        "undo_log_entries": null
+       },
+       {
+        "holds": null,
+        "victim": false,
+        "query_id": null,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 2"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2406799"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct01_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337463
+        ],
+        "process_id": 337464,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "transaction_id": null,
+        "undo_log_entries": null
+       }
+      ],
+      "database_name": "ql_demo",
+      "first_seen_at": "2026-11-16 11:06:03.422000",
+      "signature_parts": [
+       [
+        "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "ql_ct01_cuentas",
+        "",
+        "X,row"
+       ],
+       [
+        "UPDATE ql_ct01_cuentas SET saldo = saldo + $1 WHERE id = $2",
+        "ql_ct01_cuentas",
+        "",
+        "X,row"
+       ]
+      ],
+      "detection_delay_s": 2.8,
+      "victim_process_id": 337463
+     },
+     "recomendacion": "Imponer un orden de acceso unico sobre ql_ct01_cuentas: toda transaccion que modifique varias filas o tablas debe tomarlas en el mismo orden (por ejemplo, por clave primaria ascendente), o bloquearlas todas al inicio con SELECT ... FOR UPDATE ordenado por esa clave. Mantener las transacciones cortas reduce la ventana del ciclo. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (SQLSTATE 40P01).",
+     "detectado_en": "2026-11-19T12:46:05.844212+00:00"
+    }
+   ],
+   "counter_before": 49,
+   "counter_after": 50,
+   "case": "ct01",
+   "phase": "positivo",
+   "rep": 10
+  },
+  {
+   "started": "2026-11-19 12:46:17.344287+00",
+   "finished": "2026-11-19 12:46:21.284877+00",
+   "rc": 0,
+   "seconds": 3.8,
+   "output": "[CT-02/postgres] MODE=literal GAP=0.5\n[CT-02/postgres] sesion 1 pid=337511: FOR SHARE de la fila 1 y despues UPDATE\n[CT-02/postgres] sesion 2 pid=337512: FOR SHARE de la fila 1 y despues UPDATE\n[CT-02/postgres] escenario terminado a las 12:46:21 UTC; victima: sesion 1\n[CT-02/postgres] hallazgo lock_mode_conversion_deadlock esperado antes de las 12:46:36 UTC (M4: detection_delay_s <= 15)\n",
+   "script": "postgres/simulate_ct02_deadlock_conversion_postgres.sh",
+   "env": {},
+   "pids": [
+    337511,
+    337512
+   ],
+   "victim_pid": 337511,
+   "root_pid": null,
+   "deadlock": true,
+   "findings_snapshot": [
+    {
+     "id": 54021,
+     "antipatron": "lock_mode_conversion_deadlock",
+     "severidad": "high",
+     "table_name": "ql_ct02_cuentas",
+     "evidencia": {
+      "risk": "Pedir la fila con FOR UPDATE desde la lectura pone en fila a las transacciones que antes la leian en paralelo: las que solo leen y no modifican esperan ahora a las que modifican. Si la mayoria solo lee, conviene separar esa ruta y dejarla con FOR SHARE o sin bloqueo.",
+      "source": "postgres_log",
+      "tables": [
+       "ql_ct02_cuentas"
+      ],
+      "signature": "9eb23c5dc96ec22e",
+      "cycle_size": 2,
+      "captured_at": "2026-11-19T12:46:25.055187+00:00",
+      "detected_at": "2026-11-19 12:46:20.586000",
+      "limitations": [
+       "Inferido: el informe no dice que mantenia cada transaccion. Se deduce de que todas esperaban la misma fila: dos transacciones solo pueden esperarse mutuamente por la misma fila si ya la tenian las dos, y eso solo es posible en modo compartido."
+      ],
+      "occurrences": 22,
+      "transactions": [
+       {
+        "holds": null,
+        "victim": true,
+        "query_id": 4965197822308022306,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2407763"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct02_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337512
+        ],
+        "process_id": 337511,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "transaction_id": "2407735",
+        "undo_log_entries": null
+       },
+       {
+        "holds": null,
+        "victim": false,
+        "query_id": null,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2407735"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct02_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337511
+        ],
+        "process_id": 337512,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "transaction_id": null,
+        "undo_log_entries": null
+       }
+      ],
+      "database_name": "ql_demo",
+      "first_seen_at": "2026-11-16 11:06:21.996000",
+      "signature_parts": [
+       [
+        "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "ql_ct02_cuentas",
+        "",
+        "X,row"
+       ],
+       [
+        "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "ql_ct02_cuentas",
+        "",
+        "X,row"
+       ]
+      ],
+      "detection_delay_s": 4.5,
+      "victim_process_id": 337511
+     },
+     "recomendacion": "Si la transaccion lee la fila antes de modificarla, pedirla desde el inicio en modo exclusivo con SELECT ... FOR UPDATE en lugar de FOR SHARE, o hacer la verificacion en el WHERE del UPDATE (por ejemplo UPDATE ... WHERE id = ... AND saldo >= ...) para no leerla antes. El informe muestra la sentencia que esperaba; la lectura con FOR SHARE esta antes, en la misma transaccion. En Postgres un INSERT en una tabla hija bloquea la fila padre con FOR KEY SHARE: choca con un DELETE o un cambio de clave de esa fila en otra transaccion. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (SQLSTATE 40P01).",
+     "detectado_en": "2026-11-19T12:46:25.849678+00:00"
+    }
+   ],
+   "counter_before": 50,
+   "counter_after": 51,
+   "case": "ct02",
+   "phase": "positivo",
+   "rep": 1
+  },
+  {
+   "started": "2026-11-19 12:46:35.869386+00",
+   "finished": "2026-11-19 12:46:39.823478+00",
+   "rc": 0,
+   "seconds": 3.8,
+   "output": "[CT-02/postgres] MODE=literal GAP=0.5\n[CT-02/postgres] sesion 1 pid=337563: FOR SHARE de la fila 1 y despues UPDATE\n[CT-02/postgres] sesion 2 pid=337564: FOR SHARE de la fila 1 y despues UPDATE\n[CT-02/postgres] escenario terminado a las 12:46:39 UTC; victima: sesion 1\n[CT-02/postgres] hallazgo lock_mode_conversion_deadlock esperado antes de las 12:46:54 UTC (M4: detection_delay_s <= 15)\n",
+   "script": "postgres/simulate_ct02_deadlock_conversion_postgres.sh",
+   "env": {},
+   "pids": [
+    337563,
+    337564
+   ],
+   "victim_pid": 337563,
+   "root_pid": null,
+   "deadlock": true,
+   "findings_snapshot": [
+    {
+     "id": 54042,
+     "antipatron": "lock_mode_conversion_deadlock",
+     "severidad": "high",
+     "table_name": "ql_ct02_cuentas",
+     "evidencia": {
+      "risk": "Pedir la fila con FOR UPDATE desde la lectura pone en fila a las transacciones que antes la leian en paralelo: las que solo leen y no modifican esperan ahora a las que modifican. Si la mayoria solo lee, conviene separar esa ruta y dejarla con FOR SHARE o sin bloqueo.",
+      "source": "postgres_log",
+      "tables": [
+       "ql_ct02_cuentas"
+      ],
+      "signature": "9eb23c5dc96ec22e",
+      "cycle_size": 2,
+      "captured_at": "2026-11-19T12:46:45.044195+00:00",
+      "detected_at": "2026-11-19 12:46:39.107000",
+      "limitations": [
+       "Inferido: el informe no dice que mantenia cada transaccion. Se deduce de que todas esperaban la misma fila: dos transacciones solo pueden esperarse mutuamente por la misma fila si ya la tenian las dos, y eso solo es posible en modo compartido."
+      ],
+      "occurrences": 23,
+      "transactions": [
+       {
+        "holds": null,
+        "victim": true,
+        "query_id": 4965197822308022306,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2408706"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct02_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337564
+        ],
+        "process_id": 337563,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "transaction_id": "2408682",
+        "undo_log_entries": null
+       },
+       {
+        "holds": null,
+        "victim": false,
+        "query_id": null,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2408682"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct02_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337563
+        ],
+        "process_id": 337564,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "transaction_id": null,
+        "undo_log_entries": null
+       }
+      ],
+      "database_name": "ql_demo",
+      "first_seen_at": "2026-11-16 11:06:21.996000",
+      "signature_parts": [
+       [
+        "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "ql_ct02_cuentas",
+        "",
+        "X,row"
+       ],
+       [
+        "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "ql_ct02_cuentas",
+        "",
+        "X,row"
+       ]
+      ],
+      "detection_delay_s": 5.9,
+      "victim_process_id": 337563
+     },
+     "recomendacion": "Si la transaccion lee la fila antes de modificarla, pedirla desde el inicio en modo exclusivo con SELECT ... FOR UPDATE en lugar de FOR SHARE, o hacer la verificacion en el WHERE del UPDATE (por ejemplo UPDATE ... WHERE id = ... AND saldo >= ...) para no leerla antes. El informe muestra la sentencia que esperaba; la lectura con FOR SHARE esta antes, en la misma transaccion. En Postgres un INSERT en una tabla hija bloquea la fila padre con FOR KEY SHARE: choca con un DELETE o un cambio de clave de esa fila en otra transaccion. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (SQLSTATE 40P01).",
+     "detectado_en": "2026-11-19T12:46:45.69663+00:00"
+    }
+   ],
+   "counter_before": 51,
+   "counter_after": 52,
+   "case": "ct02",
+   "phase": "positivo",
+   "rep": 2
+  },
+  {
+   "started": "2026-11-19 12:46:54.268286+00",
+   "finished": "2026-11-19 12:46:58.190625+00",
+   "rc": 0,
+   "seconds": 3.7,
+   "output": "[CT-02/postgres] MODE=literal GAP=0.5\n[CT-02/postgres] sesion 1 pid=337610: FOR SHARE de la fila 1 y despues UPDATE\n[CT-02/postgres] sesion 2 pid=337612: FOR SHARE de la fila 1 y despues UPDATE\n[CT-02/postgres] escenario terminado a las 12:46:58 UTC; victima: sesion 1\n[CT-02/postgres] hallazgo lock_mode_conversion_deadlock esperado antes de las 12:47:13 UTC (M4: detection_delay_s <= 15)\n",
+   "script": "postgres/simulate_ct02_deadlock_conversion_postgres.sh",
+   "env": {},
+   "pids": [
+    337610,
+    337612
+   ],
+   "victim_pid": 337610,
+   "root_pid": null,
+   "deadlock": true,
+   "findings_snapshot": [
+    {
+     "id": 54063,
+     "antipatron": "lock_mode_conversion_deadlock",
+     "severidad": "high",
+     "table_name": "ql_ct02_cuentas",
+     "evidencia": {
+      "risk": "Pedir la fila con FOR UPDATE desde la lectura pone en fila a las transacciones que antes la leian en paralelo: las que solo leen y no modifican esperan ahora a las que modifican. Si la mayoria solo lee, conviene separar esa ruta y dejarla con FOR SHARE o sin bloqueo.",
+      "source": "postgres_log",
+      "tables": [
+       "ql_ct02_cuentas"
+      ],
+      "signature": "9eb23c5dc96ec22e",
+      "cycle_size": 2,
+      "captured_at": "2026-11-19T12:47:05.045914+00:00",
+      "detected_at": "2026-11-19 12:46:57.494000",
+      "limitations": [
+       "Inferido: el informe no dice que mantenia cada transaccion. Se deduce de que todas esperaban la misma fila: dos transacciones solo pueden esperarse mutuamente por la misma fila si ya la tenian las dos, y eso solo es posible en modo compartido."
+      ],
+      "occurrences": 24,
+      "transactions": [
+       {
+        "holds": null,
+        "victim": true,
+        "query_id": 4965197822308022306,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2409636"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct02_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337612
+        ],
+        "process_id": 337610,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "transaction_id": "2409616",
+        "undo_log_entries": null
+       },
+       {
+        "holds": null,
+        "victim": false,
+        "query_id": null,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2409616"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct02_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337610
+        ],
+        "process_id": 337612,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "transaction_id": null,
+        "undo_log_entries": null
+       }
+      ],
+      "database_name": "ql_demo",
+      "first_seen_at": "2026-11-16 11:06:21.996000",
+      "signature_parts": [
+       [
+        "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "ql_ct02_cuentas",
+        "",
+        "X,row"
+       ],
+       [
+        "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "ql_ct02_cuentas",
+        "",
+        "X,row"
+       ]
+      ],
+      "detection_delay_s": 7.6,
+      "victim_process_id": 337610
+     },
+     "recomendacion": "Si la transaccion lee la fila antes de modificarla, pedirla desde el inicio en modo exclusivo con SELECT ... FOR UPDATE en lugar de FOR SHARE, o hacer la verificacion en el WHERE del UPDATE (por ejemplo UPDATE ... WHERE id = ... AND saldo >= ...) para no leerla antes. El informe muestra la sentencia que esperaba; la lectura con FOR SHARE esta antes, en la misma transaccion. En Postgres un INSERT en una tabla hija bloquea la fila padre con FOR KEY SHARE: choca con un DELETE o un cambio de clave de esa fila en otra transaccion. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (SQLSTATE 40P01).",
+     "detectado_en": "2026-11-19T12:47:05.761895+00:00"
+    }
+   ],
+   "counter_before": 52,
+   "counter_after": 53,
+   "case": "ct02",
+   "phase": "positivo",
+   "rep": 3
+  },
+  {
+   "started": "2026-11-19 12:47:12.599432+00",
+   "finished": "2026-11-19 12:47:16.547759+00",
+   "rc": 0,
+   "seconds": 3.7,
+   "output": "[CT-02/postgres] MODE=literal GAP=0.5\n[CT-02/postgres] sesion 1 pid=337663: FOR SHARE de la fila 1 y despues UPDATE\n[CT-02/postgres] sesion 2 pid=337664: FOR SHARE de la fila 1 y despues UPDATE\n[CT-02/postgres] escenario terminado a las 12:47:16 UTC; victima: sesion 1\n[CT-02/postgres] hallazgo lock_mode_conversion_deadlock esperado antes de las 12:47:31 UTC (M4: detection_delay_s <= 15)\n",
+   "script": "postgres/simulate_ct02_deadlock_conversion_postgres.sh",
+   "env": {},
+   "pids": [
+    337663,
+    337664
+   ],
+   "victim_pid": 337663,
+   "root_pid": null,
+   "deadlock": true,
+   "findings_snapshot": [
+    {
+     "id": 54084,
+     "antipatron": "lock_mode_conversion_deadlock",
+     "severidad": "high",
+     "table_name": "ql_ct02_cuentas",
+     "evidencia": {
+      "risk": "Pedir la fila con FOR UPDATE desde la lectura pone en fila a las transacciones que antes la leian en paralelo: las que solo leen y no modifican esperan ahora a las que modifican. Si la mayoria solo lee, conviene separar esa ruta y dejarla con FOR SHARE o sin bloqueo.",
+      "source": "postgres_log",
+      "tables": [
+       "ql_ct02_cuentas"
+      ],
+      "signature": "9eb23c5dc96ec22e",
+      "cycle_size": 2,
+      "captured_at": "2026-11-19T12:47:25.042126+00:00",
+      "detected_at": "2026-11-19 12:47:15.812000",
+      "limitations": [
+       "Inferido: el informe no dice que mantenia cada transaccion. Se deduce de que todas esperaban la misma fila: dos transacciones solo pueden esperarse mutuamente por la misma fila si ya la tenian las dos, y eso solo es posible en modo compartido."
+      ],
+      "occurrences": 25,
+      "transactions": [
+       {
+        "holds": null,
+        "victim": true,
+        "query_id": 4965197822308022306,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2410587"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct02_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337664
+        ],
+        "process_id": 337663,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "transaction_id": "2410556",
+        "undo_log_entries": null
+       },
+       {
+        "holds": null,
+        "victim": false,
+        "query_id": null,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2410556"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct02_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337663
+        ],
+        "process_id": 337664,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "transaction_id": null,
+        "undo_log_entries": null
+       }
+      ],
+      "database_name": "ql_demo",
+      "first_seen_at": "2026-11-16 11:06:21.996000",
+      "signature_parts": [
+       [
+        "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "ql_ct02_cuentas",
+        "",
+        "X,row"
+       ],
+       [
+        "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "ql_ct02_cuentas",
+        "",
+        "X,row"
+       ]
+      ],
+      "detection_delay_s": 9.2,
+      "victim_process_id": 337663
+     },
+     "recomendacion": "Si la transaccion lee la fila antes de modificarla, pedirla desde el inicio en modo exclusivo con SELECT ... FOR UPDATE en lugar de FOR SHARE, o hacer la verificacion en el WHERE del UPDATE (por ejemplo UPDATE ... WHERE id = ... AND saldo >= ...) para no leerla antes. El informe muestra la sentencia que esperaba; la lectura con FOR SHARE esta antes, en la misma transaccion. En Postgres un INSERT en una tabla hija bloquea la fila padre con FOR KEY SHARE: choca con un DELETE o un cambio de clave de esa fila en otra transaccion. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (SQLSTATE 40P01).",
+     "detectado_en": "2026-11-19T12:47:25.895749+00:00"
+    }
+   ],
+   "counter_before": 53,
+   "counter_after": 54,
+   "case": "ct02",
+   "phase": "positivo",
+   "rep": 4
+  },
+  {
+   "started": "2026-11-19 12:47:30.947284+00",
+   "finished": "2026-11-19 12:47:34.875328+00",
+   "rc": 0,
+   "seconds": 3.7,
+   "output": "[CT-02/postgres] MODE=literal GAP=0.5\n[CT-02/postgres] sesion 1 pid=337717: FOR SHARE de la fila 1 y despues UPDATE\n[CT-02/postgres] sesion 2 pid=337718: FOR SHARE de la fila 1 y despues UPDATE\n[CT-02/postgres] escenario terminado a las 12:47:34 UTC; victima: sesion 1\n[CT-02/postgres] hallazgo lock_mode_conversion_deadlock esperado antes de las 12:47:49 UTC (M4: detection_delay_s <= 15)\n",
+   "script": "postgres/simulate_ct02_deadlock_conversion_postgres.sh",
+   "env": {},
+   "pids": [
+    337717,
+    337718
+   ],
+   "victim_pid": 337717,
+   "root_pid": null,
+   "deadlock": true,
+   "findings_snapshot": [
+    {
+     "id": 54095,
+     "antipatron": "lock_mode_conversion_deadlock",
+     "severidad": "high",
+     "table_name": "ql_ct02_cuentas",
+     "evidencia": {
+      "risk": "Pedir la fila con FOR UPDATE desde la lectura pone en fila a las transacciones que antes la leian en paralelo: las que solo leen y no modifican esperan ahora a las que modifican. Si la mayoria solo lee, conviene separar esa ruta y dejarla con FOR SHARE o sin bloqueo.",
+      "source": "postgres_log",
+      "tables": [
+       "ql_ct02_cuentas"
+      ],
+      "signature": "9eb23c5dc96ec22e",
+      "cycle_size": 2,
+      "captured_at": "2026-11-19T12:47:35.046834+00:00",
+      "detected_at": "2026-11-19 12:47:34.146000",
+      "limitations": [
+       "Inferido: el informe no dice que mantenia cada transaccion. Se deduce de que todas esperaban la misma fila: dos transacciones solo pueden esperarse mutuamente por la misma fila si ya la tenian las dos, y eso solo es posible en modo compartido."
+      ],
+      "occurrences": 26,
+      "transactions": [
+       {
+        "holds": null,
+        "victim": true,
+        "query_id": 4965197822308022306,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2411541"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct02_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337718
+        ],
+        "process_id": 337717,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "transaction_id": "2411521",
+        "undo_log_entries": null
+       },
+       {
+        "holds": null,
+        "victim": false,
+        "query_id": null,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2411521"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct02_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337717
+        ],
+        "process_id": 337718,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "transaction_id": null,
+        "undo_log_entries": null
+       }
+      ],
+      "database_name": "ql_demo",
+      "first_seen_at": "2026-11-16 11:06:21.996000",
+      "signature_parts": [
+       [
+        "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "ql_ct02_cuentas",
+        "",
+        "X,row"
+       ],
+       [
+        "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "ql_ct02_cuentas",
+        "",
+        "X,row"
+       ]
+      ],
+      "detection_delay_s": 0.9,
+      "victim_process_id": 337717
+     },
+     "recomendacion": "Si la transaccion lee la fila antes de modificarla, pedirla desde el inicio en modo exclusivo con SELECT ... FOR UPDATE en lugar de FOR SHARE, o hacer la verificacion en el WHERE del UPDATE (por ejemplo UPDATE ... WHERE id = ... AND saldo >= ...) para no leerla antes. El informe muestra la sentencia que esperaba; la lectura con FOR SHARE esta antes, en la misma transaccion. En Postgres un INSERT en una tabla hija bloquea la fila padre con FOR KEY SHARE: choca con un DELETE o un cambio de clave de esa fila en otra transaccion. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (SQLSTATE 40P01).",
+     "detectado_en": "2026-11-19T12:47:35.816814+00:00"
+    }
+   ],
+   "counter_before": 54,
+   "counter_after": 55,
+   "case": "ct02",
+   "phase": "positivo",
+   "rep": 5
+  },
+  {
+   "started": "2026-11-19 12:47:49.263183+00",
+   "finished": "2026-11-19 12:47:53.197384+00",
+   "rc": 0,
+   "seconds": 3.7,
+   "output": "[CT-02/postgres] MODE=literal GAP=0.5\n[CT-02/postgres] sesion 1 pid=337764: FOR SHARE de la fila 1 y despues UPDATE\n[CT-02/postgres] sesion 2 pid=337765: FOR SHARE de la fila 1 y despues UPDATE\n[CT-02/postgres] escenario terminado a las 12:47:52 UTC; victima: sesion 1\n[CT-02/postgres] hallazgo lock_mode_conversion_deadlock esperado antes de las 12:48:07 UTC (M4: detection_delay_s <= 15)\n",
+   "script": "postgres/simulate_ct02_deadlock_conversion_postgres.sh",
+   "env": {},
+   "pids": [
+    337764,
+    337765
+   ],
+   "victim_pid": 337764,
+   "root_pid": null,
+   "deadlock": true,
+   "findings_snapshot": [
+    {
+     "id": 54116,
+     "antipatron": "lock_mode_conversion_deadlock",
+     "severidad": "high",
+     "table_name": "ql_ct02_cuentas",
+     "evidencia": {
+      "risk": "Pedir la fila con FOR UPDATE desde la lectura pone en fila a las transacciones que antes la leian en paralelo: las que solo leen y no modifican esperan ahora a las que modifican. Si la mayoria solo lee, conviene separar esa ruta y dejarla con FOR SHARE o sin bloqueo.",
+      "source": "postgres_log",
+      "tables": [
+       "ql_ct02_cuentas"
+      ],
+      "signature": "9eb23c5dc96ec22e",
+      "cycle_size": 2,
+      "captured_at": "2026-11-19T12:47:55.036758+00:00",
+      "detected_at": "2026-11-19 12:47:52.461000",
+      "limitations": [
+       "Inferido: el informe no dice que mantenia cada transaccion. Se deduce de que todas esperaban la misma fila: dos transacciones solo pueden esperarse mutuamente por la misma fila si ya la tenian las dos, y eso solo es posible en modo compartido."
+      ],
+      "occurrences": 27,
+      "transactions": [
+       {
+        "holds": null,
+        "victim": true,
+        "query_id": 4965197822308022306,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2412492"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct02_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337765
+        ],
+        "process_id": 337764,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "transaction_id": "2412462",
+        "undo_log_entries": null
+       },
+       {
+        "holds": null,
+        "victim": false,
+        "query_id": null,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2412462"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct02_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337764
+        ],
+        "process_id": 337765,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "transaction_id": null,
+        "undo_log_entries": null
+       }
+      ],
+      "database_name": "ql_demo",
+      "first_seen_at": "2026-11-16 11:06:21.996000",
+      "signature_parts": [
+       [
+        "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "ql_ct02_cuentas",
+        "",
+        "X,row"
+       ],
+       [
+        "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "ql_ct02_cuentas",
+        "",
+        "X,row"
+       ]
+      ],
+      "detection_delay_s": 2.6,
+      "victim_process_id": 337764
+     },
+     "recomendacion": "Si la transaccion lee la fila antes de modificarla, pedirla desde el inicio en modo exclusivo con SELECT ... FOR UPDATE en lugar de FOR SHARE, o hacer la verificacion en el WHERE del UPDATE (por ejemplo UPDATE ... WHERE id = ... AND saldo >= ...) para no leerla antes. El informe muestra la sentencia que esperaba; la lectura con FOR SHARE esta antes, en la misma transaccion. En Postgres un INSERT en una tabla hija bloquea la fila padre con FOR KEY SHARE: choca con un DELETE o un cambio de clave de esa fila en otra transaccion. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (SQLSTATE 40P01).",
+     "detectado_en": "2026-11-19T12:47:55.730586+00:00"
+    }
+   ],
+   "counter_before": 55,
+   "counter_after": 56,
+   "case": "ct02",
+   "phase": "positivo",
+   "rep": 6
+  },
+  {
+   "started": "2026-11-19 12:48:07.541032+00",
+   "finished": "2026-11-19 12:48:11.438331+00",
+   "rc": 0,
+   "seconds": 3.7,
+   "output": "[CT-02/postgres] MODE=literal GAP=0.5\n[CT-02/postgres] sesion 1 pid=337816: FOR SHARE de la fila 1 y despues UPDATE\n[CT-02/postgres] sesion 2 pid=337817: FOR SHARE de la fila 1 y despues UPDATE\n[CT-02/postgres] escenario terminado a las 12:48:11 UTC; victima: sesion 1\n[CT-02/postgres] hallazgo lock_mode_conversion_deadlock esperado antes de las 12:48:26 UTC (M4: detection_delay_s <= 15)\n",
+   "script": "postgres/simulate_ct02_deadlock_conversion_postgres.sh",
+   "env": {},
+   "pids": [
+    337816,
+    337817
+   ],
+   "victim_pid": 337816,
+   "root_pid": null,
+   "deadlock": true,
+   "findings_snapshot": [
+    {
+     "id": 54137,
+     "antipatron": "lock_mode_conversion_deadlock",
+     "severidad": "high",
+     "table_name": "ql_ct02_cuentas",
+     "evidencia": {
+      "risk": "Pedir la fila con FOR UPDATE desde la lectura pone en fila a las transacciones que antes la leian en paralelo: las que solo leen y no modifican esperan ahora a las que modifican. Si la mayoria solo lee, conviene separar esa ruta y dejarla con FOR SHARE o sin bloqueo.",
+      "source": "postgres_log",
+      "tables": [
+       "ql_ct02_cuentas"
+      ],
+      "signature": "9eb23c5dc96ec22e",
+      "cycle_size": 2,
+      "captured_at": "2026-11-19T12:48:15.034756+00:00",
+      "detected_at": "2026-11-19 12:48:10.743000",
+      "limitations": [
+       "Inferido: el informe no dice que mantenia cada transaccion. Se deduce de que todas esperaban la misma fila: dos transacciones solo pueden esperarse mutuamente por la misma fila si ya la tenian las dos, y eso solo es posible en modo compartido."
+      ],
+      "occurrences": 28,
+      "transactions": [
+       {
+        "holds": null,
+        "victim": true,
+        "query_id": 4965197822308022306,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2413404"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct02_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337817
+        ],
+        "process_id": 337816,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "transaction_id": "2413376",
+        "undo_log_entries": null
+       },
+       {
+        "holds": null,
+        "victim": false,
+        "query_id": null,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2413376"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct02_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337816
+        ],
+        "process_id": 337817,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "transaction_id": null,
+        "undo_log_entries": null
+       }
+      ],
+      "database_name": "ql_demo",
+      "first_seen_at": "2026-11-16 11:06:21.996000",
+      "signature_parts": [
+       [
+        "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "ql_ct02_cuentas",
+        "",
+        "X,row"
+       ],
+       [
+        "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "ql_ct02_cuentas",
+        "",
+        "X,row"
+       ]
+      ],
+      "detection_delay_s": 4.3,
+      "victim_process_id": 337816
+     },
+     "recomendacion": "Si la transaccion lee la fila antes de modificarla, pedirla desde el inicio en modo exclusivo con SELECT ... FOR UPDATE en lugar de FOR SHARE, o hacer la verificacion en el WHERE del UPDATE (por ejemplo UPDATE ... WHERE id = ... AND saldo >= ...) para no leerla antes. El informe muestra la sentencia que esperaba; la lectura con FOR SHARE esta antes, en la misma transaccion. En Postgres un INSERT en una tabla hija bloquea la fila padre con FOR KEY SHARE: choca con un DELETE o un cambio de clave de esa fila en otra transaccion. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (SQLSTATE 40P01).",
+     "detectado_en": "2026-11-19T12:48:15.882392+00:00"
+    }
+   ],
+   "counter_before": 56,
+   "counter_after": 57,
+   "case": "ct02",
+   "phase": "positivo",
+   "rep": 7
+  },
+  {
+   "started": "2026-11-19 12:48:25.911785+00",
+   "finished": "2026-11-19 12:48:29.839646+00",
+   "rc": 0,
+   "seconds": 3.8,
+   "output": "[CT-02/postgres] MODE=literal GAP=0.5\n[CT-02/postgres] sesion 1 pid=337861: FOR SHARE de la fila 1 y despues UPDATE\n[CT-02/postgres] sesion 2 pid=337862: FOR SHARE de la fila 1 y despues UPDATE\n[CT-02/postgres] escenario terminado a las 12:48:29 UTC; victima: sesion 1\n[CT-02/postgres] hallazgo lock_mode_conversion_deadlock esperado antes de las 12:48:44 UTC (M4: detection_delay_s <= 15)\n",
+   "script": "postgres/simulate_ct02_deadlock_conversion_postgres.sh",
+   "env": {},
+   "pids": [
+    337861,
+    337862
+   ],
+   "victim_pid": 337861,
+   "root_pid": null,
+   "deadlock": true,
+   "findings_snapshot": [
+    {
+     "id": 54158,
+     "antipatron": "lock_mode_conversion_deadlock",
+     "severidad": "high",
+     "table_name": "ql_ct02_cuentas",
+     "evidencia": {
+      "risk": "Pedir la fila con FOR UPDATE desde la lectura pone en fila a las transacciones que antes la leian en paralelo: las que solo leen y no modifican esperan ahora a las que modifican. Si la mayoria solo lee, conviene separar esa ruta y dejarla con FOR SHARE o sin bloqueo.",
+      "source": "postgres_log",
+      "tables": [
+       "ql_ct02_cuentas"
+      ],
+      "signature": "9eb23c5dc96ec22e",
+      "cycle_size": 2,
+      "captured_at": "2026-11-19T12:48:35.037196+00:00",
+      "detected_at": "2026-11-19 12:48:29.147000",
+      "limitations": [
+       "Inferido: el informe no dice que mantenia cada transaccion. Se deduce de que todas esperaban la misma fila: dos transacciones solo pueden esperarse mutuamente por la misma fila si ya la tenian las dos, y eso solo es posible en modo compartido."
+      ],
+      "occurrences": 29,
+      "transactions": [
+       {
+        "holds": null,
+        "victim": true,
+        "query_id": 4965197822308022306,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2414308"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct02_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337862
+        ],
+        "process_id": 337861,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "transaction_id": "2414287",
+        "undo_log_entries": null
+       },
+       {
+        "holds": null,
+        "victim": false,
+        "query_id": null,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2414287"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct02_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337861
+        ],
+        "process_id": 337862,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "transaction_id": null,
+        "undo_log_entries": null
+       }
+      ],
+      "database_name": "ql_demo",
+      "first_seen_at": "2026-11-16 11:06:21.996000",
+      "signature_parts": [
+       [
+        "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "ql_ct02_cuentas",
+        "",
+        "X,row"
+       ],
+       [
+        "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "ql_ct02_cuentas",
+        "",
+        "X,row"
+       ]
+      ],
+      "detection_delay_s": 5.9,
+      "victim_process_id": 337861
+     },
+     "recomendacion": "Si la transaccion lee la fila antes de modificarla, pedirla desde el inicio en modo exclusivo con SELECT ... FOR UPDATE en lugar de FOR SHARE, o hacer la verificacion en el WHERE del UPDATE (por ejemplo UPDATE ... WHERE id = ... AND saldo >= ...) para no leerla antes. El informe muestra la sentencia que esperaba; la lectura con FOR SHARE esta antes, en la misma transaccion. En Postgres un INSERT en una tabla hija bloquea la fila padre con FOR KEY SHARE: choca con un DELETE o un cambio de clave de esa fila en otra transaccion. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (SQLSTATE 40P01).",
+     "detectado_en": "2026-11-19T12:48:35.724543+00:00"
+    }
+   ],
+   "counter_before": 57,
+   "counter_after": 58,
+   "case": "ct02",
+   "phase": "positivo",
+   "rep": 8
+  },
+  {
+   "started": "2026-11-19 12:48:44.282402+00",
+   "finished": "2026-11-19 12:48:48.209093+00",
+   "rc": 0,
+   "seconds": 3.7,
+   "output": "[CT-02/postgres] MODE=literal GAP=0.5\n[CT-02/postgres] sesion 1 pid=337914: FOR SHARE de la fila 1 y despues UPDATE\n[CT-02/postgres] sesion 2 pid=337916: FOR SHARE de la fila 1 y despues UPDATE\n[CT-02/postgres] escenario terminado a las 12:48:48 UTC; victima: sesion 1\n[CT-02/postgres] hallazgo lock_mode_conversion_deadlock esperado antes de las 12:49:03 UTC (M4: detection_delay_s <= 15)\n",
+   "script": "postgres/simulate_ct02_deadlock_conversion_postgres.sh",
+   "env": {},
+   "pids": [
+    337914,
+    337916
+   ],
+   "victim_pid": 337914,
+   "root_pid": null,
+   "deadlock": true,
+   "findings_snapshot": [
+    {
+     "id": 54179,
+     "antipatron": "lock_mode_conversion_deadlock",
+     "severidad": "high",
+     "table_name": "ql_ct02_cuentas",
+     "evidencia": {
+      "risk": "Pedir la fila con FOR UPDATE desde la lectura pone en fila a las transacciones que antes la leian en paralelo: las que solo leen y no modifican esperan ahora a las que modifican. Si la mayoria solo lee, conviene separar esa ruta y dejarla con FOR SHARE o sin bloqueo.",
+      "source": "postgres_log",
+      "tables": [
+       "ql_ct02_cuentas"
+      ],
+      "signature": "9eb23c5dc96ec22e",
+      "cycle_size": 2,
+      "captured_at": "2026-11-19T12:48:55.030903+00:00",
+      "detected_at": "2026-11-19 12:48:47.502000",
+      "limitations": [
+       "Inferido: el informe no dice que mantenia cada transaccion. Se deduce de que todas esperaban la misma fila: dos transacciones solo pueden esperarse mutuamente por la misma fila si ya la tenian las dos, y eso solo es posible en modo compartido."
+      ],
+      "occurrences": 30,
+      "transactions": [
+       {
+        "holds": null,
+        "victim": true,
+        "query_id": 4965197822308022306,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2415240"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct02_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337916
+        ],
+        "process_id": 337914,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "transaction_id": "2415211",
+        "undo_log_entries": null
+       },
+       {
+        "holds": null,
+        "victim": false,
+        "query_id": null,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2415211"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct02_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337914
+        ],
+        "process_id": 337916,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "transaction_id": null,
+        "undo_log_entries": null
+       }
+      ],
+      "database_name": "ql_demo",
+      "first_seen_at": "2026-11-16 11:06:21.996000",
+      "signature_parts": [
+       [
+        "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "ql_ct02_cuentas",
+        "",
+        "X,row"
+       ],
+       [
+        "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "ql_ct02_cuentas",
+        "",
+        "X,row"
+       ]
+      ],
+      "detection_delay_s": 7.5,
+      "victim_process_id": 337914
+     },
+     "recomendacion": "Si la transaccion lee la fila antes de modificarla, pedirla desde el inicio en modo exclusivo con SELECT ... FOR UPDATE en lugar de FOR SHARE, o hacer la verificacion en el WHERE del UPDATE (por ejemplo UPDATE ... WHERE id = ... AND saldo >= ...) para no leerla antes. El informe muestra la sentencia que esperaba; la lectura con FOR SHARE esta antes, en la misma transaccion. En Postgres un INSERT en una tabla hija bloquea la fila padre con FOR KEY SHARE: choca con un DELETE o un cambio de clave de esa fila en otra transaccion. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (SQLSTATE 40P01).",
+     "detectado_en": "2026-11-19T12:48:55.828534+00:00"
+    }
+   ],
+   "counter_before": 58,
+   "counter_after": 59,
+   "case": "ct02",
+   "phase": "positivo",
+   "rep": 9
+  },
+  {
+   "started": "2026-11-19 12:49:02.56798+00",
+   "finished": "2026-11-19 12:49:06.468651+00",
+   "rc": 0,
+   "seconds": 3.7,
+   "output": "[CT-02/postgres] MODE=literal GAP=0.5\n[CT-02/postgres] sesion 1 pid=337958: FOR SHARE de la fila 1 y despues UPDATE\n[CT-02/postgres] sesion 2 pid=337967: FOR SHARE de la fila 1 y despues UPDATE\n[CT-02/postgres] escenario terminado a las 12:49:06 UTC; victima: sesion 1\n[CT-02/postgres] hallazgo lock_mode_conversion_deadlock esperado antes de las 12:49:21 UTC (M4: detection_delay_s <= 15)\n",
+   "script": "postgres/simulate_ct02_deadlock_conversion_postgres.sh",
+   "env": {},
+   "pids": [
+    337958,
+    337967
+   ],
+   "victim_pid": 337958,
+   "root_pid": null,
+   "deadlock": true,
+   "findings_snapshot": [
+    {
+     "id": 54200,
+     "antipatron": "lock_mode_conversion_deadlock",
+     "severidad": "high",
+     "table_name": "ql_ct02_cuentas",
+     "evidencia": {
+      "risk": "Pedir la fila con FOR UPDATE desde la lectura pone en fila a las transacciones que antes la leian en paralelo: las que solo leen y no modifican esperan ahora a las que modifican. Si la mayoria solo lee, conviene separar esa ruta y dejarla con FOR SHARE o sin bloqueo.",
+      "source": "postgres_log",
+      "tables": [
+       "ql_ct02_cuentas"
+      ],
+      "signature": "9eb23c5dc96ec22e",
+      "cycle_size": 2,
+      "captured_at": "2026-11-19T12:49:15.055590+00:00",
+      "detected_at": "2026-11-19 12:49:05.758000",
+      "limitations": [
+       "Inferido: el informe no dice que mantenia cada transaccion. Se deduce de que todas esperaban la misma fila: dos transacciones solo pueden esperarse mutuamente por la misma fila si ya la tenian las dos, y eso solo es posible en modo compartido."
+      ],
+      "occurrences": 31,
+      "transactions": [
+       {
+        "holds": null,
+        "victim": true,
+        "query_id": 4965197822308022306,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2416130"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct02_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337967
+        ],
+        "process_id": 337958,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "transaction_id": "2416113",
+        "undo_log_entries": null
+       },
+       {
+        "holds": null,
+        "victim": false,
+        "query_id": null,
+        "waits_for": {
+         "mode": "X",
+         "scope": "row",
+         "targets": [
+          "row 1"
+         ],
+         "lock_mode": "ShareLock",
+         "lock_type": "transactionid",
+         "resources": [
+          "transaction 2416113"
+         ],
+         "index_name": null,
+         "table_name": "ql_ct02_cuentas",
+         "schema_name": null,
+         "targets_source": "row_key"
+        },
+        "blocked_by": [
+         337958
+        ],
+        "process_id": 337967,
+        "rows_locked": null,
+        "canonic_query": "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "transaction_id": null,
+        "undo_log_entries": null
+       }
+      ],
+      "database_name": "ql_demo",
+      "first_seen_at": "2026-11-16 11:06:21.996000",
+      "signature_parts": [
+       [
+        "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "ql_ct02_cuentas",
+        "",
+        "X,row"
+       ],
+       [
+        "UPDATE ql_ct02_cuentas SET saldo = saldo - $1 WHERE id = $2",
+        "ql_ct02_cuentas",
+        "",
+        "X,row"
+       ]
+      ],
+      "detection_delay_s": 9.3,
+      "victim_process_id": 337958
+     },
+     "recomendacion": "Si la transaccion lee la fila antes de modificarla, pedirla desde el inicio en modo exclusivo con SELECT ... FOR UPDATE en lugar de FOR SHARE, o hacer la verificacion en el WHERE del UPDATE (por ejemplo UPDATE ... WHERE id = ... AND saldo >= ...) para no leerla antes. El informe muestra la sentencia que esperaba; la lectura con FOR SHARE esta antes, en la misma transaccion. En Postgres un INSERT en una tabla hija bloquea la fila padre con FOR KEY SHARE: choca con un DELETE o un cambio de clave de esa fila en otra transaccion. La aplicacion debe reintentar la transaccion revertida al recibir el error de abrazo mortal (SQLSTATE 40P01).",
+     "detectado_en": "2026-11-19T12:49:15.830155+00:00"
+    }
+   ],
+   "counter_before": 59,
+   "counter_after": 60,
+   "case": "ct02",
+   "phase": "positivo",
+   "rep": 10
+  },
+  {
+   "started": "2026-11-19 12:49:20.812699+00",
+   "finished": "2026-11-19 12:50:21.219957+00",
+   "rc": 0,
+   "seconds": 60.2,
+   "output": "[CT-05/postgres] raiz pid=338012 idle in transaction desde 2026-11-19 12:49:22 UTC (60 s)\n[CT-05/postgres] la raiz cumple 30 s a las 12:49:52 UTC; hallazgo esperado antes de las 12:50:37 UTC\n[CT-05/postgres] 5 sesiones esperando la fila id=1\n[CT-05/postgres] raiz revertida a las 12:50:21 UTC; las bloqueadas terminaron\nNOTICE:  relation \"ql_ct05_cuentas\" already exists, skipping\n",
+   "script": "postgres/simulate_ct05_long_transaction_postgres.sh",
+   "env": {
+    "HOLD_SECONDS": "60",
+    "WAITERS": "5"
+   },
+   "pids": [],
+   "victim_pid": null,
+   "root_pid": 338012,
+   "deadlock": false,
+   "counter_before": 60,
+   "counter_after": 60,
+   "case": "ct05",
+   "phase": "positivo",
+   "rep": 1
+  },
+  {
+   "started": "2026-11-19 12:50:33.750076+00",
+   "finished": "2026-11-19 12:51:34.196184+00",
+   "rc": 0,
+   "seconds": 60.2,
+   "output": "[CT-05/postgres] raiz pid=338161 idle in transaction desde 2026-11-19 12:50:34 UTC (60 s)\n[CT-05/postgres] la raiz cumple 30 s a las 12:51:04 UTC; hallazgo esperado antes de las 12:51:49 UTC\n[CT-05/postgres] 5 sesiones esperando la fila id=1\n[CT-05/postgres] raiz revertida a las 12:51:33 UTC; las bloqueadas terminaron\nNOTICE:  relation \"ql_ct05_cuentas\" already exists, skipping\n",
+   "script": "postgres/simulate_ct05_long_transaction_postgres.sh",
+   "env": {
+    "HOLD_SECONDS": "60",
+    "WAITERS": "5"
+   },
+   "pids": [],
+   "victim_pid": null,
+   "root_pid": 338161,
+   "deadlock": false,
+   "counter_before": 60,
+   "counter_after": 60,
+   "case": "ct05",
+   "phase": "positivo",
+   "rep": 2
+  },
+  {
+   "started": "2026-11-19 12:51:46.757518+00",
+   "finished": "2026-11-19 12:52:47.158128+00",
+   "rc": 0,
+   "seconds": 60.2,
+   "output": "[CT-05/postgres] raiz pid=338318 idle in transaction desde 2026-11-19 12:51:47 UTC (60 s)\n[CT-05/postgres] la raiz cumple 30 s a las 12:52:17 UTC; hallazgo esperado antes de las 12:53:02 UTC\n[CT-05/postgres] 5 sesiones esperando la fila id=1\n[CT-05/postgres] raiz revertida a las 12:52:46 UTC; las bloqueadas terminaron\nNOTICE:  relation \"ql_ct05_cuentas\" already exists, skipping\n",
+   "script": "postgres/simulate_ct05_long_transaction_postgres.sh",
+   "env": {
+    "HOLD_SECONDS": "60",
+    "WAITERS": "5"
+   },
+   "pids": [],
+   "victim_pid": null,
+   "root_pid": 338318,
+   "deadlock": false,
+   "counter_before": 60,
+   "counter_after": 60,
+   "case": "ct05",
+   "phase": "positivo",
+   "rep": 3
+  },
+  {
+   "started": "2026-11-19 12:52:59.740137+00",
+   "finished": "2026-11-19 12:54:00.143432+00",
+   "rc": 0,
+   "seconds": 60.2,
+   "output": "[CT-05/postgres] raiz pid=338463 idle in transaction desde 2026-11-19 12:53:00 UTC (60 s)\n[CT-05/postgres] la raiz cumple 30 s a las 12:53:30 UTC; hallazgo esperado antes de las 12:54:15 UTC\n[CT-05/postgres] 5 sesiones esperando la fila id=1\n[CT-05/postgres] raiz revertida a las 12:53:59 UTC; las bloqueadas terminaron\nNOTICE:  relation \"ql_ct05_cuentas\" already exists, skipping\n",
+   "script": "postgres/simulate_ct05_long_transaction_postgres.sh",
+   "env": {
+    "HOLD_SECONDS": "60",
+    "WAITERS": "5"
+   },
+   "pids": [],
+   "victim_pid": null,
+   "root_pid": 338463,
+   "deadlock": false,
+   "counter_before": 60,
+   "counter_after": 60,
+   "case": "ct05",
+   "phase": "positivo",
+   "rep": 4
+  },
+  {
+   "started": "2026-11-19 12:54:12.685028+00",
+   "finished": "2026-11-19 12:55:13.106875+00",
+   "rc": 0,
+   "seconds": 60.2,
+   "output": "[CT-05/postgres] raiz pid=338609 idle in transaction desde 2026-11-19 12:54:13 UTC (60 s)\n[CT-05/postgres] la raiz cumple 30 s a las 12:54:43 UTC; hallazgo esperado antes de las 12:55:28 UTC\n[CT-05/postgres] 5 sesiones esperando la fila id=1\n[CT-05/postgres] raiz revertida a las 12:55:12 UTC; las bloqueadas terminaron\nNOTICE:  relation \"ql_ct05_cuentas\" already exists, skipping\n",
+   "script": "postgres/simulate_ct05_long_transaction_postgres.sh",
+   "env": {
+    "HOLD_SECONDS": "60",
+    "WAITERS": "5"
+   },
+   "pids": [],
+   "victim_pid": null,
+   "root_pid": 338609,
+   "deadlock": false,
+   "counter_before": 60,
+   "counter_after": 60,
+   "case": "ct05",
+   "phase": "positivo",
+   "rep": 5
+  },
+  {
+   "started": "2026-11-19 12:55:25.833918+00",
+   "finished": "2026-11-19 12:56:26.304108+00",
+   "rc": 0,
+   "seconds": 60.2,
+   "output": "[CT-05/postgres] raiz pid=338757 idle in transaction desde 2026-11-19 12:55:27 UTC (60 s)\n[CT-05/postgres] la raiz cumple 30 s a las 12:55:57 UTC; hallazgo esperado antes de las 12:56:42 UTC\n[CT-05/postgres] 5 sesiones esperando la fila id=1\n[CT-05/postgres] raiz revertida a las 12:56:26 UTC; las bloqueadas terminaron\nNOTICE:  relation \"ql_ct05_cuentas\" already exists, skipping\n",
+   "script": "postgres/simulate_ct05_long_transaction_postgres.sh",
+   "env": {
+    "HOLD_SECONDS": "60",
+    "WAITERS": "5"
+   },
+   "pids": [],
+   "victim_pid": null,
+   "root_pid": 338757,
+   "deadlock": false,
+   "counter_before": 60,
+   "counter_after": 60,
+   "case": "ct05",
+   "phase": "positivo",
+   "rep": 6
+  },
+  {
+   "started": "2026-11-19 12:56:38.867441+00",
+   "finished": "2026-11-19 12:57:39.277529+00",
+   "rc": 0,
+   "seconds": 60.2,
+   "output": "[CT-05/postgres] raiz pid=338913 idle in transaction desde 2026-11-19 12:56:40 UTC (60 s)\n[CT-05/postgres] la raiz cumple 30 s a las 12:57:10 UTC; hallazgo esperado antes de las 12:57:55 UTC\n[CT-05/postgres] 5 sesiones esperando la fila id=1\n[CT-05/postgres] raiz revertida a las 12:57:39 UTC; las bloqueadas terminaron\nNOTICE:  relation \"ql_ct05_cuentas\" already exists, skipping\n",
+   "script": "postgres/simulate_ct05_long_transaction_postgres.sh",
+   "env": {
+    "HOLD_SECONDS": "60",
+    "WAITERS": "5"
+   },
+   "pids": [],
+   "victim_pid": null,
+   "root_pid": 338913,
+   "deadlock": false,
+   "counter_before": 60,
+   "counter_after": 60,
+   "case": "ct05",
+   "phase": "positivo",
+   "rep": 7
+  },
+  {
+   "started": "2026-11-19 12:57:51.827578+00",
+   "finished": "2026-11-19 12:58:52.367622+00",
+   "rc": 0,
+   "seconds": 60.3,
+   "output": "[CT-05/postgres] raiz pid=339062 idle in transaction desde 2026-11-19 12:57:53 UTC (60 s)\n[CT-05/postgres] la raiz cumple 30 s a las 12:58:23 UTC; hallazgo esperado antes de las 12:59:08 UTC\n[CT-05/postgres] 5 sesiones esperando la fila id=1\n[CT-05/postgres] raiz revertida a las 12:58:52 UTC; las bloqueadas terminaron\nNOTICE:  relation \"ql_ct05_cuentas\" already exists, skipping\n",
+   "script": "postgres/simulate_ct05_long_transaction_postgres.sh",
+   "env": {
+    "HOLD_SECONDS": "60",
+    "WAITERS": "5"
+   },
+   "pids": [],
+   "victim_pid": null,
+   "root_pid": 339062,
+   "deadlock": false,
+   "counter_before": 60,
+   "counter_after": 60,
+   "case": "ct05",
+   "phase": "positivo",
+   "rep": 8
+  },
+  {
+   "started": "2026-11-19 12:59:04.932718+00",
+   "finished": "2026-11-19 13:00:05.498818+00",
+   "rc": 0,
+   "seconds": 60.3,
+   "output": "[CT-05/postgres] raiz pid=339208 idle in transaction desde 2026-11-19 12:59:06 UTC (60 s)\n[CT-05/postgres] la raiz cumple 30 s a las 12:59:36 UTC; hallazgo esperado antes de las 13:00:21 UTC\n[CT-05/postgres] 5 sesiones esperando la fila id=1\n[CT-05/postgres] raiz revertida a las 13:00:05 UTC; las bloqueadas terminaron\nNOTICE:  relation \"ql_ct05_cuentas\" already exists, skipping\n",
+   "script": "postgres/simulate_ct05_long_transaction_postgres.sh",
+   "env": {
+    "HOLD_SECONDS": "60",
+    "WAITERS": "5"
+   },
+   "pids": [],
+   "victim_pid": null,
+   "root_pid": 339208,
+   "deadlock": false,
+   "counter_before": 60,
+   "counter_after": 60,
+   "case": "ct05",
+   "phase": "positivo",
+   "rep": 9
+  },
+  {
+   "started": "2026-11-19 13:00:18.051728+00",
+   "finished": "2026-11-19 13:01:18.481585+00",
+   "rc": 0,
+   "seconds": 60.2,
+   "output": "[CT-05/postgres] raiz pid=339362 idle in transaction desde 2026-11-19 13:00:19 UTC (60 s)\n[CT-05/postgres] la raiz cumple 30 s a las 13:00:49 UTC; hallazgo esperado antes de las 13:01:34 UTC\n[CT-05/postgres] 5 sesiones esperando la fila id=1\n[CT-05/postgres] raiz revertida a las 13:01:18 UTC; las bloqueadas terminaron\nNOTICE:  relation \"ql_ct05_cuentas\" already exists, skipping\n",
+   "script": "postgres/simulate_ct05_long_transaction_postgres.sh",
+   "env": {
+    "HOLD_SECONDS": "60",
+    "WAITERS": "5"
+   },
+   "pids": [],
+   "victim_pid": null,
+   "root_pid": 339362,
+   "deadlock": false,
+   "counter_before": 60,
+   "counter_after": 60,
+   "case": "ct05",
+   "phase": "positivo",
+   "rep": 10
+  }
+ ]
+}

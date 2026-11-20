@@ -40,6 +40,16 @@ class Hallazgo:
     # base donde ocurrio: en MySQL el schema, que no tiene por que ser el del
     # registro (la conexion ve todo el servidor). None si no se sabe
     database_name: str | None = None
+    # lo que puede pasar al aplicar la recomendacion; no es la gravedad del
+    # problema (esa es la severidad). Lo escribe cada detector junto a su
+    # recomendacion
+    riesgo: str = ""
+    # costo del problema en la ventana, en milisegundos, y criterio del orden
+    # (SegundoInforme 6.2): en un antipatron, el tiempo de base de datos de su
+    # sentencia en la ventana; en contencion, la espera acumulada de las
+    # sesiones afectadas. None si no se puede medir (un abrazo mortal: el
+    # informe del motor no dice cuanto espero cada transaccion)
+    impacto_ms: float | None = None
 
 
 @dataclass

@@ -1,0 +1,1208 @@
+{
+  "generated_at": "2026-11-17 06:26:08",
+  "method": "paired_blocks_per_template_p95_bootstrap",
+  "profile": "serious",
+  "config": {
+    "block_s": 45.0,
+    "aa_pairs": 8,
+    "pipeline_pairs": 16,
+    "instr_pairs": 6,
+    "stress_pairs": 4,
+    "burn_pairs": 4,
+    "settle_s": 5.0,
+    "warmup_s": 300.0,
+    "cadence_s": 10.0,
+    "stress_cadence_s": 2.0,
+    "workers": 2,
+    "bootstrap": 2000,
+    "seed": 225354898
+  },
+  "umbral_pct": 5.0,
+  "preflight_warnings": [],
+  "verdict": "CUMPLE",
+  "engines": {
+    "postgres": {
+      "samples_total": 121844,
+      "failures_total": 36,
+      "arms": {
+        "aa": {
+          "pairs": 8,
+          "min_template_n_base": 1256,
+          "min_template_n_treat": 1247,
+          "p95_pct": 1.8564660584450943,
+          "p95_ci": [
+            -0.6326865964419002,
+            3.966806384053445
+          ],
+          "mean_pct": 0.6231099475058732,
+          "mean_ci": [
+            0.07176058390385709,
+            1.1137248210662156
+          ],
+          "throughput_pct": 0.858830343498437,
+          "throughput_ci": [
+            0.1808086050371431,
+            1.6477593979208447
+          ],
+          "enough_samples": true,
+          "failures": 0,
+          "server_base": {
+            "log_json_bytes_per_s": 28655.114232979777,
+            "monitor_blks_per_s": 0.0,
+            "monitor_calls_per_s": 0.0,
+            "monitor_exec_ms_per_s": 0.0,
+            "monitor_temp_blks_written_per_s": 0.0,
+            "cpu_pct_of_core": 200.24416884117517
+          },
+          "server_treat": {
+            "log_json_bytes_per_s": 28404.48980713027,
+            "monitor_blks_per_s": 0.0,
+            "monitor_calls_per_s": 0.0,
+            "monitor_exec_ms_per_s": 0.0,
+            "monitor_temp_blks_written_per_s": 0.0,
+            "cpu_pct_of_core": 200.28287771468013
+          },
+          "server_errors": [],
+          "noise_floor_ok": true
+        },
+        "pipeline": {
+          "pairs": 16,
+          "min_template_n_base": 2501,
+          "min_template_n_treat": 2505,
+          "p95_pct": -0.14493625733046356,
+          "p95_ci": [
+            -2.385848823899743,
+            2.327428665590043
+          ],
+          "mean_pct": -0.0003761861024020874,
+          "mean_ci": [
+            -0.6690826123748158,
+            0.7651872312353528
+          ],
+          "throughput_pct": -0.1623853422901589,
+          "throughput_ci": [
+            -0.9198341628977103,
+            0.7274682992398601
+          ],
+          "enough_samples": true,
+          "failures": 0,
+          "server_base": {
+            "log_json_bytes_per_s": 28424.274500349275,
+            "monitor_blks_per_s": 0.0,
+            "monitor_calls_per_s": 0.0,
+            "monitor_exec_ms_per_s": 0.0,
+            "monitor_temp_blks_written_per_s": 0.0,
+            "cpu_pct_of_core": 200.27317560506458
+          },
+          "server_treat": {
+            "log_json_bytes_per_s": 28452.269769992836,
+            "monitor_blks_per_s": 137.38538933983202,
+            "monitor_calls_per_s": 6.158238725739276,
+            "monitor_exec_ms_per_s": 2.8328437155376665,
+            "monitor_temp_blks_written_per_s": 0.0,
+            "cpu_pct_of_core": 200.94094810171248
+          },
+          "server_errors": [],
+          "cycles": {
+            "cycles": 64,
+            "failed": 0,
+            "errors": [],
+            "wall_s_mean": 0.31813289534375,
+            "wall_s_max": 0.445638791,
+            "duty_cycle_pct": 3.1813106668810356,
+            "candidates_mean": 10.0,
+            "auto_explain_plans_mean": 2.0,
+            "log_bytes_read_mean": 2097152.0
+          },
+          "during_extraction": {
+            "n_overlapping": 868,
+            "n_clear": 24394,
+            "mean_pct": 9.389060481139744,
+            "p95_pct": 17.929109185233095
+          },
+          "verdict": "CUMPLE"
+        },
+        "instrumentation": {
+          "pairs": 6,
+          "min_template_n_base": 963,
+          "min_template_n_treat": 936,
+          "p95_pct": 3.777967313709363,
+          "p95_ci": [
+            -4.620496827032887,
+            11.014341449929477
+          ],
+          "mean_pct": 4.735455441377878,
+          "mean_ci": [
+            3.388227053506469,
+            6.465347496184326
+          ],
+          "throughput_pct": 3.0618359864685973,
+          "throughput_ci": [
+            0.7923842387735697,
+            5.845008987081736
+          ],
+          "enough_samples": true,
+          "failures": 0,
+          "server_base": {
+            "log_json_bytes_per_s": 5.3036838444720855,
+            "monitor_blks_per_s": 0.0,
+            "monitor_calls_per_s": 0.0,
+            "monitor_exec_ms_per_s": 0.0,
+            "monitor_temp_blks_written_per_s": 0.0,
+            "cpu_pct_of_core": 199.69750861810687
+          },
+          "server_treat": {
+            "log_json_bytes_per_s": 28341.112208821087,
+            "monitor_blks_per_s": 0.0,
+            "monitor_calls_per_s": 0.0,
+            "monitor_exec_ms_per_s": 0.0,
+            "monitor_temp_blks_written_per_s": 0.0,
+            "cpu_pct_of_core": 200.27135187561566
+          },
+          "server_errors": [],
+          "verdict": "INCONCLUSO",
+          "toggled": {
+            "setting": "auto_explain.log_min_duration",
+            "role": "ql_user",
+            "server_value_ms": 50,
+            "role_original": null
+          }
+        }
+      },
+      "verdict": "CUMPLE",
+      "noise_floor_ok": true,
+      "health": {
+        "db_id": "querylens-db-01:postgres",
+        "last_run": {
+          "status": "ok",
+          "sections_failed": [],
+          "finished_at": "2026-11-17 06:25:36.534191+00:00"
+        },
+        "open_issues": []
+      },
+      "warnings": [],
+      "blocks": [
+        {
+          "arm": "pipeline",
+          "pair": 13,
+          "side": "off",
+          "start_ns": 2735728122949,
+          "end_ns": 2780728269502,
+          "server": {
+            "cpu_usec": 90119737,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1274709
+          },
+          "server_span_ns": 45000148777,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 13,
+          "side": "on",
+          "start_ns": 2781915045467,
+          "end_ns": 2826915243238,
+          "server": {
+            "cpu_usec": 90428298,
+            "monitor_calls": 279,
+            "monitor_exec_ms": 146.3703089999999,
+            "monitor_blks": 6261,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1285568
+          },
+          "server_span_ns": 45000679328,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 3,
+          "side": "off",
+          "start_ns": 2828096964325,
+          "end_ns": 2873097096772,
+          "server": {
+            "cpu_usec": 90170452,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1296427
+          },
+          "server_span_ns": 45000134021,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 3,
+          "side": "on",
+          "start_ns": 2874268176503,
+          "end_ns": 2919268330609,
+          "server": {
+            "cpu_usec": 90407841,
+            "monitor_calls": 276,
+            "monitor_exec_ms": 133.00596100000007,
+            "monitor_blks": 6136,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1292842
+          },
+          "server_span_ns": 45000754423,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 0,
+          "side": "on",
+          "start_ns": 2920445973187,
+          "end_ns": 2965446153990,
+          "server": {
+            "cpu_usec": 90404091,
+            "monitor_calls": 276,
+            "monitor_exec_ms": 124.77075799999989,
+            "monitor_blks": 6136,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1264308
+          },
+          "server_span_ns": 45000602576,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 0,
+          "side": "off",
+          "start_ns": 2966628265288,
+          "end_ns": 3011628413388,
+          "server": {
+            "cpu_usec": 90174398,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1257080
+          },
+          "server_span_ns": 45000150705,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 1,
+          "side": "A2",
+          "start_ns": 3012811262491,
+          "end_ns": 3057811422068,
+          "server": {
+            "cpu_usec": 90169193,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1264304
+          },
+          "server_span_ns": 45000161851,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 1,
+          "side": "A1",
+          "start_ns": 3058990954181,
+          "end_ns": 3103991325445,
+          "server": {
+            "cpu_usec": 90127854,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1289562
+          },
+          "server_span_ns": 45000373759,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 0,
+          "side": "A2",
+          "start_ns": 3105162331995,
+          "end_ns": 3150162526396,
+          "server": {
+            "cpu_usec": 90154227,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1282390
+          },
+          "server_span_ns": 45000196766,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 0,
+          "side": "A1",
+          "start_ns": 3151334218087,
+          "end_ns": 3196334617313,
+          "server": {
+            "cpu_usec": 90123599,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1307596
+          },
+          "server_span_ns": 45000401681,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 4,
+          "side": "off",
+          "start_ns": 3197506140006,
+          "end_ns": 3242506286713,
+          "server": {
+            "cpu_usec": 90168032,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1278752
+          },
+          "server_span_ns": 45000149262,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 4,
+          "side": "on",
+          "start_ns": 3243684977286,
+          "end_ns": 3288685118800,
+          "server": {
+            "cpu_usec": 90432434,
+            "monitor_calls": 279,
+            "monitor_exec_ms": 128.61490500000002,
+            "monitor_blks": 6246,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1282286
+          },
+          "server_span_ns": 45000617933,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 9,
+          "side": "on",
+          "start_ns": 3289861377998,
+          "end_ns": 3334861572282,
+          "server": {
+            "cpu_usec": 90496925,
+            "monitor_calls": 276,
+            "monitor_exec_ms": 137.3072770000001,
+            "monitor_blks": 6136,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1228132
+          },
+          "server_span_ns": 45000755425,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 9,
+          "side": "off",
+          "start_ns": 3336030220758,
+          "end_ns": 3381030372856,
+          "server": {
+            "cpu_usec": 90038012,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1282286
+          },
+          "server_span_ns": 45000154072,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 15,
+          "side": "off",
+          "start_ns": 3382197680803,
+          "end_ns": 3427197826679,
+          "server": {
+            "cpu_usec": 90070139,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1293096
+          },
+          "server_span_ns": 45000147670,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 15,
+          "side": "on",
+          "start_ns": 3428365315448,
+          "end_ns": 3473365471696,
+          "server": {
+            "cpu_usec": 90422995,
+            "monitor_calls": 276,
+            "monitor_exec_ms": 109.96662299999957,
+            "monitor_blks": 6136,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1257080
+          },
+          "server_span_ns": 45000627526,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 6,
+          "side": "A1",
+          "start_ns": 3474530619869,
+          "end_ns": 3519530783947,
+          "server": {
+            "cpu_usec": 90134520,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1260614
+          },
+          "server_span_ns": 45000166353,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 6,
+          "side": "A2",
+          "start_ns": 3520700562021,
+          "end_ns": 3565700679042,
+          "server": {
+            "cpu_usec": 90243269,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1260562
+          },
+          "server_span_ns": 45000119445,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 10,
+          "side": "off",
+          "start_ns": 3566901180311,
+          "end_ns": 3611901341630,
+          "server": {
+            "cpu_usec": 90142206,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1293148
+          },
+          "server_span_ns": 45000163724,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 10,
+          "side": "on",
+          "start_ns": 3613069845166,
+          "end_ns": 3658070180493,
+          "server": {
+            "cpu_usec": 90386160,
+            "monitor_calls": 279,
+            "monitor_exec_ms": 120.09665500000028,
+            "monitor_blks": 6261,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1282286
+          },
+          "server_span_ns": 45000822695,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 7,
+          "side": "on",
+          "start_ns": 3659234282669,
+          "end_ns": 3704234637429,
+          "server": {
+            "cpu_usec": 90464095,
+            "monitor_calls": 276,
+            "monitor_exec_ms": 123.45610600000032,
+            "monitor_blks": 6136,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1289510
+          },
+          "server_span_ns": 45000787704,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 7,
+          "side": "off",
+          "start_ns": 3705414056370,
+          "end_ns": 3750414190364,
+          "server": {
+            "cpu_usec": 90112447,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1285873
+          },
+          "server_span_ns": 45000135737,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 1,
+          "side": "off",
+          "start_ns": 3751579814632,
+          "end_ns": 3796580076035,
+          "server": {
+            "cpu_usec": 90166993,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1285872
+          },
+          "server_span_ns": 45000263808,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 1,
+          "side": "on",
+          "start_ns": 3797761705727,
+          "end_ns": 3842762021633,
+          "server": {
+            "cpu_usec": 90426240,
+            "monitor_calls": 276,
+            "monitor_exec_ms": 126.88359299999934,
+            "monitor_blks": 6136,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1285872
+          },
+          "server_span_ns": 45000751616,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 12,
+          "side": "on",
+          "start_ns": 3843938585667,
+          "end_ns": 3888938909165,
+          "server": {
+            "cpu_usec": 90446137,
+            "monitor_calls": 276,
+            "monitor_exec_ms": 130.8030230000004,
+            "monitor_blks": 6136,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1296734
+          },
+          "server_span_ns": 45000772203,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 12,
+          "side": "off",
+          "start_ns": 3890115382195,
+          "end_ns": 3935115525083,
+          "server": {
+            "cpu_usec": 90041344,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1256976
+          },
+          "server_span_ns": 45000145653,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 4,
+          "side": "A2",
+          "start_ns": 3936287750339,
+          "end_ns": 3981287924892,
+          "server": {
+            "cpu_usec": 89964822,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1271424
+          },
+          "server_span_ns": 45000176798,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 4,
+          "side": "A1",
+          "start_ns": 3982456976918,
+          "end_ns": 4027457155421,
+          "server": {
+            "cpu_usec": 90074030,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1289510
+          },
+          "server_span_ns": 45000180527,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 2,
+          "side": "A1",
+          "start_ns": 4028634276060,
+          "end_ns": 4073634609696,
+          "server": {
+            "cpu_usec": 90118027,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1300320
+          },
+          "server_span_ns": 45000336502,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 2,
+          "side": "A2",
+          "start_ns": 4074808147197,
+          "end_ns": 4119808296721,
+          "server": {
+            "cpu_usec": 90135155,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1282286
+          },
+          "server_span_ns": 45000151979,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 7,
+          "side": "A1",
+          "start_ns": 4120973642340,
+          "end_ns": 4165973789459,
+          "server": {
+            "cpu_usec": 90124549,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1293096
+          },
+          "server_span_ns": 45000149473,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 7,
+          "side": "A2",
+          "start_ns": 4167142137551,
+          "end_ns": 4212142280440,
+          "server": {
+            "cpu_usec": 90152165,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1296734
+          },
+          "server_span_ns": 45000145503,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 5,
+          "side": "A1",
+          "start_ns": 4213322056133,
+          "end_ns": 4258322231600,
+          "server": {
+            "cpu_usec": 90147631,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1300320
+          },
+          "server_span_ns": 45000178143,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 5,
+          "side": "A2",
+          "start_ns": 4259489221271,
+          "end_ns": 4304489436239,
+          "server": {
+            "cpu_usec": 90108871,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1285872
+          },
+          "server_span_ns": 45000217773,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 5,
+          "side": "on",
+          "start_ns": 4305659275297,
+          "end_ns": 4350659438833,
+          "server": {
+            "cpu_usec": 90433343,
+            "monitor_calls": 279,
+            "monitor_exec_ms": 128.3621119999998,
+            "monitor_blks": 6261,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1300320
+          },
+          "server_span_ns": 45000588144,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 5,
+          "side": "off",
+          "start_ns": 4351826022025,
+          "end_ns": 4396826175836,
+          "server": {
+            "cpu_usec": 90157001,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1285872
+          },
+          "server_span_ns": 45000156326,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 11,
+          "side": "on",
+          "start_ns": 4397999053985,
+          "end_ns": 4442999193365,
+          "server": {
+            "cpu_usec": 90410866,
+            "monitor_calls": 276,
+            "monitor_exec_ms": 126.27728999999931,
+            "monitor_blks": 6136,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1282286
+          },
+          "server_span_ns": 45000528781,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 11,
+          "side": "off",
+          "start_ns": 4444167443389,
+          "end_ns": 4489167604983,
+          "server": {
+            "cpu_usec": 90099601,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1260666
+          },
+          "server_span_ns": 45000164099,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 14,
+          "side": "off",
+          "start_ns": 4490341054486,
+          "end_ns": 4535341191217,
+          "server": {
+            "cpu_usec": 90125654,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1289562
+          },
+          "server_span_ns": 45000139205,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 14,
+          "side": "on",
+          "start_ns": 4536508569632,
+          "end_ns": 4581508691976,
+          "server": {
+            "cpu_usec": 90376487,
+            "monitor_calls": 276,
+            "monitor_exec_ms": 130.19159400000035,
+            "monitor_blks": 6136,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1285872
+          },
+          "server_span_ns": 45000558484,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 8,
+          "side": "on",
+          "start_ns": 4582678483046,
+          "end_ns": 4627678847298,
+          "server": {
+            "cpu_usec": 90416838,
+            "monitor_calls": 279,
+            "monitor_exec_ms": 123.97432799999956,
+            "monitor_blks": 6261,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1293096
+          },
+          "server_span_ns": 45000817253,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 8,
+          "side": "off",
+          "start_ns": 4628864766597,
+          "end_ns": 4673864937492,
+          "server": {
+            "cpu_usec": 90090268,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1256976
+          },
+          "server_span_ns": 45000173470,
+          "server_error": null
+        },
+        {
+          "arm": "instrumentation",
+          "pair": 3,
+          "side": "on",
+          "start_ns": 4675073754386,
+          "end_ns": 4720073901075,
+          "server": {
+            "cpu_usec": 90157080,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1274058
+          },
+          "server_span_ns": 45000149514,
+          "server_error": null
+        },
+        {
+          "arm": "instrumentation",
+          "pair": 3,
+          "side": "off",
+          "start_ns": 4721274587817,
+          "end_ns": 4766274735240,
+          "server": {
+            "cpu_usec": 89948711,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 0
+          },
+          "server_span_ns": 45000150349,
+          "server_error": null
+        },
+        {
+          "arm": "instrumentation",
+          "pair": 2,
+          "side": "on",
+          "start_ns": 4767489516572,
+          "end_ns": 4812489698559,
+          "server": {
+            "cpu_usec": 90172400,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1266886
+          },
+          "server_span_ns": 45000184112,
+          "server_error": null
+        },
+        {
+          "arm": "instrumentation",
+          "pair": 2,
+          "side": "off",
+          "start_ns": 4813678953818,
+          "end_ns": 4858679123416,
+          "server": {
+            "cpu_usec": 89832545,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 716
+          },
+          "server_span_ns": 45000171802,
+          "server_error": null
+        },
+        {
+          "arm": "instrumentation",
+          "pair": 4,
+          "side": "off",
+          "start_ns": 4859903366515,
+          "end_ns": 4904903698848,
+          "server": {
+            "cpu_usec": 89867977,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 0
+          },
+          "server_span_ns": 45000335399,
+          "server_error": null
+        },
+        {
+          "arm": "instrumentation",
+          "pair": 4,
+          "side": "on",
+          "start_ns": 4906105868928,
+          "end_ns": 4951106413039,
+          "server": {
+            "cpu_usec": 90139369,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1292190
+          },
+          "server_span_ns": 45000546605,
+          "server_error": null
+        },
+        {
+          "arm": "instrumentation",
+          "pair": 0,
+          "side": "off",
+          "start_ns": 4952306850180,
+          "end_ns": 4997307008568,
+          "server": {
+            "cpu_usec": 89899766,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 0
+          },
+          "server_span_ns": 45000161313,
+          "server_error": null
+        },
+        {
+          "arm": "instrumentation",
+          "pair": 0,
+          "side": "on",
+          "start_ns": 4998517220289,
+          "end_ns": 5043517377661,
+          "server": {
+            "cpu_usec": 89999162,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1249121
+          },
+          "server_span_ns": 45000159637,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 3,
+          "side": "A2",
+          "start_ns": 5044683237851,
+          "end_ns": 5089683601348,
+          "server": {
+            "cpu_usec": 90093734,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1282088
+          },
+          "server_span_ns": 45000365992,
+          "server_error": null
+        },
+        {
+          "arm": "aa",
+          "pair": 3,
+          "side": "A1",
+          "start_ns": 5090861456228,
+          "end_ns": 5135861788874,
+          "server": {
+            "cpu_usec": 90033046,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1274884
+          },
+          "server_span_ns": 45000335119,
+          "server_error": null
+        },
+        {
+          "arm": "instrumentation",
+          "pair": 5,
+          "side": "off",
+          "start_ns": 5137059165466,
+          "end_ns": 5182059328107,
+          "server": {
+            "cpu_usec": 89746440,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 716
+          },
+          "server_span_ns": 45000165196,
+          "server_error": null
+        },
+        {
+          "arm": "instrumentation",
+          "pair": 5,
+          "side": "on",
+          "start_ns": 5183272825455,
+          "end_ns": 5228272971364,
+          "server": {
+            "cpu_usec": 90119673,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1277692
+          },
+          "server_span_ns": 45000148634,
+          "server_error": null
+        },
+        {
+          "arm": "instrumentation",
+          "pair": 1,
+          "side": "on",
+          "start_ns": 5229459555749,
+          "end_ns": 5274459725232,
+          "server": {
+            "cpu_usec": 90147691,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1292192
+          },
+          "server_span_ns": 45000172037,
+          "server_error": null
+        },
+        {
+          "arm": "instrumentation",
+          "pair": 1,
+          "side": "off",
+          "start_ns": 5275658709775,
+          "end_ns": 5320658868813,
+          "server": {
+            "cpu_usec": 89890121,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 0
+          },
+          "server_span_ns": 45000161051,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 6,
+          "side": "on",
+          "start_ns": 5321854468947,
+          "end_ns": 5366854660500,
+          "server": {
+            "cpu_usec": 90426629,
+            "monitor_calls": 279,
+            "monitor_exec_ms": 126.46039200000132,
+            "monitor_blks": 6265,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1274189
+          },
+          "server_span_ns": 45000625107,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 6,
+          "side": "off",
+          "start_ns": 5368023291048,
+          "end_ns": 5413023456683,
+          "server": {
+            "cpu_usec": 90145843,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1278335
+          },
+          "server_span_ns": 45000168040,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 2,
+          "side": "off",
+          "start_ns": 5414201316005,
+          "end_ns": 5459201499941,
+          "server": {
+            "cpu_usec": 90149906,
+            "monitor_calls": 0,
+            "monitor_exec_ms": 0.0,
+            "monitor_blks": 0,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1289921
+          },
+          "server_span_ns": 45000186170,
+          "server_error": null
+        },
+        {
+          "arm": "pipeline",
+          "pair": 2,
+          "side": "on",
+          "start_ns": 5460379293996,
+          "end_ns": 5505379637511,
+          "server": {
+            "cpu_usec": 90417674,
+            "monitor_calls": 276,
+            "monitor_exec_ms": 123.13788199999863,
+            "monitor_blks": 6140,
+            "monitor_temp_blks_written": 0,
+            "log_json_bytes": 1285568
+          },
+          "server_span_ns": 45000771971,
+          "server_error": null
+        }
+      ]
+    }
+  }
+}

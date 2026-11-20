@@ -35,7 +35,7 @@ export const STAGES = [
   {
     title: "Detecta",
     text: "Cruza estadísticas, planes e historial y aplica una regla por cada antipatrón.",
-    sample: "latencia media ≥ 2 × mediana\nde las 10 ventanas previas",
+    sample: "latencia media ≥ 2 × mediana\nde las 60 ventanas previas",
   },
   {
     title: "Recomienda",
@@ -54,6 +54,7 @@ export const FEED_POOL: { severity: DemoSeverity; name: string; subject: string 
   { severity: "medium", name: "avoidable_full_scan", subject: "movimientos" },
   { severity: "medium", name: "baseline_degradation", subject: "q_7c10" },
   { severity: "low", name: "cardinality_misestimate", subject: "envios" },
+  { severity: "medium", name: "n_plus_one", subject: "pedidos" },
 ];
 
 // Respuesta de ejemplo de GET /diagnostics para la vista previa del tablero. La hora del
@@ -73,6 +74,7 @@ const SAMPLE_RECOMMENDATIONS: Record<string, string> = {
   baseline_degradation: "Comparar el plan actual con el anterior y revisar las estadísticas de la tabla.",
   cardinality_misestimate: "Actualizar las estadísticas de la tabla con ANALYZE.",
   disk_spill: "Aumentar la memoria de trabajo para esa consulta o reducir el tamaño del ordenamiento.",
+  n_plus_one: "Traer las filas relacionadas con un JOIN, o todas juntas con WHERE ... IN (...).",
 };
 
 const SAMPLE_ROWS: [string, "high" | "medium" | "low", string | null, string | null, number][] = [
@@ -81,10 +83,35 @@ const SAMPLE_ROWS: [string, "high" | "medium" | "low", string | null, string | n
   ["non_sargable_predicate", "medium", "clientes", "q_91ab", 3 * HOUR],
   ["avoidable_full_scan", "medium", "movimientos", "q_c4e9", 9 * HOUR],
   ["baseline_degradation", "medium", null, "q_7c10", 20 * HOUR],
+  ["n_plus_one", "medium", "pedidos", "q_5d08", 22 * HOUR],
   ["unused_index", "low", "pedidos", null, 2 * DAY],
   ["cardinality_misestimate", "low", "envios", "q_0b77", 3 * DAY],
   ["missing_index", "high", "facturas", "q_a1d3", 4 * DAY],
 ];
+
+// Detecciones de cada fila de SAMPLE_ROWS: en la sesión de ejemplo y en total.
+const SAMPLE_COUNTS: [number, number][] = [
+  [1240, 9400],
+  [310, 310],
+  [860, 2150],
+  [2150, 2150],
+  [95, 640],
+  [640, 3400],
+  [3400, 31000],
+  [12, 48],
+  [180, 180],
+];
+
+// Impacto de cada fila de SAMPLE_ROWS en la sesión (ms), de mayor a menor: la lista va ordenada por impacto.
+const SAMPLE_IMPACT_MS = [5_400_000, 1_850_000, 960_000, 610_000, 240_000, 182_000, 36_000, 9_500, 4_200];
+
+const SAMPLE_SESSION_START = at(5 * DAY);
+
+// Detecciones por hora de las últimas 24 h, con más actividad en la tarde.
+const SAMPLE_ACTIVITY = Array.from({ length: 24 }, (_, i) => ({
+  hora: new Date(Math.floor(SAMPLE_NOW / HOUR) * HOUR - (23 - i) * HOUR).toISOString(),
+  detecciones: 30 + ((i * 37) % 53) + (i > 15 ? 40 : 0),
+}));
 
 export const SAMPLE_DIAGNOSTICS: DiagnosticsResponse = {
   database_identifier: "db_7f3a91c2",
@@ -93,17 +120,30 @@ export const SAMPLE_DIAGNOSTICS: DiagnosticsResponse = {
   is_active: true,
   monitoring_enabled: true,
   server_time: at(0),
+  detection_session_started_at: SAMPLE_SESSION_START,
   diagnostics: SAMPLE_ROWS.map(([id, severidad, table_name, query_id, ago], i) => ({
     id: 100 - i,
     antipatron: id,
+    codigo: ANTIPATTERN_DOCS[id].code,
     severidad,
+    severidad_actual: severidad,
     table_name,
+    database_name: "ventas",
     query_id,
     evidencia: Object.fromEntries(byId(id).evidence),
     explicacion: byId(id).summary,
     recomendacion: SAMPLE_RECOMMENDATIONS[id],
+    riesgo: null,
+    impacto_ms: Math.round(SAMPLE_IMPACT_MS[i] / SAMPLE_COUNTS[i][0]),
+    impacto_sesion_ms: SAMPLE_IMPACT_MS[i],
     detectado_en: at(ago),
+    primera_deteccion: SAMPLE_COUNTS[i][1] > SAMPLE_COUNTS[i][0] ? at(30 * DAY) : SAMPLE_SESSION_START,
+    veces_sesion: SAMPLE_COUNTS[i][0],
+    veces_total: SAMPLE_COUNTS[i][1],
+    por_severidad: { [severidad]: SAMPLE_COUNTS[i][0] },
   })),
+  evaluation: [],
+  activity: SAMPLE_ACTIVITY,
   health: {
     last_run: {
       status: "ok",

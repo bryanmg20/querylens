@@ -24,7 +24,8 @@ logger = get_logger(__name__)
 #   - sus ejecuciones coinciden (+-20 %) con las filas que devolvio el padre en
 #     la misma ventana
 #
-# Ajustes respecto al informe (pendiente: llevarlos a la fila de AP-06):
+# Ajustes respecto al planteamiento original (ya estan en la fila de AP-06 de
+# la Tabla 2 del Informe final):
 #   - el padre devuelve >= 2 filas por ejecucion: descarta el "1 + 1" normal de
 #     una pagina de detalle (leer un pedido y despues su cliente)
 #   - las dos ventanas se miden contra el mismo snapshot anterior (o las dos
@@ -37,11 +38,11 @@ logger = get_logger(__name__)
 #
 # No usa el EXPLAIN: recorre todos los statements, no solo top_impact_queries.
 
-# Con ventanas de 10 s (el informe pide 100 en ventanas de 60 s). 50 en vez de
-# los ~17 que darian la misma tasa: con numeros chicos dos consultas sin
-# relacion coinciden por casualidad dentro del +-20 % (falso positivo); con 50
-# se pierden los N+1 de menos de 50 filas por ventana (paginas de 20 o 25).
-# Pendiente: llevarlo a la fila de AP-06 del informe.
+# Con ventanas de 10 s (el planteamiento original pedia 100 en ventanas de
+# 60 s). 50 en vez de los ~17 que darian la misma tasa: con numeros chicos dos
+# consultas sin relacion coinciden por casualidad dentro del +-20 % (falso
+# positivo); con 50 se pierden los N+1 de menos de 50 filas por ventana
+# (paginas de 20 o 25). La Tabla 2 del Informe final fija este valor.
 _MIN_CHILD_CALLS = 50
 _MATCH_TOLERANCE = 0.20
 _MIN_PARENT_ROWS_PER_CALL = 2
@@ -56,6 +57,18 @@ _NEW_QUERY_WINDOW = timedelta(seconds=10)
 
 _UNAVAILABLE = "Not available"
 
+# Riesgo de aplicar la recomendacion (no la gravedad del problema): la
+# recomendacion propone un JOIN, un IN o la carga anticipada del ORM.
+_RISK = (
+    "Traer todo de una vez cambia el codigo de la aplicacion y devuelve mas "
+    "filas en una sola respuesta: mas memoria en la aplicacion y una consulta "
+    "mas pesada si la lista es larga. Con un JOIN las columnas del padre se "
+    "repiten por cada fila hija, y un IN con miles de valores puede terminar "
+    "en un plan peor que el de las consultas sueltas. Si se activa la carga "
+    "anticipada del ORM, hacerlo solo donde se usa la relacion: en las demas "
+    "rutas trae datos de mas."
+)
+
 
 @dataclass
 class _RowsWindow:
@@ -63,6 +76,10 @@ class _RowsWindow:
     rows: int
     # True si la query aparecio en esta ventana y se uso su acumulado completo
     new_query: bool = False
+    # tiempo de base de datos de la sentencia en la ventana (el impacto del
+    # hallazgo). None si el snapshot no trae el tiempo. No decide si hay
+    # hallazgo: la regla solo mira ejecuciones y filas
+    total_ms: float | None = None
 
 
 @dataclass
@@ -103,18 +120,25 @@ def _parse_instant(value) -> datetime | None:
     return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
 
 
-def _current_counters(snapshot: SnapshotPayload) -> dict[str, tuple[StatementRow, int, int | None, str | None]]:
-    # (primer statement, ejecuciones, filas devueltas, counters_epoch) por query,
-    # sumando las filas repetidas igual que la fila guardada en statement_samples
-    counters: dict[str, tuple[StatementRow, int, int | None, str | None]] = {}
+def _current_counters(
+    snapshot: SnapshotPayload,
+) -> dict[str, tuple[StatementRow, int, int | None, float | None, str | None]]:
+    # (primer statement, ejecuciones, filas devueltas, tiempo total,
+    # counters_epoch) por query, sumando las filas repetidas igual que la fila
+    # guardada en statement_samples
+    counters: dict[str, tuple[StatementRow, int, int | None, float | None, str | None]] = {}
     for statement in snapshot.statements:
         if statement.query_id is None or statement.execution_count is None:
             continue
         key = str(statement.query_id)
-        first, calls, rows, epoch = counters.get(key, (statement, 0, None, statement.counters_epoch))
+        first, calls, rows, total_ms, epoch = counters.get(
+            key, (statement, 0, None, None, statement.counters_epoch),
+        )
         if statement.rows_returned is not None:
             rows = (rows or 0) + statement.rows_returned
-        counters[key] = (first, calls + statement.execution_count, rows, epoch)
+        if statement.total_time_ms is not None:
+            total_ms = (total_ms or 0.0) + statement.total_time_ms
+        counters[key] = (first, calls + statement.execution_count, rows, total_ms, epoch)
     return counters
 
 
@@ -122,13 +146,15 @@ def _current_counters(snapshot: SnapshotPayload) -> dict[str, tuple[StatementRow
 def _rows_window(
     calls: int,
     rows: int | None,
+    total_ms: float | None,
     epoch: datetime | None,
     previous: StatementHistory | None,
     previous_snapshot_at: datetime | None,
     captured_at: datetime,
 ) -> _RowsWindow | None:
-    # Ejecuciones y filas devueltas entre el snapshot anterior y este. None si
-    # no se puede medir o si la query no se ejecuto en la ventana.
+    # Ejecuciones, filas devueltas y tiempo entre el snapshot anterior y este.
+    # None si no se puede medir o si la query no se ejecuto en la ventana. El
+    # tiempo nunca descarta la ventana: solo es el impacto.
     if rows is None:
         return None
 
@@ -140,7 +166,7 @@ def _rows_window(
         started_in_window = captured_at - epoch <= _NEW_QUERY_WINDOW
         started_after_previous = previous_snapshot_at is not None and epoch > previous_snapshot_at
         if started_in_window or started_after_previous:
-            return _RowsWindow(calls=calls, rows=rows, new_query=True)
+            return _RowsWindow(calls=calls, rows=rows, new_query=True, total_ms=total_ms)
         return None
     if previous.rows_returned is None:
         return None
@@ -151,7 +177,8 @@ def _rows_window(
     delta_rows = rows - previous.rows_returned
     if delta_calls <= 0 or delta_rows < 0:
         return None
-    return _RowsWindow(calls=delta_calls, rows=delta_rows)
+    delta_ms = None if total_ms is None else max(total_ms - previous.total_time_ms, 0.0)
+    return _RowsWindow(calls=delta_calls, rows=delta_rows, total_ms=delta_ms)
 
 
 def _lower(value: str | None) -> str | None:
@@ -285,6 +312,15 @@ def _filters_by(query: _Query, table: tuple[str | None, str], columns: list[str]
     )
 
 
+def _impact_ms(child: _Query, parent: _Query) -> float | None:
+    """Tiempo de base de datos del N+1 en la ventana: el de todas las
+    ejecuciones de la hija mas el del padre que las provoca. Sin el tiempo de la
+    hija no hay impacto (None); sin el del padre, solo la hija."""
+    if child.window.total_ms is None:
+        return None
+    return round(child.window.total_ms + (parent.window.total_ms or 0.0), 3)
+
+
 def _same_window(child: _Query, parent: _Query) -> bool:
     if child.window.new_query or parent.window.new_query:
         return child.window.new_query and parent.window.new_query
@@ -312,10 +348,10 @@ def detect_n_plus_one(
     previous_snapshot_at = max((row.captured_at for row in history.values()), default=None)
 
     queries: list[_Query] = []
-    for query_id, (statement, calls, rows, epoch_raw) in _current_counters(snapshot).items():
+    for query_id, (statement, calls, rows, total_ms, epoch_raw) in _current_counters(snapshot).items():
         previous = history.get(query_id)
         window = _rows_window(
-            calls, rows, _parse_instant(epoch_raw), previous, previous_snapshot_at, captured_at,
+            calls, rows, total_ms, _parse_instant(epoch_raw), previous, previous_snapshot_at, captured_at,
         )
         if window is None:
             continue
@@ -397,6 +433,13 @@ def detect_n_plus_one(
                     "child_filter_columns": child_columns,
                     "child_window_calls": child.window.calls,
                     "child_window_rows": child.window.rows,
+                    # impacto: tiempo de la operacion completa en la ventana, la
+                    # hija y su padre, como en los demas patrones (el tiempo de
+                    # la sentencia afectada, no solo lo evitable). Sin el tiempo
+                    # del padre, solo la hija
+                    "window_time_ms": _impact_ms(child, parent),
+                    "child_window_time_ms": child.window.total_ms,
+                    "parent_window_time_ms": parent.window.total_ms,
                     "parent_query_id": parent.statement.query_id,
                     "parent_query_text": parent.statement.query_text,
                     "parent_canonic_query": parent.statement.canonic_query,
@@ -424,6 +467,9 @@ def detect_n_plus_one(
                 ),
                 query_id=statement.query_id,
                 table_name=child_table[1],
+                database_name=statement.database_name,
+                riesgo=_RISK,
+                impacto_ms=_impact_ms(child, parent),
             )
         )
 

@@ -178,6 +178,10 @@ def _finding(
         query_id=root.query_id,
         table_name=", ".join(tables) if tables else None,
         database_name=", ".join(databases) if databases else root.database_name,
+        riesgo=_RISK,
+        # el impacto del hallazgo va en milisegundos, como el de los
+        # antipatrones: es la misma espera acumulada de evidencia.impact_wait_s
+        impacto_ms=round(impact_wait_s * 1000, 3),
     )
 
 

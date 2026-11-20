@@ -133,3 +133,11 @@ def test_mysql_without_known_limit_reports_nothing():
     report = HealthReport()
     post_collect({"statements": [{"query_sample_text": "x" * 5000}]}, report, "mysql")
     assert report.issues == {}
+
+
+def test_snapshot_status_carries_the_undefined_table_suggestion():
+    report = HealthReport()
+    report.add("EXPLAIN_FAILED", sqlstate="42P01", undefined_table="postgres")
+    [issue] = report.snapshot_status()["issues"]
+    assert "pg_stat_statements_reset()" in issue["remediation"]
+    assert issue["remediation"].endswith(CATALOG["EXPLAIN_FAILED"].remediation)

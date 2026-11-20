@@ -11,13 +11,17 @@ from .statement_history import WINDOW_MIN_CALLS, evaluate_statements
 # Regla AP-01 del SegundoInforme (Tabla 2), ajustada a ventanas de 10 s: huella
 # con >= 5 ejecuciones en la ventana cuya latencia media es >= 2,0 veces la
 # mediana de las 60 ventanas previas (10 min, lo mismo que 10 ventanas de 60 s)
-# y al menos 1 ms mayor en valor absoluto. La lista de ventanas la arma
+# y al menos 10 ms mayor en valor absoluto. La lista de ventanas la arma
 # statement_history.py con el mismo minimo de ejecuciones.
-# Pendiente: llevar los valores de 10 s a la fila de AP-01 del informe.
+# El minimo absoluto era 1 ms; la calibracion del 2026-11-18 (#60) lo subio a
+# 10 ms: en los controles de MySQL, las escrituras de sysbench (~0,4 ms) tienen
+# ventanas sueltas de 1-4 ms mas (vaciado de InnoDB) que daban 31 FP, y las
+# degradaciones reales del escenario de AP-01 suben entre 57 y 751 ms.
+# Estos valores son los de la fila de AP-01 de la Tabla 2 del Informe final.
 DEFAULT_MIN_CALLS = WINDOW_MIN_CALLS
 DEFAULT_BASELINE_WINDOW = 60
 DEFAULT_MIN_RATIO = 2.0
-DEFAULT_MIN_ABS_INCREASE_MS = 1.0
+DEFAULT_MIN_ABS_INCREASE_MS = 10.0
 
 # Severidad por tiempo extra consumido en la ventana (ms), no por el ratio:
 # una query de 2ms que se duplica con 40 llamadas pesa menos que una de 50ms
@@ -37,6 +41,17 @@ _MEDIUM_EXTRA_MS = 1_000
 # (valor - mediana) / (1.4826 * MAD) >= 3, que descarta lo que esta dentro de
 # la variacion habitual de esa query. No se usa porque no forma parte de la
 # regla declarada en el informe; si se agrega, hay que declararlo ahi primero.
+
+# Riesgo de aplicar la recomendacion (no la gravedad del problema). La
+# recomendacion es revisar, que no cambia nada: el riesgo es el de las
+# correcciones que suelen salir de esa revision.
+_RISK = (
+    "Revisar no cambia nada en la base. El riesgo esta en la correccion que "
+    "salga de esa revision: actualizar las estadisticas (ANALYZE) puede cambiar "
+    "el plan de otras consultas de la misma tabla, y volver a crear un indice "
+    "eliminado encarece las escrituras sobre la tabla y, en Postgres sin "
+    "CONCURRENTLY, las bloquea mientras se construye."
+)
 
 
 def _severity(extra_ms: float) -> str:
@@ -123,6 +138,12 @@ def detect_baseline_degradation(
                     "contencion por bloqueos o carga concurrente en el servidor."
                 ),
                 query_id=statement.query_id,
+                database_name=statement.database_name,
+                riesgo=_RISK,
+                # impacto del informe: tiempo de la sentencia en la ventana
+                # (evidencia.impact_ms). La severidad sale del tiempo extra, que
+                # es otra cosa: lo que costo de mas respecto a su linea base
+                impacto_ms=round(window.total_ms, 3),
             )
         )
     return findings

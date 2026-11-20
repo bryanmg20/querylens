@@ -1,5 +1,6 @@
 "use client";
 
+import { getDoc } from "@/lib/antipatterns";
 import { SEVERITY_KEYS, SEVERITY_META, countBySeverity } from "@/lib/insights";
 import { useCountUp } from "@/lib/hooks";
 import { timeAgo } from "@/lib/format";
@@ -65,7 +66,7 @@ export default function SeverityPanel({ findings, serverTime }: { findings: Find
         <div className="mt-auto pt-4">
           <p className="border-t border-rule pt-4 text-[13px] text-muted">
             Último hallazgo {timeAgo(latest.detectado_en, serverTime)}:{" "}
-            <code className="font-mono text-fg">{latest.antipatron}</code>
+            <span className="text-fg">{getDoc(latest.antipatron)?.title ?? latest.antipatron}</span>
           </p>
         </div>
       )}

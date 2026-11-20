@@ -182,11 +182,14 @@ services:
     profiles: ["ui"]
     build:
       context: ./frontend
-      # Rutas relativas al origen de nginx (mismo origen, sin CORS). Next las
-      # fija en el bundle durante el build: si cambian, reconstruir frontend.
+      # Rutas relativas al origen de nginx (mismo origen, sin CORS), las mismas
+      # que fija nginx/nginx.conf: Next las fija en el bundle durante el
+      # build. Van fijas y no como ${VAR}: una variable de la terminal le gana
+      # al .env, y Git Bash convierte "/auth" en "C:/Program Files/Git/auth"
+      # al pasarla a docker (el registro deja de funcionar sin error visible).
       args:
-        NEXT_PUBLIC_AUTH_SERVICE_URL: ${NEXT_PUBLIC_AUTH_SERVICE_URL:-/auth}
-        NEXT_PUBLIC_API_REST_URL: ${NEXT_PUBLIC_API_REST_URL:-/api}
+        NEXT_PUBLIC_AUTH_SERVICE_URL: /auth
+        NEXT_PUBLIC_API_REST_URL: /api
     # NEXT_PUBLIC_* van solo en args: en runtime no cambian el bundle.
     environment:
       # El server.js standalone escucha en $HOSTNAME, que Docker llena con el

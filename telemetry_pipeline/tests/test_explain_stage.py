@@ -703,3 +703,53 @@ def test_mysql_sample_with_leading_comment_is_still_explained():
     )
     ExplainStage(_FakeMysqlCollector()).execute(stats, conn)
     assert any("EXPLAIN FORMAT=JSON /* app=checkout */ select" in s for s in conn.sent)
+
+
+class _PgUndefinedTable(Exception):
+    """psycopg2: el SQLSTATE viaja en pgcode."""
+
+    pgcode = "42P01"
+
+
+class _UndefinedTableConn(_FakeConn):
+    def execute(self, stmt):
+        self.sent.append(str(stmt))
+        if "EXPLAIN" in str(stmt):
+            from sqlalchemy.exc import ProgrammingError
+            raise ProgrammingError("EXPLAIN", {}, _PgUndefinedTable('relation "x" does not exist'))
+        return _FakeResult(self.rows)
+
+
+def test_postgres_undefined_table_marks_the_failure_for_the_remediation():
+    stage = ExplainStage(_FakeCollector())
+    stage.execute(_stats(), _UndefinedTableConn())
+    params = stage.report.issues[("EXPLAIN_FAILED", "")]
+    assert params["sqlstate"] == "42P01"
+    assert params["undefined_table"] == "postgres"
+
+
+def test_postgres_other_explain_failure_has_no_undefined_table_mark():
+    stage = ExplainStage(_FakeCollector())
+    stage.execute(_stats(), _FailingConn())
+    assert "undefined_table" not in stage.report.issues[("EXPLAIN_FAILED", "")]
+
+
+class _MysqlNoSuchTable(Exception):
+    """pymysql: args = (errno, mensaje)."""
+
+
+class _MysqlNoSuchTableConn(_FakeConn):
+    def execute(self, stmt):
+        self.sent.append(str(stmt))
+        if "EXPLAIN FORMAT=JSON" in str(stmt):
+            from sqlalchemy.exc import ProgrammingError
+            raise ProgrammingError("EXPLAIN", {}, _MysqlNoSuchTable(1146, "Table 'ql_demo.x' doesn't exist"))
+        return _FakeResult(self.rows)
+
+
+def test_mysql_no_such_table_marks_the_failure_for_the_remediation():
+    stage = ExplainStage(_FakeMysqlCollector())
+    stage.execute(_mysql_stats(), _MysqlNoSuchTableConn())
+    params = stage.report.issues[("EXPLAIN_FAILED", "")]
+    assert params["errno"] == 1146
+    assert params["undefined_table"] == "mysql"

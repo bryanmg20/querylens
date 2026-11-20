@@ -189,6 +189,14 @@ class ExplainStage:
                     failures += 1
                     # Agrupado por code (params.count): nunca query_id ni texto.
                     code, params = classify(e, dialect=dialect, scope="explain")
+                    # "La tabla no existe" (Postgres 42P01, MySQL 1146). Marca con
+                    # el motor, que se conserva aunque otra falla del ciclo pise
+                    # el sqlstate/errno: el remedio sugiere limpiar las
+                    # estadisticas de queries de ese motor
+                    if code == "EXPLAIN_FAILED" and (
+                        params.get("sqlstate") == "42P01" or params.get("errno") == 1146
+                    ):
+                        params["undefined_table"] = dialect
                     self.report.add(code, **params)
                     # Un limite conocido del plan generico se repite en cada
                     # ciclo: en ERROR serian ~8 640 lineas al dia por query.

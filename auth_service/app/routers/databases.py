@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -148,8 +149,15 @@ def set_monitoring(
     db: Session = Depends(get_db),
 ) -> MonitoringResponse:
     """Pausa (enabled=false) o inicia/reanuda (enabled=true) el monitoreo de la
-    base de datos del token. Solo cambia monitoring_enabled: la disponibilidad
-    (is_active) sigue siendo responsabilidad del chequeo automático."""
+    base de datos del token. La disponibilidad (is_active) sigue siendo
+    responsabilidad del chequeo automático.
+
+    new_session=true, solo al iniciar o reanudar, empieza una sesión de
+    detección nueva: la página de diagnósticos pasa a contar solo lo detectado
+    desde ahora (no se borra nada). La sesión solo cambia cuando el monitoreo
+    arranca: con el monitoreo encendido, el detector todavía procesa snapshots
+    tomados antes del corte. La primera vez que se inicia, la página la pide
+    siempre."""
 
     record = (
         db.query(RegisteredDatabase)
@@ -161,10 +169,25 @@ def set_monitoring(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="La base de datos del token ya no está registrada",
         )
+    if payload.new_session and not payload.enabled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Una sesión de detección nueva solo se empieza al iniciar o reanudar el monitoreo",
+        )
+    if payload.new_session and record.monitoring_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="El monitoreo ya está activo: páusalo para empezar una sesión de detección nueva",
+        )
 
+    if payload.new_session:
+        # Hora del servidor de la base, la misma con la que el detector anota las detecciones.
+        record.detection_session_started_at = func.now()
     record.monitoring_enabled = payload.enabled
     db.commit()
+    db.refresh(record)
     return MonitoringResponse(
         database_identifier=record.database_identifier,
         monitoring_enabled=record.monitoring_enabled,
+        detection_session_started_at=record.detection_session_started_at,
     )

@@ -331,3 +331,31 @@ def test_crash_after_another_blocking_issue_is_still_recorded(monkeypatch):
     [report] = flushed
     assert ("PG_STATEMENTS_NOT_INSTALLED", "statements") in report.issues
     assert ("PIPELINE_FAILED", "") in report.issues
+
+
+# ---------- estado de la recoleccion dentro del snapshot ----------
+
+
+def test_enqueued_snapshot_carries_the_collection_status(monkeypatch):
+    """El detector marca como no evaluadas las patologias cuya seccion fallo
+    (SegundoInforme 6.3): el estado del ciclo tiene que llegarle en el
+    snapshot, con las secciones fallidas y los problemas de este ciclo."""
+    import json
+
+    monkeypatch.setattr(main, "get_connection_querylens_db", mock.MagicMock)
+    monkeypatch.setattr(main.health_writer, "flush", lambda engine, db_id, report, started_at: None)
+    sent = []
+    monkeypatch.setattr(main, "send_to_queue", lambda payload_json, engine: sent.append(payload_json) or 1)
+    conn = _FakeConn(overrides={"c.oid = l.relation": _pg_exc("42501")})
+
+    main.run_engine("postgres", lambda: _FakeEngine(conn), db_id="db_1")
+
+    [payload] = sent
+    status = json.loads(payload)["collection_status"]
+    assert status["status"] == "degraded"
+    assert status["sections_failed"] == ["locks"]
+    issue = next(i for i in status["issues"] if i["section"] == "locks")
+    assert issue["code"] == "SECTION_PERMISSION_DENIED" and issue["severity"] == "degraded"
+    assert issue["message"] and issue["remediation"]
+    # nunca los params (sqlstate, conteos): solo lo que el detector necesita
+    assert "params" not in issue and "count" not in issue

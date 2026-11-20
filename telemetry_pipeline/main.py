@@ -144,6 +144,11 @@ def _cycle(
     if db_id:
         payload["db_id"] = db_id
 
+    # El estado de la recoleccion del ciclo viaja con el snapshot: una seccion
+    # que fallo llega como lista vacia, igual que una sin filas, y sin esto el
+    # detector no puede distinguir "sin hallazgos" de "no evaluada".
+    payload["collection_status"] = report.snapshot_status()
+
     try:
         snapshot = SnapshotPayload.from_snapshot(payload)
     except ValidationError as e:

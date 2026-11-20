@@ -2,17 +2,22 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { flushSync } from "react-dom";
 import { ActivityPanel } from "@/components/ActivityPanel";
 import DiagnosticsSkeleton from "@/components/DiagnosticsSkeleton";
-import FindingsPanel, { NO_FILTERS, type Filters } from "@/components/FindingsPanel";
+import EvaluationPanel from "@/components/EvaluationPanel";
+import FindingsPanel, { NO_FILTERS, filterFindings, type Filters } from "@/components/FindingsPanel";
 import HealthPanel from "@/components/HealthPanel";
 import KpiStrip from "@/components/KpiStrip";
 import MonitoringControl from "@/components/MonitoringControl";
+import PrintReport from "@/components/PrintReport";
 import ReadingGuide from "@/components/ReadingGuide";
 import StatusSummary from "@/components/StatusSummary";
 import { ApiError, fetchDiagnostics, setMonitoring } from "@/lib/api";
+import { formatDateTime, formatShortDateTime } from "@/lib/format";
 import { useNow } from "@/lib/hooks";
-import { countBySeverity } from "@/lib/insights";
+import { getDoc } from "@/lib/antipatterns";
+import { SEVERITY_META, countBySeverity } from "@/lib/insights";
 import { clearAccessToken, getAccessToken } from "@/lib/session";
 import type { DiagnosticsResponse } from "@/types/database";
 
@@ -52,7 +57,24 @@ function headline(data: DiagnosticsResponse): { text: string; tone: string } {
       tone: "var(--warning)",
     };
   }
-  return { text: "No se han detectado antipatrones.", tone: "var(--positive)" };
+  // Sin hallazgos solo es una buena noticia si las patologías se pudieron evaluar.
+  const notEvaluated = (data.evaluation ?? []).filter((e) => e.aplica && e.estado === "no_evaluada").length;
+  if (notEvaluated > 0) {
+    return {
+      text: `Sin hallazgos en esta sesión, pero ${notEvaluated} ${notEvaluated === 1 ? "patología no se pudo evaluar" : "patologías no se pudieron evaluar"}: revisa el estado de evaluación.`,
+      tone: "var(--warning)",
+    };
+  }
+  return { text: "No se han detectado antipatrones en esta sesión.", tone: "var(--positive)" };
+}
+
+// Los filtros activos en palabras, para el encabezado del PDF. null si no hay ninguno.
+function describeFilters(filters: Filters): string | null {
+  const parts: string[] = [];
+  if (filters.severity !== "all") parts.push(`severidad ${SEVERITY_META[filters.severity].label.toLowerCase()}`);
+  if (filters.pattern !== "all") parts.push(getDoc(filters.pattern)?.title.toLowerCase() ?? filters.pattern);
+  if (filters.query.trim()) parts.push(`búsqueda «${filters.query.trim()}»`);
+  return parts.length ? parts.join(", ") : null;
 }
 
 export default function DiagnosticsPage() {
@@ -66,6 +88,9 @@ export default function DiagnosticsPage() {
   const [monitoringError, setMonitoringError] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [guideOpen, setGuideOpen] = useState(false);
+  // Imprimir todos los hallazgos de la sesión, sin los filtros de la lista (antes de empezar una
+  // sesión nueva). Vuelve a false al cerrar el diálogo de impresión.
+  const [printAll, setPrintAll] = useState(false);
   const refresh = useRef<() => void>(() => {});
   const now = useNow(1000);
 
@@ -128,7 +153,7 @@ export default function DiagnosticsPage() {
     };
   }, [router]);
 
-  async function handleMonitoringChange(enabled: boolean) {
+  async function handleMonitoringChange(enabled: boolean, newSession: boolean) {
     const token = getAccessToken();
     if (!token) {
       router.replace("/conectar");
@@ -137,12 +162,27 @@ export default function DiagnosticsPage() {
 
     setMonitoringBusy(true);
     setMonitoringError(null);
+    const sessionBefore = data ? new Date(data.detection_session_started_at).getTime() : null;
     try {
-      const result = await setMonitoring(token, enabled);
-      // Se refleja de inmediato; el siguiente polling confirma el estado.
+      const result = await setMonitoring(token, enabled, newSession);
+      // Se refleja de inmediato; el siguiente polling confirma el estado. Con una sesión nueva la
+      // lista vuelve a empezar vacía.
+      const sessionChanged =
+        sessionBefore !== null && new Date(result.detection_session_started_at).getTime() !== sessionBefore;
       setData((current) =>
-        current ? { ...current, monitoring_enabled: result.monitoring_enabled } : current
+        current
+          ? {
+              ...current,
+              monitoring_enabled: result.monitoring_enabled,
+              detection_session_started_at: result.detection_session_started_at,
+              diagnostics: sessionChanged ? [] : current.diagnostics,
+            }
+          : current
       );
+      if (sessionChanged) {
+        setFilters(NO_FILTERS);
+        refresh.current();
+      }
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         clearAccessToken();
@@ -157,11 +197,27 @@ export default function DiagnosticsPage() {
     }
   }
 
+  function printAllFindings() {
+    // flushSync: el informe tiene que estar renderizado con todos los hallazgos antes de que se
+    // abra el diálogo de impresión.
+    flushSync(() => setPrintAll(true));
+    window.addEventListener("afterprint", () => setPrintAll(false), { once: true });
+    window.print();
+  }
+
   const summary = data ? headline(data) : null;
   const seconds = updatedAt ? Math.max(0, Math.round((now - updatedAt) / 1000)) : null;
 
   return (
-    <main className="mx-auto w-full max-w-[1320px] px-4 pb-24 pt-8 md:px-8 md:pb-12">
+    <main className="mx-auto w-full max-w-[1320px] px-4 pb-24 pt-8 md:px-8 md:pb-12 print:p-0">
+      {data && (
+        <PrintReport
+          data={data}
+          findings={printAll ? data.diagnostics : filterFindings(data.diagnostics, filters)}
+          filterNote={printAll ? null : describeFilters(filters)}
+        />
+      )}
+      <div className="print:hidden">
       <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
         <div className="min-w-0">
           <p className="text-[13px] text-muted">
@@ -170,9 +226,12 @@ export default function DiagnosticsPage() {
             {data ? data.connection_name : "Diagnósticos"}
           </p>
           <h1 className="mt-2 text-[24px] font-semibold leading-8 tracking-[-0.02em] md:text-[32px] md:leading-10">Diagnósticos</h1>
-          <p className="mt-1 max-w-2xl text-[14px] leading-5 text-muted">
+          <p
+            className="mt-1 max-w-2xl text-[14px] leading-5 text-muted"
+            title={data ? `Inicio de la sesión de detección: ${formatDateTime(data.detection_session_started_at)}` : undefined}
+          >
             {data
-              ? `Lo que QueryLens encontró en ${data.connection_name} durante la última ventana de observación.`
+              ? `Desde el ${formatShortDateTime(data.detection_session_started_at)}, lo que QueryLens encontró en ${data.connection_name}.`
               : "Consultando…"}
           </p>
           {summary && (
@@ -249,12 +308,15 @@ export default function DiagnosticsPage() {
                 started={data.health.last_run != null}
                 busy={monitoringBusy}
                 error={monitoringError}
+                sessionStartedAt={data.detection_session_started_at}
+                serverTime={data.server_time}
+                findingsCount={data.diagnostics.length}
                 onChange={handleMonitoringChange}
+                onExportAll={printAllFindings}
               />
+              <EvaluationPanel evaluation={data.evaluation ?? []} engine={data.engine} serverTime={data.server_time} />
               <HealthPanel issues={data.health.issues} serverTime={data.server_time} />
-              {data.diagnostics.length > 0 && (
-                <ActivityPanel findings={data.diagnostics} serverTime={data.server_time} />
-              )}
+              {data.activity.length > 0 && <ActivityPanel points={data.activity} serverTime={data.server_time} />}
             </div>
 
             <div className="order-first min-w-0 lg:order-none">
@@ -269,6 +331,7 @@ export default function DiagnosticsPage() {
           </div>
         </>
       )}
+      </div>
     </main>
   );
 }

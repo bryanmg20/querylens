@@ -10,7 +10,13 @@
 -- base. Es idempotente: lo que ya esta bien no cambia, y correrlo de nuevo no
 -- rompe nada.
 --
+-- Para que querylens_monitor tambien pueda pedir planes de ejecucion (SELECT
+-- sobre la base; por defecto no), ver la seccion 1:
+--
+--   mysql -u root -p <base> -e "SET @ql_grant_select = 1; source setup_target_mysql.sql"
+--
 -- Al final:
+--   * dice si querylens_monitor puede pedir planes de ejecucion;
 --   * la primera vez muestra la contrasena generada para querylens_monitor
 --     (la que se ingresa en querylens add). Las siguientes no la cambia;
 --   * dice si hace falta reiniciar MySQL. Solo lo pide si cambio algo que
@@ -73,11 +79,26 @@ PREPARE ql_grant FROM @ql_grant;
 EXECUTE ql_grant;
 DEALLOCATE PREPARE ql_grant;
 
--- EXPLAIN y las columnas de las tablas necesitan SELECT, y con SELECT el
--- usuario podria leer los datos. Es decision del dueno de la base; sin esto
--- QueryLens ve las consultas y los indices, pero no los planes. Para darlo:
+-- Planes de ejecucion (opcional). EXPLAIN y las columnas de las tablas
+-- necesitan SELECT, y con SELECT el usuario podria leer los datos. Es
+-- decision del dueno de la base; sin esto QueryLens ve las consultas y los
+-- indices, pero no los planes (AP-02 a AP-05 no aparecen). El script no
+-- puede preguntar, porque mysql lo lee por la entrada: la respuesta va en
+-- una variable antes de correrlo, y sin ella no se da.
 --
---   GRANT SELECT ON `<base>`.* TO 'querylens_monitor'@'%';
+--   mysql -u root -p <base> -e "SET @ql_grant_select = 1; source setup_target_mysql.sql"
+--
+-- El teardown lo quita con DROP USER.
+SET @ql_do_select = @ql_db IS NOT NULL
+                    AND LOWER(TRIM(COALESCE(@ql_grant_select, '')))
+                        IN ('1', 's', 'si', 'y', 'yes', 'true', 'on');
+SET @ql_grant = IF(@ql_do_select,
+                   CONCAT('GRANT SELECT ON `', REPLACE(@ql_db, '`', '``'),
+                          '`.* TO ''querylens_monitor''@''%'''),
+                   'DO 0');
+PREPARE ql_grant FROM @ql_grant;
+EXECUTE ql_grant;
+DEALLOCATE PREPARE ql_grant;
 
 -- ---------------------------------------------------------------------------
 -- 2. Configuracion que MySQL lee al arrancar (PERSIST_ONLY: se aplica en el
@@ -123,6 +144,15 @@ WHERE NAME LIKE 'statement/%' AND (ENABLED <> 'YES' OR TIMED <> 'YES');
 -- ---------------------------------------------------------------------------
 -- 4. Resultado.
 -- ---------------------------------------------------------------------------
+-- Si querylens_monitor puede pedir planes en esta base (de esta corrida o de
+-- una anterior).
+SELECT IF(EXISTS (SELECT 1 FROM mysql.db
+                  WHERE User = 'querylens_monitor' AND Host = '%'
+                    AND Db = @ql_db AND Select_priv = 'Y'),
+          CONCAT('autorizados en ', @ql_db),
+          'no autorizados: AP-02 a AP-05 no aparecen. Para darlos: SET @ql_grant_select = 1 antes del script (PREPARAR_BASE.md).')
+       AS planes_de_ejecucion;
+
 -- Lo persistido que todavia no rige (de arranque) pide reinicio. Sin
 -- persisted_globals_load MySQL ignora mysqld-auto.cnf al arrancar.
 SELECT CASE

@@ -1,0 +1,1050 @@
+{
+ "combinaciones": [
+  {
+   "codigo": "AP-01",
+   "nombre": "degradacion respecto a la linea base",
+   "engine": "postgres",
+   "inyecciones": 10,
+   "inyecciones_fallidas": 0,
+   "completa": true,
+   "vp": 10,
+   "fn": 0,
+   "fp": 0,
+   "m1": 1.0,
+   "m1_ic95": [
+    0.7225,
+    1.0
+   ],
+   "m1_ok": true,
+   "m2": 1.0,
+   "m2_ok": true,
+   "m4": {
+    "n": 10,
+    "limite_s": 120,
+    "dentro": 10,
+    "mediana_s": 18.9,
+    "max_s": 22.1,
+    "mediana_ventanas": 1.9,
+    "max_ventanas": 2.2
+   },
+   "m4_ok": true,
+   "m3": null,
+   "m3_ok": null
+  },
+  {
+   "codigo": "AP-02",
+   "nombre": "escaneo completo evitable",
+   "engine": "postgres",
+   "inyecciones": 10,
+   "inyecciones_fallidas": 0,
+   "completa": true,
+   "vp": 10,
+   "fn": 0,
+   "fp": 0,
+   "m1": 1.0,
+   "m1_ic95": [
+    0.7225,
+    1.0
+   ],
+   "m1_ok": true,
+   "m2": 1.0,
+   "m2_ok": true,
+   "m4": {
+    "n": 10,
+    "limite_s": 120,
+    "dentro": 10,
+    "mediana_s": 9.6,
+    "max_s": 10.1,
+    "mediana_ventanas": 1.0,
+    "max_ventanas": 1.0
+   },
+   "m4_ok": true,
+   "m3": null,
+   "m3_ok": null
+  },
+  {
+   "codigo": "AP-03",
+   "nombre": "predicado no sargable",
+   "engine": "postgres",
+   "inyecciones": 10,
+   "inyecciones_fallidas": 0,
+   "completa": true,
+   "vp": 10,
+   "fn": 0,
+   "fp": 0,
+   "m1": 1.0,
+   "m1_ic95": [
+    0.7225,
+    1.0
+   ],
+   "m1_ok": true,
+   "m2": 1.0,
+   "m2_ok": true,
+   "m4": {
+    "n": 10,
+    "limite_s": 120,
+    "dentro": 10,
+    "mediana_s": 9.4,
+    "max_s": 10.2,
+    "mediana_ventanas": 0.9,
+    "max_ventanas": 1.0
+   },
+   "m4_ok": true,
+   "m3": null,
+   "m3_ok": null
+  },
+  {
+   "codigo": "AP-04",
+   "nombre": "indice ausente",
+   "engine": "postgres",
+   "inyecciones": 10,
+   "inyecciones_fallidas": 0,
+   "completa": true,
+   "vp": 10,
+   "fn": 0,
+   "fp": 0,
+   "m1": 1.0,
+   "m1_ic95": [
+    0.7225,
+    1.0
+   ],
+   "m1_ok": true,
+   "m2": 1.0,
+   "m2_ok": true,
+   "m4": {
+    "n": 10,
+    "limite_s": 120,
+    "dentro": 10,
+    "mediana_s": 9.6,
+    "max_s": 10.1,
+    "mediana_ventanas": 1.0,
+    "max_ventanas": 1.0
+   },
+   "m4_ok": true,
+   "m3": null,
+   "m3_ok": null
+  },
+  {
+   "codigo": "AP-05",
+   "nombre": "indice no utilizado o redundante",
+   "engine": "postgres",
+   "inyecciones": 10,
+   "inyecciones_fallidas": 0,
+   "completa": true,
+   "vp": 10,
+   "fn": 0,
+   "fp": 0,
+   "m1": 1.0,
+   "m1_ic95": [
+    0.7225,
+    1.0
+   ],
+   "m1_ok": true,
+   "m2": 1.0,
+   "m2_ok": true,
+   "m4": {
+    "n": 10,
+    "limite_s": 120,
+    "dentro": 10,
+    "mediana_s": 9.7,
+    "max_s": 20.1,
+    "mediana_ventanas": 1.0,
+    "max_ventanas": 2.0
+   },
+   "m4_ok": true,
+   "m3": null,
+   "m3_ok": null
+  },
+  {
+   "codigo": "AP-06",
+   "nombre": "patron N+1",
+   "engine": "postgres",
+   "inyecciones": 10,
+   "inyecciones_fallidas": 0,
+   "completa": true,
+   "vp": 10,
+   "fn": 0,
+   "fp": 0,
+   "m1": 1.0,
+   "m1_ic95": [
+    0.7225,
+    1.0
+   ],
+   "m1_ok": true,
+   "m2": 1.0,
+   "m2_ok": true,
+   "m4": {
+    "n": 10,
+    "limite_s": 120,
+    "dentro": 10,
+    "mediana_s": 9.1,
+    "max_s": 9.7,
+    "mediana_ventanas": 0.9,
+    "max_ventanas": 1.0
+   },
+   "m4_ok": true,
+   "m3": null,
+   "m3_ok": null
+  },
+  {
+   "codigo": "AP-07",
+   "nombre": "vertido a disco",
+   "engine": "postgres",
+   "inyecciones": 10,
+   "inyecciones_fallidas": 0,
+   "completa": true,
+   "vp": 10,
+   "fn": 0,
+   "fp": 0,
+   "m1": 1.0,
+   "m1_ic95": [
+    0.7225,
+    1.0
+   ],
+   "m1_ok": true,
+   "m2": 1.0,
+   "m2_ok": true,
+   "m4": {
+    "n": 10,
+    "limite_s": 120,
+    "dentro": 10,
+    "mediana_s": 9.4,
+    "max_s": 9.9,
+    "mediana_ventanas": 0.9,
+    "max_ventanas": 1.0
+   },
+   "m4_ok": true,
+   "m3": null,
+   "m3_ok": null
+  },
+  {
+   "codigo": "AP-08",
+   "nombre": "error grave de estimacion de cardinalidad",
+   "engine": "postgres",
+   "inyecciones": 10,
+   "inyecciones_fallidas": 0,
+   "completa": true,
+   "vp": 10,
+   "fn": 0,
+   "fp": 0,
+   "m1": 1.0,
+   "m1_ic95": [
+    0.7225,
+    1.0
+   ],
+   "m1_ok": true,
+   "m2": 1.0,
+   "m2_ok": true,
+   "m4": {
+    "n": 10,
+    "limite_s": 120,
+    "dentro": 10,
+    "mediana_s": 30.4,
+    "max_s": 40.5,
+    "mediana_ventanas": 3.0,
+    "max_ventanas": 4.0
+   },
+   "m4_ok": true,
+   "m3": null,
+   "m3_ok": null
+  },
+  {
+   "codigo": "AP-01",
+   "nombre": "degradacion respecto a la linea base",
+   "engine": "mysql",
+   "inyecciones": 10,
+   "inyecciones_fallidas": 0,
+   "completa": true,
+   "vp": 10,
+   "fn": 0,
+   "fp": 0,
+   "m1": 1.0,
+   "m1_ic95": [
+    0.7225,
+    1.0
+   ],
+   "m1_ok": true,
+   "m2": 1.0,
+   "m2_ok": true,
+   "m4": {
+    "n": 10,
+    "limite_s": 120,
+    "dentro": 10,
+    "mediana_s": 16.6,
+    "max_s": 18.2,
+    "mediana_ventanas": 1.7,
+    "max_ventanas": 1.8
+   },
+   "m4_ok": true,
+   "m3": null,
+   "m3_ok": null
+  },
+  {
+   "codigo": "AP-02",
+   "nombre": "escaneo completo evitable",
+   "engine": "mysql",
+   "inyecciones": 10,
+   "inyecciones_fallidas": 0,
+   "completa": true,
+   "vp": 10,
+   "fn": 0,
+   "fp": 0,
+   "m1": 1.0,
+   "m1_ic95": [
+    0.7225,
+    1.0
+   ],
+   "m1_ok": true,
+   "m2": 1.0,
+   "m2_ok": true,
+   "m4": {
+    "n": 10,
+    "limite_s": 120,
+    "dentro": 10,
+    "mediana_s": 9.2,
+    "max_s": 19.7,
+    "mediana_ventanas": 0.9,
+    "max_ventanas": 2.0
+   },
+   "m4_ok": true,
+   "m3": null,
+   "m3_ok": null
+  },
+  {
+   "codigo": "AP-03",
+   "nombre": "predicado no sargable",
+   "engine": "mysql",
+   "inyecciones": 10,
+   "inyecciones_fallidas": 0,
+   "completa": true,
+   "vp": 10,
+   "fn": 0,
+   "fp": 0,
+   "m1": 1.0,
+   "m1_ic95": [
+    0.7225,
+    1.0
+   ],
+   "m1_ok": true,
+   "m2": 1.0,
+   "m2_ok": true,
+   "m4": {
+    "n": 10,
+    "limite_s": 120,
+    "dentro": 10,
+    "mediana_s": 8.9,
+    "max_s": 29.2,
+    "mediana_ventanas": 0.9,
+    "max_ventanas": 2.9
+   },
+   "m4_ok": true,
+   "m3": null,
+   "m3_ok": null
+  },
+  {
+   "codigo": "AP-04",
+   "nombre": "indice ausente",
+   "engine": "mysql",
+   "inyecciones": 10,
+   "inyecciones_fallidas": 0,
+   "completa": true,
+   "vp": 10,
+   "fn": 0,
+   "fp": 0,
+   "m1": 1.0,
+   "m1_ic95": [
+    0.7225,
+    1.0
+   ],
+   "m1_ok": true,
+   "m2": 1.0,
+   "m2_ok": true,
+   "m4": {
+    "n": 10,
+    "limite_s": 120,
+    "dentro": 10,
+    "mediana_s": 9.2,
+    "max_s": 19.7,
+    "mediana_ventanas": 0.9,
+    "max_ventanas": 2.0
+   },
+   "m4_ok": true,
+   "m3": null,
+   "m3_ok": null
+  },
+  {
+   "codigo": "AP-05",
+   "nombre": "indice no utilizado o redundante",
+   "engine": "mysql",
+   "inyecciones": 10,
+   "inyecciones_fallidas": 0,
+   "completa": true,
+   "vp": 10,
+   "fn": 0,
+   "fp": 0,
+   "m1": 1.0,
+   "m1_ic95": [
+    0.7225,
+    1.0
+   ],
+   "m1_ok": true,
+   "m2": 1.0,
+   "m2_ok": true,
+   "m4": {
+    "n": 10,
+    "limite_s": 120,
+    "dentro": 10,
+    "mediana_s": 9.1,
+    "max_s": 9.8,
+    "mediana_ventanas": 0.9,
+    "max_ventanas": 1.0
+   },
+   "m4_ok": true,
+   "m3": null,
+   "m3_ok": null
+  },
+  {
+   "codigo": "AP-06",
+   "nombre": "patron N+1",
+   "engine": "mysql",
+   "inyecciones": 10,
+   "inyecciones_fallidas": 0,
+   "completa": true,
+   "vp": 10,
+   "fn": 0,
+   "fp": 0,
+   "m1": 1.0,
+   "m1_ic95": [
+    0.7225,
+    1.0
+   ],
+   "m1_ok": true,
+   "m2": 1.0,
+   "m2_ok": true,
+   "m4": {
+    "n": 10,
+    "limite_s": 120,
+    "dentro": 10,
+    "mediana_s": 9.2,
+    "max_s": 18.9,
+    "mediana_ventanas": 0.9,
+    "max_ventanas": 1.9
+   },
+   "m4_ok": true,
+   "m3": null,
+   "m3_ok": null
+  },
+  {
+   "codigo": "AP-07",
+   "nombre": "vertido a disco",
+   "engine": "mysql",
+   "inyecciones": 10,
+   "inyecciones_fallidas": 0,
+   "completa": true,
+   "vp": 10,
+   "fn": 0,
+   "fp": 0,
+   "m1": 1.0,
+   "m1_ic95": [
+    0.7225,
+    1.0
+   ],
+   "m1_ok": true,
+   "m2": 1.0,
+   "m2_ok": true,
+   "m4": {
+    "n": 10,
+    "limite_s": 120,
+    "dentro": 10,
+    "mediana_s": 9.0,
+    "max_s": 19.5,
+    "mediana_ventanas": 0.9,
+    "max_ventanas": 1.9
+   },
+   "m4_ok": true,
+   "m3": null,
+   "m3_ok": null
+  },
+  {
+   "codigo": "AP-08",
+   "nombre": "error grave de estimacion de cardinalidad",
+   "engine": "mysql",
+   "inyecciones": 10,
+   "inyecciones_fallidas": 0,
+   "completa": true,
+   "vp": 10,
+   "fn": 0,
+   "fp": 0,
+   "m1": 1.0,
+   "m1_ic95": [
+    0.7225,
+    1.0
+   ],
+   "m1_ok": true,
+   "m2": 1.0,
+   "m2_ok": true,
+   "m4": {
+    "n": 10,
+    "limite_s": 120,
+    "dentro": 10,
+    "mediana_s": 8.9,
+    "max_s": 39.3,
+    "mediana_ventanas": 0.9,
+    "max_ventanas": 3.9
+   },
+   "m4_ok": true,
+   "m3": null,
+   "m3_ok": null
+  },
+  {
+   "codigo": "CT-01",
+   "nombre": "abrazo mortal por orden inconsistente",
+   "engine": "postgres",
+   "inyecciones": 10,
+   "inyecciones_fallidas": 0,
+   "completa": true,
+   "vp": 10,
+   "fn": 0,
+   "fp": 0,
+   "m1": 1.0,
+   "m1_ic95": [
+    0.7225,
+    1.0
+   ],
+   "m1_ok": true,
+   "m2": 1.0,
+   "m2_ok": true,
+   "m4": {
+    "n": 10,
+    "limite_s": 15,
+    "dentro": 10,
+    "mediana_s": 5.9,
+    "max_s": 10.1,
+    "mediana_ventanas": 0.6,
+    "max_ventanas": 1.0
+   },
+   "m4_ok": true,
+   "m3": {
+    "detectados": 10,
+    "miembros_ok": 10,
+    "miembros": 1.0,
+    "clasificacion_ok": 10,
+    "clasificacion": 1.0
+   },
+   "m3_ok": true
+  },
+  {
+   "codigo": "CT-02",
+   "nombre": "abrazo mortal por conversion de modo",
+   "engine": "postgres",
+   "inyecciones": 10,
+   "inyecciones_fallidas": 0,
+   "completa": true,
+   "vp": 10,
+   "fn": 0,
+   "fp": 0,
+   "m1": 1.0,
+   "m1_ic95": [
+    0.7225,
+    1.0
+   ],
+   "m1_ok": true,
+   "m2": 1.0,
+   "m2_ok": true,
+   "m4": {
+    "n": 10,
+    "limite_s": 15,
+    "dentro": 10,
+    "mediana_s": 6.6,
+    "max_s": 10.1,
+    "mediana_ventanas": 0.7,
+    "max_ventanas": 1.0
+   },
+   "m4_ok": true,
+   "m3": {
+    "detectados": 10,
+    "miembros_ok": 10,
+    "miembros": 1.0,
+    "clasificacion_ok": 10,
+    "clasificacion": 1.0
+   },
+   "m3_ok": true
+  },
+  {
+   "codigo": "CT-05",
+   "nombre": "cascada por transaccion larga",
+   "engine": "postgres",
+   "inyecciones": 10,
+   "inyecciones_fallidas": 0,
+   "completa": true,
+   "vp": 10,
+   "fn": 0,
+   "fp": 0,
+   "m1": 1.0,
+   "m1_ic95": [
+    0.7225,
+    1.0
+   ],
+   "m1_ok": true,
+   "m2": 1.0,
+   "m2_ok": true,
+   "m4": {
+    "n": 10,
+    "limite_s": 45,
+    "dentro": 10,
+    "mediana_s": 16.1,
+    "max_s": 20.3,
+    "mediana_ventanas": 1.6,
+    "max_ventanas": 2.0
+   },
+   "m4_ok": true,
+   "m3": {
+    "detectados": 10,
+    "miembros_ok": 10,
+    "miembros": 1.0,
+    "clasificacion_ok": 10,
+    "clasificacion": 1.0
+   },
+   "m3_ok": true
+  },
+  {
+   "codigo": "CT-01",
+   "nombre": "abrazo mortal por orden inconsistente",
+   "engine": "mysql",
+   "inyecciones": 10,
+   "inyecciones_fallidas": 0,
+   "completa": true,
+   "vp": 10,
+   "fn": 0,
+   "fp": 0,
+   "m1": 1.0,
+   "m1_ic95": [
+    0.7225,
+    1.0
+   ],
+   "m1_ok": true,
+   "m2": 1.0,
+   "m2_ok": true,
+   "m4": {
+    "n": 10,
+    "limite_s": 15,
+    "dentro": 10,
+    "mediana_s": 6.0,
+    "max_s": 9.3,
+    "mediana_ventanas": 0.6,
+    "max_ventanas": 0.9
+   },
+   "m4_ok": true,
+   "m3": {
+    "detectados": 10,
+    "miembros_ok": 10,
+    "miembros": 1.0,
+    "clasificacion_ok": 10,
+    "clasificacion": 1.0
+   },
+   "m3_ok": true
+  },
+  {
+   "codigo": "CT-02",
+   "nombre": "abrazo mortal por conversion de modo",
+   "engine": "mysql",
+   "inyecciones": 10,
+   "inyecciones_fallidas": 0,
+   "completa": true,
+   "vp": 10,
+   "fn": 0,
+   "fp": 0,
+   "m1": 1.0,
+   "m1_ic95": [
+    0.7225,
+    1.0
+   ],
+   "m1_ok": true,
+   "m2": 1.0,
+   "m2_ok": true,
+   "m4": {
+    "n": 10,
+    "limite_s": 15,
+    "dentro": 10,
+    "mediana_s": 4.1,
+    "max_s": 8.9,
+    "mediana_ventanas": 0.4,
+    "max_ventanas": 0.9
+   },
+   "m4_ok": true,
+   "m3": {
+    "detectados": 10,
+    "miembros_ok": 10,
+    "miembros": 1.0,
+    "clasificacion_ok": 10,
+    "clasificacion": 1.0
+   },
+   "m3_ok": true
+  },
+  {
+   "codigo": "CT-03",
+   "nombre": "abrazo mortal por contencion de rango",
+   "engine": "mysql",
+   "inyecciones": 10,
+   "inyecciones_fallidas": 0,
+   "completa": true,
+   "vp": 10,
+   "fn": 0,
+   "fp": 0,
+   "m1": 1.0,
+   "m1_ic95": [
+    0.7225,
+    1.0
+   ],
+   "m1_ok": true,
+   "m2": 1.0,
+   "m2_ok": true,
+   "m4": {
+    "n": 10,
+    "limite_s": 15,
+    "dentro": 10,
+    "mediana_s": 6.9,
+    "max_s": 10.0,
+    "mediana_ventanas": 0.7,
+    "max_ventanas": 1.0
+   },
+   "m4_ok": true,
+   "m3": {
+    "detectados": 10,
+    "miembros_ok": 10,
+    "miembros": 1.0,
+    "clasificacion_ok": 10,
+    "clasificacion": 1.0
+   },
+   "m3_ok": true
+  },
+  {
+   "codigo": "CT-04",
+   "nombre": "ampliacion de bloqueos por ausencia de indice",
+   "engine": "mysql",
+   "inyecciones": 10,
+   "inyecciones_fallidas": 0,
+   "completa": true,
+   "vp": 10,
+   "fn": 0,
+   "fp": 0,
+   "m1": 1.0,
+   "m1_ic95": [
+    0.7225,
+    1.0
+   ],
+   "m1_ok": true,
+   "m2": 1.0,
+   "m2_ok": true,
+   "m4": {
+    "n": 10,
+    "limite_s": 15,
+    "dentro": 10,
+    "mediana_s": 5.9,
+    "max_s": 10.2,
+    "mediana_ventanas": 0.6,
+    "max_ventanas": 1.0
+   },
+   "m4_ok": true,
+   "m3": {
+    "detectados": 10,
+    "miembros_ok": 10,
+    "miembros": 1.0,
+    "clasificacion_ok": 10,
+    "clasificacion": 1.0
+   },
+   "m3_ok": true
+  },
+  {
+   "codigo": "CT-05",
+   "nombre": "cascada por transaccion larga",
+   "engine": "mysql",
+   "inyecciones": 10,
+   "inyecciones_fallidas": 0,
+   "completa": true,
+   "vp": 10,
+   "fn": 0,
+   "fp": 0,
+   "m1": 1.0,
+   "m1_ic95": [
+    0.7225,
+    1.0
+   ],
+   "m1_ok": true,
+   "m2": 1.0,
+   "m2_ok": true,
+   "m4": {
+    "n": 10,
+    "limite_s": 45,
+    "dentro": 10,
+    "mediana_s": 15.6,
+    "max_s": 20.1,
+    "mediana_ventanas": 1.6,
+    "max_ventanas": 2.0
+   },
+   "m4_ok": true,
+   "m3": {
+    "detectados": 10,
+    "miembros_ok": 10,
+    "miembros": 1.0,
+    "clasificacion_ok": 10,
+    "clasificacion": 1.0
+   },
+   "m3_ok": true
+  }
+ ],
+ "resumen": {
+  "combinaciones": 24,
+  "evaluadas": 24,
+  "completas": 24,
+  "M1": {
+   "cumplen": 24,
+   "de": 24,
+   "veredicto": "CUMPLE"
+  },
+  "M2": {
+   "cumplen": 24,
+   "de": 24,
+   "veredicto": "CUMPLE"
+  },
+  "M3": {
+   "cumplen": 8,
+   "de": 8,
+   "veredicto": "CUMPLE"
+  },
+  "M4": {
+   "cumplen": 24,
+   "de": 24,
+   "veredicto": "CUMPLE"
+  },
+  "M7": {
+   "cumplen": 1174,
+   "de": 1174,
+   "veredicto": "CUMPLE"
+  }
+ },
+ "completitud": {
+  "problemas": 1174,
+  "completos": 1174,
+  "faltantes": {
+   "con_explicacion": 0,
+   "con_evidencia": 0,
+   "con_recomendacion": 0,
+   "con_riesgo": 0,
+   "con_enlace_a_instantanea": 0
+  },
+  "incompletos": [],
+  "sin_dato_de_enlace": 0
+ },
+ "controles": {
+  "postgres": {
+   "corridas": 10,
+   "minutos": 300.1
+  },
+  "mysql": {
+   "corridas": 10,
+   "minutos": 300.1
+  }
+ },
+ "falsos_negativos": [],
+ "falsos_positivos": [],
+ "sin_patologia_del_catalogo": [],
+ "declarados": [
+  {
+   "tipo": "colateral",
+   "escenario": "baseline_degradation",
+   "engine": "mysql",
+   "descripcion": "AP-02: sin el indice, WHERE k = ? recorre toda la tabla para devolver ~10 filas",
+   "veces": 10
+  },
+  {
+   "tipo": "colateral",
+   "escenario": "baseline_degradation",
+   "engine": "mysql",
+   "descripcion": "AP-04: sin el indice, k se filtra sin un indice que lo respalde",
+   "veces": 10
+  },
+  {
+   "tipo": "colateral",
+   "escenario": "baseline_degradation",
+   "engine": "mysql",
+   "descripcion": "AP-08: MySQL estima un 10 % fijo para k = ? sin indice ni histograma (~100.000 filas frente a ~10)",
+   "veces": 10
+  },
+  {
+   "tipo": "colateral",
+   "escenario": "baseline_degradation",
+   "engine": "postgres",
+   "descripcion": "AP-02: sin el indice, WHERE k = ? recorre toda la tabla para devolver ~10 filas",
+   "veces": 10
+  },
+  {
+   "tipo": "colateral",
+   "escenario": "baseline_degradation",
+   "engine": "postgres",
+   "descripcion": "AP-04: sin el indice, k se filtra sin un indice que lo respalde",
+   "veces": 10
+  },
+  {
+   "tipo": "colateral",
+   "escenario": "cardinality_misestimate",
+   "engine": "mysql",
+   "descripcion": "AP-02: a, b y c no tienen indice y la consulta devuelve el 10 % de la tabla, justo el limite de la regla",
+   "veces": 6
+  },
+  {
+   "tipo": "colateral",
+   "escenario": "cardinality_misestimate",
+   "engine": "mysql",
+   "descripcion": "AP-04: igual, sin indice sobre a, b ni c",
+   "veces": 6
+  },
+  {
+   "tipo": "colateral",
+   "escenario": "cardinality_misestimate",
+   "engine": "postgres",
+   "descripcion": "AP-02: a, b y c no tienen indice y la consulta devuelve el 10 % de la tabla, justo el limite de la regla",
+   "veces": 10
+  },
+  {
+   "tipo": "colateral",
+   "escenario": "cardinality_misestimate",
+   "engine": "postgres",
+   "descripcion": "AP-04: igual, sin indice sobre a, b ni c",
+   "veces": 10
+  },
+  {
+   "tipo": "colateral",
+   "escenario": "missing_index",
+   "engine": "mysql",
+   "descripcion": "AP-08: MySQL estima un 10 % fijo para c = ? sin indice ni histograma (~100.000 filas frente a ~10)",
+   "veces": 10
+  },
+  {
+   "tipo": "colateral",
+   "escenario": "missing_index",
+   "engine": "postgres",
+   "descripcion": "AP-05: ql_scn_k, recien creado, no lo lee la carga del escenario",
+   "veces": 10
+  },
+  {
+   "tipo": "colateral",
+   "escenario": "non_sargable_predicate",
+   "engine": "mysql",
+   "descripcion": "AP-02: k + 0 = ? no puede usar el indice y recorre toda la tabla para devolver ~10 filas (misma base de escaneo completo que AP-03)",
+   "veces": 10
+  },
+  {
+   "tipo": "colateral",
+   "escenario": "non_sargable_predicate",
+   "engine": "mysql",
+   "descripcion": "AP-08: ningun motor estima bien una expresion sobre la columna (Postgres 0,5 % por defecto, MySQL casi toda la tabla) frente a ~10 filas reales",
+   "veces": 10
+  },
+  {
+   "tipo": "colateral",
+   "escenario": "non_sargable_predicate",
+   "engine": "postgres",
+   "descripcion": "AP-02: k + 0 = ? no puede usar el indice y recorre toda la tabla para devolver ~10 filas (misma base de escaneo completo que AP-03)",
+   "veces": 10
+  },
+  {
+   "tipo": "colateral",
+   "escenario": "non_sargable_predicate",
+   "engine": "postgres",
+   "descripcion": "AP-05: ql_scn_k, recien creado, no lo lee la carga del escenario",
+   "veces": 10
+  },
+  {
+   "tipo": "colateral",
+   "escenario": "non_sargable_predicate",
+   "engine": "postgres",
+   "descripcion": "AP-08: ningun motor estima bien una expresion sobre la columna (Postgres 0,5 % por defecto, MySQL casi toda la tabla) frente a ~10 filas reales",
+   "veces": 10
+  },
+  {
+   "tipo": "colateral",
+   "escenario": "unused_index",
+   "engine": "mysql",
+   "descripcion": "AP-01: la inyeccion compite con sysbench por CPU y bloqueos y degrada sus sentencias",
+   "veces": 52
+  },
+  {
+   "tipo": "linea_base",
+   "escenario": "baseline_degradation",
+   "engine": "mysql",
+   "descripcion": "AP-05: indice k_N de sysbench, que oltp_read_write no usa para leer",
+   "veces": 8
+  },
+  {
+   "tipo": "linea_base",
+   "escenario": "baseline_degradation",
+   "engine": "postgres",
+   "descripcion": "AP-05: indice k_N de sysbench, que oltp_read_write no usa para leer",
+   "veces": 82
+  },
+  {
+   "tipo": "linea_base",
+   "escenario": "cardinality_misestimate",
+   "engine": "postgres",
+   "descripcion": "AP-05: indice k_N de sysbench, que oltp_read_write no usa para leer",
+   "veces": 89
+  },
+  {
+   "tipo": "linea_base",
+   "escenario": "control",
+   "engine": "mysql",
+   "descripcion": "AP-05: indice k_N de sysbench, que oltp_read_write no usa para leer",
+   "veces": 20
+  },
+  {
+   "tipo": "linea_base",
+   "escenario": "control",
+   "engine": "postgres",
+   "descripcion": "AP-05: indice k_N de sysbench, que oltp_read_write no usa para leer",
+   "veces": 94
+  },
+  {
+   "tipo": "linea_base",
+   "escenario": "ct",
+   "engine": "postgres",
+   "descripcion": "AP-05: indice k_N de sysbench, que oltp_read_write no usa para leer",
+   "veces": 10
+  },
+  {
+   "tipo": "linea_base",
+   "escenario": "disk_spill",
+   "engine": "postgres",
+   "descripcion": "AP-05: indice k_N de sysbench, que oltp_read_write no usa para leer",
+   "veces": 93
+  },
+  {
+   "tipo": "linea_base",
+   "escenario": "missing_index",
+   "engine": "postgres",
+   "descripcion": "AP-05: indice k_N de sysbench, que oltp_read_write no usa para leer",
+   "veces": 78
+  },
+  {
+   "tipo": "linea_base",
+   "escenario": "n_plus_one",
+   "engine": "postgres",
+   "descripcion": "AP-05: indice k_N de sysbench, que oltp_read_write no usa para leer",
+   "veces": 100
+  },
+  {
+   "tipo": "linea_base",
+   "escenario": "non_sargable_predicate",
+   "engine": "postgres",
+   "descripcion": "AP-05: indice k_N de sysbench, que oltp_read_write no usa para leer",
+   "veces": 85
+  },
+  {
+   "tipo": "linea_base",
+   "escenario": "unused_index",
+   "engine": "postgres",
+   "descripcion": "AP-05: indice k_N de sysbench, que oltp_read_write no usa para leer",
+   "veces": 65
+  }
+ ]
+}

@@ -168,3 +168,40 @@ def test_purge_deletes_with_retention_days():
 def test_retention_days_from_env(monkeypatch, raw, days):
     monkeypatch.setenv("HEALTH_RETENTION_DAYS", raw)
     assert writer.retention_days() == days
+
+
+def test_explain_failed_with_undefined_table_suggests_reset_before_the_catalog_text():
+    report = HealthReport()
+    report.add("EXPLAIN_FAILED", sqlstate="42P01", undefined_table="postgres")
+    engine = _Engine()
+
+    writer.flush(engine, "db_1", report, STARTED)
+
+    [(_, [row])] = _sql(engine, "INSERT INTO pipeline_health.issues")
+    assert row["remediation"].startswith("Si alguna de esas queries usa una tabla que ya se elimino")
+    assert "SELECT pg_stat_statements_reset();" in row["remediation"]
+    assert row["remediation"].endswith("Si persiste, contacta a soporte.")
+
+
+def test_explain_failed_without_undefined_table_keeps_the_catalog_text():
+    report = HealthReport()
+    report.add("EXPLAIN_FAILED", sqlstate="XX000")
+    engine = _Engine()
+
+    writer.flush(engine, "db_1", report, STARTED)
+
+    [(_, [row])] = _sql(engine, "INSERT INTO pipeline_health.issues")
+    assert row["remediation"] == "Si persiste, contacta a soporte."
+
+
+def test_explain_failed_with_mysql_undefined_table_suggests_truncating_the_digest_summary():
+    report = HealthReport()
+    report.add("EXPLAIN_FAILED", errno=1146, undefined_table="mysql")
+    engine = _Engine()
+
+    writer.flush(engine, "db_1", report, STARTED)
+
+    [(_, [row])] = _sql(engine, "INSERT INTO pipeline_health.issues")
+    assert "TRUNCATE TABLE performance_schema.events_statements_summary_by_digest;" in row["remediation"]
+    assert "pg_stat_statements" not in row["remediation"]
+    assert row["remediation"].endswith("Si persiste, contacta a soporte.")

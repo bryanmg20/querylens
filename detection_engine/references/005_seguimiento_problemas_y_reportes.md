@@ -1,6 +1,13 @@
-# Seguimiento de problemas: ventanas, marcas y reportes (propuesta, sin implementar)
+# Seguimiento de problemas: ventanas, marcas y reportes (propuesta; implementada en versión reducida)
 
-> **Estado:** propuesta, nada implementado. Surgió el 2026-11-03 al revisar AP-05 (índice no utilizado o redundante).
+> **Estado (2026-11-08):** implementada una versión más simple, en la rama `feature/hallazgos_repetidos`:
+> - **Clave por problema** (`storage.finding_key`), como la sección 4.1, con tres diferencias: la consulta se identifica por su **texto normalizado** (una huella del `canonic_query`, o del `query_text` si no lo hay) y no por el `query_id`, porque en Postgres el `query_id` cambia al borrar y crear la tabla (escenarios, campañas, migraciones); AP-01, AP-07 y AP-08 usan solo la consulta y su schema (la tabla sale del plan de cada ventana); y CT-01 a CT-04 usan la firma del abrazo que ya calculaba el módulo de contención (CT-05: una por transacción).
+> - **Guardado sin repetir el contenido:** `public.problemas` (una fila por problema, con la evidencia de la última detección) y `public.detecciones` (hora y severidad de cada una). `public.hallazgos` pasa a ser una vista con las columnas de antes, y la tabla anterior se renombra a `hallazgos_v1`. Ver `querylens_database/hallazgos.sql`.
+> - **Sesión de detección** en vez de marcas y estados: `registered_databases.detection_session_started_at`. La página de diagnósticos y `querylens report --session` muestran los problemas detectados desde ese momento, con sus detecciones en la sesión y en total. Solo cambia cuando el monitoreo arranca: la primera vez que se inicia, al reanudar con sesión nueva («Reanudar con sesión nueva» en la web, `querylens resume --new-session`) y cuando el scheduler abre una ventana con el monitoreo apagado. Con el monitoreo encendido se rechaza, porque el detector todavía procesa snapshots de antes del corte. No se borra nada.
+> - **Severidad:** se muestra la más alta de la sesión (o del rango, en el reporte) y, si es otra, la de la última detección.
+> - **Sin implementar:** las marcas y su verificación (4.3, 4.4), la comparación entre periodos (4.6, punto 2) y el historial de periodos (4.5). La **sección 10** los adapta a lo implementado, con los archivos que tocarían, y anota otras ideas que salieron al probar.
+>
+> Lo que sigue es la propuesta original. Surgió el 2026-11-03 al revisar AP-05 (índice no utilizado o redundante).
 > Amplía `001_ciclo_vida_hallazgos.md`: toma su clave por patrón (sección 3.1) y sus reglas de cierre (sección 3.4), pero las usa para **verificar las marcas del usuario** y para **comparar periodos**, en vez de cerrar hallazgos solas.
 
 ## 1. De dónde salió
@@ -484,3 +491,63 @@ Cada fase se puede usar sin las siguientes.
 - **Solo la fase 1** (D1-C): el reporte deja de mezclar problemas, pero no hay marcas ni comparación.
 - **Fases 1 y 2 sin historial** (D4-B): la forma del profesor funciona completa desde el CLI, eligiendo fechas a mano.
 - **Fases 1 a 3 sin interfaz:** las dos formas funcionan completas desde el CLI.
+
+## 10. Lo que quedó fuera y cómo encajaría con lo implementado
+
+> Escrita el 2026-11-09, al cerrar la rama `feature/hallazgos_repetidos`. Las secciones 1 a 9 son anteriores a la implementación: para retomar algo, partir de esta sección y no de la 4.
+
+### 10.1 El punto de partida ya no es el de la sección 4
+
+| En la propuesta | Ahora |
+|---|---|
+| `hallazgos` es el registro de detecciones (4.2) | El registro es `public.detecciones` (problema, hora, severidad). `public.hallazgos` es una vista con las columnas de antes, para los scripts de `ql_sandbox` |
+| Tabla **nueva** `problemas` con estados (4.3) | `public.problemas` **ya existe**, con otra función: una fila por problema con la evidencia, la explicación y la recomendación de la última detección. No tiene estados. Las marcas se agregarían ahí (10.2) y no en una tabla con ese nombre |
+| `veces`, `first_seen`, `last_seen` en `problemas` (4.3) | `primera_deteccion` y `ultima_deteccion` están en `problemas`; las veces se cuentan sobre `detecciones` (índice `problema_id, detectado_en`) |
+| Severidad del problema (D6) | Cada detección guarda la suya. Se muestra la más alta de la sesión o del rango y, si es otra, la de la última |
+| «Desde que lo encendí» (4.5, 4.6) | Sesión de detección: `registered_databases.detection_session_started_at`. Solo cambia cuando el monitoreo arranca |
+| Hallazgos existentes (D9) | La tabla anterior quedó como `public.hallazgos_v1`, sin migrar |
+| Volumen (D10) | En parte resuelto: el contenido se guarda una vez y cada detección ocupa unos 100 B. Ver 10.2-E |
+| Clave por `query_id` (4.1) | La consulta se identifica por su texto normalizado (huella de `canonic_query` o `query_text`); el `query_id` solo si no hay texto |
+
+### 10.2 Pendientes de este documento, adaptados
+
+**A. Marcas del usuario y verificación (4.3, 4.4, D2, D3, D11, D12).** La sesión ya cubre «corregí, reanudo con sesión nueva y veo si vuelve», pero para toda la base y pausando el monitoreo. Las marcas lo harían **por problema** y sin pausar. Dos versiones:
+
+| | Versión simple | Versión completa (como 4.4) |
+|---|---|---|
+| Qué se guarda | `marcado_en` y `marcado_por` en `problemas` | Además `estado`, `verificaciones` y `referencia` |
+| Estado | Se calcula al leer: con detecciones posteriores a `marcado_en`, «reapareció»; sin ellas, «sin detecciones desde la marca (hace X)» | Lo escribe el detector en cada snapshot |
+| Detector | No cambia | Paso nuevo en `main.py`, después de `save_findings`: por cada problema marcado, busca la evidencia de 4.4 (AP-05 índice no utilizado o redundante: el índice tuvo lecturas o ya no existe; AP-01 degradación respecto a la línea base: tiempo cerca de la `referencia`; el resto: la consulta corrió en la ventana sin que la regla disparara). El snapshot y `history` ya están en `process_job` |
+| Lo que no distingue | «No volvió» de «la consulta no corrió» | Nada: confirma solo con evidencia |
+
+- **Detalle de tiempo:** `detecciones.detectado_en` es la hora de inserción, unos segundos después del snapshot. Para no contar como reaparición un snapshot tomado antes de la marca, guardar el `captured_at` del job en `detecciones` o comparar con un margen.
+- **Archivos:** `querylens_database/hallazgos.sql` (columnas en `problemas`) y `service_roles.sql` (UPDATE de esas columnas para `ql_auth` y `ql_cli`); en la completa, `detection_engine/main.py` y `storage.py`; `auth_service/app/routers/databases.py` (marcar y desmarcar, con el `database_identifier` del token y el `problema_id`); `api_rest/app/routers/diagnostics.py` y `schemas.py` (estado y marca en cada `Finding`); `frontend/components/FindingCard.tsx` (botón «Marcar corregido») y `FindingsPanel.tsx` (filtro por estado); `cli/querylens.sh` (`resolve ID PROBLEMA`, `reopen`, `findings --estado`).
+
+**B. Comparación entre periodos (4.6, punto 2; D5).**
+
+- `cli/share/report.sql` recibe un segundo rango (o «el anterior de la misma duración») y cruza por `problema_id` con las detecciones de cada rango: **nuevo** (solo en el actual), **persiste** (en los dos), **ya no aparece** (solo en el anterior).
+- Distinguir «ya no aparece» de «sin datos» sigue necesitando una de las opciones de D5. La más barata es D5-C: mostrar «no detectado» con el aviso de que puede no haber corrido.
+- **Archivos:** `report.sql`, `report_md.jq`, `report_csv.jq`, `querylens.sh` (por ejemplo, `report ID --compare-with T..T`). En la web, una vista «Comparar periodos» con su endpoint en `api_rest`.
+
+**C. Historial de periodos (4.5, D4).** Igual que en 4.5: tabla `periodos (db_id, desde, hasta, origen, reporte)` que escriben el scheduler, `auth_service` (al pausar y reanudar) y el CLI. Ahora tiene un momento natural de escritura: **cada inicio de sesión de detección**. Con ese historial salen gratis la lista de jornadas pasadas, B con periodos elegidos de una lista y D.
+
+**D. «De la sesión anterior, no han vuelto a salir».** Los problemas con detecciones entre el inicio de la sesión anterior y el de la actual, y ninguna desde entonces. Hace falta guardar el inicio de la sesión anterior: una columna en `registered_databases` que se llena donde hoy cambia la sesión (`auth_service` `set_monitoring`, `querylens.sh` `set_monitoring`, `cmd_schedule` y `scheduler_tick`), o la tabla de C. Mismo límite que la versión simple de A: «no volvió» no prueba que se haya resuelto.
+
+**E. Volumen de `detecciones` (D10).** Si crece demasiado:
+- borrar las detecciones de más de N días, con una purga periódica como la de `pipeline_health` (`HEALTH_RETENTION_DAYS`); el total del problema pasa a contar solo esos días;
+- o resumir las viejas en `detecciones_por_hora (problema_id, hora, severidad_max, n)` y sumar las dos tablas al contar. Los reportes de esas fechas quedan con precisión de una hora.
+
+**F. Ventanas programadas en la web (4.7, D8).** Hoy solo se programan desde el CLI y la web no sabe si hay una ventana. Agregar `collect_from` y `collect_until` a la respuesta de diagnósticos, un endpoint para programar en `auth_service` (D8-A) y, al reanudar dentro de una ventana, el aviso de que el reporte de la ventana se arma por sus fechas y no por la sesión.
+
+**G. Decisión abierta: el cierre de una ventana apaga el monitoreo aunque lo hubiera encendido el usuario.** `scheduler_tick` (`cli/querylens.sh`) apaga toda base con la ventana vencida y el monitoreo encendido, aunque el monitoreo ya estuviera encendido antes de que la ventana empezara. Si se quiere dejarlo como estaba, guardar si la ventana fue la que lo encendió (por ejemplo, una columna booleana que escriban `scheduler_tick` y `cmd_schedule`) y apagar solo en ese caso.
+
+### 10.3 Relacionado, de otros módulos
+
+Salieron al probar esta rama y no son de este documento:
+
+| Idea | Dónde | Por qué |
+|---|---|---|
+| Que una consulta sobre un objeto que ya no existe (SQLSTATE `42P01` tabla, `42703` columna, `42883` función) dé un aviso informativo con un texto claro, en vez de `EXPLAIN_FAILED` | `telemetry_pipeline/health/classify.py` (`_explain_code`) y `health/catalog.py` | Hoy, si una consulta de la lista de mayor impacto usa una tabla borrada (escenarios, migraciones), la base queda «degradada» con «contacta a soporte» mientras esa consulta siga en la lista. Ya hay un caso parecido: `EXPLAIN_PARAM_TYPES_AMBIGUOUS` |
+| Elegir la lista de mayor impacto por el tiempo **reciente** (últimas ventanas) y no por el acumulado | `telemetry_pipeline/stages/selectors.py` (`select_high_impact_time_statements`) | Una consulta nueva tarda en entrar si las viejas acumularon mucho tiempo. En Postgres, recrear una tabla le da otro `query_id` a la misma consulta y las de antes siguen ocupando la lista: en una corrida del escenario de AP-05 con 61 entradas viejas en `pg_stat_statements`, la consulta nueva entró a la lista 66 s después de empezar la carga y cada índice se detectó 7 veces en vez de unas 12. Cambia qué consultas se analizan: validar con las campañas |
+| `SELECT pg_stat_statements_reset()` al empezar cada escenario | `ql_sandbox/scenarios/run_scenario.py` | Corridas comparables entre sí (mismo número de ciclos con detección) y sin el `EXPLAIN_FAILED` de las tablas de corridas anteriores |
+| Consultas sobre tablas temporales en la lista de mayor impacto | pipeline (explain) | Probable `EXPLAIN_FAILED` permanente: la tabla solo existe en la sesión de la aplicación. No probado |

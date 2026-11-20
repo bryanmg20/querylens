@@ -21,7 +21,7 @@ export default function CtaSlide(_: SlideProps) {
           </h2>
           <div className="sl md:col-span-4 md:justify-self-end" style={{ ["--i" as string]: 3 }}>
             <p className="max-w-[24rem] text-[18px] leading-[1.5]">
-              Regístrala con sus credenciales y en unos segundos verás tus primeros diagnósticos.
+              Regístrala con sus credenciales, inicia su monitoreo y en unos segundos verás tus primeros diagnósticos.
             </p>
             <Link
               href="/conectar"

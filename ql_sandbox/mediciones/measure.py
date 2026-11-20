@@ -62,10 +62,15 @@ def log(message):
 
 
 def run(cmd, input_text=None, check=True):
-    result = subprocess.run(cmd, input=input_text, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    # La entrada va en bytes: en Windows el modo texto convierte cada "\n" en
+    # "\r\n", y el CLI (bash) leeria "postgresql\r" como motor en `querylens add`.
+    data = None if input_text is None else input_text.encode("utf-8")
+    result = subprocess.run(cmd, input=data, capture_output=True)
+    stdout = result.stdout.decode("utf-8", errors="replace").replace("\r\n", "\n")
     if check and result.returncode != 0:
-        raise RuntimeError(f"Fallo: {' '.join(cmd[:8])}\n{result.stdout[-3000:]}\n{result.stderr[-3000:]}")
-    return result.stdout
+        stderr = result.stderr.decode("utf-8", errors="replace")
+        raise RuntimeError(f"Fallo: {' '.join(cmd[:8])}\n{stdout[-3000:]}\n{stderr[-3000:]}")
+    return stdout
 
 
 @functools.cache

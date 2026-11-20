@@ -85,6 +85,8 @@ EVENT_TIMEOUT_S = 40
 SPACING_S = 14
 # Antes de cerrar una fase: que el ultimo ciclo y el detector la alcancen.
 PHASE_TAIL_S = 30
+# Espera del hallazgo de cada abrazo antes de copiarlo (ver capture_findings).
+FINDING_TIMEOUT_S = 20
 # Pausa del monitoreo: mas que LOOKBACK_S de DeadlocksStage (120 s).
 PAUSE_S = 135
 # Desborde del log de Postgres: LOG_WINDOW_BYTES es 2 MB por ciclo (10 s), es
@@ -270,7 +272,9 @@ def register(engine):
     auth-service reconoce la misma conexion por su fingerprint y devuelve el id
     que ya tenia, asi que repetirlo no crea otra fila."""
     name, auth_engine, port = CONNECTION[engine]
-    answers = [name, auth_engine, "host.docker.internal", port, "querylens_monitor", "monitor_pass", "ql_demo", "", ""]
+    # En MySQL el CLI no pregunta la base.
+    database = [] if auth_engine == "mysql" else ["ql_demo"]
+    answers = [name, auth_engine, "host.docker.internal", port, "querylens_monitor", "monitor_pass", *database, "", ""]
     out = cli("add", input_text="\n".join(answers) + "\n")
     match = re.search(r"\(id (db_[0-9a-f]+)\)", out)
     if not match:
@@ -417,7 +421,7 @@ def run_deadlock(engine, db_id, script, env):
     if truth["deadlock"]:
         wait_for(lambda: event_for_victim(db_id, truth["victim_pid"], started), EVENT_TIMEOUT_S)
         # el hallazgo se guarda despues que el evento, en el mismo job
-        time.sleep(2)
+        truth["findings_snapshot"] = capture_findings(db_id, started, [truth["pids"]])
     time.sleep(max(0.0, SPACING_S - (time.monotonic() - done)))
     truth["counter_before"], truth["counter_after"] = before, engine_counter(engine)
     return truth
@@ -455,7 +459,8 @@ def run_burst(engine, db_id, parts):
         members.append({"script": script, "env": env, "expect": expect, "rc": rc, "seconds": seconds,
                         "output": output, **parse_output(output)})
     time.sleep(EVENT_TIMEOUT_S)
-    return {"started": started, "finished": finished, "members": members,
+    snapshot = capture_findings(db_id, started, [m["pids"] for m in members if m["deadlock"]])
+    return {"started": started, "finished": finished, "members": members, "findings_snapshot": snapshot,
             "counter_before": before, "counter_after": engine_counter(engine)}
 
 
@@ -471,6 +476,8 @@ def run_pause(engine, db_id, script, env):
     cli("resume", db_id)
     resumed_at = ql_now()
     time.sleep(EVENT_TIMEOUT_S)
+    if truth["deadlock"]:
+        truth["findings_snapshot"] = capture_findings(db_id, truth["started"], [truth["pids"]])
     truth.update({"paused_at": paused_at, "resumed_at": resumed_at,
                   "counter_before": before, "counter_after": engine_counter(engine)})
     return truth
@@ -494,6 +501,8 @@ def run_flood(engine, db_id, script, env):
     truth = run_deadlock_only(engine, script, env)
     flood.join()
     time.sleep(EVENT_TIMEOUT_S)
+    if truth["deadlock"]:
+        truth["findings_snapshot"] = capture_findings(db_id, truth["started"], [truth["pids"]])
     truth.update({"flood_started": flood_started, "flood_finished": ql_now(),
                   "counter_before": before, "counter_after": engine_counter(engine)})
     return truth
@@ -615,6 +624,28 @@ def fetch_findings(db_id, since, until):
         f" FROM public.hallazgos WHERE db_id = {lit(db_id)}"
         f" AND antipatron = ANY(ARRAY[{', '.join(lit(a) for a in PATTERN)}])"
         f" AND detectado_en >= {lit(since)}::timestamptz AND detectado_en < {lit(until)}::timestamptz) h;")
+
+
+def capture_findings(db_id, since, pid_sets):
+    """Copia de los hallazgos de contencion de esta repeticion, en cuanto el
+    hallazgo de cada abrazo (por su conjunto de pid) ya esta guardado.
+
+    Un abrazo repetido sobre las mismas tablas es un solo problema (doc 005).
+    En un volumen anterior a public.detecciones.evidencia, public.hallazgos
+    muestra en todas sus detecciones la evidencia de la ultima: si se leyera
+    solo al final, las repeticiones anteriores no tendrian sus pid ni sus
+    recursos. Con la columna, cada deteccion trae la suya y la copia da lo
+    mismo. evaluate() usa esta copia para cada deteccion."""
+    wanted = [sorted(pids) for pids in pid_sets]
+    found = []
+
+    def ready():
+        found[:] = fetch_findings(db_id, since, "infinity")
+        have = [finding_pids(f) for f in found if f["antipatron"] != CASCADE]
+        return all(pids in have for pids in wanted)
+
+    wait_for(ready, FINDING_TIMEOUT_S)
+    return found
 
 
 def fetch_issues(db_id, since):
@@ -748,6 +779,10 @@ def evaluate(out):
     until = (parse_ts(meta.get("finished") or ql_now()) + timedelta(minutes=5)).isoformat()
     events = fetch_events(db_id, meta["started"], until)
     findings = fetch_findings(db_id, meta["started"], until)
+    # cada deteccion con la evidencia que tenia al terminar su repeticion
+    # (capture_findings); sin copia, la de la lectura final
+    captured = {f["id"]: f for run_ in runs for f in run_.get("findings_snapshot") or []}
+    findings = [captured.get(f["id"], f) for f in findings]
     issues = fetch_issues(db_id, meta["started"])
     used_events, used_findings = set(), set()
 

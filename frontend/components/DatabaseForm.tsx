@@ -38,22 +38,31 @@ export default function DatabaseForm() {
   const [traceState, setTraceState] = useState<TraceState>({ status: "idle" });
   const router = useRouter();
   const [registerFeedback, setRegisterFeedback] = useState<RegisterFeedback>({ type: "idle" });
+  // Registrar prueba antes la conexión, como `querylens add`: si falla, se
+  // guarda el motivo y se pide confirmación para registrar de todos modos (una
+  // base que todavía no está encendida se puede registrar igual).
+  const [failedCheck, setFailedCheck] = useState<string | null>(null);
 
   const testing = traceState.status === "testing";
   const dsnPreview = useMemo(() => buildDsnPreview(values), [values]);
 
+  // Cambiar un dato invalida la prueba que pedía confirmación.
   function update<K extends keyof ConnectionFormValues>(key: K, value: ConnectionFormValues[K]) {
+    setFailedCheck(null);
     setValues((prev) => ({ ...prev, [key]: value }));
   }
 
   function handleEngineChange(engine: DatabaseEngine) {
+    setFailedCheck(null);
     setValues((prev) => {
       const wasDefaultPort = prev.port === DEFAULT_PORTS[prev.engine];
       return { ...prev, engine, port: wasDefaultPort ? DEFAULT_PORTS[engine] : prev.port };
     });
   }
 
-  async function handleTestConnection() {
+  // Prueba la conexión, muestra el resultado en la traza y dice si conectó
+  // (con el mensaje del servidor si no).
+  async function runConnectionTest(): Promise<{ ok: boolean; message: string }> {
     setTraceState({ status: "testing" });
     try {
       const result = await testConnection(values);
@@ -62,16 +71,37 @@ export default function DatabaseForm() {
           ? { status: "success", latencyMs: result.latency_ms ?? null, message: result.message }
           : { status: "error", message: result.message }
       );
+      return { ok: result.success, message: result.message };
     } catch (error) {
-      setTraceState({
-        status: "error",
-        message: error instanceof Error ? error.message : "No fue posible probar la conexión",
-      });
+      const message = error instanceof Error ? error.message : "No fue posible probar la conexión";
+      setTraceState({ status: "error", message });
+      return { ok: false, message };
     }
+  }
+
+  async function handleTestConnection() {
+    setFailedCheck(null);
+    await runConnectionTest();
   }
 
   async function handleRegister(event: React.FormEvent) {
     event.preventDefault();
+    setRegisterFeedback({ type: "idle" });
+    setFailedCheck(null);
+    const check = await runConnectionTest();
+    if (!check.ok) {
+      setFailedCheck(check.message);
+      return;
+    }
+    await register();
+  }
+
+  async function handleRegisterAnyway() {
+    setFailedCheck(null);
+    await register();
+  }
+
+  async function register() {
     setRegistering(true);
     setRegisterFeedback({ type: "idle" });
     try {
@@ -208,17 +238,35 @@ export default function DatabaseForm() {
             {registerFeedback.message}
           </div>
         )}
+        {failedCheck !== null && (
+          <div className="notice-warn pop mt-6" role="alert">
+            <p className="font-medium">No se pudo conectar con estos datos.</p>
+            <p className="mt-1">{failedCheck}</p>
+            <p className="mt-2">
+              Puedes registrarla de todos modos (por ejemplo, si el servidor todavía no está encendido): QueryLens
+              mostrará el problema de conexión en Diagnósticos hasta que se resuelva.
+            </p>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <button type="button" onClick={() => setFailedCheck(null)} className="btn-outline">
+                Revisar los datos
+              </button>
+              <button type="button" onClick={handleRegisterAnyway} disabled={registering} className="btn-primary">
+                Registrar de todos modos
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="mt-6 flex flex-col gap-3 border-t border-rule pt-6 sm:flex-row sm:justify-end">
-          <button type="button" onClick={handleTestConnection} disabled={testing} className="btn-outline">
+          <button type="button" onClick={handleTestConnection} disabled={testing || registering} className="btn-outline">
             {testing ? "Probando…" : "Probar conexión"}
           </button>
           <button
             type="submit"
-            disabled={registering || registerFeedback.type === "success"}
+            disabled={testing || registering || failedCheck !== null || registerFeedback.type === "success"}
             className="btn-primary"
           >
-            {registering ? "Registrando…" : "Registrar base de datos"}
+            {registering ? "Registrando…" : testing ? "Probando conexión…" : "Registrar base de datos"}
           </button>
         </div>
       </form>

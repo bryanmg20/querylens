@@ -38,6 +38,14 @@ class RegisteredDatabase(Base):
     monitoring_enabled: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default=false()
     )
+    # Inicio de la sesión de detección: la página de diagnósticos cuenta como
+    # "esta sesión" solo lo detectado después (lo anterior queda en el
+    # histórico, no se borra). Solo cambia cuando el monitoreo arranca:
+    # PATCH /databases/monitoring con new_session, querylens resume
+    # --new-session y el scheduler al abrir una ventana.
+    detection_session_started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

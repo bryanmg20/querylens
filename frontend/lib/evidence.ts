@@ -26,25 +26,41 @@ const KNOWN: { keys: string[]; label: string; format: (v: number) => string }[] 
   { keys: ["baseline_median_ms"], label: "Mediana previa", format: fmtMs },
   { keys: ["window_mean_ms", "mean_time_ms"], label: "Tiempo medio", format: fmtMs },
   { keys: ["window_calls", "execution_count"], label: "Ejecuciones", format: (n) => INT.format(n) },
+  { keys: ["cycle_size"], label: "Transacciones en el ciclo", format: (n) => INT.format(n) },
+  { keys: ["occurrences"], label: "Veces que ocurrió", format: (n) => INT.format(n) },
+  { keys: ["blocked_count"], label: "Sesiones bloqueadas", format: (n) => INT.format(n) },
+  { keys: ["impact_wait_s"], label: "Espera acumulada", format: (n) => `${NUMBER.format(n)} s` },
+  { keys: ["child_window_calls"], label: "Ejecuciones de la hija", format: (n) => INT.format(n) },
+  { keys: ["parent_window_rows"], label: "Filas del padre", format: (n) => INT.format(n) },
   { keys: ["window_time_ms", "total_time_ms", "extra_time_ms"], label: "Tiempo total", format: fmtMs },
   { keys: ["window_disk_spill"], label: "Escritura temporal", format: (n) => INT.format(n) },
   { keys: ["index_scans"], label: "Lecturas del índice", format: (n) => INT.format(n) },
   { keys: ["index_size_bytes"], label: "Tamaño del índice", format: fmtBytes },
 ];
 
+// La tabla no va: ya está en la cabecera de la tarjeta.
 const TEXT: { key: string; label: string }[] = [
-  { key: "relation", label: "Tabla" },
+  { key: "constraint_name", label: "Clave foránea" },
   { key: "index_name", label: "Índice" },
   { key: "suggested_index", label: "Índice sugerido" },
   { key: "column", label: "Columna" },
   { key: "predicate", label: "Predicado" },
 ];
 
+// Recuadros que no se muestran en un antipatrón aunque la clave venga en la evidencia.
+// AP-05: window_time_ms es el tiempo de la consulta asociada (con él se calcula el impacto), no del
+// índice; como "Tiempo total" daba a entender que el índice tardó eso y repetía el impacto.
+const HIDDEN: Record<string, string[]> = {
+  unused_index: ["Tiempo total"],
+};
+
 export function findingMetrics(finding: Finding, limit = 6): Metric[] {
   const e = finding.evidencia as Record<string, unknown>;
+  const hidden = HIDDEN[finding.antipatron] ?? [];
   const out: Metric[] = [];
 
   for (const { keys, label, format } of KNOWN) {
+    if (hidden.includes(label)) continue;
     const key = keys.find((k) => typeof e[k] === "number" && Number.isFinite(e[k] as number));
     if (key) out.push({ label, value: format(e[key] as number) });
   }

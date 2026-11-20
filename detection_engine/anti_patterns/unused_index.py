@@ -343,6 +343,8 @@ def _collect_filter_traffic(
             traffic.setdefault(key, []).append({
                 "query_id": candidate.query_id,
                 "query_text": candidate.query_text,
+                # base de la consulta (en MySQL, su schema): la del hallazgo
+                "database_name": candidate.database_name,
                 "filter_columns": filter_columns,
                 # el plan capturado recorre la tabla completa filtrando por esas columnas
                 "full_scan_columns": full_scan_columns,
@@ -406,6 +408,37 @@ def _full_scan_entries_for_table(
         if tn == table_name and (sn is None or schema_name is None)
     ]
     return candidates[0] if len(candidates) == 1 else []
+
+
+# Riesgo de aplicar la recomendacion de cada variante (no la gravedad del
+# problema).
+_RISK_REVIEW = (
+    "Revisar no cambia nada en la base. Si la correccion es ANALYZE, puede cambiar el plan de "
+    "otras consultas de la tabla; si es volver a definir el indice, mientras se elimina y se "
+    "crea de nuevo las consultas que lo usarian recorren la tabla, y en Postgres, sin "
+    "CONCURRENTLY, la creacion bloquea las escrituras."
+)
+_RISK_DROP_UNUSED = (
+    "Eliminar el indice no se deshace sin volver a crearlo. Si lo usa una consulta poco "
+    "frecuente que no corrio en la ventana observada (un cierre mensual, un reporte), esa "
+    "consulta pasaria a recorrer la tabla completa."
+)
+_RISK_DROP_DUPLICATE = (
+    "Si alguna consulta nombra este indice de forma explicita (un hint, FORCE INDEX), falla "
+    "o cambia de plan al eliminarlo. Eliminarlo no se deshace sin volver a crearlo."
+)
+_RISK_DROP_PREFIX = (
+    "Las consultas que hoy usan este indice pasarian al indice mas ancho, que ocupa mas "
+    "paginas: pueden volverse algo mas lentas, sobre todo las que se resuelven solo con el "
+    "indice (index-only scan). Eliminarlo no se deshace sin volver a crearlo."
+)
+
+
+def _impact_ms(chosen: dict) -> float:
+    # AP-05 no tiene una sentencia propia: su costo esta en las escrituras, que
+    # el snapshot no reparte por indice. El impacto es el tiempo en la ventana
+    # de la consulta asociada al hallazgo (su query_id)
+    return round(chosen["window_time_ms"], 3)
 
 
 def _has_reads(index, used_index_keys: set[tuple[str | None, str, str]]) -> bool:
@@ -538,6 +571,8 @@ def _detect_unused(
                     "index_scans": index.index_scans,
                     "last_index_scan": index.last_index_scan,
                     "index_size_bytes": index.index_size_bytes,
+                    # impacto: tiempo en la ventana de la consulta asociada
+                    "window_time_ms": chosen["window_time_ms"],
                     "queries_que_filtran_la_tabla": _queries_evidence(queries, lead_column),
                 },
                 explicacion=explicacion,
@@ -550,6 +585,9 @@ def _detect_unused(
                 ),
                 query_id=chosen["query_id"],
                 table_name=index.table_name,
+                database_name=chosen["database_name"],
+                riesgo=_RISK_REVIEW if filters_by_lead else _RISK_DROP_UNUSED,
+                impacto_ms=_impact_ms(chosen),
             )
         )
     return findings
@@ -688,6 +726,8 @@ def _detect_redundant(
                         # separado de la severidad: que tan seguro es actuar sobre el DROP.
                         # El WHERE de un indice parcial no se verifica contra la query
                         "confianza_eliminar": "baja" if (seen_in_use or narrow_is_partial) else "alta",
+                        # impacto: tiempo en la ventana de la consulta asociada
+                        "window_time_ms": chosen["window_time_ms"],
                         "queries_que_filtran_la_tabla": _queries_evidence(queries, narrow_columns[0]),
                     },
                     explicacion=explicacion,
@@ -699,6 +739,9 @@ def _detect_redundant(
                     ),
                     query_id=chosen["query_id"],
                     table_name=table_name,
+                    database_name=chosen["database_name"],
+                    riesgo=_RISK_DROP_DUPLICATE if exact_duplicate else _RISK_DROP_PREFIX,
+                    impacto_ms=_impact_ms(chosen),
                 )
             )
     return findings
