@@ -1,0 +1,28 @@
+marcadores: texto=qlm6802f409fd9c8 numero=8642417495
+{
+  "sources_with_marker": {
+    "postgres_auto_explain_log": 21,
+    "mysql_query_sample_text": 6
+  },
+  "msg_ids": {
+    "postgres": 12038,
+    "mysql": 12039
+  },
+  "detection_jobs_processed": 2,
+  "storage_hits": {
+    "qlm6802f409fd9c8": {},
+    "8642417495": {}
+  },
+  "log_hits": {
+    "qlm6802f409fd9c8": {},
+    "8642417495": {}
+  },
+  "controls": {
+    "marcador_en_fuentes": true,
+    "candidatas_capturadas": true,
+    "buscador_ve_el_alias": true
+  }
+}
+candidatas capturadas: postgres=6, mysql=6
+tablas revisadas: 15 | apariciones en almacenamiento: 0 | en logs: 0
+RESULTADO: 0 literales persistidos
