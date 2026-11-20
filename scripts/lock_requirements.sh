@@ -26,4 +26,8 @@ compile telemetry_pipeline/requirements-dev.in -o telemetry_pipeline/requirement
 compile detection_engine/requirements.in -o detection_engine/requirements.txt \
     -c telemetry_pipeline/requirements.txt
 compile api_rest/requirements.in -o api_rest/requirements.txt
+compile api_rest/requirements-dev.in -o api_rest/requirements-dev.txt \
+    -c api_rest/requirements.txt
 compile auth_service/requirements.in -o auth_service/requirements.txt
+compile auth_service/requirements-dev.in -o auth_service/requirements-dev.txt \
+    -c auth_service/requirements.txt
