@@ -17,7 +17,7 @@ from .statement_history import WINDOW_MIN_CALLS, evaluate_statements
 # 10 ms: en los controles de MySQL, las escrituras de sysbench (~0,4 ms) tienen
 # ventanas sueltas de 1-4 ms mas (vaciado de InnoDB) que daban 31 FP, y las
 # degradaciones reales del escenario de AP-01 suben entre 57 y 751 ms.
-# Pendiente: llevar los valores de 10 s a la fila de AP-01 del informe.
+# Estos valores son los de la fila de AP-01 de la Tabla 2 del Informe final.
 DEFAULT_MIN_CALLS = WINDOW_MIN_CALLS
 DEFAULT_BASELINE_WINDOW = 60
 DEFAULT_MIN_RATIO = 2.0

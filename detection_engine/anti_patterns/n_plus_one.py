@@ -24,7 +24,8 @@ logger = get_logger(__name__)
 #   - sus ejecuciones coinciden (+-20 %) con las filas que devolvio el padre en
 #     la misma ventana
 #
-# Ajustes respecto al informe (pendiente: llevarlos a la fila de AP-06):
+# Ajustes respecto al planteamiento original (ya estan en la fila de AP-06 de
+# la Tabla 2 del Informe final):
 #   - el padre devuelve >= 2 filas por ejecucion: descarta el "1 + 1" normal de
 #     una pagina de detalle (leer un pedido y despues su cliente)
 #   - las dos ventanas se miden contra el mismo snapshot anterior (o las dos
@@ -37,11 +38,11 @@ logger = get_logger(__name__)
 #
 # No usa el EXPLAIN: recorre todos los statements, no solo top_impact_queries.
 
-# Con ventanas de 10 s (el informe pide 100 en ventanas de 60 s). 50 en vez de
-# los ~17 que darian la misma tasa: con numeros chicos dos consultas sin
-# relacion coinciden por casualidad dentro del +-20 % (falso positivo); con 50
-# se pierden los N+1 de menos de 50 filas por ventana (paginas de 20 o 25).
-# Pendiente: llevarlo a la fila de AP-06 del informe.
+# Con ventanas de 10 s (el planteamiento original pedia 100 en ventanas de
+# 60 s). 50 en vez de los ~17 que darian la misma tasa: con numeros chicos dos
+# consultas sin relacion coinciden por casualidad dentro del +-20 % (falso
+# positivo); con 50 se pierden los N+1 de menos de 50 filas por ventana
+# (paginas de 20 o 25). La Tabla 2 del Informe final fija este valor.
 _MIN_CHILD_CALLS = 50
 _MATCH_TOLERANCE = 0.20
 _MIN_PARENT_ROWS_PER_CALL = 2

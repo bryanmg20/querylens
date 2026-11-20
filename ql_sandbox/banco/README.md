@@ -39,7 +39,7 @@ Con `--engine both` corre primero MySQL completo y después Postgres (`ENGINE_RU
 | 4 | Escenario de AP-01 degradación respecto a la línea base | `run_scenario.py` | ~12 min |
 | 5 | Corridas de control | carga base sola | 30 min |
 
-**Por qué AP-05 índice no utilizado o redundante va primero.** El detector asocia cada hallazgo a una consulta de la tabla que esté entre las candidatas del pipeline, que se eligen por tiempo total acumulado. La consulta del escenario es liviana (lee con índice), así que corre justo después de poner en cero las estadísticas de sentencias (`--reiniciar-sentencias`). Es una limitación del pipeline y se declara en el informe.
+**Por qué AP-05 índice no utilizado o redundante va primero.** El detector asocia cada hallazgo a una consulta de la tabla que esté entre las candidatas del pipeline, que se eligen por tiempo total acumulado. La consulta del escenario es liviana (lee con índice), así que corre justo después de poner en cero las estadísticas de sentencias (`--reiniciar-sentencias`). Es una limitación del pipeline y se declara en la sección 3.2 del informe.
 
 Además, "no utilizado" solo se evalúa con 30 min de estadísticas de los índices. Si el motor lleva menos tiempo encendido, el banco espera antes de poner en cero las sentencias.
 

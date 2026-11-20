@@ -44,7 +44,7 @@ logger = get_logger(__name__)
 #   - GROUP BY y DISTINCT: en MySQL el ultimo acceso estima las filas ANTES de
 #     agrupar, y compararlas con los grupos devueltos daria falsos positivos.
 #     Se excluyen en ambos motores para que la regla sea la misma.
-#     Pendiente: agregar esta exclusion a la fila de AP-08 del informe.
+#     Esta exclusion esta en la fila de AP-08 de la Tabla 2 del Informe final.
 #
 # Sin minimo de ejecuciones por ventana (el informe no lo pide para AP-08).
 
