@@ -263,7 +263,7 @@ function BaselineViz({ cfg, mode }: { cfg: Extract<VizConfig, { kind: "baseline"
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2 text-[13px]">
-        <p className="text-muted">Latencia media por ventana de 60 s</p>
+        <p className="text-muted">Latencia media por ventana de 10 s</p>
         <span className={fixed ? "pill-pos" : "pill-neg"}>{fixed ? "Vuelve a su nivel habitual" : "Se aleja de su histórico"}</span>
       </div>
 
@@ -285,7 +285,7 @@ function BaselineViz({ cfg, mode }: { cfg: Extract<VizConfig, { kind: "baseline"
             {last && <circle cx={last[0]} cy={last[1]} r={5} fill={over ? "var(--negative)" : "var(--accent)"} />}
             {[0, Math.floor((series.length - 1) / 2), series.length - 1].map((i) => (
               <text key={i} x={x(i)} y={H - 8} textAnchor={i === 0 ? "start" : i === series.length - 1 ? "end" : "middle"} fontSize={11} fill="var(--muted)">
-                {i === series.length - 1 ? "ahora" : `−${series.length - 1 - i} min`}
+                {i === series.length - 1 ? "ahora" : `−${(series.length - 1 - i) * 10} s`}
               </text>
             ))}
           </svg>

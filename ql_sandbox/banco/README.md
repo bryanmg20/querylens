@@ -27,16 +27,21 @@ El banco no toma instantáneas por su cuenta. Solo inyecta y lee lo que QueryLen
 
 **Carga base.** `scripts/base_load.sh` corre sysbench `oltp_read_write` con 4 hilos a una tasa fija (50 tx/s por defecto, `--tasa`). Corre todo el tiempo en el motor que se mide. Las inyecciones se hacen sobre ella, y las corridas de control son la carga base sola.
 
+Con `--engine both` corre primero MySQL completo y después Postgres (`ENGINE_RUN_ORDER` en `manifiestos.py`). El reporte muestra Postgres primero.
+
 **Por motor, en este orden:**
 
 | Paso | Qué es | Fuente | Duración aprox. por repetición |
 |---|---|---|---|
-| 1 | 6 escenarios de antipatrones | tabla y carga de `scenarios/run_scenario.py` | 1–3 min |
-| 2 | Bloque de contención | casos `positivo` de `mediciones/measure_ct.py` | ~30 s por caso |
-| 3 | Escenario de AP-01 degradación respecto a la línea base | `run_scenario.py` | ~12 min |
-| 4 | Corridas de control | carga base sola | 30 min |
+| 1 | Escenario de AP-05 índice no utilizado o redundante | tabla y carga de `scenarios/run_scenario.py` | ~2 min |
+| 2 | Los otros 5 escenarios de antipatrones | `run_scenario.py` | 1–3 min |
+| 3 | Bloque de contención | casos `positivo` de `mediciones/measure_ct.py` | ~30 s por caso |
+| 4 | Escenario de AP-01 degradación respecto a la línea base | `run_scenario.py` | ~12 min |
+| 5 | Corridas de control | carga base sola | 30 min |
 
-El escenario de AP-05 índice no utilizado o redundante espera, si hace falta, a que el motor lleve 30 min encendido: antes de eso "no utilizado" no se evalúa.
+**Por qué AP-05 índice no utilizado o redundante va primero.** El detector asocia cada hallazgo a una consulta de la tabla que esté entre las candidatas del pipeline, que se eligen por tiempo total acumulado. La consulta del escenario es liviana (lee con índice), así que corre justo después de poner en cero las estadísticas de sentencias (`--reiniciar-sentencias`). Es una limitación del pipeline y se declara en la sección 3.2 del informe.
+
+Además, "no utilizado" solo se evalúa con 30 min de estadísticas de los índices. Si el motor lleva menos tiempo encendido, el banco espera antes de poner en cero las sentencias.
 
 **Escenarios.** Son 22 para 24 combinaciones patología-motor:
 
@@ -73,7 +78,7 @@ Todo hallazgo que no coincide con ninguno de los tres es un **falso positivo** d
 
 **M4 en los antipatrones.** El informe dice "≤ 2 ventanas (120 s)", porque se escribió con ventanas de 60 s. Se mantiene el límite en segundos, y la latencia también se reporta en ventanas.
 
-M5 (sobrecosto) se mide con `telemetry_pipeline/overhead`. M6 (anonimización) se mide con `scenarios/check_literal_leak.py`. M7 (completitud) es la lista de chequeo sobre los hallazgos de la campaña.
+M5 (sobrecosto) se mide con `telemetry_pipeline/overhead`. M6 (anonimización) se mide con `scenarios/check_literal_leak.py`. M7 (completitud) es la lista de chequeo sobre los hallazgos de la campaña: explicación, recomendación y riesgo de cada problema, y la evidencia y el enlace con la instantánea (`snapshot_msg_id` en `pgmq.a_analyze_job`) de cada detección.
 
 ## Salida (`resultados/<corrida>/`, no se versiona)
 

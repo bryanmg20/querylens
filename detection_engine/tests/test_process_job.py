@@ -42,7 +42,10 @@ def saved(monkeypatch):
         _finding("missing_index", 300.0),
         _finding("disk_spill", 300.0, "high"),
     ])
-    monkeypatch.setattr(main, "save_findings", lambda engine, db_id, findings: calls.update(findings=findings))
+    monkeypatch.setattr(
+        main, "save_findings",
+        lambda engine, db_id, findings, snapshot_msg_id: calls.update(findings=findings, snapshot_msg_id=snapshot_msg_id),
+    )
     monkeypatch.setattr(
         main, "save_evaluation",
         lambda engine, db_id, captured_at, states: calls.update(evaluation=(db_id, captured_at, states)),
@@ -55,6 +58,12 @@ def test_findings_are_saved_in_impact_order(saved):
     order = ["long_transaction_cascade", "disk_spill", "missing_index", "unused_index"]
     assert [f.antipatron for f in saved["findings"]] == order
     assert [f.antipatron for f in returned] == order
+
+
+def test_findings_are_saved_with_the_msg_id_of_their_snapshot(saved):
+    # el msg_id enlaza cada deteccion con su instantanea en pgmq.a_analyze_job (RNF-06)
+    main.process_job(mock.MagicMock(), _job())
+    assert saved["snapshot_msg_id"] == 7
 
 
 def test_evaluation_state_is_saved_for_the_window(saved):

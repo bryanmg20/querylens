@@ -1,0 +1,28 @@
+marcadores: texto=qlm6ece8e830800a numero=8644990482
+{
+  "sources_with_marker": {
+    "postgres_auto_explain_log": 21,
+    "mysql_query_sample_text": 6
+  },
+  "msg_ids": {
+    "postgres": 12036,
+    "mysql": 12037
+  },
+  "detection_jobs_processed": 1,
+  "storage_hits": {
+    "qlm6ece8e830800a": {},
+    "8644990482": {}
+  },
+  "log_hits": {
+    "qlm6ece8e830800a": {},
+    "8644990482": {}
+  },
+  "controls": {
+    "marcador_en_fuentes": true,
+    "candidatas_capturadas": false,
+    "buscador_ve_el_alias": true
+  }
+}
+candidatas capturadas: postgres=0, mysql=6
+tablas revisadas: 15 | apariciones en almacenamiento: 0 | en logs: 0
+RESULTADO: INCONCLUSO (fallo un control positivo)

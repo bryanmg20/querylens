@@ -21,10 +21,13 @@ de su escenario (manifiestos.py) y calcula, por combinacion patologia-motor:
                     guardado. En una patologia con varios esperados, hasta que
                     aparece el ultimo.
   M7 completitud    lista de chequeo sobre todos los problemas de la corrida:
-                    causa (explicacion), evidencia, recomendacion y riesgo. El
-                    enlace de cada deteccion con su instantanea todavia no se
-                    guarda (public.detecciones no tiene el snapshot): se informa
-                    como no medible, y M7 no cumple hasta que exista.
+                    causa (explicacion), evidencia, recomendacion, riesgo y
+                    enlace con la instantanea. La evidencia y el enlace se
+                    revisan en cada deteccion: todas tienen que guardar su
+                    evidencia y su snapshot_msg_id, y esa instantanea tiene que
+                    estar archivada en pgmq.a_analyze_job con el mismo db_id.
+                    Una corrida anterior a esas columnas no trae el dato: M7
+                    queda como no medible.
 
 No necesita Docker: lee lo que dejo el banco en la carpeta de la corrida.
 
@@ -189,7 +192,7 @@ def compute(units: list[dict], reps: int | None = None) -> dict:
             "M3": verdict("m3_ok", contention),
             "M4": verdict("m4_ok"),
             "M7": {"cumplen": completeness["completos"], "de": completeness["problemas"],
-                   "veredicto": "NO MEDIBLE" if completeness["sin_enlace_a_instantanea"] else (
+                   "veredicto": "NO MEDIBLE" if completeness["sin_dato_de_enlace"] else (
                        "CUMPLE" if completeness["completos"] == completeness["problemas"] else "NO CUMPLE")},
         },
         "completitud": completeness,
@@ -205,20 +208,26 @@ def compute(units: list[dict], reps: int | None = None) -> dict:
     }
 
 
-# Lo que M7 revisa en cada problema; el enlace con la instantanea no se guarda
-M7_CHECKS = ("con_explicacion", "con_evidencia", "con_recomendacion", "con_riesgo")
+# Lo que M7 revisa en cada problema
+M7_CHECKS = ("con_explicacion", "con_evidencia", "con_recomendacion", "con_riesgo", "con_enlace_a_instantanea")
 
 
 def _completeness(units: list[dict]) -> dict:
     """M7: una vez por problema de cada corrida (no por deteccion)."""
     missing = {check: 0 for check in M7_CHECKS}
-    incomplete, total, linked = [], 0, 0
+    incomplete, total, without_data = [], 0, 0
     for unit in units:
         for finding in unit["hallazgos"]:
             total += 1
-            checks = {**{check: bool(finding.get(check)) for check in M7_CHECKS},
-                      "con_evidencia": bool(finding.get("evidencia"))}
-            linked += finding.get("snapshot") is not None
+            checks = {check: bool(finding.get(check)) for check in M7_CHECKS}
+            # evidencia y enlace, en cada deteccion del problema dentro de la corrida
+            checks["con_evidencia"] = bool(finding.get("evidencia")) and not finding.get("detecciones_sin_evidencia")
+            if "detecciones_sin_enlace" in finding:
+                checks["con_enlace_a_instantanea"] = finding["detecciones_sin_enlace"] == 0
+            else:
+                # corrida anterior al enlace: no hay dato que revisar
+                del checks["con_enlace_a_instantanea"]
+                without_data += 1
             failed = [check for check, ok in checks.items() if not ok]
             for check in failed:
                 missing[check] += 1
@@ -226,7 +235,7 @@ def _completeness(units: list[dict]) -> dict:
                 incomplete.append({"corrida": unit["id"], "antipatron": finding.get("antipatron"),
                                    "faltan": failed, "detalle": describe(finding)})
     return {"problemas": total, "completos": total - len(incomplete), "faltantes": missing,
-            "incompletos": incomplete[:50], "sin_enlace_a_instantanea": total - linked}
+            "incompletos": incomplete[:50], "sin_dato_de_enlace": without_data}
 
 
 def _contention_block(unit, combos, false_negatives, add_false_positive, classify_plain) -> None:
@@ -350,7 +359,8 @@ def markdown(metrics: dict, meta: dict) -> str:
         f"Inicio {meta.get('inicio')} · fin {meta.get('fin') or 'sin terminar'} · "
         f"{meta.get('reps')} repeticiones por escenario · {meta.get('controles')} corridas de control de "
         f"{meta.get('minutos_control')} min por motor · carga base: sysbench oltp_read_write, 4 hilos, "
-        f"{meta.get('tasa_carga_base')} tx/s · commit `{meta.get('commit', '?')}`", "",
+        f"{meta.get('tasa_carga_base')} tx/s · commit `{meta.get('commit', '?')}`"
+        + (" · estadisticas de sentencias en cero al empezar cada motor" if meta.get("reiniciar_sentencias") else ""), "",
         "## Veredicto (Tabla 7)", "",
         "| Metrica | Umbral | Combinaciones que cumplen | Veredicto |", "|---|---|---|---|",
         f"| M1 exhaustividad | >= {mf.M1_MIN:.2f} en cada combinacion | {summary['M1']['cumplen']}/{summary['M1']['de']} | {summary['M1']['veredicto']} |",
@@ -404,9 +414,9 @@ def markdown(metrics: dict, meta: dict) -> str:
               f"{completeness['problemas']} problemas en todas las corridas; faltantes por punto: "
               + ", ".join(f"{check.removeprefix('con_')} {count}" for check, count in completeness["faltantes"].items())
               + ".", ""]
-    if completeness["sin_enlace_a_instantanea"]:
-        lines += [f"Enlace con la instantanea: no medible ({completeness['sin_enlace_a_instantanea']} problemas sin "
-                  "el dato). public.detecciones no guarda de que instantanea salio cada deteccion (RNF-06).", ""]
+    if completeness["sin_dato_de_enlace"]:
+        lines += [f"Enlace con la instantanea: no medible ({completeness['sin_dato_de_enlace']} problemas sin "
+                  "el dato). La corrida es anterior a public.detecciones.snapshot_msg_id (RNF-06).", ""]
     for item in completeness["incompletos"]:
         lines.append(f"- `{item['corrida']}` `{item['antipatron']}`: falta {', '.join(item['faltan'])} — {item['detalle']}")
     if completeness["incompletos"]:

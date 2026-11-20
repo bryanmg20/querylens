@@ -183,21 +183,35 @@ def wait_cycles(db_id: str, since: str, cycles: int) -> None:
 def fetch_findings(db_id: str, since: str, until: str | None = None) -> list[dict]:
     """Problemas detectados en la ventana, uno por problema: cuando se detecto
     por primera vez dentro de ella y cuantas veces. La evidencia es la de su
-    ultima deteccion."""
-    upper = f" AND detectado_en <= {lit(until)}::timestamptz" if until else ""
+    ultima deteccion dentro de la ventana (la del problema si esa deteccion es
+    anterior a la columna).
+
+    Para M7 cuenta, entre las detecciones de la ventana, las que no guardaron
+    su evidencia y las que no quedaron enlazadas con su instantanea: sin
+    snapshot_msg_id, o con uno que no esta en pgmq.a_analyze_job con el mismo
+    db_id."""
+    upper = f" AND d.detectado_en <= {lit(until)}::timestamptz" if until else ""
     raw = rs.querylens_sql(
         "SELECT coalesce(json_agg(t ORDER BY t.primera_deteccion), '[]') FROM ("
         " SELECT p.id AS problema_id, p.antipatron, p.codigo, p.table_name, p.query_id, p.database_name,"
-        "        p.finding_key, p.severidad, p.evidencia,"
+        "        p.finding_key, p.severidad, coalesce(d.ultima_evidencia, p.evidencia) AS evidencia,"
         "        coalesce(p.explicacion, '') <> '' AS con_explicacion,"
         "        coalesce(p.recomendacion, '') <> '' AS con_recomendacion,"
         "        coalesce(p.riesgo, '') <> '' AS con_riesgo,"
-        "        d.primera_deteccion, d.detecciones, d.deteccion_ids"
+        "        d.primera_deteccion, d.detecciones, d.deteccion_ids,"
+        "        d.detecciones_sin_evidencia, d.detecciones_sin_enlace"
         " FROM public.problemas p JOIN ("
-        "   SELECT problema_id, min(detectado_en) AS primera_deteccion, count(*) AS detecciones,"
-        "          array_agg(id ORDER BY id) AS deteccion_ids"
-        f"   FROM public.detecciones WHERE detectado_en >= {lit(since)}::timestamptz{upper}"
-        "   GROUP BY problema_id) d ON d.problema_id = p.id"
+        "   SELECT d.problema_id, min(d.detectado_en) AS primera_deteccion, count(*) AS detecciones,"
+        "          array_agg(d.id ORDER BY d.id) AS deteccion_ids,"
+        "          (array_agg(d.evidencia ORDER BY d.id DESC))[1] AS ultima_evidencia,"
+        "          count(*) FILTER (WHERE d.evidencia IS NULL) AS detecciones_sin_evidencia,"
+        "          count(*) FILTER (WHERE a.msg_id IS NULL) AS detecciones_sin_enlace"
+        "   FROM public.detecciones d"
+        "   JOIN public.problemas dp ON dp.id = d.problema_id"
+        "   LEFT JOIN pgmq.a_analyze_job a"
+        "     ON a.msg_id = d.snapshot_msg_id AND a.message ->> 'db_id' IS NOT DISTINCT FROM dp.db_id"
+        f"   WHERE d.detectado_en >= {lit(since)}::timestamptz{upper}"
+        "   GROUP BY d.problema_id) d ON d.problema_id = p.id"
         f" WHERE p.db_id = {lit(db_id)}) t;"
     )
     return json.loads(raw or "[]")
@@ -214,9 +228,38 @@ def stats_window_minutes(engine: str) -> float:
     return float(out.strip().splitlines()[-1]) / 60
 
 
+def reset_statement_stats(engine: str) -> None:
+    """Pone en cero las estadisticas de sentencias del motor (pg_stat_statements
+    o el resumen por digest de MySQL).
+
+    El pipeline elige las consultas a analizar (EXPLAIN y auto_explain) por el
+    top 10 de tiempo total acumulado. Con horas de carga base acumuladas, la
+    consulta nueva de un escenario tarda mas en entrar a ese top 10, y AP-05
+    indice no utilizado o redundante y AP-08 error grave de estimacion de
+    cardinalidad se atrasan (calibracion del 2026-11-18: 139 s con 230 min
+    acumulados frente a 40 s con 31 min). Es una limitacion del pipeline, no
+    del banco, y se declara en el informe. No toca las estadisticas de uso de
+    los indices ni el arranque del motor, asi que la ventana de AP-05 sigue
+    igual."""
+    if engine == "postgres":
+        ct.pg_sandbox("SELECT pg_stat_statements_reset();")
+    else:
+        ct.mysql_root("TRUNCATE TABLE performance_schema.events_statements_summary_by_digest;")
+    log(f"{engine} | estadisticas de sentencias en cero")
+
+
 # ------------------------------------------------------------------
 # Corridas
 # ------------------------------------------------------------------
+
+def wait_stats_window(engine: str, name: str) -> None:
+    """"No utilizado" (AP-05) solo se evalua con la ventana de estadisticas de
+    los indices cerrada: si el motor lleva poco encendido, se espera."""
+    missing = mf.AP05_STATS_WINDOW_MIN + 1 - stats_window_minutes(engine)
+    if missing > 0:
+        log(f"{engine} | {name}: el motor lleva poco encendido; se esperan {missing:.0f} min")
+        time.sleep(missing * 60)
+
 
 def run_injection(engine: str, db_id: str, name: str, rep: int) -> dict:
     scenario = rs.SCENARIOS[name]
@@ -225,11 +268,7 @@ def run_injection(engine: str, db_id: str, name: str, rep: int) -> dict:
     extra = {}
 
     if "AP-05" in manifest.codes():
-        # "no utilizado" solo se evalua con la ventana de estadisticas cerrada
-        missing = mf.AP05_STATS_WINDOW_MIN + 1 - stats_window_minutes(engine)
-        if missing > 0:
-            log(f"{engine} | {name}: el motor lleva poco encendido; se esperan {missing:.0f} min")
-            time.sleep(missing * 60)
+        wait_stats_window(engine, name)
         extra["ventana_estadisticas_min"] = round(stats_window_minutes(engine), 1)
 
     try:
@@ -320,7 +359,7 @@ def run_contention(engine: str, db_id: str, reps: int) -> dict:
 def plan(args) -> list[tuple]:
     """Corridas de la campana, en orden: (id, motor, tipo, escenario, repeticion)."""
     only = set(args.solo.split(",")) if args.solo else None
-    engines = list(mf.ENGINES) if args.engine == "both" else [args.engine]
+    engines = list(mf.ENGINE_RUN_ORDER) if args.engine == "both" else [args.engine]
 
     def wanted(name: str) -> bool:
         return only is None or name in only
@@ -385,6 +424,14 @@ def run_engine(engine: str, units: list[tuple], args, out: Path) -> int:
     log(f"{engine} | base registrada {db_id}, monitoreo encendido")
     unfinished = consecutive = 0
     try:
+        if args.reiniciar_sentencias:
+            # AP-05 va primero para entrar al top 10 con las sentencias recien
+            # en cero: si tuviera que esperar la ventana de los indices despues
+            # del reinicio, la carga base acumularia esos 30 min. Se espera antes
+            first_name = next((name for _, _, kind, name, _ in units if kind == "inyeccion"), None)
+            if first_name and "AP-05" in mf.AP_MANIFESTS[first_name].codes():
+                wait_stats_window(engine, first_name)
+            reset_statement_stats(engine)
         start_base_load(engine, args.tasa)
         wait_cycle(db_id)
         for position, (unit_id, _, kind, name, rep) in enumerate(units, 1):
@@ -441,7 +488,8 @@ def summary_line(unit: dict) -> str:
         rows = [r for r in unit["ct"]["results"] if r.get("phase") == "positivo"]
         return f"{sum(bool(r.get('correct')) for r in rows)}/{len(rows)} inyecciones con el hallazgo correcto"
     manifest = mf.AP_MANIFESTS.get(unit.get("scenario"))
-    kinds = [mf.classify(finding, engine, manifest)[0] for finding in unit["hallazgos"]]
+    injected = unit["tipo"] != "control"
+    kinds = [mf.classify(finding, engine, manifest, injected)[0] for finding in unit["hallazgos"]]
     text = f"{kinds.count('no_declarado')} no declarados, {kinds.count('colateral')} colaterales, " \
            f"{kinds.count('linea_base')} de linea base"
     if manifest is None:
@@ -462,6 +510,8 @@ def main() -> int:
     parser.add_argument("--smoke", action="store_true", help="1 repeticion y 1 control de 2 min")
     parser.add_argument("--etiqueta", default=None, help="nombre de la corrida (campana, calibracion...)")
     parser.add_argument("--reanudar", metavar="CORRIDA", help="seguir una corrida cortada (carpeta en resultados/)")
+    parser.add_argument("--reiniciar-sentencias", action="store_true",
+                        help="poner en cero las estadisticas de sentencias al empezar cada motor (ver reset_statement_stats)")
     args = parser.parse_args()
 
     preflight()
@@ -471,6 +521,7 @@ def main() -> int:
         # los parametros son los de la corrida original, no los de esta linea de comandos
         args.engine, args.reps, args.controles = meta["engine"], meta["reps"], meta["controles"]
         args.minutos_control, args.tasa, args.solo = meta["minutos_control"], meta["tasa_carga_base"], meta["solo"]
+        args.reiniciar_sentencias = meta.get("reiniciar_sentencias", False)
     else:
         if args.smoke:
             args.reps, args.controles, args.minutos_control = 1, 1, 2
@@ -481,6 +532,7 @@ def main() -> int:
             "run_id": out.name, "inicio": ql_now(), "fin": None, "commit": git_commit(),
             "engine": args.engine, "reps": args.reps, "controles": args.controles,
             "minutos_control": args.minutos_control, "tasa_carga_base": args.tasa, "solo": args.solo,
+            "reiniciar_sentencias": args.reiniciar_sentencias,
             "observacion_s": [OBSERVE_MIN_S, OBSERVE_MAX_S],
             "versiones": {engine: ct.server_version(engine) for engine in mf.ENGINES},
         }
@@ -497,6 +549,8 @@ def main() -> int:
     for name in ("M1", "M2", "M3", "M4"):
         item = metrics["resumen"][name]
         print(f"{name}: {item['cumplen']}/{item['de']} combinaciones | {item['veredicto']}")
+    item = metrics["resumen"]["M7"]
+    print(f"M7: {item['cumplen']}/{item['de']} problemas | {item['veredicto']}")
     print(f"Reporte: {out / 'reporte.md'}")
     if unfinished:
         print(f"{unfinished} corridas sin terminar: python ql_sandbox/banco/banco.py --reanudar {out.name}")

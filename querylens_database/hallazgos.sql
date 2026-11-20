@@ -1,17 +1,23 @@
 -- Hallazgos del detection_engine, en el schema public de la base de QueryLens.
 --
 -- Un problema que sigue presente se detecta en cada ventana (cada 10 s). Para
--- no repetir en cada deteccion la evidencia, la explicacion y la
--- recomendacion, se guardan una vez por problema, y cada deteccion solo anota
--- cuando ocurrio y con que severidad:
+-- no repetir en cada deteccion la explicacion y la recomendacion, se guardan
+-- una vez por problema. Cada deteccion anota cuando ocurrio, con que
+-- severidad, su evidencia y de que instantanea salio:
 --
 --   problemas    una fila por problema (db_id + antipatron + finding_key), con
 --                la evidencia, la explicacion, la recomendacion y su riesgo de
 --                la ultima deteccion
---   detecciones  una fila por deteccion: problema, hora, severidad e impacto
+--   detecciones  una fila por deteccion: problema, hora, severidad, impacto,
+--                evidencia e instantanea
 --   hallazgos    vista con las columnas de la tabla anterior, una fila por
 --                deteccion. La leen los scripts de ql_sandbox; la evidencia es
---                la de la ultima deteccion del problema
+--                la de cada deteccion (la del problema en las filas anteriores
+--                a la columna)
+--
+-- Trazabilidad (RNF-06, M7): snapshot_msg_id es el msg_id del snapshot en la
+-- cola analyze_job. El detector archiva cada mensaje que procesa en
+-- pgmq.a_analyze_job, asi que la instantanea queda guardada con ese msg_id.
 --
 -- finding_key identifica el problema dentro de su antipatron (lo arma
 -- detection_engine/storage.py, funcion finding_key). evidencia es JSONB porque
@@ -102,22 +108,30 @@ CREATE TABLE IF NOT EXISTS public.detecciones (
     -- puede ir unos segundos detras del snapshot
     detectado_en TIMESTAMPTZ NOT NULL DEFAULT now(),
     -- el de esta deteccion (su ventana); NULL si no se pudo medir
-    impacto_ms DOUBLE PRECISION
+    impacto_ms DOUBLE PRECISION,
+    -- la de esta deteccion; NULL en las filas anteriores a la columna
+    evidencia JSONB,
+    -- msg_id de la instantanea (pgmq.a_analyze_job) de la que salio; NULL en
+    -- las filas anteriores a la columna
+    snapshot_msg_id BIGINT
 );
 
--- Volumenes creados antes del impacto.
+-- Volumenes creados antes del impacto, la evidencia y la instantanea.
 ALTER TABLE public.detecciones ADD COLUMN IF NOT EXISTS impacto_ms DOUBLE PRECISION;
+ALTER TABLE public.detecciones ADD COLUMN IF NOT EXISTS evidencia JSONB;
+ALTER TABLE public.detecciones ADD COLUMN IF NOT EXISTS snapshot_msg_id BIGINT;
 
 -- Conteos por problema y rangos de fechas (reporte, pagina de diagnosticos).
 CREATE INDEX IF NOT EXISTS detecciones_problema_idx
     ON public.detecciones (problema_id, detectado_en);
 
 -- Las columnas nuevas van al final: CREATE OR REPLACE VIEW no deja cambiar el
--- orden ni el nombre de las que ya existen.
+-- orden ni el nombre de las que ya existen. evidencia es la de la deteccion;
+-- en las filas anteriores a la columna (NULL) queda la del problema.
 CREATE OR REPLACE VIEW public.hallazgos AS
 SELECT d.id, p.db_id, p.antipatron, d.severidad, p.query_id, p.table_name,
-       p.evidencia, p.explicacion, p.recomendacion, d.detectado_en,
+       coalesce(d.evidencia, p.evidencia) AS evidencia, p.explicacion, p.recomendacion, d.detectado_en,
        p.database_name, p.finding_key, d.problema_id,
-       p.riesgo, d.impacto_ms, p.codigo
+       p.riesgo, d.impacto_ms, p.codigo, d.snapshot_msg_id
 FROM public.detecciones d
 JOIN public.problemas p ON p.id = d.problema_id;

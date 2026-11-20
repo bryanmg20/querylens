@@ -189,7 +189,7 @@ def test_save_findings_sends_one_row_per_detection_with_its_key():
     first = _ap05("ql_scn_pad", query_id="Q1", severidad="medium", detectado=CAPTURED_AT)
     second = _ap05("ql_scn_pad", query_id="Q2", severidad="high", detectado=CAPTURED_AT + timedelta(seconds=10))
 
-    save_findings(engine, "db-1", [first, second])
+    save_findings(engine, "db-1", [first, second], snapshot_msg_id=42)
 
     statement, rows = conn.execute.call_args.args
     sql = str(statement)
@@ -198,8 +198,18 @@ def test_save_findings_sends_one_row_per_detection_with_its_key():
     assert [r["finding_key"] for r in rows] == ["ql_demo.ql_scn|ql_scn_pad|no_usado"] * 2
     assert [(r["query_id"], r["severidad"]) for r in rows] == [("Q1", "medium"), ("Q2", "high")]
     assert all(r["db_id"] == "db-1" for r in rows)
+    # cada deteccion guarda su evidencia y la instantanea de la que salio (RNF-06)
+    assert "INSERT INTO public.detecciones (problema_id, severidad, impacto_ms, evidencia, snapshot_msg_id)" in sql
+    assert all(r["snapshot_msg_id"] == 42 for r in rows)
     # default=str: un datetime en la evidencia no rompe el guardado
     assert json.loads(rows[1]["evidencia"])["detectado"].startswith("2026-11-02 12:00:10")
+
+
+def test_save_findings_without_snapshot_leaves_the_link_empty():
+    engine, conn = _fake_engine()
+    save_findings(engine, "db-1", [_ap05("ql_scn_pad", query_id="Q1", severidad="low", detectado=CAPTURED_AT)])
+    _, rows = conn.execute.call_args.args
+    assert rows[0]["snapshot_msg_id"] is None
 
 
 def test_save_findings_without_findings_does_not_touch_the_database():

@@ -174,7 +174,7 @@ def process_job(engine: Engine, job: dict) -> list[Hallazgo]:
         )
     print("----------------------------------\n")
 
-    save_findings(engine, snapshot.db_id, findings)
+    save_findings(engine, snapshot.db_id, findings, snapshot_msg_id=msg_id)
     # Como run_contention: si falla, los hallazgos ya quedaron guardados y la
     # proxima ventana vuelve a anotar su estado
     if snapshot.db_id and states:

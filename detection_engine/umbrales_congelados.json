@@ -1,14 +1,23 @@
 {
  "descripcion": "Umbrales de deteccion congelados para la campana de validacion final (SegundoInforme 7.3 y Tabla 17). Cambiar uno de estos valores obliga a repetir la campana completa: actualizar aca el valor, la version y el motivo, y volver a correr ql_sandbox/banco/banco.py. Lo verifica tests/test_umbrales_congelados.py. Las duraciones van en segundos.",
- "version": 1,
- "congelado_en": null,
- "calibracion": null,
+ "version": 2,
+ "congelado_en": "2026-11-18",
+ "calibracion": {
+  "corrida": "banco-calibracion-20261118-022801",
+  "comando": "python ql_sandbox/banco/banco.py --reps 3 --controles 2 --minutos-control 10 --etiqueta calibracion",
+  "reporte": "ql_sandbox/banco/resultados/banco-calibracion-20261118-022801/reporte.md",
+  "resultado": "M1 24/24, M2 24/24, M3 8/8, 0 falsos positivos; M4 23/24 (AP-05 indice no utilizado o redundante en Postgres, 139 s: viene de la seleccion de candidatas del pipeline, no de un umbral)",
+  "corrida_anterior": "banco-calibracion-20261117-225403: 31 falsos positivos de AP-01 degradacion respecto a la linea base en los controles de MySQL (picos de 1 a 4 ms en escrituras de sysbench)",
+  "cambios": [
+   "version 2: AP-01 DEFAULT_MIN_ABS_INCREASE_MS de 1.0 a 10.0 ms"
+  ]
+ },
  "umbrales": {
   "AP-01 degradacion respecto a la linea base": {
    "anti_patterns.baseline_degradation.DEFAULT_MIN_CALLS": 5,
    "anti_patterns.baseline_degradation.DEFAULT_BASELINE_WINDOW": 60,
    "anti_patterns.baseline_degradation.DEFAULT_MIN_RATIO": 2.0,
-   "anti_patterns.baseline_degradation.DEFAULT_MIN_ABS_INCREASE_MS": 1.0,
+   "anti_patterns.baseline_degradation.DEFAULT_MIN_ABS_INCREASE_MS": 10.0,
    "anti_patterns.baseline_degradation._HIGH_EXTRA_MS": 10000,
    "anti_patterns.baseline_degradation._MEDIUM_EXTRA_MS": 1000,
    "anti_patterns.statement_history.WINDOW_MIN_CALLS": 5,
