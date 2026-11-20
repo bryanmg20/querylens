@@ -35,7 +35,7 @@ export const STAGES = [
   {
     title: "Detecta",
     text: "Cruza estadísticas, planes e historial y aplica una regla por cada antipatrón.",
-    sample: "latencia media ≥ 2 × mediana\nde las 10 ventanas previas",
+    sample: "latencia media ≥ 2 × mediana\nde las 60 ventanas previas",
   },
   {
     title: "Recomienda",

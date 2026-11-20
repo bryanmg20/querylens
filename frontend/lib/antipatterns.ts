@@ -48,10 +48,10 @@ export const ANTIPATTERN_DOCS: Record<string, AntipatternDoc> = {
     family: "Cambio en el tiempo",
     tagline: "Hoy tarda el doble que de costumbre.",
     summary: "Una consulta que antes respondía rápido ahora tarda mucho más que su comportamiento habitual.",
-    rule: "Al menos 30 ejecuciones en la ventana y una latencia media de 2 veces o más la mediana de las 10 ventanas previas.",
+    rule: "Al menos 5 ejecuciones en la ventana de 10 s, una latencia media de 2 veces o más la mediana de las 60 ventanas previas (los últimos 10 minutos) y al menos 10 ms más que esa mediana.",
     what: [
       "QueryLens guarda cómo se comporta cada consulta ventana tras ventana. Cuando la latencia media de una consulta supera con claridad su comportamiento habitual, la marca como degradada.",
-      "No compara con un valor fijo: compara la consulta consigo misma, contra la mediana de sus 10 ventanas anteriores.",
+      "No compara con un valor fijo: compara la consulta consigo misma, contra la mediana de sus 60 ventanas anteriores, es decir, de sus últimos 10 minutos.",
     ],
     causes: [
       { title: "La tabla creció o cambió", text: "Más filas, o una distribución distinta de los datos, vuelven más costoso el mismo plan." },
@@ -69,7 +69,7 @@ export const ANTIPATTERN_DOCS: Record<string, AntipatternDoc> = {
       "Busca bloqueos o consultas concurrentes en la misma ventana.",
     ],
     caveat:
-      "Una consulta con pocas ejecuciones varía mucho por azar. Por eso se exigen al menos 30 ejecuciones en la ventana, un aumento de 1 ms o más y que la latencia sea 2 veces la mediana o más.",
+      "Una consulta con pocas ejecuciones varía mucho por azar. Por eso se exigen al menos 5 ejecuciones en la ventana, un aumento de 10 ms o más y que la latencia sea 2 veces la mediana o más.",
     evidence: [
       ["Ejecuciones", "412"],
       ["Mediana previa", "12,4 ms"],
@@ -89,7 +89,7 @@ export const ANTIPATTERN_DOCS: Record<string, AntipatternDoc> = {
     family: "Recorrido completo de la tabla",
     tagline: "Leer toda la tabla para quedarse con el 1 %.",
     summary: "El plan lee toda la tabla aunque el predicado es muy selectivo y entrar por un índice sería mucho más barato.",
-    rule: "Full table scan sobre una tabla de 10.000 filas o más cuyo predicado deja pasar como máximo el 10 %.",
+    rule: "Un SELECT simple, con 2 ejecuciones o más en la ventana, recorre entera una tabla de 10.000 filas o más y devuelve el 10 % o menos de sus filas.",
     what: [
       "El plan de ejecución lee la tabla entera aunque el filtro es muy selectivo: solo una fracción pequeña de las filas cumple la condición.",
       "Es un recorrido evitable: con un camino de acceso adecuado, el motor podría ir directo a esas filas en lugar de revisarlas todas.",
@@ -114,7 +114,7 @@ export const ANTIPATTERN_DOCS: Record<string, AntipatternDoc> = {
     evidence: [
       ["Plan", "Seq Scan en movimientos"],
       ["Filas vivas", "12.004.113"],
-      ["Filas estimadas", "1.402"],
+      ["Filas devueltas por ejecución", "1.402"],
     ],
     viz: { kind: "scan", table: "movimientos", rows: 12004113, matches: 5, readBad: 12004113, readFix: 1402 },
   },
@@ -125,7 +125,7 @@ export const ANTIPATTERN_DOCS: Record<string, AntipatternDoc> = {
     family: "El índice no se puede usar",
     tagline: "Hay un índice, pero la consulta lo ignora.",
     summary: "Aplicar una función a la columna dentro del WHERE impide usar su índice, así que la base de datos revisa fila por fila.",
-    rule: "El predicado del plan aplica una expresión a la columna en vez de compararla directamente.",
+    rule: "Un SELECT simple con las condiciones de escaneo completo de AP-02, cuyo filtro envuelve en una función, una operación o una conversión de tipo la primera columna de un índice existente.",
     what: [
       "«Sargable» viene de «search argument able»: un predicado que el motor puede resolver apoyándose en un índice. Si aplicas una función a la columna, como LOWER(email) o DATE(fecha), el índice guarda los valores originales, no los transformados.",
       "El motor tiene entonces que calcular la función fila por fila para comparar. El índice está ahí, pero no sirve.",
@@ -133,18 +133,14 @@ export const ANTIPATTERN_DOCS: Record<string, AntipatternDoc> = {
     causes: [
       { title: "Funciones sobre la columna", text: "LOWER, UPPER, SUBSTRING o DATE aplicadas a la columna anulan el índice normal." },
       { title: "Operaciones aritméticas", text: "Un filtro como precio * 1,19 > 100 obliga a calcular el valor de cada fila." },
-      { title: "Conversiones de tipo implícitas", text: "Comparar un texto con un número hace que el motor convierta la columna entera." },
-      { title: "Comodines al inicio", text: "Un LIKE '%texto' no puede ubicarse dentro de un índice ordenado." },
-    ],
+      { title: "Conversiones de tipo implícitas", text: "Comparar un texto con un número hace que el motor convierta la columna entera." },    ],
     bad: "SELECT * FROM clientes\nWHERE lower(email) = 'ana@ejemplo.co';",
     fix: "CREATE INDEX idx_clientes_email_lower\n  ON clientes (lower(email));",
     compare: { metric: "Tiempo medio por ejecución", unit: "ms", bad: 62.8, fix: 0.6 },
     checklist: [
       "Compara la columna sin transformarla y transforma el valor: WHERE email = lower($1).",
       "Si necesitas la función, crea un índice sobre la expresión: ON clientes (lower(email)).",
-      "Evita conversiones implícitas: usa el mismo tipo que tiene la columna.",
-      "Revisa los filtros con LIKE '%...': necesitan otro tipo de índice o de búsqueda.",
-    ],
+      "Evita conversiones implícitas: usa el mismo tipo que tiene la columna.",    ],
     caveat:
       "Si la tabla es pequeña, o el filtro no es selectivo, el motor puede preferir recorrerla de todos modos y el predicado no sargable casi no cuesta nada.",
     evidence: [
@@ -171,7 +167,7 @@ export const ANTIPATTERN_DOCS: Record<string, AntipatternDoc> = {
     family: "Recorrido completo de la tabla",
     tagline: "Leer 1.250.000 filas para devolver 3.",
     summary: "Una consulta recorre entera una tabla grande para encontrar pocas filas, porque la columna que filtra no tiene índice.",
-    rule: "Escaneo completo sobre una tabla de 10.000 filas o más, con un predicado que deja pasar el 10 % o menos de la tabla.",
+    rule: "Un SELECT simple, con las condiciones de escaneo completo de AP-02, cuyo filtro compara columnas por igualdad o rango y ninguna es la primera columna de un índice de la tabla.",
     what: [
       "Cuando una consulta filtra por una columna que no tiene índice, el motor no sabe dónde están las filas que busca. Para estar seguro, lee la tabla entera, fila por fila, y se queda solo con las que cumplen la condición.",
       "Con una tabla pequeña no se nota. Con millones de filas, cada ejecución lee casi todo para devolver unas pocas, y ese costo se repite cada vez que la aplicación hace la consulta.",
@@ -192,11 +188,11 @@ export const ANTIPATTERN_DOCS: Record<string, AntipatternDoc> = {
       "Acepta el escaneo completo si la tabla es pequeña o el filtro devuelve gran parte de ella.",
     ],
     caveat:
-      "Un escaneo completo es la mejor opción cuando la tabla es pequeña o el filtro devuelve gran parte de las filas. QueryLens solo lo marca con 10.000 filas o más y un filtro que deja pasar el 10 % o menos.",
+      "Un escaneo completo es la mejor opción cuando la tabla es pequeña o el filtro devuelve gran parte de las filas. QueryLens solo lo marca con 10.000 filas o más y un filtro que deja pasar el 10 % o menos. Los filtros con LIKE no se evalúan, porque el patrón llega anonimizado.",
     evidence: [
       ["Plan", "Seq Scan en pedidos"],
       ["Filas vivas", "4.213.880"],
-      ["Filas estimadas", "38"],
+      ["Filas devueltas por ejecución", "38"],
     ],
     viz: { kind: "scan", table: "pedidos", rows: 1250000, matches: 3, readBad: 1250000, readFix: 3 },
   },
@@ -207,10 +203,10 @@ export const ANTIPATTERN_DOCS: Record<string, AntipatternDoc> = {
     family: "Costo sin beneficio",
     tagline: "Se actualiza en cada escritura y nadie lo lee, u otro índice ya hace su trabajo.",
     summary: "Un índice que nadie lee, o que repite a otro, sigue ocupando espacio y retrasa cada INSERT, UPDATE y DELETE.",
-    rule: "Sin uso: cero lecturas del índice durante la ventana de estadísticas disponible, y sin aparecer en los planes reales. Redundante: no es único y duplica exactamente a otro índice o es el comienzo de uno más ancho, y ese otro índice es el que se usa.",
+    rule: "Sin uso: un índice que no es primario ni único, con cero lecturas en al menos 30 minutos de estadísticas, que no aparece en ningún plan capturado y que no es el único que respalda una clave foránea. Redundante: no es único y duplica exactamente a otro índice o es el comienzo de uno más ancho, y ese otro índice es el que se usa.",
     what: [
       "Un índice acelera las lecturas, pero cada INSERT, UPDATE o DELETE también tiene que actualizarlo. Si ninguna consulta lo usa, solo se paga el costo.",
-      "QueryLens lo detecta cuando el contador de lecturas del índice es cero en la ventana de estadísticas disponible, y comprueba que tampoco aparezca en los planes reales.",
+      "QueryLens lo detecta cuando el contador de lecturas del índice es cero en al menos 30 minutos de estadísticas, y comprueba que tampoco aparezca en los planes reales.",
       "Es redundante cuando tiene las mismas columnas, en el mismo orden, que otro índice, o cuando sus columnas son el comienzo de otro índice más ancho: si ese otro es el que se usa, ya resuelve las mismas búsquedas. Un índice único nunca cuenta como redundante, porque garantiza que no haya valores repetidos.",
     ],
     causes: [
@@ -265,7 +261,7 @@ export const ANTIPATTERN_DOCS: Record<string, AntipatternDoc> = {
       "Verifica en pg_stat_statements que las ejecuciones de la hija bajen a una por petición.",
     ],
     caveat:
-      "Una página de detalle que lee un pedido y luego su cliente es un «1 + 1» normal: por eso el padre debe devolver 2 filas o más por ejecución. Tampoco se cuentan las lecturas con bloqueo (FOR UPDATE o FOR KEY SHARE), como el chequeo interno de claves foráneas de PostgreSQL. Con menos de 50 ejecuciones en la ventana no se marca.",
+      "Una página de detalle que lee un pedido y luego su cliente es un «1 + 1» normal: por eso el padre debe devolver 2 filas o más por ejecución. Tampoco se cuentan las lecturas con bloqueo (FOR UPDATE, FOR SHARE o FOR KEY SHARE), como el chequeo interno de claves foráneas de PostgreSQL. Con menos de 50 ejecuciones en la ventana no se marca.",
     evidence: [
       ["Ejecuciones de la hija", "1.240"],
       ["Filas del padre", "1.250"],
@@ -301,7 +297,7 @@ export const ANTIPATTERN_DOCS: Record<string, AntipatternDoc> = {
       "Pide solo las columnas que necesitas.",
     ],
     caveat:
-      "El indicador no mide lo mismo en cada motor: en PostgreSQL cuenta bloques temporales escritos y en MySQL, tablas temporales creadas en disco. Los ordenamientos que van a disco en MySQL todavía no se recolectan.",
+      "El indicador no mide lo mismo en cada motor: en PostgreSQL cuenta bloques temporales escritos y en MySQL, tablas temporales creadas en disco y pasadas de mezcla de ordenamientos.",
     evidence: [
       ["Bloques temporales", "18.432"],
       ["Memoria de trabajo", "4 MB"],
@@ -318,7 +314,7 @@ export const ANTIPATTERN_DOCS: Record<string, AntipatternDoc> = {
     rule: "La razón entre filas estimadas y reales es de 10 o más, y alguno de los dos valores llega a 100 filas.",
     what: [
       "Antes de ejecutar, el optimizador estima cuántas filas producirá cada paso y elige el plan según esa estimación. Si la estimación está muy lejos de la realidad, el plan elegido puede ser el equivocado.",
-      "QueryLens compara las filas estimadas del EXPLAIN con las filas reales por ejecución. Si difieren 10 veces o más, lo marca.",
+      "QueryLens compara las filas estimadas del plan con las filas reales de la misma ejecución, que registra el propio motor. Si difieren 10 veces o más, lo marca.",
     ],
     causes: [
       { title: "Estadísticas desactualizadas", text: "El optimizador decide con una foto vieja de los datos." },
@@ -336,7 +332,7 @@ export const ANTIPATTERN_DOCS: Record<string, AntipatternDoc> = {
       "Reescribe los predicados que el optimizador no puede estimar.",
     ],
     caveat:
-      "Solo se compara la salida final del plan, no los pasos intermedios, y se exige una razón de 10 veces y que alguno de los dos valores llegue a 100 filas.",
+      "Solo se compara la salida final del plan, no los pasos intermedios, y se exige una razón de 10 veces y que alguno de los dos valores llegue a 100 filas. Si no hay filas reales de esa ejecución, la consulta no se evalúa.",
     evidence: [
       ["Razón", "4.025 veces"],
       ["Tabla", "pedidos"],
