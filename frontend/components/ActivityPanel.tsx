@@ -32,6 +32,10 @@ export function ActivityPanel({
 
 export function PatternsPanel({ findings }: { findings: Finding[] }) {
   const rows = topPatterns(findings, 5);
+  // Solo se dibujan los 5 más frecuentes; si hay más tipos, el contador lo dice.
+  const total = new Set(findings.map((f) => f.antipatron)).size;
+  const countLabel =
+    total > rows.length ? `${rows.length} de ${total} tipos` : total === 1 ? "1 tipo" : `${total} tipos`;
 
   return (
     <section className="card p-6" aria-labelledby="patterns-title">
@@ -39,7 +43,7 @@ export function PatternsPanel({ findings }: { findings: Finding[] }) {
         <h2 id="patterns-title" className="card-title">
           Antipatrones frecuentes
         </h2>
-        <span className="text-[13px] text-muted">{rows.length === 1 ? "1 tipo" : `${rows.length} tipos`}</span>
+        <span className="text-[13px] text-muted">{countLabel}</span>
       </div>
       <div className="mt-4">
         <BarList rows={rows} />
