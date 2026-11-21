@@ -60,7 +60,7 @@ export default function KpiStrip({
 
       <div className="col-span-2 min-w-0 border-t border-line p-4 sm:col-span-1 sm:border-l lg:border-t-0">
         <p className="text-[13px] text-muted">Pipeline</p>
-        <p className="mt-1.5 text-[20px] font-semibold leading-7" style={{ color: pipeline?.color }}>
+        <p key={run?.status ?? "wait"} className="swap-in mt-1.5 text-[20px] font-semibold leading-7" style={{ color: pipeline?.color }}>
           {pipeline?.label ?? "En espera"}
         </p>
         <p className="mt-1 truncate text-[13px] text-muted">

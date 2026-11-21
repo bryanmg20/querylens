@@ -71,7 +71,7 @@ export default function MonitoringControl({
         <span className="relative mt-1.5 flex h-2 w-2 flex-none">
           <span className={`relative h-2 w-2 rounded-full ${enabled ? "live-dot bg-positive" : "border border-muted"}`} />
         </span>
-        <span>
+        <span key={enabled ? "on" : started ? "paused" : "off"} className="swap-in">
           <span className={`block font-medium ${enabled ? "" : "text-muted"}`}>
             {enabled ? "Monitoreo activo" : started ? "Monitoreo en pausa" : "Monitoreo sin iniciar"}
           </span>
