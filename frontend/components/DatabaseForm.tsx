@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { registerDatabase, testConnection } from "@/lib/api";
+import { guideHref } from "@/lib/prepararBase";
 import { saveAccessToken } from "@/lib/session";
 import {
   DEFAULT_FORM_VALUES,
@@ -294,6 +296,24 @@ export default function DatabaseForm() {
         <div className="border-t border-rule pt-6">
           <SignalTrace state={traceState} bare />
         </div>
+
+        <section className="border-t border-rule pt-6" aria-labelledby="prepare-title">
+          <h2 id="prepare-title" className="card-title">
+            Antes de registrar
+          </h2>
+          <p className="mt-4 text-[13px] leading-5 text-muted">
+            La base necesita un script, una sola vez, que instala <code className="font-mono">auto_explain</code> (en
+            PostgreSQL) y crea el usuario de solo lectura <code className="font-mono">querylens_monitor</code>.
+          </p>
+          <Link
+            href={guideHref({ engine: values.engine, base: values.engine === "postgresql" ? values.databaseName : "" })}
+            target="_blank"
+            rel="noopener"
+            className="btn-outline mt-3 w-full"
+          >
+            Cómo preparar la base ({values.engine === "mysql" ? "MySQL" : "PostgreSQL"})
+          </Link>
+        </section>
 
         <section className="border-t border-rule pt-6" aria-labelledby="next-title">
           <h2 id="next-title" className="card-title">

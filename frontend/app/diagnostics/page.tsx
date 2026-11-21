@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { flushSync } from "react-dom";
-import { ActivityPanel } from "@/components/ActivityPanel";
+import { ActivityPanel, PatternsPanel } from "@/components/ActivityPanel";
+import SeverityPanel from "@/components/SeverityPanel";
 import DiagnosticsSkeleton from "@/components/DiagnosticsSkeleton";
 import EvaluationPanel from "@/components/EvaluationPanel";
 import FindingsPanel, { NO_FILTERS, filterFindings, type Filters } from "@/components/FindingsPanel";
@@ -315,7 +316,9 @@ export default function DiagnosticsPage() {
                 onExportAll={printAllFindings}
               />
               <EvaluationPanel evaluation={data.evaluation ?? []} engine={data.engine} serverTime={data.server_time} />
-              <HealthPanel issues={data.health.issues} serverTime={data.server_time} />
+              <HealthPanel issues={data.health.issues} serverTime={data.server_time} engine={data.engine} />
+              {data.diagnostics.length > 0 && <SeverityPanel findings={data.diagnostics} serverTime={data.server_time} />}
+              {data.diagnostics.length > 0 && <PatternsPanel findings={data.diagnostics} />}
               {data.activity.length > 0 && <ActivityPanel points={data.activity} serverTime={data.server_time} />}
             </div>
 
