@@ -498,11 +498,11 @@ Los requerimientos no funcionales expresan los atributos de calidad que hacen ac
 | RNF-08 | Seguridad de acceso | La API de diagnósticos solo responde con un token firmado, emitido para la base consultada. | Pruebas de la API | Implementado |
 | RNF-09 | Reproducibilidad | El sistema y el banco de pruebas se despliegan en contenedores con versiones fijas de los motores. | Ejecución desde un entorno limpio | Verificado: reconstruido desde cero el 16 de noviembre y detección repetida igual en dos campañas de PostgreSQL |
 | RNF-10 | Mantenibilidad | Incorporar un motor exige solo un recolector y sus funciones de traducción; el comportamiento se protege con pruebas de contrato y de mutación. | Suite automatizada | Implementado |
-| RNF-11 | Usabilidad | Los hallazgos se redactan para un desarrollador sin formación de DBA. | Evaluación con equipos (objetivo 8) | Parcial: compañeros de la carrera que no participaron en el desarrollo usaron la herramienta y entendieron los mensajes de los hallazgos; falta la evaluación con equipos de desarrollo reales |
+| RNF-11 | Usabilidad | Los hallazgos se redactan para un desarrollador sin formación de DBA. | Evaluación con equipos (objetivo 8) | Parcial: diez compañeros de la carrera calificaron con medias de 4,8 a 5,0, sobre 5, la claridad del problema, la evidencia, la recomendación y el riesgo de los hallazgos (sección 13.3); falta la evaluación con equipos de desarrollo u operación |
 
 Los dos requerimientos que más condicionan la aceptación de la herramienta en un entorno real son el sobrecosto (RNF-01) y la privacidad (RNF-03). La privacidad se verificó con su métrica. El sobrecosto se verificó primero con la recolección vigente al 12 de octubre y se repitió el 17 de noviembre con la recolección completa, que incluye los informes de abrazo mortal, con resultado favorable en ambos motores.
 
-Los requerimientos de exactitud y oportunidad (RNF-04 y RNF-05) son los que determinan si QUERYLENS cumple su promesa diagnóstica; la campaña de validación final los verificó en ambos motores (sección 13.2). La usabilidad (RNF-11) se revisó de forma inicial: compañeros de la carrera que no participaron en el desarrollo usaron la herramienta y entendieron los mensajes de los hallazgos. La retroalimentación de equipos de desarrollo reales prevista en el objetivo 8, como evidencia complementaria y sin umbral de aprobación, queda pendiente.
+Los requerimientos de exactitud y oportunidad (RNF-04 y RNF-05) son los que determinan si QUERYLENS cumple su promesa diagnóstica; la campaña de validación final los verificó en ambos motores (sección 13.2). La usabilidad (RNF-11) se evaluó con un formulario que diez compañeros de la carrera respondieron después de usar la herramienta: las afirmaciones sobre la claridad de los hallazgos obtuvieron medias de 4,8 a 5,0 sobre 5 (sección 13.3). La retroalimentación de equipos de desarrollo u operación prevista en el objetivo 8, como evidencia complementaria y sin umbral de aprobación, queda pendiente.
 
 ## 9. Evaluación de alternativas
 
@@ -1198,11 +1198,35 @@ En CT-05, la latencia se mide desde que la transacción raíz cumple 30 s. CT-03
 
 ### 13.3 Pruebas de usabilidad
 
-Todavía no se han realizado pruebas de usabilidad con usuarios. La interfaz web se ha revisado internamente durante su desarrollo, pero no con personas ajenas al equipo, y la claridad de las explicaciones no se ha medido.
+La usabilidad se evaluó el 20 de noviembre de 2026 con diez compañeros de la carrera que no participaron en el desarrollo. Su experiencia con bases de datos es la básica del curso de bases de datos y la de los proyectos de la carrera, sin formación de DBA, lo que corresponde al usuario al que se dirige QUERYLENS. Cada uno tuvo una sesión remota e individual de unos 10 minutos, en la que usó la interfaz web, y al terminar respondió un formulario. En este informe los participantes se identifican como P1 a P10, y sus respuestas anonimizadas están en `docs/evidencia/usabilidad-20261120/`.
 
-La evaluación se realizará según el objetivo 8. Se invitará al menos a dos equipos de desarrollo u operación; cada participante diagnosticará con QUERYLENS al menos dos hallazgos del banco de pruebas, explicará qué entiende de la causa y de la recomendación, y calificará la claridad de las explicaciones en una escala de 1 a 5. Se registrarán, además, el tiempo que tarda en identificar la causa y las dudas que surjan durante la sesión.
+El formulario tiene nueve afirmaciones, que cada participante calificó de 1 a 5, y una pregunta abierta sobre qué añadir o mejorar. Las afirmaciones 2 a 5 corresponden a la claridad de las explicaciones que pide el objetivo 8: el problema que describe el hallazgo, la evidencia, la recomendación y el riesgo. Las demás cubren el registro de la base, la priorización, el estado de evaluación, la intención de uso y el diseño. La Tabla 17 resume las respuestas.
 
-Los resultados se presentarán como evidencia complementaria, sin umbral de aprobación, y servirán para ajustar la redacción de los hallazgos y la organización de la interfaz. Como la disponibilidad de equipos externos no está garantizada, la validación principal del proyecto no depende de esta evaluación.
+**Tabla 17.** Resultados del formulario de usabilidad (10 participantes, escala de 1 a 5).
+
+| Afirmación | Media | Mínima | Respuestas con 5 |
+|---|---|---|---|
+| 1. Fue fácil registrar la base y encender el monitoreo | 5,0 | 5 | 10 |
+| 2. Entendí qué problema describe cada hallazgo | 5,0 | 5 | 10 |
+| 3. La evidencia mostrada (consulta, plan, grafo) me ayudó a entender por qué se detectó | 4,8 | 4 | 8 |
+| 4. La recomendación me dice claramente qué hacer para corregirlo | 5,0 | 5 | 10 |
+| 5. Entendí el riesgo de aplicar la recomendación | 4,8 | 4 | 8 |
+| 6. El orden por impacto me ayudó a decidir por dónde empezar | 4,7 | 3 | 8 |
+| 7. Entendí qué patologías no se pudieron evaluar y por qué | 4,4 | 3 | 6 |
+| 8. Usaría QUERYLENS para revisar la base de datos de un proyecto propio | 4,4 | 3 | 5 |
+| 9. El diseño de la interfaz es claro y agradable | 5,0 | 5 | 10 |
+
+Las cuatro afirmaciones sobre la claridad de las explicaciones obtuvieron medias de 4,8 a 5,0, sin calificaciones por debajo de 4, lo que respalda que los hallazgos se entienden sin formación de DBA (RNF-11). Las medias más bajas fueron las de las afirmaciones 7 y 8 (4,4). La pregunta abierta explica la primera y señala otros puntos de mejora:
+
+- **Estado de evaluación:** P4 y P9, que calificaron la afirmación 7 con 3, pidieron que el mensaje sobre las patologías que no se pudieron evaluar sea más sencillo, porque les resultó demasiado técnico.
+- **Orden de los hallazgos:** P1, que calificó la afirmación 6 con 3, esperaba que los hallazgos se ordenaran por severidad, no por impacto acumulado, y propuso una nota que lo aclare.
+- **Explicación de los patrones:** P8 y P10 pidieron ver la explicación de cada patrón en la vista principal, sin esperar a que se detecte uno.
+- **Inicio de sesión:** P2 pidió iniciar sesión para guardar credenciales y conexiones y cambiar rápido entre bases. Coincide con la limitación de la sección 12: QUERYLENS no tiene autenticación de usuarios.
+- **Sin sugerencias:** P3, P5, P6 y P7.
+
+La pregunta abierta no aporta motivos para la afirmación 8; ninguno de los cinco participantes que la calificaron por debajo de 5 explicó por qué.
+
+Estos resultados tienen límites. Son la opinión de diez compañeros de la carrera sobre su propia comprensión, tras sesiones cortas, no una verificación de que entendieron la causa y la recomendación, y no se obtuvieron con equipos de desarrollo u operación, como pide el objetivo 8. Por eso se presentan como evidencia complementaria, sin umbral de aprobación. Las observaciones no se incorporaron a la interfaz antes de la entrega y quedan como trabajo futuro (sección 15).
 
 ## 14. Resultados, discusión y conclusiones
 
@@ -1210,9 +1234,9 @@ Esta sección contrasta los resultados de la validación (sección 13) con los o
 
 ### 14.1 Resultados frente a los objetivos
 
-El objetivo general se cumplió en los términos en que se formuló. Sobre fallas inyectadas en el banco de pruebas, QUERYLENS alcanzó una exhaustividad y una precisión de 1,00 en las 24 combinaciones de patología y motor, frente al umbral de 0,90. El límite superior del intervalo de confianza de su sobrecosto quedó por debajo del 5 % en ambos motores, y el 100 % de los hallazgos estaba completo y era trazable. La Tabla 17 resume el estado de cada objetivo específico.
+El objetivo general se cumplió en los términos en que se formuló. Sobre fallas inyectadas en el banco de pruebas, QUERYLENS alcanzó una exhaustividad y una precisión de 1,00 en las 24 combinaciones de patología y motor, frente al umbral de 0,90. El límite superior del intervalo de confianza de su sobrecosto quedó por debajo del 5 % en ambos motores, y el 100 % de los hallazgos estaba completo y era trazable. La Tabla 18 resume el estado de cada objetivo específico.
 
-**Tabla 17.** Estado de los objetivos específicos al cierre del proyecto.
+**Tabla 18.** Estado de los objetivos específicos al cierre del proyecto.
 
 | Objetivo | Estado | Evidencia |
 |---|---|---|
@@ -1223,7 +1247,7 @@ El objetivo general se cumplió en los términos en que se formuló. Sobre falla
 | 5. Análisis de contención | Cumplido | M1 y M2 de 1,00 en las 8 combinaciones y M3 de 1,00 en identificación y en clasificación. M4 con un máximo de 10,2 s frente a 15 s, y de 20,3 s frente a 45 s en CT-05 (cascada por transacción larga). |
 | 6. Interfaz y explicación | Cumplido | Los 1174 problemas de la campaña tienen causa, evidencia enlazada a su instantánea, recomendación y riesgo (M7). Una prueba automatizada comprueba que la priorización produce el mismo orden ante la misma entrada. |
 | 7. Banco de pruebas y métricas | Cumplido | Banco de un solo comando que corre los 22 escenarios con 10 repeticiones y 10 corridas de control por motor, y calcula las métricas. Al reconstruirse desde cero el 16 de noviembre, el banco reducido entregó los mismos veredictos, y dos campañas de PostgreSQL dieron la misma detección. |
-| 8. Retroalimentación de equipos | Parcial | Compañeros de la carrera que no participaron en el desarrollo usaron la herramienta y entendieron los mensajes. No se realizaron las sesiones con equipos de desarrollo ni la calificación de 1 a 5 (sección 13.3). |
+| 8. Retroalimentación de equipos | Parcial | Diez compañeros de la carrera usaron la interfaz y calificaron de 1 a 5 la claridad de los hallazgos, con medias de 4,8 a 5,0 en el problema, la evidencia, la recomendación y el riesgo (sección 13.3, Tabla 17). La evaluación no se hizo con equipos de desarrollo u operación, como pide el objetivo. |
 
 ### 14.2 Discusión
 
@@ -1243,7 +1267,7 @@ Las decisiones tomadas con mediciones fueron las más estables. La fuente de pla
 
 ### 14.3 Conclusiones
 
-QUERYLENS cumple el objetivo general del proyecto: detecta, prioriza y explica las 11 patologías comprometidas en PostgreSQL 17 y las 13 de MySQL 8.0, con exhaustividad y precisión por encima de 0,90 sobre fallas inyectadas, con un sobrecosto de recolección inferior al 5 % y con evidencia trazable a la instantánea que originó cada hallazgo. Siete de los ocho objetivos específicos se cumplieron por completo, y el octavo, la retroalimentación de equipos, que se planteó como complementaria, se cumplió de forma parcial.
+QUERYLENS cumple el objetivo general del proyecto: detecta, prioriza y explica las 11 patologías comprometidas en PostgreSQL 17 y las 13 de MySQL 8.0, con exhaustividad y precisión por encima de 0,90 sobre fallas inyectadas, con un sobrecosto de recolección inferior al 5 % y con evidencia trazable a la instantánea que originó cada hallazgo. Siete de los ocho objetivos específicos se cumplieron por completo, y el octavo, la retroalimentación de equipos, que se planteó como complementaria, se cumplió de forma parcial: la prueba de usabilidad se hizo con diez compañeros de la carrera, que calificaron bien la claridad de los hallazgos, pero no con equipos de desarrollo u operación.
 
 La principal lección del proyecto es que separar la recolección de la detección mediante un modelo canónico permite que las reglas sean agnósticas al motor y auditables: cada diferencia entre motores se resuelve una sola vez, en la traducción, y cada hallazgo puede verificarse contra la evidencia que lo sustenta. La segunda es que medir antes de decidir evitó construir sobre supuestos: las fuentes de planes, el diseño de la medición de sobrecosto y los umbrales cambiaron por lo que mostraron las pruebas, no por preferencia.
 
@@ -1255,7 +1279,8 @@ QUERYLENS cumplió su alcance como MVP, pero la validación y los límites decla
 
 - **SQL Server:** incorporar un tercer motor, que el alcance contemplaba como extensión opcional; con la arquitectura actual, requiere un recolector y sus funciones de traducción al modelo canónico, sin cambios en el motor de detección.
 - **Selección de candidatas:** elegirlas combinando el tiempo acumulado con el de la última ventana, para que una sentencia reciente o liviana entre pronto sin perder las que pesan a la larga (sección 3.2).
-- **Evaluación con equipos y cargas reales:** realizar las sesiones del objetivo 8 con al menos dos equipos de desarrollo, con la calificación de 1 a 5, y observar bases con cargas de producción o réplicas para medir los falsos positivos fuera del banco (secciones 13.3 y 14.2).
+- **Evaluación con equipos y cargas reales:** repetir la prueba de usabilidad con al menos dos equipos de desarrollo u operación, como pide el objetivo 8, comprobando además que cada participante explique la causa y la recomendación de los hallazgos, y observar bases con cargas de producción o réplicas para medir los falsos positivos fuera del banco (secciones 13.3 y 14.2).
+- **Ajustes de la interfaz:** atender lo que pidió la prueba de usabilidad (sección 13.3): un mensaje más sencillo sobre las patologías que no se pudieron evaluar, una nota que aclare que el orden es por impacto acumulado y no por severidad, la explicación de cada patrón visible sin esperar a que se detecte uno, y el inicio de sesión para guardar conexiones, que además permitiría exponer QUERYLENS fuera del anfitrión (sección 12).
 - **Validación con más repeticiones y cargas variadas:** llevar las inyecciones a unas 35 por combinación, para que el límite inferior del intervalo de Wilson supere 0,90, y sumar otras cargas base y escenarios escritos por personas ajenas a las reglas (sección 14.2).
 - **Cobertura del historial de MySQL:** reducir los casos en que la ejecución de una sentencia sale del historial antes del ciclo, por ejemplo leyendo también `events_statements_history_long`, para que AP-08 (error grave de estimación de cardinalidad) se evalúe en más sentencias (sección 9.3).
 - **Planes en servicios gestionados:** obtener planes de ejecuciones reales sin superusuario en servicios como Amazon RDS o Cloud SQL, por ejemplo a partir de los registros que exporta cada proveedor, para no depender del plan genérico (secciones 3.2 y 6.4).
