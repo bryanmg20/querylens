@@ -21,10 +21,6 @@ QUERYLENS surge en un contexto donde diagnosticar problemas de rendimiento en ba
 |[Instalacion.md](Instalacion.md)|	Guía de instalación, desarrollo y despliegue|
 |[Desarrollo.md](Desarrollo.md)|	Detalles técnicos del desarrollo|
 
-### Planes de ejecución
-
-[plan_patterns.md](telemetry_pipeline/plan_patterns.md): patrones canónicos de `EXPLAIN` para PostgreSQL y MySQL, con consultas SQL de ejemplo.
-
 ## Estudiantes
 
 |Nombre|	GitHub|
