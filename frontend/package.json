@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "sync:setup": "node scripts/setup-scripts.mjs",
+    "check:setup": "node scripts/setup-scripts.mjs check"
   },
   "dependencies": {
     "next": "14.2.35",

@@ -27,7 +27,9 @@ import psycopg2
 import pytest
 
 SQL_DIR = Path(__file__).resolve().parents[2] / "querylens_database"
-DDL = ["registered_databases.sql", "hallazgos.sql", "estado_evaluacion.sql", "pipeline_health.sql"]
+DDL = [
+    "registered_databases.sql", "hallazgos.sql", "estado_evaluacion.sql", "pipeline_health.sql", "contention_state.sql",
+]
 
 JWT_SECRET = "clave-de-prueba-" + uuid.uuid4().hex
 os.environ["JWT_SECRET_KEY"] = JWT_SECRET
@@ -118,7 +120,8 @@ def db_conn():
     with conn.cursor() as cur:
         cur.execute(
             "TRUNCATE registered_databases, public.problemas, public.detecciones, public.estado_evaluacion, "
-            "pipeline_health.last_run, pipeline_health.issues RESTART IDENTITY CASCADE"
+            "pipeline_health.last_run, pipeline_health.issues, pipeline_health.cycle_samples, public.deadlock_events "
+            "RESTART IDENTITY CASCADE"
         )
     try:
         yield conn

@@ -18,7 +18,7 @@ QUERYLENS surge en un contexto donde diagnosticar problemas de rendimiento en ba
 |Documento |	Descripción|
 |----------|-------------|
 |[InformeFinal.md](InformeFinal.md)|	Documento principal del proyecto|
-|[instalacion.md](instalacion.md)|	Guía de instalación, desarrollo y despliegue|
+|[Instalacion.md](Instalacion.md)|	Guía de instalación, desarrollo y despliegue|
 |[Desarrollo.md](Desarrollo.md)|	Detalles técnicos del desarrollo|
 
 ### Planes de ejecución

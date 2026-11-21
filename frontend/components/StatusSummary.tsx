@@ -51,7 +51,7 @@ export default function StatusSummary({
         <div className="min-w-0">
           {lastRun && status ? (
             <>
-              <p className="flex items-center gap-2 text-xl font-semibold leading-7">
+              <p key={lastRun.status} className="swap-in flex items-center gap-2 text-xl font-semibold leading-7">
                 <span className="h-2 w-2 flex-none rounded-full" style={{ background: status.dot }} />
                 {status.label}
               </p>

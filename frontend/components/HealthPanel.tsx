@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { formatDateTime, timeAgo } from "@/lib/format";
+import { guideHref, sectionForHealthCode } from "@/lib/prepararBase";
 import type { HealthIssue } from "@/types/database";
 
 const SEVERITY_STYLE = {
@@ -12,25 +14,32 @@ const SEVERITY_STYLE = {
 export default function HealthPanel({
   issues,
   serverTime,
+  engine,
 }: {
   issues: HealthIssue[];
   serverTime: string;
+  engine?: string;
 }) {
   const open = issues.filter((issue) => issue.resolved_at == null);
   const resolved = issues.filter((issue) => issue.resolved_at != null);
 
   return (
     <section>
-      <h2 className="mb-3 text-lg text-ink">Salud de la extracción</h2>
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h2 className="text-lg text-ink">Salud de la extracción</h2>
+        <Link href={guideHref({ engine })} className="text-[13px] text-muted underline-offset-2 hover:text-fg hover:underline">
+          Guía para preparar la base
+        </Link>
+      </div>
 
       {open.length === 0 ? (
-        <p className="rounded border border-graphite-200 bg-surface px-4 py-3 text-sm text-graphite-600">
+        <p className="swap-in rounded border border-graphite-200 bg-surface px-4 py-3 text-sm text-graphite-600">
           Sin problemas abiertos.
         </p>
       ) : (
         <ul className="space-y-3">
           {open.map((issue) => (
-            <IssueCard key={issue.id} issue={issue} serverTime={serverTime} />
+            <IssueCard key={issue.id} issue={issue} serverTime={serverTime} engine={engine} />
           ))}
         </ul>
       )}
@@ -51,11 +60,13 @@ export default function HealthPanel({
   );
 }
 
-function IssueCard({ issue, serverTime }: { issue: HealthIssue; serverTime: string }) {
+function IssueCard({ issue, serverTime, engine }: { issue: HealthIssue; serverTime: string; engine?: string }) {
   const style = SEVERITY_STYLE[issue.severity] ?? SEVERITY_STYLE.info;
+  // Algunos problemas se resuelven con un paso de la guía de preparar la base.
+  const guideSection = sectionForHealthCode(issue.code);
 
   return (
-    <li className={`rounded border border-graphite-200 border-l-4 ${style.border} bg-surface px-4 py-3`}>
+    <li className={`swap-in rounded border border-graphite-200 border-l-4 ${style.border} bg-surface px-4 py-3`}>
       <div className="flex flex-wrap items-center gap-2">
         <span className={`rounded px-2 py-0.5 text-xs ${style.badge}`}>{style.label}</span>
         <span className="font-mono text-xs text-graphite-600">{issue.code}</span>
@@ -66,6 +77,14 @@ function IssueCard({ issue, serverTime }: { issue: HealthIssue; serverTime: stri
       {issue.remediation && (
         <p className="mt-2 whitespace-pre-wrap rounded bg-paper px-3 py-2 font-mono text-xs text-ink">
           {issue.remediation}
+        </p>
+      )}
+
+      {guideSection && (
+        <p className="mt-2 text-sm">
+          <Link href={guideHref({ engine, section: guideSection })} className="font-medium text-accent underline-offset-2 hover:underline">
+            Ver cómo resolverlo en la guía →
+          </Link>
         </p>
       )}
 

@@ -85,3 +85,23 @@ export function findingTables(finding: Finding): string[] {
   if (Array.isArray(tables)) for (const t of tables) if (typeof t === "string") set.add(t);
   return [...set];
 }
+
+const SKIP_FACTS = new Set(["query_text", "canonic_query", "signature", "limitations"]);
+
+/**
+ * Todos los datos sueltos de la evidencia (texto, número, sí/no) como pares nombre → valor, para
+ * leerlos sin abrir el JSON. Lo anidado y lo largo se queda en el JSON completo.
+ */
+export function evidenceFacts(finding: Finding): Metric[] {
+  const e = finding.evidencia as Record<string, unknown>;
+  const out: Metric[] = [];
+  for (const [key, v] of Object.entries(e)) {
+    if (SKIP_FACTS.has(key)) continue;
+    let value: string | null = null;
+    if (typeof v === "number" && Number.isFinite(v)) value = NUMBER.format(v);
+    else if (typeof v === "boolean") value = v ? "sí" : "no";
+    else if (typeof v === "string" && v.trim() && v.length <= 80) value = v.trim();
+    if (value != null) out.push({ label: key.replace(/_/g, " "), value });
+  }
+  return out;
+}
