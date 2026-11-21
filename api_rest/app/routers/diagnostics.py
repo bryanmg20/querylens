@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.schemas import (
     ActivityBucket,
+    DeadlockQuality,
     DiagnosticsResponse,
     EvaluationReason,
     Finding,
@@ -136,6 +137,44 @@ ORDER BY 1
 """
 
 
+# Calidad de la captura de abrazos mortales en la sesión: los que contó el
+# motor (pipeline_health.cycle_samples, un delta por ciclo) contra los que
+# QueryLens capturó (public.deadlock_events, uno por informe único, con o sin
+# hallazgo). Es el cálculo de `calidad_deadlocks` en cli/share/report.sql, con
+# la ventana [:since, :until): si cambia uno, cambia el otro. Los dos lados se
+# cortan en la ventana, así que en los bordes puede haber un abrazo de
+# diferencia. Falta lo de la CLI que es solo de diagnóstico del log (KB/s).
+DEADLOCK_QUALITY_SQL = """
+WITH s AS (
+    SELECT deadlocks_since_prev, counter_reset, log_window_overrun, seconds_since_prev
+    FROM pipeline_health.cycle_samples
+    WHERE db_id = :identifier AND taken_at >= :since AND taken_at < :until
+), e AS (
+    SELECT complete, antipatron
+    FROM public.deadlock_events
+    WHERE db_id = :identifier AND detected_at >= :since AND detected_at < :until
+), c AS (
+    SELECT (SELECT sum(deadlocks_since_prev) FROM s)::int AS hubo,
+           (SELECT count(*) FROM e)::int AS capturados
+)
+SELECT CASE :engine WHEN 'mysql' THEN 'servidor' ELSE 'base' END AS alcance,
+       (SELECT hubo FROM c) AS hubo,
+       (SELECT capturados FROM c) AS capturados,
+       (SELECT count(*) FROM e WHERE complete)::int AS con_detalle,
+       (SELECT count(*) FROM e WHERE NOT complete)::int AS sin_detalle,
+       (SELECT coalesce(json_object_agg(patron, n ORDER BY patron), '{}')
+        FROM (SELECT coalesce(antipatron, 'sin_patron') AS patron, count(*) AS n
+              FROM e WHERE complete GROUP BY 1) p) AS por_patron,
+       -- sin contador comparable (hubo NULL) no se sabe cuántos se perdieron: NULL, no 0
+       (SELECT CASE WHEN hubo IS NULL THEN NULL ELSE greatest(hubo - capturados, 0) END FROM c) AS perdidos,
+       (SELECT CASE WHEN hubo IS NULL THEN NULL ELSE greatest(capturados - hubo, 0) END FROM c) AS capturados_de_mas,
+       (SELECT count(*) FROM s WHERE counter_reset)::int AS reinicios_contador,
+       (SELECT count(*) FROM s)::int AS ciclos,
+       (SELECT count(*) FROM s WHERE log_window_overrun)::int AS ciclos_con_desborde,
+       (SELECT count(*) FROM s WHERE seconds_since_prev > 120)::int AS huecos_largos
+"""
+
+
 def _rows(db: Session, sql: str, params: dict) -> list[dict]:
     """Ejecuta un SELECT y devuelve las filas como dicts.
 
@@ -212,6 +251,20 @@ def fetch_evaluation(
     return evaluations
 
 
+def fetch_deadlock_quality(
+    db: Session, database_identifier: str, engine: str, since: datetime, until: datetime,
+) -> DeadlockQuality | None:
+    """Calidad de la captura de abrazos mortales entre `since` y `until`, o None
+    si las tablas que la calculan todavía no existen."""
+
+    rows = _rows(
+        db,
+        DEADLOCK_QUALITY_SQL,
+        {"identifier": database_identifier, "engine": engine, "since": since, "until": until},
+    )
+    return DeadlockQuality(**rows[0]) if rows else None
+
+
 def fetch_activity(db: Session, database_identifier: str, since: datetime) -> list[ActivityBucket]:
     """Detecciones por hora desde `since` (las horas sin detecciones no vienen)."""
 
@@ -286,5 +339,6 @@ def get_diagnostics(
         evaluation=fetch_evaluation(db, database_identifier, session_start, row["engine"], health),
         activity=fetch_activity(db, database_identifier, since=now - ACTIVITY_WINDOW),
         health=health,
+        calidad_deadlocks=fetch_deadlock_quality(db, database_identifier, row["engine"], session_start, now),
         server_time=now,
     )

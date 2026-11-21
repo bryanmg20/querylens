@@ -4,11 +4,16 @@ import Link from "next/link";
 import { useState } from "react";
 import { getDoc } from "@/lib/antipatterns";
 import { buildEvidenceGraph } from "@/lib/evidenceGraph";
-import { findingMetrics, findingQuery, findingTables } from "@/lib/evidence";
+import { findingContention } from "@/lib/contention";
+import { evidenceFacts, findingMetrics, findingQuery, findingTables } from "@/lib/evidence";
+import { whyItMatters } from "@/lib/impact";
+import { recommendedSql } from "@/lib/recommendation";
 import { formatDateTime, formatDuration, timeAgo } from "@/lib/format";
 import { SEVERITY_META, formatCount, severityBreakdown, severityKey } from "@/lib/insights";
 import type { Finding } from "@/types/database";
 import EvidenceGraphView from "./antipatterns/EvidenceGraph";
+import CodeBlock from "./CodeBlock";
+import ContentionDetail from "./ContentionDetail";
 
 // Un hallazgo completo: qué es, la consulta, las métricas, la recomendación y la evidencia (en
 // JSON y como grafo, los dos plegables). "¿Qué es esto?" lleva a la explicación animada del patrón.
@@ -35,6 +40,12 @@ export default function FindingCard({
   const metrics = findingMetrics(finding);
   const query = findingQuery(finding);
   const tables = findingTables(finding);
+  const contention = findingContention(finding);
+  const why = whyItMatters(finding.antipatron);
+  const sql = recommendedSql(finding);
+  const facts = jsonOpen ? evidenceFacts(finding) : [];
+  // Lo que costó en la sesión, solo si se pudo medir (en un abrazo mortal no se mide).
+  const cost = finding.impacto_sesion_ms ? formatDuration(finding.impacto_sesion_ms) : null;
   const graph = graphMounted ? buildEvidenceGraph(finding) : null;
   const jsonId = `evidence-${finding.id}`;
   const graphId = `graph-${finding.id}`;
@@ -49,7 +60,11 @@ export default function FindingCard({
             {meta.label}
           </span>
           {current && <span className="text-[13px] text-muted">ahora {current}</span>}
-          {doc && <span className="pill-neu">{doc.code}</span>}
+          {doc && (
+            <span className="pill-neu cursor-help" title={`${doc.code} · ${doc.summary}`}>
+              {doc.code}
+            </span>
+          )}
           <h3 className="text-[16px] font-semibold">{doc?.title ?? finding.antipatron}</h3>
           <Impact finding={finding} />
         </div>
@@ -72,7 +87,9 @@ export default function FindingCard({
         </p>
       </header>
 
-      <p className="mt-3 max-w-[60rem] text-[13px] leading-5">{finding.explicacion}</p>
+      <Block title="Qué pasa">
+        <p className="max-w-[60rem]">{finding.explicacion}</p>
+      </Block>
 
       {query && (
         <pre className="mt-3 max-h-32 overflow-auto whitespace-pre-wrap break-words rounded bg-ground px-3 py-2.5 font-mono text-[13px] leading-5 text-muted">
@@ -95,17 +112,29 @@ export default function FindingCard({
         </dl>
       )}
 
-      <p className="notice-pos mt-3 leading-5">
-        <span className="font-semibold">Recomendación </span>
-        {finding.recomendacion}
-      </p>
+      {contention && <ContentionDetail contention={contention} />}
 
-      {finding.riesgo && (
-        <p className="notice-warn mt-2 leading-5">
-          <span className="font-semibold">Riesgo de aplicarla </span>
-          {finding.riesgo}
-        </p>
+      {(why || cost) && (
+        <Block title="Por qué importa">
+          {why && <p className="max-w-[60rem]">{why}</p>}
+          {cost && (
+            <p className={`max-w-[60rem] ${why ? "mt-1" : ""}`}>
+              En esta sesión le ha costado a la base <span className="font-semibold">{cost}</span>.
+            </p>
+          )}
+        </Block>
       )}
+
+      <Block title="Qué hacer">
+        <p className="notice-pos leading-5">{finding.recomendacion}</p>
+        {sql.length > 0 && <CodeBlock code={sql.join("\n")} label={sql.length > 1 ? "Copiar todo" : "Copiar SQL"} />}
+        {finding.riesgo && (
+          <p className="notice-warn mt-2 leading-5">
+            <span className="font-semibold">Riesgo de aplicarla </span>
+            {finding.riesgo}
+          </p>
+        )}
+      </Block>
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-[13px]">
         <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
@@ -120,7 +149,7 @@ export default function FindingCard({
             Grafo de la evidencia
           </Toggle>
           <Toggle open={jsonOpen} controls={jsonId} onClick={() => setJsonOpen((v) => !v)}>
-            Evidencia (JSON)
+            Ver evidencia
           </Toggle>
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-muted">
@@ -160,7 +189,18 @@ export default function FindingCard({
 
       <div id={jsonId} className="reveal" data-open={jsonOpen}>
         <div className="overflow-hidden">
-          <pre className="mt-3 max-h-56 overflow-auto rounded bg-ground px-3 py-2.5 font-mono text-[13px] leading-5">
+          {facts.length > 0 && (
+            <ul className="mt-3 flex flex-wrap gap-1.5">
+              {facts.map((f) => (
+                <li key={f.label} className="max-w-full truncate rounded bg-ground px-2 py-1 text-[13px]" title={`${f.label}: ${f.value}`}>
+                  <span className="text-muted">{f.label} </span>
+                  <span className="font-medium">{f.value}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-3 text-[13px] text-muted">Evidencia completa (JSON)</p>
+          <pre className="mt-1 max-h-56 overflow-auto rounded bg-ground px-3 py-2.5 font-mono text-[13px] leading-5">
             {JSON.stringify(finding.evidencia, null, 2)}
           </pre>
         </div>
@@ -196,6 +236,16 @@ function Impact({ finding }: { finding: Finding }) {
     >
       Impacto <span className="font-semibold text-fg">{formatDuration(session)}</span>
     </span>
+  );
+}
+
+// Un bloque con su título: los tres de cada hallazgo (qué pasa, por qué importa, qué hacer).
+function Block({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="mt-3 text-[13px] leading-5">
+      <h4 className="mb-1 text-[13px] font-semibold text-muted">{title}</h4>
+      {children}
+    </section>
   );
 }
 

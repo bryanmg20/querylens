@@ -64,6 +64,20 @@ class Seed:
             (db, hace, hace, status),
         )
 
+    def muestra(self, *, db=DB, hace=timedelta(minutes=1), deltas=0, reset=False, desborde=False, segundos=10.0):
+        self._one(
+            "INSERT INTO pipeline_health.cycle_samples (db_id, taken_at, deadlocks_since_prev, counter_reset, "
+            "  log_window_overrun, seconds_since_prev) VALUES (%s, now() - %s, %s, %s, %s, %s)",
+            (db, hace, deltas, reset, desborde, segundos),
+        )
+
+    def abrazo(self, clave, *, db=DB, hace=timedelta(minutes=1), completo=True, antipatron="inconsistent_lock_order_deadlock"):
+        self._one(
+            "INSERT INTO public.deadlock_events (db_id, report_key, detected_at, source, complete, antipatron) "
+            "VALUES (%s, %s, now() - %s, 'postgres_log', %s, %s)",
+            (db, clave, hace, completo, antipatron if completo else None),
+        )
+
     def issue(self, code, severity, *, db=DB, resuelto_hace=None, visto_hace=timedelta(minutes=1)):
         self._one(
             "INSERT INTO pipeline_health.issues (db_id, code, scope, category, severity, section, message, remediation, "
@@ -377,3 +391,86 @@ def test_problemas_de_salud_abiertos_y_resueltos_recientes(client, seed):
     codes_72h = [i["code"] for i in get(client, since_hours=72).json()["health"]["issues"]]
     assert "RESUELTO_HACE_DIAS" in codes_72h
     assert "DE_OTRA_BASE" not in codes_72h
+
+
+# --- calidad de la captura de abrazos mortales ---------------------------------------
+
+
+def test_sin_abrazos_ni_muestras_la_calidad_viene_en_cero(client, seed):
+    seed.base()
+    q = get(client).json()["calidad_deadlocks"]
+    assert q["alcance"] == "base"
+    assert q["hubo"] is None and q["perdidos"] is None  # sin contador no se sabe, no es 0
+    assert q["capturados"] == q["con_detalle"] == q["sin_detalle"] == q["ciclos"] == 0
+    assert q["por_patron"] == {}
+
+
+def test_calidad_cuenta_hubo_capturados_y_perdidos(client, seed):
+    seed.base()
+    seed.muestra(hace=timedelta(minutes=3), deltas=2)
+    seed.muestra(hace=timedelta(minutes=2), deltas=1)
+    seed.abrazo("a|1")
+    seed.abrazo("b|2", antipatron="lock_mode_conversion_deadlock")
+    seed.abrazo("c|3", completo=False)  # encabezado sin detalle
+    q = get(client).json()["calidad_deadlocks"]
+    assert (q["hubo"], q["capturados"], q["perdidos"], q["capturados_de_mas"]) == (3, 3, 0, 0)
+    assert (q["con_detalle"], q["sin_detalle"]) == (2, 1)
+    assert q["por_patron"] == {
+        "inconsistent_lock_order_deadlock": 1,
+        "lock_mode_conversion_deadlock": 1,
+    }
+    assert q["ciclos"] == 2
+
+
+def test_calidad_abrazo_perdido_y_capturado_de_mas(client, seed):
+    seed.base()
+    seed.muestra(deltas=3)
+    seed.abrazo("a|1")
+    q = get(client).json()["calidad_deadlocks"]
+    assert (q["hubo"], q["capturados"], q["perdidos"], q["capturados_de_mas"]) == (3, 1, 2, 0)
+
+    seed.abrazo("b|2")
+    seed.abrazo("c|3")
+    seed.abrazo("d|4")
+    q = get(client).json()["calidad_deadlocks"]
+    assert (q["perdidos"], q["capturados_de_mas"]) == (0, 1)
+
+
+def test_calidad_reinicios_desbordes_y_huecos(client, seed):
+    seed.base()
+    seed.muestra(hace=timedelta(minutes=4), reset=True)
+    seed.muestra(hace=timedelta(minutes=3), desborde=True)
+    seed.muestra(hace=timedelta(minutes=2), segundos=300.0)
+    q = get(client).json()["calidad_deadlocks"]
+    assert (q["ciclos"], q["reinicios_contador"], q["ciclos_con_desborde"], q["huecos_largos"]) == (3, 1, 1, 1)
+
+
+def test_calidad_alcance_es_servidor_en_mysql(client, seed):
+    seed.base(engine="mysql")
+    assert get(client).json()["calidad_deadlocks"]["alcance"] == "servidor"
+
+
+def test_calidad_solo_cuenta_la_sesion_y_la_base_del_token(client, seed):
+    seed.base(sesion_hace=timedelta(minutes=30))
+    seed.base("db_otra")
+    seed.muestra(hace=timedelta(hours=2), deltas=5)  # antes de la sesión
+    seed.muestra(hace=timedelta(minutes=1), deltas=1)
+    seed.muestra(db="db_otra", deltas=9)
+    seed.abrazo("viejo|1", hace=timedelta(hours=2))
+    seed.abrazo("a|1")
+    seed.abrazo("ajeno|1", db="db_otra")
+    q = get(client).json()["calidad_deadlocks"]
+    assert (q["hubo"], q["capturados"], q["ciclos"]) == (1, 1, 1)
+
+
+def test_calidad_sin_las_tablas_viene_nula_y_no_da_500(client, seed, db_conn):
+    seed.base()
+    with db_conn.cursor() as cur:
+        cur.execute("ALTER TABLE public.deadlock_events RENAME TO deadlock_events_aparte")
+    try:
+        r = get(client)
+        assert r.status_code == 200
+        assert r.json()["calidad_deadlocks"] is None
+    finally:
+        with db_conn.cursor() as cur:
+            cur.execute("ALTER TABLE public.deadlock_events_aparte RENAME TO deadlock_events")

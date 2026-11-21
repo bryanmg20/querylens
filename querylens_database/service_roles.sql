@@ -87,5 +87,5 @@ GRANT SELECT ON public.hallazgos, public.problemas, public.detecciones TO ql_api
 -- el reporte
 GRANT SELECT ON public.estado_evaluacion TO ql_api, ql_cli;
 -- el reporte y el health del pipeline (DEADLOCKS_MISSED) comparan los abrazos
--- capturados con el contador del motor
-GRANT SELECT ON public.deadlock_events TO ql_cli, ql_pipeline;
+-- capturados con el contador del motor; la api-rest, para calidad_deadlocks
+GRANT SELECT ON public.deadlock_events TO ql_cli, ql_pipeline, ql_api;
